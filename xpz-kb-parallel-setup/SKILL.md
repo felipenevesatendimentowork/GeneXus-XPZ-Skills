@@ -46,6 +46,8 @@ Dentro de `modo_atualizacao`, separar primeiro a intencao operacional antes de a
 
 Em `auditar_setup`, concluir primeiro a auditoria minima obrigatoria e so depois oferecer proximos passos. Antes disso, nao oferecer `sincronizar XPZ novamente`, `rebuild do indice` ou equivalentes como resposta-padrao a um pedido de "refazer setup".
 
+Quando `auditar_setup` detectar `INVENTORY_SHORT_NAMING` no campo `wrappers/inventario` da saida de `Test-*KbSetupAudit.ps1`: os scripts listados existem com naming curto (ex: `Test-KbGate.ps1`) em vez do naming canonico com prefixo KB (ex: `Test-wsEducacaoSpTesteKbGate.ps1`). Essa divergencia NAO e opcional, NAO pode ser descartada como "convencao consistente aceita", NAO e neutralizada por `GATE_OK`, `STRUCTURE_OK` ou pelo fato de os scripts funcionarem operacionalmente. O naming curto e uma divergencia do padrao desta skill. O agente deve: classificar cada script SHORT_NAMING como CUSTOMIZADO com acao de renome na tabela de 8.h; oferecer `atualizar_bootstrap_local` para executar os renomes; incluir os renomes na lista de trabalho da sessao corrente — nao adiar para sessao futura nem condicionar a confirmacao a que o usuario mencione o problema primeiro.
+
 ## PATH RESOLUTION
 
 - Este `SKILL.md` fica dentro de uma subpasta de skill sob a raiz do repositório.
