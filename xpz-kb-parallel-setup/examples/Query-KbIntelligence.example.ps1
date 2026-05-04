@@ -25,12 +25,15 @@ o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 .\Query-KbIntelligence.ps1 -Query functional-trace-basic -ObjectType Procedure -ObjectName procExemplo -Limit 20 -Format text
 
 .EXAMPLE
+.\Query-KbIntelligence.ps1 -Query list-by-type -ObjectType Procedure -Format text
+
+.EXAMPLE
 .\Query-KbIntelligence.ps1 -Query index-metadata -Format text
 #>
 
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("object-info", "search-objects", "who-uses", "what-uses", "show-evidence", "impact-basic", "functional-trace-basic", "index-metadata")]
+    [ValidateSet("object-info", "search-objects", "list-by-type", "who-uses", "what-uses", "show-evidence", "impact-basic", "functional-trace-basic", "index-metadata")]
     [string]$Query,
 
     [string]$IndexPath,

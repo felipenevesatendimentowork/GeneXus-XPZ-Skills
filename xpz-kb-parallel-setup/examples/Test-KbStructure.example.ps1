@@ -91,6 +91,7 @@ $scriptsDir = Join-Path $KbRoot 'scripts'
 foreach ($script in @(
     'Update-KbFromXpz.ps1',
     'Test-KbFullSnapshot.ps1',
+    'Test-KbSetupFreshness.ps1',
     'Query-KbIntelligence.ps1',
     'Rebuild-KbIntelligenceIndex.ps1',
     'Test-KbGate.ps1',
@@ -109,6 +110,7 @@ Test-Component -Label 'KbIntelligence\kb-intelligence.sqlite' `
 foreach ($scriptName in @(
     'Update-KbFromXpz.ps1',
     'Test-KbFullSnapshot.ps1',
+    'Test-KbSetupFreshness.ps1',
     'Query-KbIntelligence.ps1',
     'Rebuild-KbIntelligenceIndex.ps1',
     'Test-KbGate.ps1',

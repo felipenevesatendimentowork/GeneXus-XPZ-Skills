@@ -367,6 +367,27 @@ def functional_trace_basic(conn: sqlite3.Connection, object_type: str, object_na
     }
 
 
+def list_by_type(conn: sqlite3.Connection, object_type: str, limit: int | None) -> dict[str, object]:
+    rows = fetch_all(
+        conn,
+        """
+        SELECT type, name, guid, file_path, last_update
+        FROM objects
+        WHERE type = ?
+        ORDER BY name
+        """,
+        (object_type,),
+    )
+    total = len(rows)
+    return {
+        "query": "list-by-type",
+        "object_type": object_type,
+        "total": total,
+        "shown": len(limit_rows(rows, limit)),
+        "results": limit_rows(rows, limit),
+    }
+
+
 def show_evidence(
     conn: sqlite3.Connection,
     relation_id: int | None,
@@ -459,6 +480,8 @@ def format_text(result: dict[str, object]) -> str:
     else:
         if query == "search-objects":
             lines.append(f"{query}: {result.get('pattern')}")
+        elif query == "list-by-type":
+            lines.append(f"{query}: {result.get('object_type')}")
         else:
             lines.append(str(query))
 
@@ -551,7 +574,7 @@ def format_text(result: dict[str, object]) -> str:
     for row in rows:
         if not isinstance(row, dict):
             continue
-        if query == "search-objects":
+        if query in ("search-objects", "list-by-type"):
             lines.append(f"- {row.get('type')}:{row.get('name')}")
             lines.append(f"  guid={row.get('guid')} {row.get('file_path')} last_update={row.get('last_update')}")
             continue
@@ -578,6 +601,7 @@ def parse_args() -> argparse.Namespace:
         choices=[
             "object-info",
             "search-objects",
+            "list-by-type",
             "who-uses",
             "what-uses",
             "show-evidence",
@@ -616,6 +640,10 @@ def main() -> int:
             if not args.object_name:
                 raise SystemExit("search-objects requires --object-name.")
             result = search_objects(conn, args.object_name, args.object_type, args.limit)
+        elif args.query == "list-by-type":
+            if not args.object_type:
+                raise SystemExit("list-by-type requires --object-type.")
+            result = list_by_type(conn, args.object_type, args.limit)
         elif args.query == "who-uses":
             if not args.object_type or not args.object_name:
                 raise SystemExit("who-uses requires --object-type and --object-name.")

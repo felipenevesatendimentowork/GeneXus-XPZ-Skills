@@ -160,6 +160,22 @@ $packageEvidenceParts += ('source_sanity_wrapper={0}' -f $(if ($hasSourceSanityW
 $packageEvidenceParts += ('package_collision_wrapper={0}' -f $(if ($hasPackageCollisionWrapper) { 'presente' } else { 'ausente' }))
 $packageEvidence = $packageEvidenceParts -join '; '
 
+$scriptDir = Split-Path -Parent $PSCommandPath
+$inventoryScriptPath = Join-Path $scriptDir 'Test-XpzWrapperInventory.ps1'
+$examplesPath = Join-Path (Split-Path -Parent $scriptDir) 'xpz-kb-parallel-setup\examples'
+$inventoryStatus = 'INVENTORY_UNKNOWN'
+if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
+    try {
+        $inventoryOutput = (& $inventoryScriptPath -KbParallelRoot $KbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+            ForEach-Object { $_.ToString() }) -join ' '
+        $inventoryStatus = $inventoryOutput.Trim()
+    } catch {
+        $inventoryStatus = "INVENTORY_UNKNOWN: $($_.Exception.Message.Trim())"
+    }
+} else {
+    $inventoryStatus = 'INVENTORY_UNKNOWN: motor Test-XpzWrapperInventory.ps1 ausente'
+}
+
 $suggestedState = switch ($true) {
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'NAO_ADOTADO') { 'materializado_e_indice_validado'; break }
@@ -178,4 +194,5 @@ Emit-Line -Key 'metadata wrapper' -Value $metadataWrapperStatus
 Emit-Line -Key 'metadata wrapper.evidencia' -Value $(if ($metadataWrapperRaw) { $metadataWrapperRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'empacotamento local' -Value $packageAuditStatus
 Emit-Line -Key 'empacotamento local.evidencia' -Value $packageEvidence
+Emit-Line -Key 'wrappers/inventario' -Value $inventoryStatus
 Emit-Line -Key 'estado_operacional_sugerido' -Value $suggestedState

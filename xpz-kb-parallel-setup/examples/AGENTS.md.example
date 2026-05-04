@@ -54,6 +54,9 @@ C:\Dev\Knowledge\GeneXus-XPZ-Skills
 
 Wrappers esperados:
 
+- `Test-<NomeKb>KbSetupFreshness.ps1`: PRE-CONDICAO do gatilho global — compara
+  `last_setup_audit_run_at` com a data de ultima modificacao do repositorio de
+  skills e retorna `GATE_ONLY` ou `AUDIT_REQUIRED: <motivo>`.
 - `Update-<NomeKb>KbFromXpz.ps1`: materializa XPZ/XML em `ObjetosDaKbEmXml`,
   grava `kb-source-metadata.md` e chama o refresh do indice quando nao estiver
   em `VerifyOnly`.
