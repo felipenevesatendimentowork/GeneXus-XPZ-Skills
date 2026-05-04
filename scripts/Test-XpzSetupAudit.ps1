@@ -194,5 +194,10 @@ Emit-Line -Key 'metadata wrapper' -Value $metadataWrapperStatus
 Emit-Line -Key 'metadata wrapper.evidencia' -Value $(if ($metadataWrapperRaw) { $metadataWrapperRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'empacotamento local' -Value $packageAuditStatus
 Emit-Line -Key 'empacotamento local.evidencia' -Value $packageEvidence
-Emit-Line -Key 'wrappers/inventario' -Value $inventoryStatus
+if ($inventoryStatus -match '^(INVENTORY_SHORT_NAMING:[^|]+)\|\s*(INVENTORY_GAPS:.+)$') {
+    Emit-Line -Key 'wrappers/inventario' -Value $Matches[1].Trim()
+    Emit-Line -Key 'wrappers/inventario' -Value $Matches[2].Trim()
+} else {
+    Emit-Line -Key 'wrappers/inventario' -Value $inventoryStatus
+}
 Emit-Line -Key 'estado_operacional_sugerido' -Value $suggestedState
