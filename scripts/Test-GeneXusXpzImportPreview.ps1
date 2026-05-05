@@ -200,7 +200,7 @@ function Invoke-ProbeStage {
     $probeOutput = & $probeScriptPath @probeArgs
     $probeExitCode = $LASTEXITCODE
     $probeJson = ($probeOutput -join [Environment]::NewLine)
-    $probeDiagnostic = $probeJson | ConvertFrom-Json -Depth 8
+    $probeDiagnostic = $probeJson | ConvertFrom-Json
 
     return [ordered]@{
         ExitCode = $probeExitCode
