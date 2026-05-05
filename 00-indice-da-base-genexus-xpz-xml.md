@@ -68,6 +68,7 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 - `01g-moldes-sanitizados-componentes-e-fisico.md`
 - `01h-moldes-sanitizados-metadados-e-artefatos.md`
 - `04-webpanel-familias-e-templates.md`
+- `04b-ucw-gxcontroltype-reference.md`
 - `05-transaction-familias-e-templates.md`
 - `05b-procedure-relatorio-familias-e-templates.md`
 
@@ -102,6 +103,8 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 - abortar quando faltar molde estrutural comparável ou contexto estrutural
 - não promover `Hipótese` a `Inferência forte`
 - não promover `Inferência forte` a `Evidência direta`
+- `Inferência forte — evidência de KB externa inspecionada` é nível válido e rastreável; declarar sempre KB de origem, versão e objeto de referência; ver taxonomia completa em `02-regras-operacionais-e-runtime.md`
+- para KBs pequenas ou novas sem XML local comparável, seguir a escada de recursos documentada em `08-guia-para-agente-gpt.md`
 
 ## Fluxo operacional resumido
 

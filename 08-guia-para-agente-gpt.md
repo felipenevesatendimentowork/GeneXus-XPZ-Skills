@@ -59,6 +59,20 @@ Padronizar quando avançar, quando exigir molde bruto comparável e quando abort
 5. escalar para XML real comparavel apenas se o caso fugir da cobertura simples, se a tentativa inicial mais esse unico corretivo curto falharem, ou se aparecer sinal de dialeto/localismo da KB
 6. registrar no handoff qual base esta sustentando a resposta: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB` ou `hipotese`
 
+## Escada de recursos para KBs pequenas ou novas
+
+Quando a KB alvo for pequena ou nova e nao houver XML local comparavel disponivel, o agente deve seguir esta escada em ordem:
+
+1. **`nexa` + moldes sanitizados desta base** — tentar direto, sem perguntar ao usuario; declarar qual molde foi usado.
+2. **Tentativa sem compromisso** — o agente tenta com base em padrao inferido ou em evidencia de KB externa inspecionada; declarar explicitamente a fonte e o nivel de confianca; se a probabilidade de acerto for avaliada como alta, apenas avisar; se for baixa, apresentar as opcoes ao usuario e aguardar decisao antes de gerar; em ambos os casos, exigir validacao na IDE antes de importar.
+3. **Pasta paralela de KB externa** — usuario indica uma pasta paralela de outra KB com `ObjetosDaKbEmXml/`; agente inspeciona o XML real dessa KB como fonte antes de gerar; registrar no handoff como `XML real de KB externa inspecionada`.
+4. **Usuario cria exemplo na KB e exporta XPZ** — usuario cria o objeto na IDE, exporta o `.xpz` e o oferece ao agente; agente estuda o XPZ exportado como evidencia direta primaria antes de gerar qualquer clone ou variacao.
+
+Regras da escada:
+- Nunca pular do nivel 1 para o 3 ou 4 sem tentar o nivel 2 quando o caso for plausivel pelo padrao empírico desta base.
+- Em qualquer nivel, registrar no handoff qual base sustenta a resposta: `molde sanitizado`, `XML real da KB atual`, `XML real de KB externa inspecionada` ou `hipotese`.
+- A opcao 4 e a mais confiavel quando nenhuma das tres anteriores for suficiente — o proprio GeneXus e o gerador do molde canonico.
+
 ## Regra de precedencia sobre skills gerais
 
 - quando a tarefa for de `XML`/`XPZ` nesta base, os `.md` locais da pasta do projeto tem precedencia sobre heuristicas gerais de skill

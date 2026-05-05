@@ -413,3 +413,12 @@ Baseado em objetos de 80–115 KB. `<actions>` existe em TRÊS níveis distintos
 - Evidência direta (Gx_FabricaBrasil): 122/184 têm `<actions>` em ambos os níveis; 62/184 têm apenas em `<tab>`.
 - Inferência forte: a presença ou ausência de `<actions>` em `<selection>` depende da configuração do padrão WorkWithForWeb para cada objeto, não de uma regra universal.
 - Regra operacional: **sempre inspecionar o XML real antes de qualquer inserção textual**; não assumir estrutura a partir do tamanho do arquivo ou do nome do objeto.
+
+---
+
+## Prefixo de GUID de atributo no CDATA
+
+- Nível de confiança: **Inferência forte — evidência de KB externa inspecionada** (OnlineShopSS, GeneXus 18 U9 Build 187794)
+- Nos exemplos sanitizados deste documento, os GUIDs de atributo dentro do CDATA são representados como `GUID-NomeAtributo` por clareza.
+- Em KBs reais observadas externamente, os valores do atributo `attribute="..."` dentro do CDATA do `WorkWithForWeb` seguem o formato `adbb33c9-0906-4971-833c-998de27e0676-NomeAtributo`, onde `adbb33c9-0906-4971-833c-998de27e0676` é um prefixo fixo do padrão e `NomeAtributo` é o nome do atributo GeneXus.
+- Regra operacional: ao construir ou editar o CDATA de um `WorkWithForWeb` sem ter o XML real disponível, usar o prefixo `adbb33c9-0906-4971-833c-998de27e0676-` concatenado ao nome do atributo como melhor inferência; validar com o XML real da KB alvo antes de importar.

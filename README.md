@@ -33,6 +33,7 @@ Além dessa base principal, a raiz também pode conter documentação operaciona
 - `02-regras-operacionais-e-runtime.md`
 - `03-risco-e-decisao-por-tipo.md`
 - `04-webpanel-familias-e-templates.md`
+- `04b-ucw-gxcontroltype-reference.md`: catálogo de User Controls (`gxControlType`) em `GxMultiForm`, tabela de upload por contexto, regras de eventos de UC e SDT `FileUploadData`
 - `05-transaction-familias-e-templates.md`
 - `05b-procedure-relatorio-familias-e-templates.md`
 - `06-padroes-de-objeto-e-nomenclatura.md`
@@ -205,6 +206,7 @@ Además de esa base principal, la raíz también puede contener documentación o
 - `02-regras-operacionais-e-runtime.md`
 - `03-risco-e-decisao-por-tipo.md`
 - `04-webpanel-familias-e-templates.md`
+- `04b-ucw-gxcontroltype-reference.md`: catálogo de User Controls (`gxControlType`) en `GxMultiForm`, tabla de carga por contexto, reglas de eventos de UC y SDT `FileUploadData`
 - `05-transaction-familias-e-templates.md`
 - `05b-procedure-relatorio-familias-e-templates.md`
 - `06-padroes-de-objeto-e-nomenclatura.md`
@@ -377,6 +379,7 @@ In addition to that main base, the root may also contain complementary operation
 - `02-regras-operacionais-e-runtime.md`
 - `03-risco-e-decisao-por-tipo.md`
 - `04-webpanel-familias-e-templates.md`
+- `04b-ucw-gxcontroltype-reference.md`: catalog of User Controls (`gxControlType`) in `GxMultiForm`, upload-by-context table, UC event rules, and SDT `FileUploadData`
 - `05-transaction-familias-e-templates.md`
 - `05b-procedure-relatorio-familias-e-templates.md`
 - `06-padroes-de-objeto-e-nomenclatura.md`

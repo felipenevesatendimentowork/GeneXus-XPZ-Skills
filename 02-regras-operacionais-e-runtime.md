@@ -27,6 +27,23 @@ Consolidar regras de geracao, clonagem conservadora, materializacao, serializaca
 - `Inferência forte`: certos sinais estruturais do XML permitem falar em risco runtime relativo, desde que a fala seja qualificada e nao prometa comportamento real sem teste.
 - `Hipótese`: quanto mais denso o objeto em `events`, `grid`, `Level`, `AttributeProperties`, `parent`, `pattern` e links contextuais, maior tende a ser a sensibilidade a navegacao, carga de dados e comportamento nao trivial em execucao.
 
+## Niveis de confianca de fonte
+
+Esta base usa quatro niveis de confianca, em ordem decrescente de certeza:
+
+| Nivel | Descricao | Quando usar |
+|-------|-----------|-------------|
+| `Evidência direta` | XML bruto lido diretamente desta base ou de XML oficial da KB alvo na sessao corrente | Afirmacoes sobre estrutura, campos, valores ou comportamento observado |
+| `Inferência forte — evidência de KB externa inspecionada` | XML real lido de outra KB GeneXus (nao desta base), com fonte rastreavel (KB, versao, objeto) | Padrao observado em KB externa pelo agente ou reportado com rastreabilidade; valido para geracao conservadora, mas exige validacao na KB alvo antes de importar |
+| `Inferência forte` | Padrao derivado de recorrencia estatistica ou logica estrutural observada nesta base, sem XML diretamente lido para o caso especifico | Deducoes plausiveis sobre comportamento esperado quando a evidencia direta nao cobre o caso |
+| `Hipótese` | Especulacao baseada em analogia, plausibilidade ou intuicao estrutural, sem evidencia empirica direta ou reportada | Caminhos nao testados, alternativas nao validadas; exige sinalizacao explícita ao usuario |
+
+Regras de uso:
+- Nunca promover `Hipótese` a `Inferência forte` sem evidencia adicional.
+- Nunca promover `Inferência forte` a `Evidência direta` sem XML real lido na sessao corrente.
+- `Inferência forte — evidência de KB externa inspecionada` e nivel valido para operacao pratica; o agente deve declarar a KB de origem, versao e objeto de referencia quando disponivel.
+- Ao registrar no handoff, usar exatamente um dos quatro rotulos acima para cada afirmacao critica.
+
 ## Achados empiricos da trilha experimental via MSBuild
 
 - `Evidência direta`: na instalacao validada nesta frente, a task `Genexus.MsBuild.Tasks.Import` expos publicamente `PreviewMode`, `IncludeItems` e `ExcludeItems`.
