@@ -369,9 +369,9 @@ Nenhuma implementação deve ser promovida para menções nas skills atuais ante
 
 Quando a nova fonte for apresentada, ela deverá ser incorporada aqui como insumo de revisão do plano, e não como atalho para pular a etapa de validação.
 
-## Síntese Da Fonte Lida Em `C:\Dev\Fork\FBgx18MCP`
+## Síntese Da Fonte Externa Lida
 
-A leitura filtrada do repositório `C:\Dev\Fork\FBgx18MCP`, ignorando a arquitetura de `MCP` como solução-alvo desta frente, reforçou o seguinte:
+A leitura filtrada de uma fonte externa de referência, ignorando a arquitetura de `MCP` como solução-alvo desta frente, reforçou o seguinte:
 
 - o caminho mais seguro para automação operacional do GeneXus não é hospedar o SDK em executável arbitrário como base principal
 - `MSBuild` aparece como host suportado e pragmaticamente mais estável para operações sobre a `Knowledge Base`
@@ -401,9 +401,9 @@ Com base nessa leitura, este plano passa a assumir explicitamente que:
 - a skill deve tratar projeto temporário `.msbuild`, parâmetros explícitos, captura de saída e validação de artefatos como elementos centrais do fluxo
 - a skill deve continuar separada das demais skills `xpz-*` como capacidade especializada, sem virar dependência automática
 
-## Aprendizados Metodológicos Da Evolução Recente De `FBgx18MCP`
+## Aprendizados Metodológicos De Fonte Externa
 
-Uma leitura adicional dos commits mais recentes de `FBgx18MCP` não trouxe evidência nova direta sobre `MSBuild` para `XPZ`, mas trouxe padrões metodológicos reaproveitáveis para esta frente:
+Uma leitura adicional de commits recentes de uma fonte externa não trouxe evidência nova direta sobre `MSBuild` para `XPZ`, mas trouxe padrões metodológicos reaproveitáveis para esta frente:
 
 - distinguir claramente alteração apenas encenada em memória de alteração efetivamente persistida e verificada
 - não confiar apenas no sucesso nominal da operação; fazer leitura posterior do estado persistido
@@ -419,6 +419,18 @@ Consequências para esta frente:
 - `exitCode` isolado não deve ser tratado como evidência suficiente de sucesso funcional
 - a fase de verificação deve reler artefatos e estado observável em vez de depender de memória de execução
 - quando houver comportamento tardio ou ambíguo, a estratégia preferida deve ser retry curto com leitura posterior, e não inferência otimista
+
+## Decisão Descartada: Delay De Estabilização Pós-Abertura Da KB
+
+Foi avaliada a adição de um parâmetro de espera configurável entre a abertura da KB e a operação seguinte, com a hipótese de que KBs grandes poderiam estar em estado transiente logo após `OpenKnowledgeBase`.
+
+A avaliação concluiu que o mecanismo seria ineficaz nesta arquitetura:
+
+- `OpenKnowledgeBase` não é chamado pelo PowerShell diretamente — é uma task dentro do arquivo `.msbuild` gerado dinamicamente, rodando no mesmo processo `MSBuild`, sequencialmente encadeada com a operação seguinte
+- um `Start-Sleep` no PowerShell antes de invocar `MSBuild` atuaria na camada errada: o processo ainda não teria sido iniciado e a KB ainda não teria sido aberta
+- o motor do `MSBuild` já garante a sequência `OpenKnowledgeBase → operação → CloseKnowledgeBase` de forma síncrona e interna
+
+O cenário de KB grande e execução longa já está coberto pela regra empírica documentada em "Riscos Operacionais Descobertos". Um parâmetro configurável de timeout no `Start-Process` seria conceitualmente mais correto que um delay pré-chamada, mas não foi implementado por ausência de caso concreto que o justifique.
 
 ## Restrição De Escopo Sobre GeneXus Server
 
@@ -989,8 +1001,6 @@ Teste executado em 2026-05-06 na KB `C:\KBs\OnlineShopSS` (GeneXus 18 Up 14), ap
 
 - `Genexus.Tasks.targets` (instalação oficial): `<UsingTask TaskName="Genexus.MsBuild.Tasks.BuildOne" AssemblyFile="Genexus.MsBuild.Tasks.dll" Architecture="x86" />`
 - Documentação offline instalada: `Documentation\documentation\3908.html`, seção `BuildOne`
-
-O projeto `FBgx18MCP` usa essa task, mas o nome e a task são inteiramente do GeneXus.
 
 ### O que BuildOne faz
 
