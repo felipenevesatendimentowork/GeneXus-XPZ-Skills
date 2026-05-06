@@ -981,6 +981,55 @@ Teste executado em 2026-05-06 na KB `C:\KBs\OnlineShopSS` (GeneXus 18 Up 14), ap
 - nas etapas que corrigem inconsistências lógicas (Etapa 4), cada item gera par de linhas: detecção + confirmação de correção; com `Fix="false"` apenas a linha de detecção aparece
 - a Etapa 6 emite `Corrigindo redundâncias de propriedades em todos os objetos na versão X` para todas as versões, mesmo quando não há problemas reais; esse padrão é o nome interno do processo, não evidência de correção — o resumo `0 corrigido` prevalece
 
+## Achado Empírico Sobre BuildOne
+
+### Origem do nome
+
+`BuildOne` é o nome oficial da task no GeneXus MSBuild. Está registrada em:
+
+- `Genexus.Tasks.targets` (instalação oficial): `<UsingTask TaskName="Genexus.MsBuild.Tasks.BuildOne" AssemblyFile="Genexus.MsBuild.Tasks.dll" Architecture="x86" />`
+- Documentação offline instalada: `Documentation\documentation\3908.html`, seção `BuildOne`
+
+O projeto `FBgx18MCP` usa essa task, mas o nome e a task são inteiramente do GeneXus.
+
+### O que BuildOne faz
+
+Segundo a documentação oficial (`3908.html`):
+
+> "Builds the object specified and all objects it calls (direct or indirect). Building means performing all tasks required to successfully run the application. Objects (the one selected and those called by it) are specified, generated and compiled. If a reorganization is required, it is also automatically run."
+
+**É build real. Não é simulação.** Executa specify + generate + compile. Reorg ocorre automaticamente se necessário — não há parâmetro para suprimir.
+
+### Propriedades públicas confirmadas por reflexão do assembly
+
+- `ObjectName` (`String`) — nome do objeto a compilar; **obrigatório**
+- `ForceRebuild` (`Boolean`) — força rebuild mesmo sem mudança; default `false`
+- `BuildCalled` (`Boolean`) — controla se objetos chamados também são compilados
+- `DetailedNavigation` (`Boolean`) — ativa navegação detalhada; default `false`
+- `CaptureOutput` (`Boolean`) — captura saída da task
+- `TaskOutput` (`String`) — saída capturada
+
+### Restrição crítica: exige objeto com Main = true
+
+A documentação é explícita:
+
+> `ObjectName`: is the name of an existing object **having the Main property set to true**. **REQUIRED.**
+
+`BuildOne` **não aceita objetos arbitrários**. Aceita apenas objetos marcados como `Main` (entry points executáveis). A maioria dos objetos importados em um XPZ típico — Procedures, Transactions, WebPanels auxiliares, SDTs, Domains — **não tem `Main = true`** e não pode ser passada a `BuildOne`.
+
+### Consequência para validação pós-importação
+
+`BuildOne` poderia servir como smoke test de compilação após importar um XPZ, mas apenas quando:
+
+- o XPZ contém pelo menos um objeto com `Main = true`
+- o usuário recebe aviso sobre o reorg automático e confirma antes da execução
+
+Para XPZs que não contêm objeto `Main` — o caso mais comum em importações cirúrgicas — `BuildOne` é inaplicável. A confirmação funcional nesses casos ainda depende de `BuildAll` headless ou reabertura manual na IDE.
+
+### Status desta frente
+
+Nenhum script foi implementado. O levantamento foi registrado para evitar repetição da pesquisa. Implementação futura dependeria de: aviso explícito de reorg, confirmação interativa, tratamento do caso sem objeto `Main` e validação empírica em KB de teste.
+
 ## Próximo Marco Esperado
 
 O próximo marco já não é provar o mecanismo básico do wrapper. Essa etapa ficou empiricamente validada em múltiplas KBs, inclusive com um caso de grande porte.
