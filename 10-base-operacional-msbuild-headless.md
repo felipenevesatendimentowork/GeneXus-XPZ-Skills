@@ -924,7 +924,62 @@ A task executa até 7 etapas:
 
 ### Próximo passo para esta frente
 
-Implementar `Test-GeneXusKbConsistency.ps1` como wrapper da task, com diagnóstico JSON que classifique o resultado nas categorias acima e distinga timeout de Etapa 3 de falha de acesso à KB.
+Implementar `Test-GeneXusKbConsistency.ps1` como wrapper da task, com diagnóstico JSON que classifique o resultado nas categorias acima e distinga timeout de Etapa 3 de falha de acesso à KB. O comportamento de `Fix="true"` já está documentado empiricamente na seção a seguir.
+
+### Achado Empírico: Comportamento de Fix="true"
+
+Teste executado em 2026-05-06 na KB `C:\KBs\OnlineShopSS` (GeneXus 18 Up 14), após bateria prévia com `Fix="false"` que havia detectado 8 inconsistências lógicas na Etapa 4. Resultado:
+
+- `ExitCode = 0` — igual ao `Fix="false"` com inconsistências; exitCode isolado não permite distinguir se houve ou não correção
+- Warning emitido no stdout: `Parâmetro "Fix" especificado. Executando verificações e corrigindo problemas.`
+- Tempo total: ~1 minuto (00:01:00.25)
+
+#### Comportamento por etapa com Fix="true"
+
+**Etapa 1** (fragmentação de índices SQL):
+- 39 índices altamente fragmentados detectados e reconstruídos (REBUILD) ou reorganizados (REORGANIZE)
+- Mensagem adicional: `Versão de composição corrigida.`
+- Duração: 1.09s
+- Resumo: `39 problema(s) encontrado(s), 39 corrigido.`
+
+**Etapa 2** (Check Model Entity Version):
+- 0 problemas encontrados, 0 corrigidos
+- Duração: 0.03s
+
+**Etapa 3** (composição de versão de entidade):
+- 0 problemas encontrados, 0 corrigidos
+- Duração: 0.045s
+- **Achado crítico: sem timeout.** Com `Fix="false"`, essa KB havia atingido o timeout de ~3min08s na Etapa 3 por conta dos índices altamente fragmentados. Com `Fix="true"`, a Etapa 1 reconstruiu os índices antes que a Etapa 3 rodasse, eliminando completamente o timeout. Isso confirma a relação causal: fragmentação alta de índices → timeout na Etapa 3; reconstrução dos índices na Etapa 1 → Etapa 3 completa em milissegundos.
+
+**Etapa 4** (redundância lógica entre EntityVersionComposition e ModelEntityVersion):
+- 8 inconsistências detectadas e corrigidas — as mesmas 8 detectadas com `Fix="false"` na KB (`Rules` e `Events` de `Transaction 'Product'`)
+- Cada inconsistência gera agora dois registros no stdout: `Inconsistência encontrada...` seguido de `Parte '...' corrigida.`
+- Duração: 4.26s
+- Resumo: `8 problema(s) encontrado(s), 8 corrigido.`
+
+**Etapa 5** (herança de subtipo):
+- 0 problemas encontrados, 0 corrigidos
+- Duração: 0.46s
+
+**Etapa 6** (redundância de propriedades ModelEntityProperty):
+- Para cada versão da KB, o stdout emite `Verificando problemas de redundância de propriedades na versão X` seguido de `Corrigindo redundâncias de propriedades em todos os objetos na versão X` — independentemente de haver ou não problemas reais
+- `mismatched input ']' expecting 'default'` aparece intercalado nas versões com mais objetos, mesmo padrão lateral observado em outras operações headless; não é novo nem bloqueante
+- Resumo: `0 problema(s) encontrado(s), 0 corrigido.`
+- Duração: 48.58s (a etapa mais demorada desta execução)
+- **Observação:** a mensagem `Corrigindo...` no stdout de Etapa 6 é o nome padrão do processo da etapa, não evidência de correção real; o resumo `0 corrigido` é o dado definitivo
+
+**Etapa 7** (enumeradores LastObjectId e LastVersionId):
+- 0 problemas encontrados, 0 corrigidos
+- Duração: 0.015s
+
+#### Regras empíricas adicionais para Fix="true"
+
+- `ExitCode = 0` com `Fix="true"` não distingue "sem problemas" de "problemas corrigidos"; é obrigatório checar o stdout pelos resumos de cada etapa
+- o warning `Parâmetro "Fix" especificado. Executando verificações e corrigindo problemas.` é o marcador confiável de que `Fix="true"` está ativo; com `Fix="false"`, esse warning não aparece
+- `Fix="true"` na Etapa 1 elimina o timeout da Etapa 3 em execução subsequente da mesma rodada: a reconstrução dos índices SQL em Etapa 1 torna a query de Etapa 3 rápida, quebrando a relação causal de fragmentação → timeout
+- a mensagem `Versão de composição corrigida.` em Etapa 1 aparece quando `Fix="true"` e a etapa efetua alguma reconstrução; ausente com `Fix="false"`
+- nas etapas que corrigem inconsistências lógicas (Etapa 4), cada item gera par de linhas: detecção + confirmação de correção; com `Fix="false"` apenas a linha de detecção aparece
+- a Etapa 6 emite `Corrigindo redundâncias de propriedades em todos os objetos na versão X` para todas as versões, mesmo quando não há problemas reais; esse padrão é o nome interno do processo, não evidência de correção — o resumo `0 corrigido` prevalece
 
 ## Próximo Marco Esperado
 

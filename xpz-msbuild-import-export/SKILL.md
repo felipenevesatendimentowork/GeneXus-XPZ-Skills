@@ -161,7 +161,7 @@ Scripts nesta frente:
   - status atual: implementado para exportação headless de XPZ com parâmetros explícitos e validação da task carregada
 - `Invoke-GeneXusXpzImport.ps1`
 - `Test-GeneXusKbConsistency.ps1`
-  - status atual: apenas como contrato; task `CheckKnowledgeBase` confirmada no assembly e comportamento empírico documentado em `10-base-operacional-msbuild-headless.md`
+  - status atual: apenas como contrato; task `CheckKnowledgeBase` confirmada no assembly; comportamento empírico de `Fix="false"` e `Fix="true"` documentados em `10-base-operacional-msbuild-headless.md`
 
 Contrato inicial específico de `Test-GeneXusMsBuildSetup.ps1`:
 
