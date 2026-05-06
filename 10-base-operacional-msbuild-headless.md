@@ -922,9 +922,9 @@ A task executa até 7 etapas:
 - quando `Fix` for omitido, a task emite dois warnings informativos mas se comporta igual a `Fix="false"`; o wrapper deve passar `Fix="false"` explicitamente para evitar ruído
 - o warning de extensão ausente (`WebPanelDesigner` / `K2B Object Designer`) pode aparecer no `OpenKnowledgeBase` sem impedir o check de rodar
 
-### Próximo passo para esta frente
+### Status desta frente
 
-Implementar `Test-GeneXusKbConsistency.ps1` como wrapper da task, com diagnóstico JSON que classifique o resultado nas categorias acima e distinga timeout de Etapa 3 de falha de acesso à KB. O comportamento de `Fix="true"` já está documentado empiricamente na seção a seguir.
+`Test-GeneXusKbConsistency.ps1` implementado em `scripts/Test-GeneXusKbConsistency.ps1`. O wrapper classifica o resultado nas quatro categorias empíricas documentadas (KB consistente, inconsistências detectadas, check parcial por timeout da Etapa 3, KB inacessível) e exige confirmação interativa obrigatória quando `-Fix` é ativado.
 
 ### Achado Empírico: Comportamento de Fix="true"
 

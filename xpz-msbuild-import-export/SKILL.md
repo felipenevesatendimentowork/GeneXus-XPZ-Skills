@@ -138,7 +138,7 @@ Arquivos de referência e quando carregar:
 
 ## EXPECTED INTERFACE
 
-Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1` e `Invoke-GeneXusXpzImport.ps1` já foram materializados nesta fase; `Test-GeneXusKbConsistency.ps1` está documentado como contrato com achados empíricos registrados; os demais não devem ser tratados como já implementados sem confirmação explícita.
+Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1` e `Test-GeneXusKbConsistency.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
 
 Estado atual da materialização:
 
@@ -147,7 +147,7 @@ Estado atual da materialização:
 - `Test-GeneXusXpzImportPreview.ps1`: implementado para `PreviewMode` de importação e já validado nesta conversa com XPZ real
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Invoke-GeneXusXpzImport.ps1`: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
-- os demais scripts permanecem apenas como contrato
+- `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
 
 Scripts nesta frente:
 
@@ -160,8 +160,9 @@ Scripts nesta frente:
 - `Invoke-GeneXusXpzExport.ps1`
   - status atual: implementado para exportação headless de XPZ com parâmetros explícitos e validação da task carregada
 - `Invoke-GeneXusXpzImport.ps1`
+  - status atual: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Test-GeneXusKbConsistency.ps1`
-  - status atual: apenas como contrato; task `CheckKnowledgeBase` confirmada no assembly; comportamento empírico de `Fix="false"` e `Fix="true"` documentados em `10-base-operacional-msbuild-headless.md`
+  - status atual: implementado; classifica KB consistente, inconsistências detectadas, check parcial por timeout da Etapa 3 e KB inacessível; `Fix="true"` exige confirmação interativa
 
 Contrato inicial específico de `Test-GeneXusMsBuildSetup.ps1`:
 
