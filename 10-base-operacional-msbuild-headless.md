@@ -442,6 +442,7 @@ A leitura da instalação oficial em `C:\Program Files (x86)\GeneXus\GeneXus18`,
   - `Import`
   - `SetActiveVersion`
   - `SetActiveEnvironment`
+  - `CheckKnowledgeBase`
 - essas tasks são carregadas com `Architecture="x86"`
 - a instalação inclui exemplos reais de `.msbuild` usando esse modelo, como:
   - `Genexus.msbuild`
@@ -888,6 +889,42 @@ Restrições de desenho:
 - não inferir silenciosamente versão, `Environment` ou pacote
 - não esconder fallback, retry ou mudança de estratégia durante a execução
 - não tratar importação real como comportamento padrão
+
+## Achado Empírico Sobre CheckKnowledgeBase
+
+A reflexão do assembly `Genexus.MsBuild.Tasks.dll` confirmou que a task `Genexus.MsBuild.Tasks.CheckKnowledgeBase` expõe publicamente a propriedade `Fix` do tipo `Boolean`.
+
+A bateria de testes executada em mais de 30 KBs (em `C:\KBs`, `C:\Models` e `C:\GxModels`) com `Fix="false"` revelou o seguinte comportamento empírico:
+
+### Estrutura interna do check
+
+A task executa até 7 etapas:
+
+- `Etapa 1`: verifica fragmentação de índices SQL (problema de performance, não inconsistência lógica)
+- `Etapa 2`: Check Model Entity Version
+- `Etapa 3`: verificação de composição de versão de entidade — pode atingir timeout de SQL em KBs com índices altamente fragmentados (~3min08s)
+- `Etapa 4`: verificação de redundância de informação entre `EntityVersionComposition` e `ModelEntityVersion` — onde inconsistências lógicas de objetos aparecem
+- `Etapa 5`: verificação de herança de subtipo
+- `Etapa 6`: redundância de propriedades de `ModelEntityProperty`
+- `Etapa 7`: verificação de enumeradores `LastObjectId` e `LastVersionId`
+
+### Categorias de resultado observadas
+
+- `ExitCode = 0`, sem inconsistências: check completo, KB sem problemas detectados
+- `ExitCode = 0`, com inconsistências: check completo, problemas lógicos detectados no stdout — a task não falha o build mesmo com inconsistências
+- `ExitCode = 1` por timeout na Etapa 3: check parcial por limite de execução SQL (~3min08s fixos); as etapas seguintes ainda rodam e podem detectar inconsistências; `CheckKnowledgeBase falhou` aparece no stdout mas os achados das demais etapas são válidos
+- `ExitCode = 1` por `OpenKnowledgeBase` bloqueado: versão incompatível (`needs conversion`), diretório inválido (`InvalidDirectory`) ou `.mdf` em estado anômalo no SQL Server — o check nunca chegou a rodar
+
+### Regras empíricas para interpretação
+
+- `ExitCode = 0` não basta para afirmar KB limpa — é obrigatório checar o stdout por linhas de inconsistência
+- `ExitCode = 1` não significa KB quebrada — pode ser timeout da Etapa 3 em KB com índices fragmentados; distinguir lendo o stdout em busca de `Tempo Limite de Execução Expirado`
+- quando `Fix` for omitido, a task emite dois warnings informativos mas se comporta igual a `Fix="false"`; o wrapper deve passar `Fix="false"` explicitamente para evitar ruído
+- o warning de extensão ausente (`WebPanelDesigner` / `K2B Object Designer`) pode aparecer no `OpenKnowledgeBase` sem impedir o check de rodar
+
+### Próximo passo para esta frente
+
+Implementar `Test-GeneXusKbConsistency.ps1` como wrapper da task, com diagnóstico JSON que classifique o resultado nas categorias acima e distinga timeout de Etapa 3 de falha de acesso à KB.
 
 ## Próximo Marco Esperado
 

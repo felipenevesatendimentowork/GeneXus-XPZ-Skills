@@ -138,7 +138,7 @@ Arquivos de referência e quando carregar:
 
 ## EXPECTED INTERFACE
 
-Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1` e `Invoke-GeneXusXpzImport.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
+Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1` e `Invoke-GeneXusXpzImport.ps1` já foram materializados nesta fase; `Test-GeneXusKbConsistency.ps1` está documentado como contrato com achados empíricos registrados; os demais não devem ser tratados como já implementados sem confirmação explícita.
 
 Estado atual da materialização:
 
@@ -160,6 +160,8 @@ Scripts nesta frente:
 - `Invoke-GeneXusXpzExport.ps1`
   - status atual: implementado para exportação headless de XPZ com parâmetros explícitos e validação da task carregada
 - `Invoke-GeneXusXpzImport.ps1`
+- `Test-GeneXusKbConsistency.ps1`
+  - status atual: apenas como contrato; task `CheckKnowledgeBase` confirmada no assembly e comportamento empírico documentado em `10-base-operacional-msbuild-headless.md`
 
 Contrato inicial específico de `Test-GeneXusMsBuildSetup.ps1`:
 
