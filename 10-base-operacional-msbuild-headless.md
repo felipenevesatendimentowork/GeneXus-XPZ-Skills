@@ -354,21 +354,6 @@ A skill deve ser tratada como operacionalmente apta quando, além da validação
 - janela segura e bem entendida para KBs grandes, sem confundir timeout do invocador com falha do `MSBuild`
 - reabertura e observação posterior na IDE oficial em casos relevantes, sem efeito colateral novo
 
-## Regra De Publicação
-
-Antes de ler a nova fonte adicional mencionada pelo usuário, este documento serve apenas como plano base.
-
-Nenhuma implementação deve ser promovida para menções nas skills atuais antes de:
-
-- consolidar este processo seguro
-- ler a nova fonte
-- revisar o plano à luz dessa fonte
-- validar empiricamente a trilha proposta
-
-## Seção Reservada Para A Nova Fonte
-
-Quando a nova fonte for apresentada, ela deverá ser incorporada aqui como insumo de revisão do plano, e não como atalho para pular a etapa de validação.
-
 ## Síntese Da Fonte Externa Lida
 
 A leitura filtrada de uma fonte externa de referência, ignorando a arquitetura de `MCP` como solução-alvo desta frente, reforçou o seguinte:
@@ -420,17 +405,38 @@ Consequências para esta frente:
 - a fase de verificação deve reler artefatos e estado observável em vez de depender de memória de execução
 - quando houver comportamento tardio ou ambíguo, a estratégia preferida deve ser retry curto com leitura posterior, e não inferência otimista
 
-## Decisão Descartada: Delay De Estabilização Pós-Abertura Da KB
+## Decisões Operacionais Dos Wrappers
 
-Foi avaliada a adição de um parâmetro de espera configurável entre a abertura da KB e a operação seguinte, com a hipótese de que KBs grandes poderiam estar em estado transiente logo após `OpenKnowledgeBase`.
+### WorkingDirectory Do Start-Process
 
-A avaliação concluiu que o mecanismo seria ineficaz nesta arquitetura:
+Todos os wrappers desta frente invocam `MSBuild.exe` via `Start-Process` com `-WorkingDirectory` apontando para o **diretório de artefatos** da execução corrente (`Split-Path -Parent $MsBuildFilePath`), não para o diretório de instalação do GeneXus.
 
-- `OpenKnowledgeBase` não é chamado pelo PowerShell diretamente — é uma task dentro do arquivo `.msbuild` gerado dinamicamente, rodando no mesmo processo `MSBuild`, sequencialmente encadeada com a operação seguinte
-- um `Start-Sleep` no PowerShell antes de invocar `MSBuild` atuaria na camada errada: o processo ainda não teria sido iniciado e a KB ainda não teria sido aberta
-- o motor do `MSBuild` já garante a sequência `OpenKnowledgeBase → operação → CloseKnowledgeBase` de forma síncrona e interna
+Motivação:
 
-O cenário de KB grande e execução longa já está coberto pela regra empírica documentada em "Riscos Operacionais Descobertos". Um parâmetro configurável de timeout no `Start-Process` seria conceitualmente mais correto que um delay pré-chamada, mas não foi implementado por ausência de caso concreto que o justifique.
+- os arquivos `.msbuild` gerados dinamicamente usam **caminhos absolutos** para todos os recursos críticos: caminho de `Genexus.Tasks.targets`, `KBPath`, `XPZPath` e demais parâmetros; o `MSBuild` não depende do diretório de trabalho para resolver esses caminhos
+- o diretório de artefatos já está sob controle do wrapper: é criado na mesma execução, fica fora da árvore de `Program Files` e é rastreado no diagnóstico JSON como artefato da operação
+- usar o diretório de instalação do GeneXus como `WorkingDirectory` introduziria risco de escrita não intencional nesse local caso uma task interna gravasse arquivos usando caminho relativo ao diretório de trabalho
+
+Consequência prática:
+
+- o `WorkingDirectory` do `Start-Process` não deve ser confundido com o parâmetro `-WorkingDirectory` dos wrappers (que é o diretório informado pelo chamador para artefatos e log)
+- não alterar esse padrão sem evidência empírica concreta de falha causada por ele
+
+### Flags MSBuild: /nodeReuse:false, /m e Verbosidade
+
+**`/nodeReuse:false` — adotado**
+
+Todos os wrappers passam `/nodeReuse:false` ao invocar `MSBuild.exe`. Sem essa flag, o MSBuild pode manter um nó de worker process vivo entre chamadas consecutivas. Como os assemblies GeneXus (`Genexus.MsBuild.Tasks.dll`) são carregados com `Architecture="x86"` dentro desse nó, um processo residual de uma execução anterior pode carregar estado interno de uma KB diferente ou de uma sessão já encerrada. `/nodeReuse:false` garante que cada invocação começa com processo limpo, sem herança de contexto.
+
+O custo operacional é apenas o overhead de subir um novo processo a cada chamada, irrelevante dado o tempo dominante das tasks GeneXus.
+
+**`/m` — descartado**
+
+A flag `/m` habilita build multi-processador. O modelo de arquivo `.msbuild` temporário contém um único target sequencial (`OpenKnowledgeBase → operação → CloseKnowledgeBase`). Não há targets independentes paralelizáveis. `/m` não traz benefício e foi descartado.
+
+**Verbosidade — mantida em `minimal`**
+
+`/verbosity:minimal` mostra mensagens de task e erros/warnings do MSBuild sem poluir o stdout com estrutura interna de targets. `quiet` suprimiria mensagens de alta importância úteis ao diagnóstico; `normal` adicionaria saída de estrutura de targets sem ganho funcional.
 
 ## Restrição De Escopo Sobre GeneXus Server
 
@@ -992,53 +998,6 @@ Teste executado em 2026-05-06 na KB `C:\KBs\OnlineShopSS` (GeneXus 18 Up 14), ap
 - a mensagem `Versão de composição corrigida.` em Etapa 1 aparece quando `Fix="true"` e a etapa efetua alguma reconstrução; ausente com `Fix="false"`
 - nas etapas que corrigem inconsistências lógicas (Etapa 4), cada item gera par de linhas: detecção + confirmação de correção; com `Fix="false"` apenas a linha de detecção aparece
 - a Etapa 6 emite `Corrigindo redundâncias de propriedades em todos os objetos na versão X` para todas as versões, mesmo quando não há problemas reais; esse padrão é o nome interno do processo, não evidência de correção — o resumo `0 corrigido` prevalece
-
-## Achado Empírico Sobre BuildOne
-
-### Origem do nome
-
-`BuildOne` é o nome oficial da task no GeneXus MSBuild. Está registrada em:
-
-- `Genexus.Tasks.targets` (instalação oficial): `<UsingTask TaskName="Genexus.MsBuild.Tasks.BuildOne" AssemblyFile="Genexus.MsBuild.Tasks.dll" Architecture="x86" />`
-- Documentação offline instalada: `Documentation\documentation\3908.html`, seção `BuildOne`
-
-### O que BuildOne faz
-
-Segundo a documentação oficial (`3908.html`):
-
-> "Builds the object specified and all objects it calls (direct or indirect). Building means performing all tasks required to successfully run the application. Objects (the one selected and those called by it) are specified, generated and compiled. If a reorganization is required, it is also automatically run."
-
-**É build real. Não é simulação.** Executa specify + generate + compile. Reorg ocorre automaticamente se necessário — não há parâmetro para suprimir.
-
-### Propriedades públicas confirmadas por reflexão do assembly
-
-- `ObjectName` (`String`) — nome do objeto a compilar; **obrigatório**
-- `ForceRebuild` (`Boolean`) — força rebuild mesmo sem mudança; default `false`
-- `BuildCalled` (`Boolean`) — controla se objetos chamados também são compilados
-- `DetailedNavigation` (`Boolean`) — ativa navegação detalhada; default `false`
-- `CaptureOutput` (`Boolean`) — captura saída da task
-- `TaskOutput` (`String`) — saída capturada
-
-### Restrição crítica: exige objeto com Main = true
-
-A documentação é explícita:
-
-> `ObjectName`: is the name of an existing object **having the Main property set to true**. **REQUIRED.**
-
-`BuildOne` **não aceita objetos arbitrários**. Aceita apenas objetos marcados como `Main` (entry points executáveis). A maioria dos objetos importados em um XPZ típico — Procedures, Transactions, WebPanels auxiliares, SDTs, Domains — **não tem `Main = true`** e não pode ser passada a `BuildOne`.
-
-### Consequência para validação pós-importação
-
-`BuildOne` poderia servir como smoke test de compilação após importar um XPZ, mas apenas quando:
-
-- o XPZ contém pelo menos um objeto com `Main = true`
-- o usuário recebe aviso sobre o reorg automático e confirma antes da execução
-
-Para XPZs que não contêm objeto `Main` — o caso mais comum em importações cirúrgicas — `BuildOne` é inaplicável. A confirmação funcional nesses casos ainda depende de `BuildAll` headless ou reabertura manual na IDE.
-
-### Status desta frente
-
-Nenhum script foi implementado. O levantamento foi registrado para evitar repetição da pesquisa. Implementação futura dependeria de: aviso explícito de reorg, confirmação interativa, tratamento do caso sem objeto `Main` e validação empírica em KB de teste.
 
 ## Próximo Marco Esperado
 

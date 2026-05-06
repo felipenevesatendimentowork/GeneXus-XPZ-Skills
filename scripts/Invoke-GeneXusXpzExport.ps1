@@ -439,6 +439,7 @@ function Invoke-MsBuildFile {
         $MsBuildFilePath,
         '/nologo',
         '/verbosity:minimal',
+        '/nodeReuse:false',
         '/target:Run'
     )
 
