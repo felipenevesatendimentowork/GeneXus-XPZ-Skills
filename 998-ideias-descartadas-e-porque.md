@@ -730,3 +730,45 @@ trata de migração e sincronização de objetos GeneXus genéricos. O público-
 frente não opera projetos de conversational flows GeneXus.
 
 **Não reavaliar** — fora de escopo por definição do público-alvo desta frente.
+
+---
+
+## Domínio Deploy (Deploy.msbuild, docker.msbuild, CreateCloudPackage.msbuild e demais)
+
+**Origem:** avaliação de inventário de tasks MSBuild do GeneXus 18, domínio Deploy,
+2026-05-06. Arquivos `.msbuild` confirmados como presentes na instalação oficial em todas
+as versões avaliadas.
+
+**O que são:** arquivos `.msbuild` permanentes entregues pela instalação do GeneXus para
+publicação de aplicações compiladas em ambientes de servidor. Abrangem:
+
+- `Deploy.msbuild` — deploy para application server; documentação oficial na wiki (id 42073)
+- `CreateCloudPackage.msbuild` — empacotamento para deploy em nuvem
+- `CreateFrontendPackage.msbuild` — empacotamento de frontend
+- `docker.msbuild` — geração de imagem Docker
+- `GXDeployProjects.msbuild` — deploy de múltiplos projetos
+- `MobileAndroidDeploy` — deploy para Android
+- Subpastas com targets por plataforma: `DeploymentTargets\`, `gxnet\`, `gxnetcore\`,
+  `ApplicationServers\Templates\`, `GenExtensions\SmartDevices\`
+
+Diferente das operações de import/export/build, que exigem gerar `.msbuild` dinamicamente,
+esses arquivos já existem na instalação e podem ser invocados diretamente com parâmetros —
+o que confirma que deploy headless é um cenário oficialmente previsto e suportado pelo
+GeneXus.
+
+**Por que foram descartados:**
+
+Deploy de aplicação é uma preocupação de infraestrutura, não de movimentação de objetos
+entre KBs. O escopo declarado das skills XPZ cobre o ciclo `import → build → validar`:
+o deploy começa exatamente onde esse ciclo termina. O público-alvo dessas skills é o
+desenvolvedor que trabalha com objetos GeneXus, não o operador que publica a aplicação em
+servidor.
+
+Adicionalmente, vários cenários de deploy dependem do GeneXus Server como requisito
+operacional — critério de exclusão já estabelecido nesta base (ver `BulkCopyKnowledgeBase`).
+
+**Não reavaliar** salvo surgimento de caso concreto em que o ciclo de validação pós-import
+inclua deploy como etapa necessária para o desenvolvedor de objetos — por exemplo, um
+ambiente de teste que exija publicação headless automatizada como parte do gate de aceite
+do XPZ. Nesse caso, a implementação seria invocar o `Deploy.msbuild` existente com
+parâmetros explícitos, não gerar `.msbuild` dinamicamente.
