@@ -352,3 +352,98 @@ As tasks avaliadas nesta frente (`CreateVersion`, `RevertToVersion`, `MergeVersi
 - Parâmetros adicionais de `CreateVersion`, `RevertToVersion`, `MergeVersions`, `RestoreRevision` e `DeleteObject`
 - Restrições ou pré-condições de uso das tasks em contexto sem GeneXus Server
 - Mecanismo de listagem de revisões de objetos (necessário para `RestoreRevision`)
+
+## RestoreModule — pré-requisito de build para KBs com dependências de módulo
+
+**Origem:** avaliação de prompt externo sobre domínio Módulos (MSBuild Tasks), 2026-05-07.
+Documentação oficial confirmada em `46830.html` da instalação local. Task registrada em
+`Genexus.Tasks.targets` e mapeada para `Genexus.MsBuild.Tasks.dll`.
+
+### Problema concreto que motiva a ideia
+
+A skill `xpz-msbuild-build` não trata o caso em que a KB tem módulos instalados (AWSCore,
+AzureCore, etc.) e esses módulos precisam estar restaurados antes de o build ter sucesso. Sem
+`RestoreModule`, o build falha com erro de referência não resolvida — mas o erro parece ser
+do XPZ importado, não da ausência de módulo. O agente pode diagnosticar incorretamente a causa.
+
+`RestoreModule` sem parâmetro `ModuleName` restaura a implementação de todos os módulos instalados
+na KB a partir do cache local (`%USERPROFILE%\.gxmodules\.cache\`). É o equivalente de `npm install`
+antes de `npm build`. Não requer GeneXus Server — funciona com o cache já populado pela IDE
+ou pela instalação do GeneXus (servidor `Local`).
+
+### Parâmetros documentados
+
+- `ModuleName` (string, opcional): nome do módulo a restaurar. Se omitido, restaura todos.
+
+### O que justificaria implementar agora vs. aguardar
+
+Implementar quando houver KB concreta com módulos instalados no portfólio onde o build headless
+falhe por ausência de restauração. O gate de adição ao pipeline da `xpz-msbuild-build` seria:
+verificar antes do build se a KB tem módulos instalados e, em caso afirmativo, executar
+`RestoreModule` automaticamente como etapa anterior ao `BuildAll`.
+
+### Condições antes de implementar
+
+- Verificar empiricamente se `Genexus.MsBuild.Tasks.RestoreModule` expõe `ModuleName` como
+  propriedade pública no assembly desta instalação
+- Confirmar que `RestoreModule` sem parâmetro opera sobre módulos referenciados pela KB aberta,
+  não sobre o cache global
+- Definir se deve ser etapa automática do pipeline ou gate explícito com confirmação do usuário
+
+### Perguntas a responder antes de decidir
+
+- `RestoreModule` sem `ModuleName` já é idempotente (não falha se não há módulos)? Ou exige
+  que haja ao menos um módulo instalado?
+- O cache `%USERPROFILE%\.gxmodules\.cache\` já existe numa instalação limpa com módulos
+  instalados pela IDE? Ou precisa de pré-aquecimento headless?
+- Qual o comportamento quando o servidor de origem do módulo não está acessível? `RestoreModule`
+  falha ou usa o cache existente?
+
+## InstallModule / UpdateModule / GetModulesServer / AddModulesServer — gestão de dependências headless
+
+**Origem:** avaliação de prompt externo sobre domínio Módulos (MSBuild Tasks), 2026-05-07.
+Documentação oficial confirmada em `46830.html` e `45933.html` da instalação local. Tasks
+registradas em `Genexus.Tasks.targets`.
+
+### Contexto
+
+Módulos GeneXus não requerem GeneXus Server. Funcionam com três tipos de servidor:
+
+- `Directory` — pasta local no sistema de arquivos (sem servidor de rede)
+- `Nexus-Maven` / `Nexus-NuGet` — repositórios Maven ou NuGet genéricos (Nexus OSS)
+- Servidores pré-configurados: `Local` (módulos da instalação GeneXus) e `Global Matrix`
+  (repositório público da GeneXus, visível na IDE em "Manage Module References")
+
+### O que cada task faz
+
+- `InstallModule(ModuleName, Version?)` — instala módulo do servidor configurado na KB aberta
+- `UpdateModule(ModuleName, Version?)` — atualiza módulo instalado para versão especificada
+  ou mais recente
+- `GetModulesServer` — lista servidores de módulo configurados (saída: `Servers`)
+- `AddModulesServer(Type, Name, Source, Preserve?, OverwriteDefinition?, User?, Password?)` —
+  registra novo servidor de módulos no ambiente headless
+
+### Relevância para o fluxo de KB paralela
+
+`GetModulesServer` é útil como diagnóstico: antes de um `RestoreModule` ou `InstallModule`,
+confirmar quais servidores estão acessíveis no contexto headless. `AddModulesServer` com
+`Type="Directory"` pode registrar um servidor local (pasta) sem acesso à rede.
+
+`InstallModule` e `UpdateModule` abrem a possibilidade de um pipeline headless de atualização
+de dependências: "instalar ou atualizar este módulo de terceiro na KB sem abrir a IDE".
+
+### O que justificaria implementar agora vs. aguardar
+
+Aguardar até que `RestoreModule` esteja implementado e validado. Só então avaliar se o caso
+de uso de instalação/atualização headless de módulos aparece no portfólio. O cenário mais
+provável de chegada não é importação de XPZ, mas setup inicial de KB de teste que precisa
+das mesmas dependências de módulo que a KB de origem.
+
+### Perguntas a responder antes de decidir
+
+- `InstallModule` com `Version` vazio usa a versão mais recente disponível no servidor ou
+  a versão especificada no arquivo de dependências da KB?
+- `AddModulesServer` com `Preserve=true` persiste a configuração entre sessões MSBuild ou
+  apenas para a sessão corrente?
+- Em que arquivo ou estrutura o GeneXus armazena a lista de servidores configurados? É por
+  KB ou por instalação?

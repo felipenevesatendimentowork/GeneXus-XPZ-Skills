@@ -825,3 +825,52 @@ que o fluxo precisa.
 
 **Não reavaliar** salvo surgimento de pipeline headless de criação de KB de teste em que
 environments precisem ser criados programaticamente como parte do contrato de automação.
+
+---
+
+## PackageModule / PublishModule
+
+**Origem:** avaliação de prompt externo sobre domínio Módulos (MSBuild Tasks), 2026-05-07.
+Documentação oficial confirmada em `46830.html` da instalação local.
+
+**O que são:**
+
+`PackageModule(ModuleName, Rebuild?, OutputDirectory?, Environments?)` cria um arquivo `.opc`
+(Open Packaging Convention — ZIP) contendo binários e arquivos de definição do módulo.
+`PublishModule(ModuleName, Server, OpcFile?, User?, Password?)` publica o `.opc` em um servidor
+de módulos (Directory, Nexus-Maven ou Nexus-NuGet).
+
+**Por que foram descartadas:**
+
+São o lado produtor do ecossistema de módulos. Quem usa as skills XPZ é consumidor de objetos
+e funcionalidades — importa, valida e usa. Criar e distribuir módulos para terceiros consumirem
+é uma atividade de library author, não de desenvolvedor de KB. O fluxo de movimentação de
+objetos desta frente (export XPZ → import XPZ → build → validar) não tem equivalência com o
+fluxo produtor de módulos (PackageModule → PublishModule → servidor).
+
+A granularidade também é incompatível: XPZ permite selecionar objetos individuais com controle
+cirúrgico; um módulo é uma unidade de distribuição com contrato de interface público — criar um
+módulo pressupõe decisão de design que vai além do escopo de automação headless desta frente.
+
+**Não reavaliar** salvo surgimento de caso concreto em que o público-alvo desta frente precise
+publicar módulos GeneXus como parte do pipeline de distribuição de objetos.
+
+---
+
+## UpdateUserControls
+
+**Origem:** avaliação de prompt externo sobre domínio Módulos (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets`.
+
+**O que é:** task que atualiza user controls (extensões visuais UCW/GX Control) instalados
+na KB. Não faz parte do domínio de módulos de objetos GeneXus — trata de extensões visuais
+(componentes de terceiros que aparecem na toolbox da IDE).
+
+**Por que foi descartada:**
+
+User controls são extensões da IDE para design visual de telas, não objetos GeneXus movimentáveis
+via XPZ. A atualização dessas extensões é gerenciada pela IDE do GeneXus ou pela instalação de
+pacote de extensão, não pelo fluxo de importação de objetos. Sem caso de uso identificado no
+contexto de migração e sincronização de objetos via XPZ.
+
+**Não reavaliar** — fora de escopo por definição do domínio desta frente.
