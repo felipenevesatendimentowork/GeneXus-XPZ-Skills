@@ -962,3 +962,193 @@ timeout do invocador PowerShell.
 invocação MSBuild cobrindo abertura, import, specify, generate e fechamento da KB) onde
 specify+generate sejam o gargalo dominante — cenário que exigiria reforma estrutural do
 modelo de wrappers isolados adotado nesta frente.
+
+---
+
+## Profile
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que é:** task de perfilamento de execução/tempo das operações MSBuild do GeneXus.
+Função presumida: medir duração de etapas internas do pipeline.
+
+**Por que foi descartada:**
+
+Sem caso de uso concreto no contexto de migração e sincronização de objetos via XPZ. Os
+logs gerados por `/verbosity:minimal` do MSBuild e o `exitCode` já fornecem informação de
+tempo e resultado suficiente para diagnóstico operacional. Implementar wrapper de perfilamento
+não agrega valor prático neste contexto. Ausência de documentação oficial agrava o risco de
+comportamento imprevisível.
+
+**Não reavaliar** — sem caso de uso identificado e sem documentação oficial.
+
+---
+
+## AddExternalFile
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que é:** task que adiciona um arquivo externo (imagens, recursos) à KB GeneXus.
+Função presumida baseada no nome.
+
+**Por que foi descartada:**
+
+Adição de recursos externos à KB é cenário raro no fluxo de migração de objetos via XPZ.
+Quando necessário, a IDE do GeneXus conduz essa operação com seleção visual e validação.
+Ausência de documentação oficial e de parâmetros confirmados por reflexão de assembly
+aumenta o risco de comportamento imprevisível em automação headless. Sem caso de uso
+concreto identificado neste contexto.
+
+**Não reavaliar** salvo surgimento de caso concreto em que adição recorrente de arquivos
+externos à KB seja requisito de automação neste contexto, combinado com confirmação
+empírica dos parâmetros da task no assembly.
+
+---
+
+## CreateFromGxml
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que é:** task que cria objetos GeneXus a partir de GXML — formato de serialização
+interna do GeneXus, distinto do formato XPZ. Função presumida baseada no nome.
+
+**Por que foi descartada:**
+
+GXML é um formato interno do GeneXus, distinto do XPZ que é o objeto de trabalho desta
+frente. Sem documentação oficial, parâmetros desconhecidos e sem caso de uso identificado
+no fluxo de migração e sincronização de objetos via XPZ. A IDE do GeneXus exporta e
+importa GXML quando necessário. Implementar wrapper headless para formato interno não
+documentado introduz risco sem ganho prático identificado.
+
+**Não reavaliar** — fora de escopo por definição do domínio desta frente e por ausência
+de documentação oficial da task.
+
+---
+
+## MergeSource / MergeXml
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Tasks registradas em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que são:** tasks de merge de arquivos de source code ou XML — presumivelmente úteis
+em cenários de versionamento e resolução de conflitos entre objetos GeneXus.
+
+**Por que foram descartadas:**
+
+Mesma barreira central de `MergeVersions` (já descartada): o público-alvo desta frente
+não opera com Team Development ativo e versões concorrentes de desenvolvimento. Sem esse
+perfil, merge de source ou XML não aparece no horizonte do fluxo de XPZ. Ausência de
+documentação oficial dos parâmetros agrava o risco de uso incorreto. A IDE do GeneXus
+conduz esse processo com feedback visual quando necessário.
+
+**Não reavaliar** salvo surgimento de caso concreto com Team Development ativo e conflitos
+de merge que precisem ser resolvidos por automação headless, combinado com documentação
+oficial das tasks.
+
+---
+
+## HelpGenerator
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que é:** task que gera documentação de ajuda da aplicação GeneXus. Função presumida
+baseada no nome.
+
+**Por que foi descartada:**
+
+Geração de documentação de ajuda é etapa de publicação da aplicação, completamente fora
+do escopo de migração e sincronização de objetos via XPZ. A IDE do GeneXus conduz essa
+operação. Sem documentação oficial, parâmetros desconhecidos e sem caso de uso identificado
+neste contexto.
+
+**Não reavaliar** — fora de escopo por definição do domínio desta frente.
+
+---
+
+## NavigationOnly
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets` e referenciada no target `Navigation` do
+`Genexus.msbuild` canônico da instalação oficial.
+
+**O que é:** task que executa apenas a etapa de navegação entre objetos do GeneXus —
+parte interna do pipeline de specify que analisa referências e dependências entre objetos,
+sem gerar código.
+
+**Por que foi descartada:**
+
+Etapa intermediária do pipeline interno de build do GeneXus. Sem caso de uso isolado em
+wrapper headless — `SpecifyAll` e `BuildAll` cobrem os cenários relevantes de verificação
+pós-import, incluindo a navegação como subetapa implícita. Executar apenas a navegação
+sem specify ou generate não produz evidência útil adicional para o fluxo de validação desta
+frente. Sem documentação oficial de parâmetros.
+
+**Não reavaliar** — etapa interna do pipeline sem caso de uso isolado identificado neste
+contexto.
+
+---
+
+## HasDataStore / HasGenerator
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Tasks registradas em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que são:** tasks utilitárias de verificação de existência — `HasDataStore` verifica
+se a KB tem um DataStore configurado; `HasGenerator` verifica se tem um Generator ativo.
+Funções presumidas baseadas nos nomes.
+
+**Por que foram descartadas:**
+
+O fluxo operacional desta frente confirma DataStore e Generator via `GetActiveEnvironment`
+e pelos parâmetros explícitos passados nos wrappers (`-EnvironmentName`). As tasks `Get*Property`
+já cobertas pela skill `xpz-msbuild-import-export` (`GetDataStoreProperty`, `GetGeneratorProperty`)
+oferecem diagnóstico mais rico que uma verificação binária de existência. Sem documentação
+oficial e sem caso de uso concreto que justifique wrapper separado.
+
+**Não reavaliar** — diagnóstico de DataStore e Generator já coberto por `Get*Property`.
+
+---
+
+## SketchToGxmlTask
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Task registrada em `Genexus.Tasks.targets`; sem documentação oficial em `3908.html`.
+
+**O que é:** task que converte um sketch (esboço de interface) para o formato GXML do
+GeneXus. Faz parte do fluxo de design visual assistido do GeneXus — transformação de
+wireframes ou esboços em objetos GeneXus.
+
+**Por que foi descartada:**
+
+Produto específico do fluxo de design visual assistido do GeneXus, completamente fora do
+escopo de migração e sincronização de objetos via XPZ. O público-alvo desta frente não
+opera esse fluxo. Sem documentação oficial e sem caso de uso identificado.
+
+**Não reavaliar** — fora de escopo por definição do público-alvo desta frente.
+
+---
+
+## KnowledgeMatrix* (6 tasks comentadas)
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Tasks identificadas no `Genexus.Tasks.targets` da instalação oficial, porém **comentadas**
+no arquivo.
+
+**O que são:** `KnowledgeMatrixNPreview`, `KnowledgeMatrixNPreviewDN`, `KnowledgeMatrixPreview`,
+`KnowledgeMatrixPreviewDN`, `KnowledgeMatrixNRelease`, `KnowledgeMatrixRelease` — 6 tasks
+com prefixo `KnowledgeMatrix` registradas mas desativadas no `.targets`.
+
+**Por que foram descartadas:**
+
+Tasks comentadas no arquivo `.targets` oficial indicam produto ou licença separada
+(`KnowledgeMatrix`) não disponível na instalação padrão do GeneXus 18. Não há documentação
+oficial correspondente em `3908.html`. O fato de estarem comentadas — e não apenas ausentes
+— sugere que fazem parte de uma feature opcional ou descontinuada que a instalação padrão
+não expõe.
+
+**Não reavaliar** salvo evidência de que o produto `KnowledgeMatrix` passou a estar
+disponível na instalação padrão do GeneXus 18 com as tasks descomentadas e documentadas.

@@ -447,3 +447,171 @@ das mesmas dependências de módulo que a KB de origem.
   apenas para a sessão corrente?
 - Em que arquivo ou estrutura o GeneXus armazena a lista de servidores configurados? É por
   KB ou por instalação?
+
+## GetCategoryObjects — seleção de objetos por categoria para Export/Import
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Documentada no índice `3908.html` da instalação oficial.
+
+### Problema concreto que motiva a ideia
+
+Hoje, quando a skill `xpz-msbuild-import-export` faz export ou import com recorte, o
+chamador precisa fornecer a lista de objetos explicitamente em `Objects`, `IncludeItems`
+ou `ExcludeItems`. Em projetos que usam categorias GeneXus como convenção de organização
+("todos os objetos da categoria `Faturamento`", "todos os da categoria `Integrações`"),
+o usuário precisa enumerar os nomes manualmente ou extrair a lista de outra forma.
+
+`GetCategoryObjects` retorna a lista de todos os objetos pertencentes a uma categoria.
+O fluxo seria: chamar `GetCategoryObjects` com `CategoryName`, capturar a lista
+resultante, usá-la diretamente como entrada de `Export` ou `IncludeItems` de `Import`.
+
+### Parâmetros documentados
+
+- `CategoryName` (obrigatório) — nome da categoria GeneXus
+- Saída via `<Output TaskParameter="Objects" PropertyName="..."/>` — lista capturável
+  em propriedade MSBuild nomeada pelo chamador
+
+### Distinção importante
+
+Categorias GeneXus são agrupamentos organizacionais criados manualmente pelo desenvolvedor
+na IDE — diferentes de tipos (`Procedure`, `WebPanel`), módulos e pastas. A task opera
+sobre essa classificação visual, não sobre a estrutura interna de tipos.
+
+### Condições antes de implementar
+
+- Verificar empiricamente se `Genexus.MsBuild.Tasks.GetCategoryObjects` está exposta no
+  assembly com o parâmetro documentado
+- Confirmar que o formato de saída é compatível com `IncludeItems`/`ExcludeItems` de `Import`
+  sem transformação intermediária
+
+### Perguntas a responder antes de decidir
+
+- `Genexus.MsBuild.Tasks.GetCategoryObjects` aparece no assembly com `CategoryName`
+  como propriedade pública?
+- O formato de saída é lista plana de nomes de objeto no mesmo formato que `IncludeItems`
+  aceita, ou exige transformação?
+- O que a task retorna quando a categoria está vazia ou não existe — falha, lista vazia ou
+  `exitCode` diferente?
+- "Categoria" aqui corresponde exatamente ao conceito visual da IDE ou a outro agrupamento
+  interno do GeneXus?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) reflexão do assembly confirmando a task acessível com os
+parâmetros documentados, e (b) caso concreto de projeto que usa categorias como convenção
+de organização de objetos, tornando a seleção por categoria mais prática que a lista manual.
+
+---
+
+## CalculateChecksums + AreObjectsEqual — diagnóstico de integridade de objeto pré/pós-operação
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Tasks registradas em `Genexus.Tasks.targets`; **sem documentação oficial em `3908.html`**.
+
+### Problema concreto que motiva a ideia
+
+O fluxo de verificação pós-import hoje depende de `importedItems` (lista de o que entrou),
+`exitCode` e varredura de stdout/stderr. Nenhum desses verifica se o objeto que entrou
+é de fato diferente do que estava antes, nem se o objeto na KB de destino ficou idêntico
+ao objeto da KB de origem. Há um gap de evidência objetiva entre "o import foi executado"
+e "o objeto mudou da forma esperada".
+
+### O que cada task faz (hipótese — sem documentação oficial confirmada)
+
+`CalculateChecksums` — calcula checksums de um conjunto de objetos da KB. Potencial uso:
+registrar o checksum dos objetos antes do import, recalcular depois, comparar para
+confirmar quais mudaram e quais permaneceram inalterados.
+
+`AreObjectsEqual` — compara dois objetos e retorna se são idênticos. Potencial uso:
+comparar o estado de um objeto na KB de destino com o mesmo objeto na KB de origem,
+ou comparar o estado antes e depois de uma operação dentro da mesma KB.
+
+### Distinção entre as duas
+
+São mecanismos complementares mas de granularidade diferente. `CalculateChecksums` opera
+sobre um conjunto de objetos em lote; `AreObjectsEqual` opera sobre dois objetos
+comparados par a par. Para o fluxo de verificação pós-import, `CalculateChecksums` seria
+mais prático: calcula o checksum do conjunto importado antes e depois da operação.
+
+### Risco adicional desta dupla
+
+Diferente das tasks documentadas em `3908.html`, estas duas são registradas apenas em
+`Genexus.Tasks.targets` sem documentação offline correspondente. O risco de comportamento
+imprevisível ou interface não estável é maior. A investigação começa pela reflexão do
+assembly antes de qualquer uso.
+
+### Condições antes de implementar
+
+- Verificar empiricamente se ambas estão expostas no assembly com propriedades acessíveis
+- Para `CalculateChecksums`: qual é a granularidade do checksum? Objeto inteiro ou por
+  part-type? A saída é capturável via `TaskOutput`/`CaptureOutput`?
+- Para `AreObjectsEqual`: os dois objetos são da mesma KB aberta (dois estados) ou de
+  duas KBs distintas? Como se passa o segundo objeto para comparação?
+
+### Perguntas a responder antes de decidir
+
+- `CalculateChecksums` e `AreObjectsEqual` aparecem no assembly com propriedades públicas
+  acessíveis?
+- `CalculateChecksums` opera sobre a KB aberta no contexto headless corrente ou precisa
+  de parâmetro de escopo adicional?
+- A saída de `CalculateChecksums` é legível e comparável entre duas execuções, ou é
+  representação interna não determinística?
+- `AreObjectsEqual` compara objetos da mesma KB ou permite comparar entre KBs distintas?
+- O resultado de `AreObjectsEqual` é capturável programaticamente ou apenas emitido em
+  stdout?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) reflexão do assembly confirmando ambas as tasks acessíveis,
+(b) formato de saída de `CalculateChecksums` legível e determinístico, e (c) caso concreto
+de verificação pós-import em que a lista de `importedItems` não for evidência suficiente
+de que o objeto mudou da forma esperada.
+
+---
+
+## CompressKB — manutenção da KB após importações de grande volume
+
+**Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
+Arquivo `CompressKB.msbuild` confirmado como presente na instalação oficial do GeneXus 18,
+idêntico em todas as instalações inspecionadas (21 linhas).
+
+### Problema concreto que motiva a ideia
+
+Importações de grande volume inserem e atualizam muitos registros no banco interno da KB
+(SQL Server ou LocalDB). Com o tempo, o banco pode ficar fragmentado internamente. A operação
+`CompressKB` abre a KB com o parâmetro `CompressData='true'` em `OpenKnowledgeBase` e a
+fecha — possivelmente acionando compactação ou reorganização interna do banco da KB.
+
+Diferente da reorg do GeneXus (que altera o banco da **aplicação**), `CompressKB` afeta
+o banco **interno da KB** — o repositório de objetos, regras e metadados.
+
+### Distinção técnica importante
+
+`CompressData` não é uma task separada — é um parâmetro de `OpenKnowledgeBase`. O arquivo
+`CompressKB.msbuild` já é o wrapper pronto entregue pela instalação oficial. A skill não
+precisaria gerar um `.msbuild` dinamicamente: apenas invocaria `CompressKB.msbuild` com o
+parâmetro `-p:kbLocation=<caminho>`, reusando o arquivo permanente da instalação.
+
+### Condições antes de implementar
+
+- Verificar empiricamente o que `CompressData='true'` faz de fato no banco interno da KB:
+  compressão SQL Server (ROW/PAGE), compactação lógica interna do GeneXus ou outro mecanismo
+- Verificar se é seguro executar sem confirmação interativa — a operação não importa nem
+  exporta objetos, mas altera o banco interno da KB
+- Medir o tempo de execução em KBs de médio e grande porte
+- Verificar se há efeito colateral ao reabrir a KB na IDE depois da operação
+
+### Perguntas a responder antes de decidir
+
+- O que `CompressData='true'` faz exatamente no banco interno da KB? É seguro executar
+  sem confirmação interativa?
+- O `CompressKB.msbuild` existente aceita apenas `-p:kbLocation` ou há outros parâmetros?
+- Qual o tempo de execução típico em KBs de médio porte (~5.000 objetos)?
+- A KB reabre normalmente na IDE após `CompressKB`? Há warning ou efeito colateral observável?
+- A operação é idempotente — executar duas vezes seguidas é seguro?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) verificação empírica do efeito real de `CompressData='true'`
+confirmando operação segura sem efeito colateral grave, e (b) caso concreto de KB com
+degradação de performance pós-import que se beneficiaria da compactação.
