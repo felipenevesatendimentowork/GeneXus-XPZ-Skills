@@ -794,3 +794,34 @@ de versão não aparece no horizonte das skills XPZ.
 
 **Não reavaliar** salvo surgimento de caso concreto com Team Development ativo e versões
 paralelas de desenvolvimento que precisem ser consolidadas por automação headless.
+
+---
+
+## CreateEnvironment
+
+**Origem:** avaliação de prompt externo sobre domínio Environment (MSBuild Tasks), 2026-05-07.
+
+**O que é:** task MSBuild oficial que cria um novo environment na versão ativa ou especificada
+da KB. Parâmetros: `Name` (obrigatório), `Template` (obrigatório — um dos templates de KB:
+`CSharp.KBTemplate`, `NetCore.KBTemplate`, `Java.KBTemplate`). Documentada no índice `3908.html`.
+
+**Por que foi descartada:**
+
+O domínio Environment é essencialmente coberto pelas operações já implementadas:
+`SetActiveEnvironment` (via `-EnvironmentName` em todos os wrappers) e `GetActiveEnvironment`
+(capturado e declarado em `Open-GeneXusKbHeadless.ps1`). `CreateEnvironment` só agregaria valor
+em dois cenários:
+
+1. Pipeline totalmente headless de criação de KB de teste — descartado pelo mesmo motivo que
+   `CreateKnowledgeBase`: a IDE cria KB e environments sem dificuldade, sem custo de configuração
+   SQL Server/LocalDB e sem risco de template incorreto.
+2. Criação de environment adicional em KB existente — operação de setup pontual que a IDE
+   resolve em segundos, sem justificar wrapper headless.
+
+O `Template` obrigatório introduz decisão de generator + DBMS que pertence ao setup inicial da
+KB, não ao fluxo de importação e exportação de XPZ. Quando a KB já existe com seus environments
+(cenário operacional desta frente), `SetActiveEnvironment` e `GetActiveEnvironment` cobrem tudo
+que o fluxo precisa.
+
+**Não reavaliar** salvo surgimento de pipeline headless de criação de KB de teste em que
+environments precisem ser criados programaticamente como parte do contrato de automação.
