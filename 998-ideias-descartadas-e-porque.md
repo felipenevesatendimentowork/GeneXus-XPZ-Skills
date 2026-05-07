@@ -874,3 +874,49 @@ pacote de extensão, não pelo fluxo de importação de objetos. Sem caso de uso
 contexto de migração e sincronização de objetos via XPZ.
 
 **Não reavaliar** — fora de escopo por definição do domínio desta frente.
+
+---
+
+## Domínio Testes (ExecuteTests / RunAndroidUITests / RunIOSUITests)
+
+**Origem:** avaliação de prompt externo sobre domínio Testes (MSBuild Tasks / GXtest), 2026-05-07.
+Arquivo `GXtest.msbuild` presente na instalação oficial do GeneXus 18; tasks `RunAndroidUITests`
+e `RunIOSUITests` registradas em `Genexus.Tasks.targets`.
+
+**O que são:**
+
+`ExecuteTests` — task do `GXtest.msbuild` que executa testes automatizados (UI, Unit ou All)
+contra a KB. Parâmetros: `KBPath`, `KBVersion`, `TestType`, `Browser`, `BaseURL`,
+`ScreenshotMode`, entre outros. Requer licença `GXtest` ativa.
+
+`RunAndroidUITests` / `RunIOSUITests` — tasks de execução de testes de interface em dispositivos
+ou emuladores Android e iOS, respectivamente. Exigem aplicação já buildada e deployada, SDK da
+plataforma e device/emulador ativo.
+
+**Por que foram descartadas:**
+
+Dois bloqueios independentes, qualquer um suficiente para descartar:
+
+1. **Dependência de `Genexus.Server.Tasks.targets`**: o `GXtest.msbuild` importa explicitamente
+   `Genexus.Server.Tasks.targets`. A restrição de escopo sobre GeneXus Server já está estabelecida
+   nesta base: `Genexus.Server.Tasks.targets` não é base operacional da skill e tasks que dependem
+   dele não devem virar pré-requisito de uso. O domínio Testes cruza essa fronteira na própria
+   infraestrutura de execução.
+
+2. **Licença `GXtest` obrigatória**: `KB_Teste_E` confirmou empiricamente o bloqueio: `exitCode = 0`,
+   `importedItems` vazio, tentativa de contato com GeneXus Server, exigência de credenciais e
+   ausência de licença `GXtest` válida. O público-alvo desta frente não dispõe de GeneXus Server
+   nem de licença `GXtest` ativa.
+
+Adicionalmente, `RunAndroidUITests` e `RunIOSUITests` exigem infraestrutura de device ou emulador
+móvel (Android SDK, Xcode/simulador iOS) e aplicação já deployada — escopo de CI mobile dedicado,
+completamente fora do domínio de validação pós-import de XPZ.
+
+**Nota sobre padrão de string matching sem ExitCode (FBgx18MCP):** a fonte externa avaliada usa
+string matching no stdout (`"Tests execution succeeded"` ou `"Passed: 1"`) sem verificar `ExitCode`
+como critério de sucesso. Esse padrão contradiz as regras empíricas consolidadas nesta base —
+`ExitCode` + varredura obrigatória de stdout/stderr são exigidos antes de classificar qualquer
+operação como bem-sucedida. O padrão do FBgx18MCP não foi adotado.
+
+**Não reavaliar** salvo evidência de que o GXtest passou a operar sem `Genexus.Server.Tasks.targets`
+e sem licença própria, e que o público-alvo desta frente passou a dispor de licença GXtest ativa.
