@@ -117,6 +117,193 @@ ineficaz.
 
 ---
 
+## ExportAtTimestamp (parâmetro de Export)
+
+**Origem:** investigação empírica durante construção da skill `xpz-msbuild-import-export`.
+
+**O que é:** propriedade pública `ExportAtTimestamp` do tipo `System.DateTime` confirmada
+por reflexão do assembly na task `Genexus.MsBuild.Tasks.Export`. Equivalente headless
+ao filtro visual "Modified = After Date/time" da IDE.
+
+**Por que foi descartado:**
+
+Testado com dois formatos de data em chamadas headless:
+
+- `ExportAtTimestamp="2026-03-24T23:59:00"` — aceito pelo MSBuild, KB abriu, mas a
+  task `Export` falhou internamente com `Referência de objeto não definida para uma
+  instância de um objeto` (NullReferenceException).
+- `ExportAtTimestamp="24/03/2026 23:59:00"` — rejeitado pelo MSBuild como valor inválido
+  para `System.DateTime`.
+- Testado também combinado com `Objects` explícito — mesma falha.
+
+Conclusão: filtro por data não é funcional via MSBuild headless nesta instalação.
+O caminho validado para exportação parcial é fornecer a lista de objetos explicitamente
+em `Objects`/`ObjectList`.
+
+**Não reavaliar** salvo evidência de que o comportamento mudou em versão posterior do
+GeneXus 18 ou que existe sintaxe de data alternativa não testada.
+
+---
+
+## UpdateFile (parâmetro de Import)
+
+**Origem:** investigação empírica durante construção da skill `xpz-msbuild-import-export`.
+
+**O que é:** parâmetro documentado oficialmente na task `Import` (`35599.html`). Gera um
+arquivo de relatório descrevendo o que seria alterado na KB antes da importação real.
+
+**Por que foi descartado:**
+
+A reflexão do assembly `Genexus.MsBuild.Tasks.dll` nesta instalação mostrou que a task
+`Genexus.MsBuild.Tasks.Import` não expõe `UpdateFile` como propriedade pública
+configurável. O parâmetro existe na documentação offline mas não está acessível via
+MSBuild headless na versão instalada.
+
+**Não reavaliar** salvo confirmação empírica de que uma atualização do GeneXus 18 passou
+a expor `UpdateFile` como propriedade pública da task carregada.
+
+---
+
+## ImportKBInformation (parâmetro de Import)
+
+**Origem:** investigação empírica durante construção da skill `xpz-msbuild-import-export`.
+
+**O que é:** parâmetro documentado oficialmente na task `Import`. Controla se propriedades
+da KB, Version e Environment são importadas junto com os objetos do XPZ. Default
+documentado: `true` — o que o torna potencialmente perigoso se não explicitado.
+
+**Por que foi descartado:**
+
+Mesma situação que `UpdateFile`: a reflexão do assembly nesta instalação mostrou que
+`ImportKBInformation` não está exposto como propriedade pública da task carregada.
+Parâmetro documentado mas inacessível via MSBuild headless na versão instalada.
+
+**Não reavaliar** salvo confirmação empírica de exposição em versão posterior.
+
+---
+
+## ImportCSSOnTheme
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, 2026-05-06. Reflexão do assembly
+confirmou propriedades públicas.
+
+**O que é:** task que importa um arquivo CSS para dentro de um objeto Tema existente na
+KB. Parâmetros funcionais: `CSSFilePath` (obrigatório), `ObjectName` (obrigatório).
+
+**Por que foi descartada:**
+
+Cenário de uso restrito a customização visual de temas — situação rara no contexto da
+skill XPZ, que trata de migração e sincronização de objetos GeneXus. Quando necessário,
+a IDE do GeneXus executa essa operação com feedback visual imediato. Implementar wrapper
+headless não adiciona valor prático para o caso de uso central desta skill.
+
+**Não reavaliar** salvo surgimento de caso concreto em que importação de CSS em tema
+seja requisito de automação recorrente neste contexto.
+
+---
+
+## ImportExternalObject
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, 2026-05-06. Reflexão do assembly
+confirmou propriedades públicas.
+
+**O que é:** task que registra um objeto externo na KB. Parâmetros funcionais: `Name`,
+`Type`, `URL` (nenhum marcado como obrigatório na reflexão).
+
+**Por que foi descartada:**
+
+Objetos externos são registros de integrações com sistemas de terceiros — cenário
+específico e raro no fluxo de migração XPZ. A IDE do GeneXus gerencia esse registro
+com validação visual. Semântica dos parâmetros não documentada oficialmente, o que
+aumenta o risco de uso incorreto em automação headless.
+
+**Não reavaliar** salvo surgimento de caso concreto documentado de automação de registro
+de objetos externos.
+
+---
+
+## ImportTranslations
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, 2026-05-06. Reflexão do assembly
+confirmou propriedades públicas.
+
+**O que é:** task que importa traduções de mensagens GeneXus a partir de arquivo externo.
+Parâmetros funcionais: `FileName` (obrigatório), `AddNewMsg` (Boolean), `Override`
+(Boolean).
+
+**Por que foi descartada:**
+
+Fluxo de tradução de mensagens é separado do fluxo principal de migração de objetos via
+XPZ. Quando necessário, a IDE conduz a importação com validação e feedback. A superfície
+técnica é simples, mas o caso de uso não se enquadra no escopo central da skill.
+
+**Não reavaliar** salvo surgimento de caso concreto em que importação de traduções seja
+requisito de automação recorrente neste contexto — especialmente em KBs multilíngues com
+ciclo de tradução externo.
+
+---
+
+## ExportTranslations
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, 2026-05-06. Reflexão do assembly
+confirmou propriedades públicas.
+
+**O que é:** task que exporta traduções de mensagens da KB para arquivo externo. Rica em
+filtros: `FileName` (obrigatório), `FilterText`, `IncludeXRef`, `Languages`,
+`OnlyReferencedMessages`, `OnlyUntranslatedMessages`, `OnlyUserMessages`, `UsedInObjects`.
+
+**Por que foi descartada:**
+
+Mesmo raciocínio de `ImportTranslations`: fora do escopo central da skill. A superfície
+técnica é a mais rica das 6 tasks investigadas, com filtros granulares úteis em cenários
+multilíngues. Porém, sem caso de uso concreto identificado neste contexto, implementar
+wrapper headless não se justifica.
+
+**Não reavaliar** salvo surgimento de caso concreto em que exportação de traduções com
+filtro por idioma seja requisito de automação — aí a superfície desta task tem valor real.
+
+---
+
+## ConvertExportFile
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, 2026-05-06. Reflexão do assembly
+e documentação offline (`60737.html`) confirmaram propósito e parâmetros.
+
+**O que é:** task que converte um arquivo XPZ de versões anteriores do GeneXus para o
+formato GeneXus 18. Requer KB aberta (usa a KB para converter referências a objetos
+comuns como o SDT `Messages`). Disponível a partir do GeneXus 18 Upgrade 14.
+Parâmetros: `File` (obrigatório), `OutputFile` (saída).
+
+**Por que foi descartada:**
+
+Cenário de uso limitado a migração pontual de XPZ legado — situação rara e de execução
+única. Quando necessário, a IDE do GeneXus conduz a conversão. Implementar wrapper
+headless para operação pontual de migração não justifica o custo de implementação e
+manutenção.
+
+**Não reavaliar** salvo surgimento de volume recorrente de conversões de XPZ legado que
+torne a automação headless mais eficiente que a IDE.
+
+---
+
+## CreateExportForImages
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, 2026-05-06. Reflexão do assembly
+confirmou propriedades públicas.
+
+**O que é:** task que exporta imagens da KB para um arquivo XPZ. Parâmetros funcionais:
+`Folder` (obrigatório — pasta de origem das imagens), `OutputFile` (obrigatório — XPZ
+de saída), `Filter`, `Parent`, `RenderingMode`.
+
+**Por que foi descartada:**
+
+Exportação de imagens é cenário separado do fluxo principal de migração de objetos via
+XPZ. A IDE do GeneXus conduz essa exportação com seleção visual. Sem caso de uso
+concreto identificado neste contexto.
+
+**Não reavaliar** salvo surgimento de caso concreto em que exportação recorrente de
+imagens em lote seja requisito de automação neste contexto.
+
 ## Book (parâmetro de OpenKnowledgeBase)
 
 **Origem:** investigação empírica durante construção da skill `xpz-msbuild-import-export`.
