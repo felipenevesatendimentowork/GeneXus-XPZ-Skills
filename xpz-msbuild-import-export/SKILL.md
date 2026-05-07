@@ -125,6 +125,18 @@ Do NOT use esta skill para:
   - objetivo metodologico da rodada
   - resultado operacional observado
   - confirmacao funcional ainda nao coberta
+- Quando a rodada envolver iteração sobre objeto único, consolidar o resultado no seguinte template antes de recomendar próximo passo:
+
+  ```
+  Rodada N — <NomeDoObjeto> (<TipoObjeto>)
+  - XML local atualizado: sim / não
+  - XML bem-formado: sim / não
+  - Sanity: limpo / warnings / bloqueante
+  - Preview: reconhecido / não reconhecido / não executado
+  - Import real: <sub-estado nomeado>
+  - Warnings conhecidos: <lista ou "nenhum">
+  ```
+
 - Quando houver ambiguidade de contexto, interrompa a execução e peça definição explícita
 - Não use linguagem otimista para sugerir segurança que ainda não foi validada empiricamente
 - Quando a exportação headless gerar um `.xpz` para alimentar a pasta paralela da KB, declarar explicitamente o marco `XPZ gerado`
@@ -275,6 +287,7 @@ Parâmetros específicos de importação:
 12. Classificar o resultado como:
    - `não apto para prosseguir`
    - `importação real efetiva provada` — `importedItems` contém explicitamente o objeto esperado
+   - `importação real efetiva provada, efeito não confirmado na IDE` — `importedItems` contém o objeto esperado, mas build ou execução na IDE ainda exibe comportamento da versão anterior; verificar se KB foi reaberta e se build foi executado após reabertura antes de suspeitar de falha de import
    - `sucesso operacional sem prova de import efetivo` — `exitCode=0` mas `importedItems` ausente ou não contém o objeto esperado
    - `importação real falhou por source` — erro rastreável ao conteúdo do objeto importado
    - `importação real falhou por envelope` — erro na estrutura ou envelope do XPZ
@@ -288,6 +301,10 @@ Parâmetros específicos de importação:
    - acionar `xpz-msbuild-build` (headless) — `compilou limpo` ou `specify e generate concluídos` reforçam o handoff sem alterar o sub-estado de import declarado
    - abrir a KB na IDE e executar o build por lá
    Recomendar reabertura da KB na IDE quando o teste exigir observação posterior, independentemente da opção de build escolhida
+   Se o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito esperado na IDE, diferenciar explicitamente as hipóteses:
+   - IDE ainda carregando versão anterior: KB não foi reaberta desde o import, ou foi reaberta mas build não foi executado depois
+   - Sintomas concretos de IDE desatualizada: mesmo erro persiste após reabertura + rebuild, propriedades do objeto exibem data/versão anterior ao import, output gerado é idêntico ao da rodada anterior
+   - Nenhum desses sintomas invalida o sub-estado de import já declarado — o diagnóstico de IDE desatualizada é camada separada
 14. Se a exportação gerou um `.xpz` full para a pasta paralela da KB, declarar explicitamente:
    - caminho do artefato gerado
    - status operacional da exportação
@@ -352,6 +369,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
 - [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
+- [ ] Quando o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito na IDE, o diagnóstico de IDE desatualizada foi tratado como camada separada — não como revisão do sub-estado de import
 
 ---
 
