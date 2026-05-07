@@ -772,3 +772,25 @@ inclua deploy como etapa necessária para o desenvolvedor de objetos — por exe
 ambiente de teste que exija publicação headless automatizada como parte do gate de aceite
 do XPZ. Nesse caso, a implementação seria invocar o `Deploy.msbuild` existente com
 parâmetros explícitos, não gerar `.msbuild` dinamicamente.
+
+---
+
+## MergeVersions
+
+**Origem:** avaliação de inventário de tasks MSBuild — domínio Team Development, 2026-05-07.
+
+**O que é:** task MSBuild do domínio Team Development que mescla alterações de uma versão
+derivada para outra versão da KB. Operação destinada a fluxos em que equipes desenvolvem
+em versões paralelas e precisam consolidar o trabalho numa versão comum.
+
+Parâmetros não documentados no índice local `3908.html`. Não verificada no assembly.
+
+**Por que foi descartada:**
+
+Ausência de caso de uso no perfil de KB local com versões-checkpoint. O público-alvo
+desta trilha usa versões como pontos de restauração de segurança, não como ramificações
+de desenvolvimento paralelo. Sem Team Development ativo com versões concorrentes, merge
+de versão não aparece no horizonte das skills XPZ.
+
+**Não reavaliar** salvo surgimento de caso concreto com Team Development ativo e versões
+paralelas de desenvolvimento que precisem ser consolidadas por automação headless.
