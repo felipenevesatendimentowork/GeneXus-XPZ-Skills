@@ -165,6 +165,7 @@ Do NOT use this skill for:
 - Ao orientar o caminho `A)`, preferir descricao funcional estavel como `export full da KB pela IDE` em vez de depender de rotulos exatos de menu, tela ou botao do GeneXus como se fossem universais; se citar caminho de menu, apresentá-lo depois da instrucao principal e marcado explicitamente como exemplo opcional de navegacao, nunca como passo normativo principal
 - Se o usuario escolher `B)`, encaminhar a geracao do `.xpz` full pela skill `xpz-msbuild-import-export` em vez de improvisar exportacao fora dessa trilha
 - Ao concluir exportacao via `B)`, verificar em `kb-source-metadata.md` se o campo `kb (GUID)` na secao `## Source` foi populado com um GUID real; exportacoes full geradas via MSBuild podem nao conter esse GUID na secao Source do XPZ, deixando o campo como placeholder; se isso ocorrer, alertar o usuario explicitamente no handoff: frentes de empacotamento que precisem do `source_guid` real no envelope de importacao vao exigir um re-export parcial ou manual pela IDE para obter esse valor
+- Quando o usuario precisar inspecionar uma propriedade da KB, Version, Environment, Generator, DataStore ou objeto especifico sem abrir a IDE, o script `Get-GeneXusKbProperty.ps1` do motor compartilhado esta disponivel via `xpz-msbuild-import-export`; seu uso e pontual e sob demanda — nao faz parte de nenhuma etapa obrigatoria do setup
 
 ---
 

@@ -1018,3 +1018,36 @@ Classificação mínima que a documentação da skill deve espelhar a partir daq
 - warning estrutural por extensão ausente, como `WebPanelDesigner`/`K2B Object Designer`
 
 Enquanto essa consolidação não estiver totalmente espelhada na skill e nos critérios de uso, o mecanismo central já deve ser tratado como validado, com operação controlada e classificação explícita dos limites remanescentes.
+
+## Achado Empírico Sobre Tasks de Propriedades
+
+Reflexão do assembly `Genexus.MsBuild.Tasks.dll` realizada em 2026-05-07 confirmou a acessibilidade de todas as tasks do domínio de gerenciamento de propriedades.
+
+### Tasks confirmadas e acessíveis
+
+**Get* (leitura segura, sem efeito sobre a KB):**
+
+Todas as 6 tasks do domínio Get confirmadas. Interface comum: `Name` [String] (entrada), `PropertyValue` [String] (saída). Parâmetros de escopo por nível:
+
+- `GetKnowledgeBaseProperty` — sem parâmetro adicional de escopo
+- `GetVersionProperty` — sem parâmetro adicional de escopo
+- `GetEnvironmentProperty` — sem parâmetro adicional de escopo
+- `GetGeneratorProperty` — `Generator` [String] opcional (default "Default")
+- `GetDataStoreProperty` — `DataStore` [String] opcional (default "Default")
+- `GetObjectProperty` — `Object` [String] (nome do objeto, obrigatório)
+
+Todas herdam de `BasePropertyTask` e expõem `CaptureOutput` e `TaskOutput` — o valor de `PropertyValue` pode ser capturado programaticamente via `TaskOutput`.
+
+**SetConfiguration (escrita segura para pré-build):**
+
+`SetConfiguration` confirmado com parâmetro `Configuration` [String]. Valores válidos documentados: `Release`, `Debug`, `Performance Test`. Não faz parte das famílias Set*/Reset* descartadas — é task de configuração de contexto de build, absorvida na skill `xpz-msbuild-build`.
+
+### Tasks descartadas neste domínio
+
+Set*/Reset* nos níveis KB/Version/Environment/Generator/DataStore, `SetObjectProperty`, `ResetObjectProperty`, `SetCredential`, `SetCatalog`, `SetProductInfo` e `SetConversationalFlowsProperty` foram avaliados e descartados. Motivos e condições de reavaliação registrados em `998-ideias-descartadas-e-porque.md`.
+
+### Consequências operacionais
+
+- `Get*Property` pode ser invocado de forma segura como diagnóstico pré-operação; o script `Get-GeneXusKbProperty.ps1` tem interface definida em `xpz-msbuild-import-export/SKILL.md`
+- `SetConfiguration` deve ser emitido apenas mediante instrução explícita do usuário, antes do `BuildAll`, com valor validado
+- nenhuma das tasks Get* foi testada em execução real nesta frente; a confirmação atual é de acessibilidade no assembly, não de comportamento funcional em KB real

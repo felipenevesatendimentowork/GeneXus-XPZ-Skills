@@ -595,3 +595,138 @@ alternativa trivial de usar a IDE para criação inicial.
 
 **Não reavaliar** salvo surgimento de caso concreto em que a criação de banco seja
 requisito de automação recorrente em pipeline headless — não apenas setup pontual.
+
+---
+
+## Set*/Reset* de propriedades em KB/Version/Environment/Generator/DataStore
+
+**Origem:** avaliação do domínio de gerenciamento de propriedades, 2026-05-07. Reflexão
+do assembly confirmou as 10 tasks: `SetKnowledgeBaseProperty`, `SetVersionProperty`,
+`SetEnvironmentProperty`, `SetGeneratorProperty`, `SetDataStoreProperty` e os
+correspondentes `Reset*`.
+
+**O que são:** tasks de escrita e restauração de propriedades nos níveis KB, Version,
+Environment, Generator e DataStore. Interfaces confirmadas por reflexão:
+
+- Set*: `Name` (String), `Value` (String); Generator e DataStore aceitam também nome do
+  target (`Generator` ou `DataStore`, opcional, default "Default")
+- Reset*: `Name` (String); Generator e DataStore aceitam também o nome do target
+
+**Por que foram descartadas:**
+
+O usuário pode alterar essas propriedades diretamente na IDE do GeneXus sem risco
+operacional adicional. Fazer isso via script headless introduz risco de efeito colateral
+não documentado (precedência entre níveis, interação com build pipeline) sem benefício
+concreto identificado. Não há caso de uso específico desta frente que exija alterar
+propriedades de KB, Version, Environment, Generator ou DataStore programaticamente.
+
+**Não reavaliar** salvo surgimento de caso concreto de automação em que o usuário
+não possa ou não deva abrir a IDE para ajustar essas propriedades.
+
+---
+
+## SetObjectProperty / ResetObjectProperty
+
+**Origem:** avaliação do domínio de gerenciamento de propriedades, 2026-05-07. Reflexão
+do assembly confirmou ambas as tasks.
+
+**O que são:** tasks de escrita e restauração de propriedade de um objeto específico da
+KB. Interface confirmada: `Object` (String, nome do objeto), `Name` (String, nome da
+propriedade), `Value` (String, para Set). `ResetObjectProperty` usa apenas `Object` e
+`Name`.
+
+**Por que foram descartadas:**
+
+Objetos importados via XPZ já carregam suas propriedades do arquivo de origem. Se uma
+propriedade precisar ser corrigida após import, o problema está no pacote — e a
+correção correta é ajustar o XPZ de origem, não sobrescrever via script pós-import.
+Além disso, alterar propriedades de objeto headless sem saber o estado atual é operação
+cega que pode sobrescrever configurações deliberadas.
+
+Não há caso de uso concreto identificado nesta frente que exija ajustar propriedades de
+objeto headless. A IDE do GeneXus resolve isso com feedback visual imediato.
+
+**Não reavaliar** salvo surgimento de caso documentado em que uma propriedade de objeto
+precise ser definida programaticamente como parte do pipeline de import e o ajuste no
+XPZ de origem não for viável.
+
+---
+
+## SetCredential
+
+**Origem:** avaliação do domínio de gerenciamento de propriedades, 2026-05-07. Reflexão
+do assembly confirmou a task com parâmetros: `UserName` (String), `UserPassword`
+(String), `TargetName` (String), `Persist` (Boolean), `AccessToken` (String).
+
+**O que é:** task que registra ou atualiza credenciais associadas à KB, possivelmente
+para GeneXus Server ou outros serviços integrados.
+
+**Por que foi descartada:**
+
+Manipular senhas e tokens de acesso em scripts automatizados é risco de segurança
+explícito. Além disso, o público-alvo desta frente não usa GeneXus Server, que é o
+consumidor principal dessas credenciais. A presença de `UserPassword` em texto simples
+como parâmetro da task reforça que essa operação não deve ser automatizada
+indiscriminadamente.
+
+**Não reavaliar** — fora de escopo por razão de segurança e por ausência de GeneXus
+Server no ambiente desta frente.
+
+---
+
+## SetCatalog
+
+**Origem:** avaliação do domínio de gerenciamento de propriedades, 2026-05-07. Reflexão
+do assembly confirmou a task com parâmetro: `FilePath` (String).
+
+**O que é:** task que aponta a instalação do GeneXus para um arquivo de catálogo
+alternativo. Opera no nível do produto GeneXus, não da KB — a reflexão confirmou a
+ausência das propriedades `KB`, `KBHandle` e `KBPath` que todas as tasks KB-escopadas
+carregam.
+
+**Por que foi descartada:**
+
+Altera configuração da instalação do GeneXus como um todo, não de uma KB específica.
+Esse nível de configuração é gerenciado pela IDE do GeneXus e não tem caso de uso no
+fluxo de importação/exportação de XPZ desta frente.
+
+**Não reavaliar** salvo surgimento de cenário em que troca de catálogo headless seja
+requisito documentado de automação neste contexto.
+
+---
+
+## SetProductInfo
+
+**Origem:** avaliação do domínio de gerenciamento de propriedades, 2026-05-07. Reflexão
+do assembly confirmou a task com parâmetros: `Info` (String), `DefaultRWDTheme`
+(String), `DefaultStyle` (String).
+
+**O que é:** task que define informações de produto para a instalação do GeneXus — tema
+RWD padrão e estilo padrão. Opera no nível do produto, não da KB (mesma evidência que
+`SetCatalog`: ausência das propriedades KB-escopadas na reflexão).
+
+**Por que foi descartada:**
+
+Não tem relação com o fluxo de importação/exportação de XPZ. A IDE do GeneXus gerencia
+essas configurações de produto sem necessidade de automação headless neste contexto.
+
+**Não reavaliar** — fora de escopo por definição do domínio desta frente.
+
+---
+
+## SetConversationalFlowsProperty
+
+**Origem:** avaliação do domínio de gerenciamento de propriedades, 2026-05-07. Reflexão
+do assembly confirmou a task com parâmetros: `ObjectName` (String), `PropertyName`
+(String), `PropertyValue` (String).
+
+**O que é:** task que define propriedades de objetos do gerador de conversational flows
+(chatbots/assistentes) do GeneXus. Parâmetros confirmados por reflexão.
+
+**Por que foi descartada:**
+
+Específica do gerador de conversational flows — fora do escopo desta skill de XPZ, que
+trata de migração e sincronização de objetos GeneXus genéricos. O público-alvo desta
+frente não opera projetos de conversational flows GeneXus.
+
+**Não reavaliar** — fora de escopo por definição do público-alvo desta frente.

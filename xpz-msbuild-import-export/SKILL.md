@@ -61,6 +61,8 @@ Use esta skill para:
 - exportar `XPZ` com parâmetros explícitos
 - importar `XPZ` apenas em fase explicitamente autorizada de teste controlado
 - classificar resultado em sucesso operacional versus confirmação funcional pendente
+- inspecionar propriedades da KB, Version, Environment, Generator, DataStore ou Object
+  para diagnóstico pré-operação via `Get*Property`
 
 Do NOT use esta skill para:
 - substituir o fluxo oficial atual da trilha paralela da KB
@@ -100,6 +102,10 @@ Do NOT use esta skill para:
 - Normalizar recortes multiplos de `IncludeItems` e `ExcludeItems` como lista antes de serializar para a task carregada
 - Preservar `importedItems` como lista em qualquer diagnóstico JSON, mesmo quando houver apenas um item
 - Quando a task carregada não expuser `UpdateFile` nem `ImportKBInformation`, o wrapper de preview deve bloquear esses parâmetros cedo
+- Tratar `Get*Property` como operação de leitura segura, sem efeito sobre a KB
+- Validar `-Level` e `-Name` explicitamente antes de emitir a task; exigir `-Target`
+  quando `-Level` for `Generator`, `DataStore` ou `Object`
+- Nunca inferir o nome da propriedade; sempre exigir `-Name` explícito
 - Quando recortes sucessivos isolarem erro residual de `Source`, `Specification` ou referência não resolvida em objeto importado, tratar a continuação como frente de conteúdo da KB/`XPZ`, não como ajuste adicional presumido do wrapper
 - Quando um teste controlado com `Source` global preenchido e outro teste controlado com ajuste isolado de `Pattern Settings` nao mudarem o padrao principal do log, registrar explicitamente que essas diferencas deixaram de ser suspeitas fortes e estreitar a hipotese para conteudo da KB/`XPZ`
 - Exigir confirmação explícita antes de importação real
@@ -163,6 +169,13 @@ Scripts nesta frente:
   - status atual: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Test-GeneXusKbConsistency.ps1`
   - status atual: implementado; classifica KB consistente, inconsistências detectadas, check parcial por timeout da Etapa 3 e KB inacessível; `Fix="true"` exige confirmação interativa
+- `Get-GeneXusKbProperty.ps1`
+  - status atual: implementado
+  - objetivo: leitura de propriedade em qualquer nível da KB sem alterar nenhum dado
+  - parâmetros obrigatórios: `-KbPath`, `-Level` (KB | Version | Environment | Generator | DataStore | Object), `-Name`, `-WorkingDirectory`, `-LogPath`
+  - parâmetros opcionais: `-Target` (obrigatório quando `-Level` for `Generator`, `DataStore` ou `Object`; nome do generator, datastore ou objeto), `-GeneXusDir`, `-MsBuildPath`, `-VersionName`, `-EnvironmentName`, `-VerboseLog`
+  - saída esperada: `status` (`leitura concluída` | `falha de leitura`), `level`, `target` (quando aplicável), `propertyName`, `propertyValue`, `exitCode`, caminho do log
+  - tasks confirmadas no assembly: `GetKnowledgeBaseProperty`, `GetVersionProperty`, `GetEnvironmentProperty`, `GetGeneratorProperty` (parâmetro opcional `Generator`), `GetDataStoreProperty` (parâmetro opcional `DataStore`), `GetObjectProperty` (parâmetro `Object` obrigatório); todas expõem `Name` e `PropertyValue` como interface comum
 
 Contrato inicial específico de `Test-GeneXusMsBuildSetup.ps1`:
 

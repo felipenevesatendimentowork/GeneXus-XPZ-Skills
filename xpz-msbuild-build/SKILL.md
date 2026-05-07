@@ -51,6 +51,7 @@ Use esta skill para:
 - detectar se há reorg pendente após import, sem executá-la
 - inspecionar o que a reorg alteraria no banco sem executar (`ImpactDatabaseOnly`)
 - executar reorg a partir de script de impacto já inspecionado (`ReorganizeOnly`)
+- configurar o modo de build antes de `BuildAll` via `SetConfiguration` (valores: `Release`, `Debug`, `Performance Test`)
 - classificar resultado de build em categorias operacionais explícitas
 - apoiar decisão do usuário sobre o próximo passo após import
 
@@ -84,6 +85,10 @@ Do NOT use esta skill para:
 - Exigir confirmação explícita antes de qualquer execução de reorg
 - Tratar `ImpactDatabaseOnly` como pré-requisito de inspeção antes de autorizar `ReorganizeOnly` explícito
 - Exigir confirmação interativa obrigatória antes de `ReorganizeOnly`, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
+- Tratar `SetConfiguration` como operação auxiliar opcional de pré-build: só emitir
+  quando explicitamente solicitado pelo usuário, com valor validado (`Release`, `Debug`,
+  `Performance Test`)
+- Nunca inferir ou alterar configuração sem instrução explícita
 - Validar explicitamente `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory`,
   `LogPath` e `Genexus.Tasks.targets` antes de qualquer build
 
@@ -163,6 +168,9 @@ não executa por padrão) reorg necessária.
 - `-DoNotExecuteReorg` (Boolean, default `false`)
 - `-AllowReorg` (switch — quando presente, define `FailIfReorg=false` e
   `DoNotExecuteReorg=false`; exige confirmação interativa antes de prosseguir)
+- `-Configuration` (String, opcional — valores válidos: `Release`, `Debug`,
+  `Performance Test`; quando informado, emite `SetConfiguration` imediatamente antes
+  do `BuildAll`; quando omitido, a configuração ativa da KB é mantida sem alteração)
 
 **Categorias de resultado:**
 
@@ -236,6 +244,10 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 4. Identificar o objetivo:
    - verificação leve pós-import cirúrgico → `Invoke-GeneXusKbSpecifyGenerate.ps1`
    - validação completa incluindo compilação → `Invoke-GeneXusKbBuildAll.ps1`
+4b. Se o usuário informar `-Configuration`:
+    - confirmar que o valor é `Release`, `Debug` ou `Performance Test`
+    - emitir `SetConfiguration` como step imediatamente anterior ao `BuildAll`
+    - registrar o valor emitido no log e no diagnóstico
 5. Validar explicitamente `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory`,
    `LogPath` e existência de `Genexus.Tasks.targets`
 6. Resolver `GeneXusDir` e `MsBuildPath` por ordem explícita de precedência e fallback,
@@ -293,5 +305,6 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 - NEVER tratar `exitCode = 0` isolado como confirmação funcional
 - NEVER executar `Invoke-GeneXusDbReorg.ps1` sem confirmação interativa explícita do usuário, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
 - NEVER emitir `FromModel` ou `Model` em `ImpactDatabaseOnly` sem validação empírica prévia do comportamento desses parâmetros nesta instalação
+- NEVER emitir `SetConfiguration` implicitamente ou inferir o valor de configuração desejado
 - ABORT se `KbPath`, versão, `Environment` ou destino de logs estiverem ambíguos
 - ABORT se não houver ambiente controlado compatível com a fase solicitada
