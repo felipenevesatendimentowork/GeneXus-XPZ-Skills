@@ -563,3 +563,35 @@ quer reorg) que não justifica script dedicado neste contexto.
 
 **Não reavaliar** salvo surgimento de XPZ com objeto `Main = true` em que a compilação
 isolada faça sentido como etapa separada do BuildAll.
+
+---
+
+## CreateDatabase / CreateDatabaseOnly
+
+**Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
+Propriedades públicas confirmadas por reflexão do assembly.
+
+**O que são:**
+
+`CreateDatabase` cria os objetos de banco de dados (tabelas, índices, constraints) exigidos
+pela KB aberta. Parâmetro `ExecuteCreate` (Boolean) controla se apenas gera o script ou
+também executa.
+
+`CreateDatabaseOnly` é uma variante por modelo: parâmetros `Model` (Int32) e `FromModel`
+(Int32) permitem especificar de qual modelo a criação parte. Sem documentação oficial no
+índice `3908.html`; registrada no assembly e em `Genexus.Tasks.targets`.
+
+**Por que foram descartadas:**
+
+Ambas são operações de setup inicial de banco — executadas uma vez quando a KB é criada
+ou migrada. A IDE do GeneXus conduz esse processo com feedback visual e sem risco de
+interpretação incorreta dos parâmetros de modelo.
+
+`CreateDatabaseOnly` tem parâmetros `Model` e `FromModel` sem documentação oficial, o que
+aumenta o risco de comportamento imprevisível em automação headless.
+
+Em nenhum dos dois casos o ganho de automatizar supera o risco e a complexidade frente à
+alternativa trivial de usar a IDE para criação inicial.
+
+**Não reavaliar** salvo surgimento de caso concreto em que a criação de banco seja
+requisito de automação recorrente em pipeline headless — não apenas setup pontual.

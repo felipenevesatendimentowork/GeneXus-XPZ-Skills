@@ -133,6 +133,104 @@ Aguardar ate que haja uma frente de refatoracao maior no motor compartilhado ou 
 - Ha outras renomeclaturas de campo ou arquivo pendentes que pudessem ser agrupadas na mesma frente de migracao para amortizar o custo?
 - O rename deve ser feito com compatibilidade retroativa (suporte temporario aos dois nomes) ou como corte limpo?
 
+## CreateOfflineDatabase
+
+**Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
+
+### Problema concreto que motiva a ideia
+
+Em KBs GeneXus com aplicativos Native Mobile e `Connectivity Support = Offline` em Main Objects, o build headless do pipeline precisa gerar o banco SQLite local que será embutido no app do dispositivo. Sem `CreateOfflineDatabase` headless, essa etapa fica dependente da IDE.
+
+### O que a task faz tecnicamente
+
+- Registrada em `Genexus.Tasks.targets` e documentada em `3908.html` da instalação oficial.
+- Parâmetro obrigatório: `OfflineObjectNames` — lista de nomes de objetos separada por `;`.
+- Os objetos listados precisam ter `Connectivity Support = Offline` configurado.
+- Quando um Main Object tem essa propriedade, o GeneXus cria automaticamente um objeto do tipo "Offline Database object" na KB. `CreateOfflineDatabase` gera e executa a criação do SQLite correspondente.
+- **Não toca o banco de dados do servidor** (SQL Server, PostgreSQL, etc.) — cria apenas o arquivo SQLite local para o dispositivo.
+- Geradores compatíveis: Android, Apple, Angular exclusivamente.
+
+### Diferença de risco em relação às tasks de banco de servidor
+
+Risco contido: o SQLite gerado é um artefato de app mobile, não o banco central da KB. Pode ser regenerado a qualquer momento sem impacto no servidor.
+
+### Perguntas a responder antes de decidir
+
+- A task `Genexus.MsBuild.Tasks.CreateOfflineDatabase` expõe `OfflineObjectNames` como propriedade pública na reflexão do assembly desta instalação?
+- Em um pipeline headless de Native Mobile, `CreateOfflineDatabase` é chamada antes ou depois de `BuildAll`?
+- Existe documentação ou uso empírico que mostre se a task exige gerador Android/Apple/Angular ativo no Environment, ou se opera apenas sobre o modelo da KB?
+- O script adequado seria um novo `Invoke-GeneXusOfflineDb.ps1` ou uma extensão do pipeline de `xpz-msbuild-build`?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) KB concreta com Native Mobile Offline no portfólio onde a automação headless do build seja requisito real, ou (b) solicitação explícita de cobertura desse pipeline.
+
+## Tríade de diagnóstico de schema: WriteDatabaseSchema + WriteKnowledgeBaseSchema + CompareSchemas
+
+**Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
+
+### Problema concreto que motiva a ideia
+
+Quando uma KB apresenta reorgs inesperadas, erros de impacto ou comportamento anômalo após migração, o desenvolvedor precisa entender se o banco físico está em sincronia com o modelo definido pela KB. Hoje esse diagnóstico depende da IDE. As três tasks permitem fazer essa análise headless, gerando XMLs comparáveis e um arquivo de diferenças.
+
+### Confirmação técnica
+
+Todas as três confirmadas por reflexão do assembly e documentadas em `3908.html`:
+
+- `WriteDatabaseSchema`: lê o banco físico real (via conexão do Environment) e grava um XML com o schema atual. Parâmetro obrigatório: `File` (String).
+- `WriteKnowledgeBaseSchema`: lê o modelo da KB (sem acessar o banco) e grava um XML com o schema esperado. Parâmetros: `File` (obrigatório), `DesignModel` (Boolean — `true` = modelo de design, `false` = modelo alvo, default `false`), `SortByName` (Boolean, default `false`).
+- `CompareSchemas`: compara os dois XMLs e grava as diferenças. Parâmetros: `DBFile` (obrigatório), `KBFile` (obrigatório), `DiffFile` (opcional — arquivo de saída das diferenças).
+
+`CompareSchemas` **não exige KB aberta** — opera sobre arquivos já gerados. `WriteDatabaseSchema` e `WriteKnowledgeBaseSchema` exigem KB aberta.
+
+### Distinção operacional importante
+
+`WriteDatabaseSchema` conecta ao banco físico (SQL Server, LocalDB). Pode falhar se a conexão não estiver disponível no contexto headless — risco diferente de `WriteKnowledgeBaseSchema`, que opera apenas sobre o modelo da KB. Implementar os dois de forma independente, não acoplada.
+
+### Enquadramento correto de uso
+
+Não é um gate pré-import. Import trata de objetos GeneXus; o schema do banco é alterado por Reorg. O caso de uso real é diagnóstico de estado: "por que minha reorg falhou?", "o banco está alinhado com o que a KB espera?", "qual o impacto de uma migração recente no schema físico?"
+
+### Perguntas a responder antes de decidir
+
+- Um único script combinado (`Test-GeneXusSchemaSync.ps1`) que executa as três etapas em sequência é melhor do que três scripts separados?
+- Onde esse script deve ficar: nova skill `xpz-msbuild-db`, ou adicionado como diagnóstico complementar na `xpz-msbuild-build`?
+- `WriteDatabaseSchema` exige que o Environment tenha uma conexão de banco válida e acessível no contexto headless? Isso precisa de teste empírico.
+- O `DiffFile` de `CompareSchemas` tem formato legível diretamente, ou exige parsing para ser útil ao usuário?
+
+### Limiar para implementar
+
+Implementar quando houver caso concreto de diagnóstico de drift DB-KB que a IDE não consiga resolver de forma conveniente, ou quando o fluxo de `Invoke-GeneXusDbImpact.ps1` precisar de contexto de schema para interpretar o script de impacto gerado.
+
+## CheckAndInstallDatabase
+
+**Origem:** referência encontrada em fonte externa de código como sinônimo de Reorg, avaliação de domínio Database, 2026-05-06.
+
+### Problema concreto que motiva a ideia
+
+A fonte externa utiliza `<CheckAndInstallDatabase />` sem parâmetros como equivalente headless da operação de Reorg, com semântica implícita de "verificar se o banco precisa de alterações e instalar somente se necessário" — o que seria mais seguro que um `Reorganize` puro, que executaria incondicionalmente.
+
+### Achado empírico desta instalação
+
+`Genexus.MsBuild.Tasks.CheckAndInstallDatabase` **não existe** no assembly `Genexus.MsBuild.Tasks.dll` da instalação GeneXus 18 local. A task não aparece nos `UsingTask` de `Genexus.Tasks.targets` nem na reflexão do assembly.
+
+Hipóteses sobre a origem:
+- Task definida em `Genexus.Server.Tasks.targets` (escopo de GeneXus Server — fora do escopo desta skill)
+- Target MSBuild definido em algum `.targets` não inspecionado, e não uma task de DLL
+- Específica de outra versão do GeneXus 18 (upgrade diferente) ou de extensão instalada
+- Nome alternativo ou alias interno que mapeia para outro mecanismo
+
+### Perguntas a responder antes de decidir
+
+- Em qual arquivo ou assembly `CheckAndInstallDatabase` está definida nesta ou em outra instalação do GeneXus 18?
+- É uma task de server (`Genexus.Server.Tasks.targets`)? Se sim, sai do escopo desta skill por definição.
+- Se for um Target MSBuild (não task de DLL), quais tasks internas ele orquestra?
+- O comportamento "verifica antes de executar" é real, ou o nome apenas sugere isso?
+
+### Limiar para reavaliar
+
+Reavaliar somente se: (a) for identificado que a task existe em caminho acessível sem GeneXus Server, e (b) a semântica "check before install" for confirmada empiricamente como diferente de `Reorganize` puro.
+
 ## DeleteObject — limpeza headless pós-import
 
 **Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
