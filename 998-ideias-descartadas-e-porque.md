@@ -361,3 +361,175 @@ confirmação interativa antes de qualquer execução.
 **Não reavaliar** salvo caso concreto em que o XPZ importado contém objeto `Main = true`
 e o usuário precisa de smoke test de compilação sem abrir a IDE, combinado com
 confirmação de que o reorg automático é aceitável naquele ambiente.
+
+---
+
+## Run
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06.
+
+**O que é:** task MSBuild oficial (`3908.html`). Executa specify + generate + compile do
+objeto informado e de tudo que ele referencia, e em seguida executa o objeto. Parâmetros:
+`ObjectName` (obrigatório, exige `Main = true`), `ForceRebuild`, `Build`, `BuildCalled`,
+`DetailedNavigation`, `Parameters`.
+
+**Por que foi descartada:**
+
+Mesma restrição central de `BuildOne`: `ObjectName` exige objeto com `Main = true`,
+inaplicável para a maioria dos XPZs cirúrgicos. Além disso, `Run` executa o objeto após
+o build — comportamento inadequado em automação headless de KB de teste, onde executar
+a aplicação não é o objetivo e pode ter efeitos colaterais imprevisíveis.
+
+**Não reavaliar** — a combinação de exigência de `Main = true` com execução real do objeto
+não tem caso de uso no contexto desta skill.
+
+---
+
+## RebuildArtifacts
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Documentação oficial: `3908.html` (breve menção, sem parâmetros).
+
+**O que é:** task sem parâmetros que reconstrói os artefatos físicos do ambiente — os
+arquivos de saída gerados e compilados pela KB — sem repetir o ciclo completo de
+specify + generate + compile. Disponível a partir do GeneXus 16 Upgrade 3.
+
+**Por que foi descartada:**
+
+Caso de uso restrito a cenários em que os artefatos físicos ficaram desincronizados do
+que o GeneXus compilou (ex.: limpeza manual de pasta de deploy ou falha de gravação).
+A IDE do GeneXus cobre essa situação com feedback visual. Implementar wrapper headless
+para operação de manutenção rara, sem parâmetros e sem diagnóstico, não agrega valor
+prático neste contexto.
+
+**Não reavaliar** salvo surgimento de cenário recorrente em que artefatos de KB de teste
+precisem ser reconstruídos headless sem novo ciclo de build.
+
+---
+
+## CustomBuild
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Documentação oficial: `3908.html`.
+
+**O que é:** task que executa um Custom Build previamente definido na IDE via
+`Tools > Options > Build > Custom Build`. Parâmetros: `Name` (nome do Custom Build,
+obrigatório), `ObjectName` (obrigatório quando o Custom Build é sobre um objeto com
+`Main = true`).
+
+**Por que foi descartada:**
+
+Depende de configuração prévia e nomeada na IDE. Em automação headless, não há garantia
+de que o Custom Build configurado na IDE de origem existe com o mesmo nome na KB de
+destino. A task falha silenciosamente ou com erro genérico se o Custom Build não existir.
+Esse acoplamento à configuração visual torna a task inadequada como base de wrapper
+headless portável.
+
+**Não reavaliar** salvo caso em que a KB de destino tenha Custom Builds nomeados e
+documentados como parte do contrato de deploy, tornando a configuração previsível.
+
+---
+
+## SpecifyOneOnly
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Registrada em `Genexus.Tasks.targets`; sem documentação oficial offline.
+
+**O que é:** equivalente objeto-a-objeto do `SpecifyAll`. Especifica apenas os objetos
+nomeados explicitamente, sem gerar código. O `Genexus.msbuild` usa-a com parâmetros
+`ObjectNames` e `Options`.
+
+**Por que foi descartada:**
+
+Sem caso de uso identificado no contexto desta skill. Especificar um subconjunto de
+objetos sem gerar é uma etapa intermediária de pipeline muito controlado — cenário que
+não ocorre no fluxo de validação pós-import desta frente. `SpecifyAll` ou `BuildAll`
+cobrem os casos relevantes. Ausência de documentação oficial agrava o risco de
+comportamento imprevisível.
+
+**Não reavaliar** salvo surgimento de pipeline headless que precise especificar objetos
+individuais sem geração, com documentação oficial da task.
+
+---
+
+## SpecifyOpenAPI
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Registrada em `Genexus.Tasks.targets`; sem documentação oficial offline.
+
+**O que é:** task de especificação específica para o gerador OpenAPI do GeneXus. Parte
+do pipeline de publicação de APIs REST com especificação OpenAPI.
+
+**Por que foi descartada:**
+
+Fora do escopo desta skill. O contexto de XPZ desta frente não inclui projetos de API
+REST com publicação de especificação OpenAPI. Sem documentação oficial e sem caso de uso
+identificado neste contexto.
+
+**Não reavaliar** salvo surgimento de projeto com pipeline headless de API REST GeneXus
+que exija especificação OpenAPI automatizada.
+
+---
+
+## GenerateChatbot
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Registrada em `Genexus.Tasks.targets`; sem documentação oficial offline da
+task em si.
+
+**O que é:** task que força a geração dos artefatos do gerador de chatbots do GeneXus —
+equivalente headless da opção de menu "Force Chatbot Generation". Aplica-se apenas a
+projetos que usam o gerador de chatbots GeneXus (integração com plataformas como
+Facebook Messenger, web e mobile via NLP).
+
+**Por que foi descartada:**
+
+Produto específico (gerador de chatbots GeneXus) fora do escopo desta skill de XPZ.
+O público-alvo desta frente não opera projetos de chatbot GeneXus. Sem caso de uso
+identificado.
+
+**Não reavaliar** — fora de escopo por definição do público-alvo desta frente.
+
+---
+
+## GenerateOpenAPI
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Uso confirmado em `DeploymentTargets/Common/common.targets`.
+
+**O que é:** task que gera o arquivo de especificação OpenAPI a partir dos objetos GeneXus
+REST com propriedade `Generate OpenAPI Interface = Yes`. Chamada no pipeline de deploy
+de APIs REST, não no build normal. Parâmetros confirmados em uso: `ObjectList`,
+`ConfigFlags`, `OutputFile`.
+
+**Por que foi descartada:**
+
+Específica do pipeline de deploy de APIs REST com publicação de especificação OpenAPI.
+Fora do escopo desta skill de XPZ, que trata de migração e sincronização de objetos.
+O público-alvo desta frente não opera pipelines de publicação OpenAPI headless.
+
+**Não reavaliar** salvo surgimento de projeto com deploy headless de REST API GeneXus
+com geração de especificação OpenAPI como requisito de automação.
+
+---
+
+## IdeWebBuildAndDeploy / IdeWebCreateDB / IdeWebImpactDB
+
+**Origem:** inventário de tasks MSBuild do GeneXus 18, avaliação do domínio build pipeline,
+2026-05-06. Registradas em `Genexus.Tasks.targets`; sem documentação oficial offline.
+
+**O que são:** tasks relacionadas ao serviço **GeneXus Cloud Services** — que permitia
+hospedar e operar a própria IDE do GeneXus em modo web/cloud. `IdeWebBuildAndDeploy`
+fazia o build e deploy da IDE web; `IdeWebCreateDB` criava o banco de dados necessário;
+`IdeWebImpactDB` aplicava alterações nesse banco.
+
+**Por que foram descartadas:**
+
+O serviço GeneXus Cloud Services foi **descontinuado no GeneXus 18** — a opção
+`Build > Deploy to GeneXus Cloud Services` foi removida da IDE e os serviços associados
+encerrados (confirmado na documentação offline `53520.html`, release notes do GeneXus 18).
+As tasks permanecem registradas no assembly por compatibilidade, mas não têm uso ativo.
+São código morto de feature descontinuada.
+
+**Não reavaliar** — feature descontinuada pelo próprio GeneXus.
