@@ -10,7 +10,7 @@
 
 ## Português (BR)
 
-Este repositório existe para sustentar e operacionalizar skills para agentes dedicadas ao ecossistema `XPZ`/XML de GeneXus, em especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export` e `xpz-index-triage`.
+Este repositório existe para sustentar e operacionalizar skills para agentes dedicadas ao ecossistema `XPZ`/XML de GeneXus, em especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage` e `xpz-skills-setup`.
 
 A documentação consolidada e os scripts desta raiz funcionam como base metodológica e operacional dessas skills, com foco em:
 
@@ -62,6 +62,7 @@ Guia operacional e metodologico da trilha KB Intelligence. Contratos de fases en
 - `xpz-msbuild-import-export`: skill experimental para importação e exportação de `XPZ` via `MSBuild`, com execução sem interface gráfica, parâmetros explícitos, rastreabilidade e gates de segurança
 - `xpz-msbuild-build`: skill para validação de build pós-import via `MSBuild`, com execução sem interface gráfica, classificação de resultado e bloqueio de reorg por padrão
 - `xpz-index-triage`: triagem inicial por índice derivado para orientar a leitura mínima dos XMLs oficiais da KB
+- `xpz-skills-setup`: auditoria e manutenção do registro global das skills XPZ nas ferramentas de agente instaladas na máquina
 
 ### Leitura recomendada para humanos
 
@@ -186,7 +187,7 @@ Se você quer entender a base rapidamente:
 
 ## Español
 
-Este repositorio reúne documentación consolidada sobre análisis estructural de objetos GeneXus a partir de XMLs extraídos de `XPZ`, con foco en skills para agentes dedicadas al ecosistema `XPZ`/XML de GeneXus, en especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export` y `xpz-index-triage`.
+Este repositorio reúne documentación consolidada sobre análisis estructural de objetos GeneXus a partir de XMLs extraídos de `XPZ`, con foco en skills para agentes dedicadas al ecosistema `XPZ`/XML de GeneXus, en especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage` y `xpz-skills-setup`.
 
 - lectura e interpretación de estructura XML
 - familias estructurales de objetos
@@ -234,7 +235,9 @@ Guía operacional y metodológica de la trilha KB Intelligence. Los contratos de
 - `xpz-doc-builder`: generación y recomposición de documentación Markdown a partir del acervo XML y de moldes sanitizados
 - `xpz-kb-parallel-setup`: preparación y validación de la estructura inicial de la carpeta paralela de la KB
 - `xpz-msbuild-import-export`: skill experimental para importación y exportación de `XPZ` vía `MSBuild`, con ejecución sin interfaz gráfica, parámetros explícitos, trazabilidad y compuertas de seguridad
+- `xpz-msbuild-build`: skill para validación de build pós-import vía `MSBuild`, con ejecución sin interfaz gráfica, clasificación de resultado y bloqueo de reorg por defecto
 - `xpz-index-triage`: triaje inicial por índice derivado para orientar la lectura mínima de los XML oficiales de la KB
+- `xpz-skills-setup`: auditoría y mantenimiento del registro global de las skills XPZ en las herramientas de agente instaladas en la máquina
 
 ### Lectura recomendada para humanos
 
@@ -359,7 +362,7 @@ Si quieres entender la base rápidamente:
 
 ## English
 
-This repository contains consolidated documentation about structural analysis of GeneXus objects based on XML extracted from `XPZ`, with emphasis on skills for agents dedicated to the `XPZ`/XML ecosystem of GeneXus, especially `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, and `xpz-index-triage`.
+This repository contains consolidated documentation about structural analysis of GeneXus objects based on XML extracted from `XPZ`, with emphasis on skills for agents dedicated to the `XPZ`/XML ecosystem of GeneXus, especially `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, and `xpz-skills-setup`.
 
 - reading and interpreting XML structure
 - structural object families
@@ -407,7 +410,9 @@ Operational and methodological guide for the KB Intelligence workstream. Closed 
 - `xpz-doc-builder`: generation and recomposition of Markdown documentation from the XML archive and sanitized templates
 - `xpz-kb-parallel-setup`: preparation and validation of the initial KB parallel-folder structure
 - `xpz-msbuild-import-export`: experimental skill for `XPZ` import and export via `MSBuild`, with headless execution, explicit parameters, traceability, and safety gates
+- `xpz-msbuild-build`: skill for post-import build validation via `MSBuild`, with headless execution, result classification, and reorg blocked by default
 - `xpz-index-triage`: initial triage through a derived index to guide the minimum reading of the KB official XMLs
+- `xpz-skills-setup`: auditing and maintaining the global registration of XPZ skills in the installed agent tools on the machine
 
 ### Recommended reading for humans
 
