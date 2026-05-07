@@ -60,6 +60,7 @@ Guia operacional e metodologico da trilha KB Intelligence. Contratos de fases en
 - `xpz-doc-builder`: geração e recomposição de documentação Markdown a partir do acervo XML e de moldes sanitizados
 - `xpz-kb-parallel-setup`: preparação e validação da estrutura inicial da pasta paralela da KB
 - `xpz-msbuild-import-export`: skill experimental para importação e exportação de `XPZ` via `MSBuild`, com execução sem interface gráfica, parâmetros explícitos, rastreabilidade e gates de segurança
+- `xpz-msbuild-build`: skill para validação de build pós-import via `MSBuild`, com execução sem interface gráfica, classificação de resultado e bloqueio de reorg por padrão
 - `xpz-index-triage`: triagem inicial por índice derivado para orientar a leitura mínima dos XMLs oficiais da KB
 
 ### Leitura recomendada para humanos
