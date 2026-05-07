@@ -146,7 +146,7 @@ Arquivos de referência e quando carregar:
 
 ## EXPECTED INTERFACE
 
-Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1` e `Test-GeneXusKbConsistency.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
+Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Test-GeneXusKbConsistency.ps1` e `Test-GeneXusImportFileEnvelope.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
 
 Estado atual da materialização:
 
@@ -156,6 +156,7 @@ Estado atual da materialização:
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Invoke-GeneXusXpzImport.ps1`: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
+- `Test-GeneXusImportFileEnvelope.ps1`: implementado para validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB
 
 Scripts nesta frente:
 
@@ -171,6 +172,13 @@ Scripts nesta frente:
   - status atual: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Test-GeneXusKbConsistency.ps1`
   - status atual: implementado; classifica KB consistente, inconsistências detectadas, check parcial por timeout da Etapa 3 e KB inacessível; `Fix="true"` exige confirmação interativa
+- `Test-GeneXusImportFileEnvelope.ps1`
+  - status atual: implementado
+  - objetivo: validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB, não requer GeneXus instalado
+  - parâmetros obrigatórios: `-InputPath` (caminho do `import_file.xml`)
+  - parâmetros opcionais: `-AsJson`
+  - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `nao apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
+  - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
 - `Get-GeneXusKbProperty.ps1`
   - status atual: implementado
   - objetivo: leitura de propriedade em qualquer nível da KB sem alterar nenhum dado
@@ -240,6 +248,14 @@ Parâmetros específicos de importação:
    O diagnóstico deve incluir `status`, `summary`, `resolvedPaths`, `checks`, `blockingReasons`, `warnings` e `strategyTrace`.
    O diagnóstico deve distinguir `WorkingDirectory` já existente de `WorkingDirectory` auto-criado no caminho explícito e seguro.
    Preferir `JSON` como formato canônico inicial.
+6b. Quando o objetivo for importação (preview ou real), executar o gate de validação do envelope **antes de qualquer chamada ao MSBuild**:
+   - Chamar `Test-GeneXusImportFileEnvelope.ps1 -InputPath <caminho> -AsJson`
+   - Interpretar o resultado:
+     - `nao apto para prosseguir` → **ABORT**; apresentar `blockingReasons` ao usuário antes de prosseguir; não chamar MSBuild
+     - `apto com ressalvas` → apresentar `warnings`; exigir confirmação explícita do usuário antes de prosseguir para preview ou import real
+     - `apto para prosseguir` → prosseguir normalmente
+   - Este gate é não invasivo: lê apenas o arquivo local, não abre KB, não requer GeneXus instalado
+   - Aplicar mesmo quando o arquivo vier de geração anterior já validada — o gate é obrigatório por rodada, não por sessão
 7. Só depois abrir a KB e confirmar versão ativa e `Environment` ativo quando aplicável
 8. Se o objetivo for inspeção, priorizar:
    - `PreviewMode`
@@ -325,6 +341,9 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] `GeneXusDir` e `MsBuildPath` foram resolvidos por precedência e fallback rastreáveis
 - [ ] `Genexus.Tasks.targets` foi validado
 - [ ] `PreviewMode` foi priorizado quando a intenção era inspeção
+- [ ] Quando o objetivo era importação (preview ou real): `Test-GeneXusImportFileEnvelope.ps1` foi executado antes de qualquer chamada ao MSBuild
+- [ ] O gate de envelope retornou `apto para prosseguir` ou `apto com ressalvas` com confirmação explícita do usuário
+- [ ] O gate de envelope não foi ignorado por presunção de que o arquivo já havia sido validado anteriormente
 - [ ] Importação real só ocorreu com autorização explícita
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
@@ -338,6 +357,8 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - NEVER assumir defaults internos de importação ou exportação como seguros sem validação prática
 - NEVER tratar importação real como comportamento implícito
 - NEVER depender de `GeneXus Server` como base operacional desta skill
+- NEVER chamar MSBuild para preview ou import sem antes executar `Test-GeneXusImportFileEnvelope.ps1` no arquivo alvo
 - ABORT se `KbPath`, versão, `Environment`, pacote ou destino de logs estiverem ambíguos
 - ABORT se não houver ambiente controlado compatível com a fase solicitada
 - ABORT se a operação não puder produzir trilha rastreável de logs e artefatos
+- ABORT se `Test-GeneXusImportFileEnvelope.ps1` retornar `nao apto para prosseguir`
