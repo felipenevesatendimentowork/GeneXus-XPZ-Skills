@@ -132,3 +132,125 @@ Aguardar ate que haja uma frente de refatoracao maior no motor compartilhado ou 
 
 - Ha outras renomeclaturas de campo ou arquivo pendentes que pudessem ser agrupadas na mesma frente de migracao para amortizar o custo?
 - O rename deve ser feito com compatibilidade retroativa (suporte temporario aos dois nomes) ou como corte limpo?
+
+## DeleteObject — limpeza headless pós-import
+
+**Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
+
+### Problema concreto que motiva a ideia
+
+A skill `xpz-msbuild-import-export` documenta explicitamente no bloco `WWP IMPORT ORDER` que `import_file` não remove objetos antigos automaticamente. A limpeza de Transactions antigas substituídas, SubtypeGroups obsoletos, PatternInstances antigas e Procedures/WebPanels gerados automaticamente é feita hoje de forma manual na IDE.
+
+`DeleteObject` é a task MSBuild oficial que remove objetos da KB. Parâmetros documentados: `Objects` (obrigatório), `IncludeChildren` (true/false, para pastas e módulos), `FailWhenNone` (true/false). Não requer GeneXus Server e não pressupõe estrutura de Team Development.
+
+### Posicionamento
+
+Candidato prioritário entre as tasks do domínio de versionamento. Fecha gap concreto e documentado no fluxo atual da skill, sem exigir nova skill — caberia como extensão de `xpz-msbuild-import-export`.
+
+### Condições antes de implementar
+
+- Verificar empiricamente se `Genexus.MsBuild.Tasks.DeleteObject` está exposta no assembly `Genexus.MsBuild.Tasks.dll` com as propriedades documentadas (`Objects`, `IncludeChildren`, `FailWhenNone`)
+- Definir gate de segurança alto: confirmação nominal por objeto (ou lista) + declaração explícita ao usuário de que não há rollback automático
+- Avaliar se o usuário fornece a lista de objetos explicitamente ou se há mecanismo auxiliar para derivá-la (por comparação entre estado pré e pós-import)
+
+### Perguntas a responder antes de decidir
+
+- `Objects` aceita lista separada por vírgula no mesmo formato de `Export`/`Import`, ou tem sintaxe própria?
+- `IncludeChildren` é seguro como default `false` ou deve ser proibido sem confirmação explícita adicional?
+- O gate deve exigir confirmação por objeto individualmente ou basta confirmação da lista completa?
+
+## CreateVersion — snapshot pré-import de baixo risco
+
+**Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
+
+### Problema concreto que motiva a ideia
+
+Antes de uma importação de XPZ arriscada, criar uma versão frozen da KB serve como ponto de restauração. `CreateVersion` cria uma versão frozen a partir da versão ativa ou especificada. Parâmetros documentados: `VersionName` (obrigatório), `VersionDescription` (opcional), `Parent` (nome da versão pai; `*Trunk` ou nome da KB para raiz). Operação não-destrutiva: apenas cria, não altera nem remove nada.
+
+A alternativa existente para o mesmo problema — cópia da pasta da KB (LocalDB) ou backup `.bak` via SQL Server — não exige task MSBuild, mas também não deixa rastreabilidade dentro da própria KB.
+
+### Condições antes de implementar
+
+- Verificar empiricamente se `CreateVersion` está exposta no assembly com os parâmetros documentados
+- Avaliar se o público-alvo da skill usa estrutura de múltiplas versões — em KB local simples sem Team Development, criar versões frozen antes de cada import pode ser overhead sem benefício claro
+- Se o public-alvo não usa versões, documentar `CreateVersion` como capacidade disponível mas não recomendar como passo padrão do fluxo
+
+### Relacionamento com RevertToVersion
+
+`CreateVersion` sozinha é de baixo risco. `RevertToVersion` como par de rollback é avaliada separadamente abaixo e depende de análise de perfil de versões da KB.
+
+### Perguntas a responder antes de decidir
+
+- O público-alvo desta skill usa estrutura de múltiplas versões de desenvolvimento (Team Development) ou KB local com versão única (Root)?
+- `CreateVersion` com `Parent=*Trunk` cria versão diretamente de Root sem abrir fluxo de merge?
+
+## RevertToVersion — rollback de snapshot, gate muito restritivo
+
+**Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
+
+### Problema concreto que motiva a ideia
+
+Par com `CreateVersion` para o fluxo snapshot+rollback: se o import deu errado, reverter para a versão frozen criada antes. Parâmetro: `VersionName` (obrigatório).
+
+### Risco crítico que bloqueia implementação imediata
+
+A documentação oficial é explícita: `RevertToVersion` **sobrescreve a versão Root com a versão especificada**. Qualquer alteração feita na versão Root após o snapshot é perdida permanentemente. Isso é mais destrutivo que uma importação mal-sucedida.
+
+Consequência para o fluxo XPZ: se o import foi feito diretamente na Root (cenário mais comum em KB local), `RevertToVersion` desfaz o import — mas também desfaz todo e qualquer outro trabalho feito na Root desde o snapshot. Se o import foi feito em versão de teste separada, `RevertToVersion` não desfaz aquela versão de teste — afeta Root.
+
+### Condições antes de implementar
+
+- Dependente de `CreateVersion` estar implementada e em uso real
+- Dependente de evidência de que o público-alvo usa múltiplas versões com Root claramente separada do fluxo de trabalho cotidiano
+- Gate precisa ser mais restritivo que os gates atuais de importação real: confirmação explícita + listagem das alterações que serão perdidas, se houver mecanismo para derivá-las
+- Verificar empiricamente a task no assembly antes de qualquer implementação
+
+### Perguntas a responder antes de decidir
+
+- Há mecanismo headless para listar diferenças entre a versão Root atual e a versão frozen antes de executar o revert?
+- O fluxo snapshot+rollback é mais seguro do que a alternativa já documentada (cópia da pasta da KB)?
+
+## RestoreRevision — desfazer cirúrgico por objeto
+
+**Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
+
+### Problema concreto que motiva a ideia
+
+`RestoreRevision` restaura um objeto específico para uma revisão específica de sua história. Parâmetros: `Object` (formato `"ObjectType:ObjectName"`), `RevisionId`. Mais cirúrgico que `RevertToVersion`: desfaz apenas o objeto indicado, sem afetar o restante da KB.
+
+### Bloqueio atual
+
+Para usar `RestoreRevision` é necessário saber o `RevisionId` concreto do estado anterior desejado. Não há task headless documentada para listar o histórico de revisões de um objeto. Sem esse mecanismo, o fluxo não é autônomo: o usuário precisaria obter o `RevisionId` manualmente pela IDE antes de invocar o wrapper.
+
+### Condições antes de implementar
+
+- Identificar task ou mecanismo headless que permita listar revisões de um objeto e seus IDs
+- Sem esse mecanismo, `RestoreRevision` só seria utilizável como wrapper de conveniência para `RevisionId` já conhecido pelo usuário
+
+### Perguntas a responder antes de decidir
+
+- Existe task headless que liste o histórico de revisões de um objeto GeneXus?
+- Se não houver, faz sentido implementar o wrapper mesmo exigindo que o usuário forneça o `RevisionId` explicitamente?
+
+## Leitura da wiki 24612 (Team Development MSBuild Tasks)
+
+**Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
+
+### Motivação
+
+A documentação offline instalada do GeneXus 18 indexa as tasks MSBuild em `3908.html`. O agente externo identificou que a wiki oficial tem página dedicada ao domínio Team Development (`id=24612`) com potencialmente mais tasks que as listadas no índice local.
+
+As tasks avaliadas nesta frente (`CreateVersion`, `RevertToVersion`, `MergeVersions`, `RestoreRevision`, `DeleteObject`) foram analisadas com base nas informações disponíveis no prompt externo. A leitura da wiki 24612 pode revelar tasks adicionais, parâmetros não documentados na instalação local ou restrições de uso não identificadas até agora.
+
+### Condições
+
+- Pesquisa de inventário — não bloqueante para as decisões registradas acima
+- Útil antes de qualquer implementação concreta de task deste domínio
+- Não requer GeneXus Server: a wiki documenta também o uso local das tasks
+
+### O que buscar na wiki 24612
+
+- Tasks não listadas em `3908.html`
+- Parâmetros adicionais de `CreateVersion`, `RevertToVersion`, `MergeVersions`, `RestoreRevision` e `DeleteObject`
+- Restrições ou pré-condições de uso das tasks em contexto sem GeneXus Server
+- Mecanismo de listagem de revisões de objetos (necessário para `RestoreRevision`)
