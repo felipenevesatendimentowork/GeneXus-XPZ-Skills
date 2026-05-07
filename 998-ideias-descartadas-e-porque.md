@@ -920,3 +920,45 @@ operação como bem-sucedida. O padrão do FBgx18MCP não foi adotado.
 
 **Não reavaliar** salvo evidência de que o GXtest passou a operar sem `Genexus.Server.Tasks.targets`
 e sem licença própria, e que o público-alvo desta frente passou a dispor de licença GXtest ativa.
+
+---
+
+## Domínio Daemons (SpecifierDaemon, GeneratorDaemon, BuildWait)
+
+**Origem:** avaliação de prompt externo sobre domínio Daemons (MSBuild Tasks), 2026-05-07.
+Tasks registradas em `Genexus.Tasks.targets`; `SpecifierDaemon` e `GeneratorDaemon` referenciados
+no `Genexus.msbuild` canônico da instalação oficial.
+
+**O que são:**
+
+`SpecifierDaemon` e `GeneratorDaemon` são processos persistentes de especificação e geração
+que ficam residentes dentro de uma sessão MSBuild com a KB já aberta em memória, reespecificando
+e regenerando objetos sob demanda sem o custo de reabertura a cada ciclo. São aceleradores do
+pipeline de build contínuo — o `Genexus.msbuild` canônico os inicia antes de `SpecifyAll` e
+`Generate`, mantendo-os vivos enquanto a sessão durar.
+
+`BuildWait` é um mecanismo de sincronização: faz um processo MSBuild aguardar a conclusão de
+builds em andamento na mesma sessão antes de prosseguir.
+
+**Por que foram descartados:**
+
+Bloqueio arquitetural: os daemons são aceleradores *intra-sessão*. Eles operam como workers
+dentro de um processo MSBuild que já tem a KB aberta e o handle em memória. Quando aquele
+processo termina, os daemons morrem junto — não ficam ouvindo para uma próxima invocação.
+
+A skill usa `/nodeReuse:false` em todos os wrappers para garantir processo limpo a cada
+chamada — o oposto do que os daemons precisam para ter valor. Além disso, um import muda
+a KB no disco; qualquer estado em memória de um daemon anterior seria stale após a importação.
+
+`BuildWait` tampouco tem aplicação: sem concorrência entre invocações (cada wrapper roda
+isolado com processo limpo), não há builds em paralelo a sincronizar.
+
+O caso `KB_Teste_Grande_A` — MSBuild continuando por longo período após timeout do wrapper —
+também não é explicado pelos daemons. A causa já está documentada: importação de grande
+porte em KB volumosa; o processo MSBuild filho continua até concluir, independentemente do
+timeout do invocador PowerShell.
+
+**Não reavaliar** salvo surgimento de pipeline monolítico de sessão contínua (uma única
+invocação MSBuild cobrindo abertura, import, specify, generate e fechamento da KB) onde
+specify+generate sejam o gargalo dominante — cenário que exigiria reforma estrutural do
+modelo de wrappers isolados adotado nesta frente.
