@@ -66,6 +66,11 @@ Segundos máximos de espera pelo MSBuild. Default 0 = sem timeout.
 Quando excedido, o processo MSBuild é encerrado e o resultado é classificado como
 'timeout em KB grande'. MSBuild pode ainda estar em execução após o encerramento.
 
+.PARAMETER Configuration
+Configuração de build a aplicar antes do BuildAll. Valores válidos: Release, Debug,
+Performance Test. Quando omitido, a configuração ativa da KB é mantida sem alteração.
+Emite SetConfiguration imediatamente antes do BuildAll.
+
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
 #>
@@ -96,6 +101,9 @@ param(
 
     [ValidateSet('true', 'false')]
     [string]$DetailedNavigation = 'false',
+
+    [ValidateSet('Release', 'Debug', 'Performance Test')]
+    [string]$Configuration,
 
     [ValidateSet('true', 'false')]
     [string]$FailIfReorg = 'true',
@@ -257,6 +265,7 @@ function New-MsBuildProjectContent {
     $forceRebuildEscaped       = Escape-Xml -Value $ForceRebuild
     $compileMainsEscaped       = Escape-Xml -Value $CompileMains
     $detailedNavigationEscaped = Escape-Xml -Value $DetailedNavigation
+    $configurationEscaped      = Escape-Xml -Value $Configuration
     $failIfReorgEscaped        = Escape-Xml -Value $EffectiveFailIfReorg
     $doNotExecuteReorgEscaped  = Escape-Xml -Value $EffectiveDoNotExecuteReorg
 
@@ -273,6 +282,7 @@ function New-MsBuildProjectContent {
     <DetailedNavigation>$detailedNavigationEscaped</DetailedNavigation>
     <FailIfReorg>$failIfReorgEscaped</FailIfReorg>
     <DoNotExecuteReorg>$doNotExecuteReorgEscaped</DoNotExecuteReorg>
+    <KBConfiguration>$configurationEscaped</KBConfiguration>
   </PropertyGroup>
 
   <Target Name="CloseOnError">
@@ -292,6 +302,7 @@ function New-MsBuildProjectContent {
     <GetActiveEnvironment CaptureOutput="true">
       <Output TaskParameter="TaskOutput" PropertyName="ActiveEnvironmentOutput" />
     </GetActiveEnvironment>
+    <SetConfiguration Condition="'`$(KBConfiguration)' != ''" Configuration="`$(KBConfiguration)" />
     <BuildAll
         ForceRebuild="`$(ForceRebuild)"
         CompileMains="`$(CompileMains)"
@@ -465,6 +476,7 @@ try {
             exitCode         = 46
             stage            = 'pre-build'
             requestedContext = [ordered]@{
+                Configuration       = $Configuration
                 FailIfReorg         = $FailIfReorg
                 DoNotExecuteReorg   = $DoNotExecuteReorg
                 AllowReorgRequested = $false
@@ -530,6 +542,7 @@ try {
                 ForceRebuild               = $ForceRebuild
                 CompileMains               = $CompileMains
                 DetailedNavigation         = $DetailedNavigation
+                Configuration              = $Configuration
                 EffectiveFailIfReorg       = $FailIfReorg
                 EffectiveDoNotExecuteReorg = $DoNotExecuteReorg
                 AllowReorgRequested        = $AllowReorg.IsPresent
@@ -608,6 +621,7 @@ try {
                     ForceRebuild               = $ForceRebuild
                     CompileMains               = $CompileMains
                     DetailedNavigation         = $DetailedNavigation
+                    Configuration              = $Configuration
                     EffectiveFailIfReorg       = $effectiveFailIfReorg
                     EffectiveDoNotExecuteReorg = $effectiveDoNotExecuteReorg
                     AllowReorgRequested        = $true
@@ -660,6 +674,12 @@ try {
         Add-StrategyTrace -Message ('Timeout configurado: {0} segundos.' -f $TimeoutSeconds)
     } else {
         Add-StrategyTrace -Message 'Sem timeout configurado. MSBuild aguardado por tempo indeterminado.'
+    }
+
+    if ([string]::IsNullOrEmpty($Configuration)) {
+        Add-StrategyTrace -Message 'Configuration nao especificada. Configuracao ativa da KB sera mantida sem alteracao.'
+    } else {
+        Add-StrategyTrace -Message ('Configuration especificada: {0}. SetConfiguration sera emitido imediatamente antes do BuildAll.' -f $Configuration)
     }
 
     $msBuildFilePath = Join-Path $artifactDirectory 'buildall.msbuild'
@@ -731,6 +751,7 @@ try {
             ForceRebuild               = $ForceRebuild
             CompileMains               = $CompileMains
             DetailedNavigation         = $DetailedNavigation
+            Configuration              = $Configuration
             EffectiveFailIfReorg       = $effectiveFailIfReorg
             EffectiveDoNotExecuteReorg = $effectiveDoNotExecuteReorg
             AllowReorgRequested        = $AllowReorg.IsPresent
@@ -785,6 +806,7 @@ catch {
             ForceRebuild               = $ForceRebuild
             CompileMains               = $CompileMains
             DetailedNavigation         = $DetailedNavigation
+            Configuration              = $Configuration
             EffectiveFailIfReorg       = $FailIfReorg
             EffectiveDoNotExecuteReorg = $DoNotExecuteReorg
             AllowReorgRequested        = $AllowReorg.IsPresent

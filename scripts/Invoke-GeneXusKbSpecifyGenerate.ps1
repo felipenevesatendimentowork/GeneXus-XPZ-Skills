@@ -8,8 +8,9 @@ Test-GeneXusMsBuildSetup.ps1, abre a KB em modo headless controlado, posiciona v
 Environment quando informados, executa SpecifyAll seguido de GenerateOnly com parâmetros
 explícitos e fecha a KB. Não compila e não executa reorg.
 
-Classifica o resultado em quatro categorias:
+Classifica o resultado em cinco categorias:
   - specify e generate concluídos
+  - operação concluída, pendente de confirmação funcional
   - erro de specify
   - erro de generate
   - KB inacessível
@@ -336,13 +337,31 @@ function Resolve-BuildStatus {
     param(
         [int]$MsBuildExitCode,
         [bool]$SpecifyDone,
-        [bool]$GenerateDone
+        [bool]$GenerateDone,
+        [string]$StdOutText,
+        [string]$StdErrText
     )
 
-    if ($MsBuildExitCode -eq 0 -and $SpecifyDone -and $GenerateDone) {
+    $alertPatterns = @('Access denied')
+    $foundAlerts = @($alertPatterns | Where-Object {
+        ($StdOutText -match [regex]::Escape($_)) -or ($StdErrText -match [regex]::Escape($_))
+    })
+
+    if ($MsBuildExitCode -eq 0 -and $SpecifyDone -and $GenerateDone -and $foundAlerts.Count -eq 0) {
         return [ordered]@{
             Status   = 'specify e generate concluídos'
             Summary  = 'SpecifyAll e GenerateOnly concluídos sem erro operacional.'
+            ExitCode = 0
+        }
+    }
+
+    if ($MsBuildExitCode -eq 0 -and $SpecifyDone -and $GenerateDone) {
+        foreach ($alert in $foundAlerts) {
+            Add-WarningMessage -Message ('Padrão de alerta em stdout/stderr impede classificação limpa: "{0}".' -f $alert)
+        }
+        return [ordered]@{
+            Status   = 'operação concluída, pendente de confirmação funcional'
+            Summary  = 'SpecifyAll e GenerateOnly concluídos com exitCode 0, mas padrões de alerta detectados em stdout/stderr. Validação funcional necessária antes de concluir sobre o resultado.'
             ExitCode = 0
         }
     }
@@ -467,7 +486,7 @@ try {
         Add-WarningMessage -Message 'Environment solicitado, mas o retorno de GetActiveEnvironment veio vazio.'
     }
 
-    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone
+    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone -StdOutText $stdOutText -StdErrText $stdErrText
 
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
