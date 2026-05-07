@@ -533,3 +533,33 @@ As tasks permanecem registradas no assembly por compatibilidade, mas não têm u
 São código morto de feature descontinuada.
 
 **Não reavaliar** — feature descontinuada pelo próprio GeneXus.
+
+---
+
+## Compile (como script isolado na skill xpz-msbuild-build)
+
+**Origem:** avaliação do domínio build pipeline durante construção da skill
+`xpz-msbuild-build`, 2026-05-06.
+
+**O que é:** task MSBuild oficial (`3908.html`). Com `ObjectName` compila o objeto
+indicado; sem `ObjectName` compila o Developer Menu. Propriedade pública confirmada por
+reflexão do assembly: `ObjectName` (`String`), opcional.
+
+**Por que foi descartada como script independente:**
+
+`Compile` com `ObjectName` exige `Main = true` — mesma restrição de `BuildOne` e `Run`,
+inaplicável para Procedures, SDTs, Domains e Transactions auxiliares que compõem a
+maioria dos XPZs cirúrgicos. `Compile` sem `ObjectName` compila o Developer Menu, que
+não toca diretamente nos objetos importados quando esses não têm `Main = true`.
+
+Portanto, `Compile` isolado não cobre a lacuna de validação pós-import que esta skill
+precisa resolver. Essa lacuna é coberta por `BuildAll`, que compila todos os objetos
+incluindo os importados, independentemente de terem `Main = true`.
+
+Usar `Compile` antes de `SpecifyAll + GenerateOnly` é estruturalmente incorreto: compila
+com especificação anterior ao import, podendo mascarar erros reais. Usar `Compile` após
+`SpecifyAll + GenerateOnly` sem `BuildAll` é caso tão específico (quer compilar mas não
+quer reorg) que não justifica script dedicado neste contexto.
+
+**Não reavaliar** salvo surgimento de XPZ com objeto `Main = true` em que a compilação
+isolada faça sentido como etapa separada do BuildAll.
