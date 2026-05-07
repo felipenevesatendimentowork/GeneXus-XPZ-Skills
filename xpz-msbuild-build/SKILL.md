@@ -174,7 +174,7 @@ não executa por padrão) reorg necessária.
 
 **Categorias de resultado:**
 
-- `compilou limpo` — `BuildAll` concluiu sem erro e sem reorg detectada
+- `compilou limpo` — `BuildAll` concluiu com exitCode 0, sem reorg detectada e sem padrões de erro em stdout/stderr
 - `compilou com erros` — `BuildAll` falhou por erro de compilação
 - `reorg necessária detectada` — `FailIfReorg=true` bloqueou o build; reorg gerada mas
   não executada; usuário deve decidir o próximo passo
@@ -183,6 +183,11 @@ não executa por padrão) reorg necessária.
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
   detectada, mas validação funcional real depende de inspeção na IDE
+
+> **Padrão conhecido:** `dotnet publish` dentro de `GAM\Platforms\*` pode registrar
+> `Access denied` em stdout com exitCode 0. Esse padrão não é erro de compilação GeneXus,
+> mas impede classificar como `compilou limpo` — usar `operação concluída, pendente de
+> confirmação funcional` e listar o padrão encontrado no diagnóstico.
 
 ### Invoke-GeneXusDbImpact.ps1
 
@@ -262,7 +267,10 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
    - resumo de `stderr`
    - caminho do `.msbuild` temporário
    - caminho do log
-9. Classificar o resultado em uma das categorias definidas em EXPECTED INTERFACE
+9. Escanear stdout e stderr por padrões de erro antes de classificar, mesmo quando exitCode = 0:
+   - padrões relevantes: `Access denied`, `error MSB`, `: error `, `FAILED`, stack traces de exceção
+   - se encontrados: registrar no diagnóstico e usar `operação concluída, pendente de confirmação funcional` em lugar de `compilou limpo`
+   Classificar então o resultado em uma das categorias definidas em EXPECTED INTERFACE
 10. Quando o resultado for `reorg necessária detectada`:
     - informar ao usuário sem dramatizar
     - apresentar as três opções:
@@ -303,6 +311,7 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER tratar `exitCode = 0` isolado como confirmação funcional
+- NEVER classificar como `compilou limpo` quando stdout ou stderr contiver padrões de erro (`Access denied`, `error MSB`, `: error `, `FAILED`, stack traces), mesmo que exitCode = 0
 - NEVER executar `Invoke-GeneXusDbReorg.ps1` sem confirmação interativa explícita do usuário, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
 - NEVER emitir `FromModel` ou `Model` em `ImpactDatabaseOnly` sem validação empírica prévia do comportamento desses parâmetros nesta instalação
 - NEVER emitir `SetConfiguration` implicitamente ou inferir o valor de configuração desejado
