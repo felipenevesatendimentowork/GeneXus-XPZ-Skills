@@ -101,6 +101,7 @@ Do NOT use esta skill para:
 - Tratar `ImportKBInformation`, `UpdateFile` e defaults internos de importação/exportação como sensíveis e dependentes da assinatura efetiva da task `Import`
 - Normalizar recortes multiplos de `IncludeItems` e `ExcludeItems` como lista antes de serializar para a task carregada
 - Preservar `importedItems` como lista em qualquer diagnóstico JSON, mesmo quando houver apenas um item
+- Declarar `importação real efetiva provada` apenas quando `importedItems` contiver explicitamente o objeto esperado; `exitCode=0` com `importedItems` ausente ou vazio classifica como `sucesso operacional sem prova de import efetivo` — nunca como import concluído
 - Quando a task carregada não expuser `UpdateFile` nem `ImportKBInformation`, o wrapper de preview deve bloquear esses parâmetros cedo
 - Tratar `Get*Property` como operação de leitura segura, sem efeito sobre a KB
 - Validar `-Level` e `-Name` explicitamente antes de emitir a task; exigir `-Target`
@@ -118,6 +119,7 @@ Do NOT use esta skill para:
 - Responda no idioma do usuário
 - Seja direto sobre estado operacional, riscos e limites
 - Declare quando o resultado é apenas operacional e ainda depende de confirmação funcional
+- Em operações de import, declare o sub-estado explicitamente pelo nome (`importação real efetiva provada`, `sucesso operacional sem prova de import efetivo`, `importação real falhou por source`, etc.) — não deixe o leitor inferir o nível de prova a partir do relato narrativo
 - Quando a rodada for `ensaio metodologico/experimental`, declarar isso nominalmente no resumo e separar:
   - objetivo metodologico da rodada
   - resultado operacional observado
@@ -255,9 +257,14 @@ Parâmetros específicos de importação:
    - artefatos gerados ou consumidos
 12. Classificar o resultado como:
    - `não apto para prosseguir`
-   - `sucesso operacional`
-   - `falha operacional`
-   - `preview apenas`
+   - `importação real efetiva provada` — `importedItems` contém explicitamente o objeto esperado
+   - `sucesso operacional sem prova de import efetivo` — `exitCode=0` mas `importedItems` ausente ou não contém o objeto esperado
+   - `importação real falhou por source` — erro rastreável ao conteúdo do objeto importado
+   - `importação real falhou por envelope` — erro na estrutura ou envelope do XPZ
+   - `importação real falhou sem importedItems` — falha sem trilha de `importedItems` no log
+   - `falha operacional` — falha na camada do wrapper ou do MSBuild antes de atingir a task de import
+   - `preview reconheceu o objeto` — objeto esperado apareceu no retorno do preview
+   - `preview apenas` — preview concluído sem evidência de reconhecimento do objeto esperado
    - `operação concluída, porém pendente de confirmação funcional`
    - quando aplicavel, acumular tambem o marcador narrativo `ensaio metodologico/experimental`, sem substituir a classificacao operacional principal
 13. Recomendar o próximo passo seguro, incluindo reabertura da KB na IDE quando o teste exigir observação posterior
@@ -321,6 +328,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] Importação real só ocorreu com autorização explícita
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
+- [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
 
 ---
 
