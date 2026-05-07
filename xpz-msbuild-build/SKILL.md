@@ -145,12 +145,17 @@ reorg. Mais rápido e mais seguro para o primeiro check após import cirúrgico.
 
 **Categorias de resultado:**
 
-- `specify e generate concluídos` — ambas as etapas passaram sem erro operacional
+- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0 e sem padrões de erro em stdout/stderr
 - `erro de specify` — `SpecifyAll` falhou; objetos com referências inválidas ou inconsistência
 - `erro de generate` — `GenerateOnly` falhou após specify bem-sucedido
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes de qualquer etapa de build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, mas validação
   funcional ainda depende de build completo ou inspeção na IDE
+
+> **Padrão conhecido:** `dotnet publish` dentro de `GAM\Platforms\*` pode registrar
+> `Access denied` em stdout com exitCode 0. Esse padrão não é erro de specify/generate,
+> mas impede classificar como `specify e generate concluídos` — usar `operação concluída,
+> pendente de confirmação funcional` e listar o padrão encontrado no diagnóstico.
 
 ### Invoke-GeneXusKbBuildAll.ps1
 
