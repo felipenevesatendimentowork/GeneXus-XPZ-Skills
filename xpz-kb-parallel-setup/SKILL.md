@@ -383,6 +383,7 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
 - Se `AGENTS.md` local ou `README.md` local declararem timestamps, estado operacional ou observacoes de frescor que conflitem com `kb-source-metadata.md`, `-Query index-metadata` ou com o gate efetivo, tratar isso como memoria local desatualizada; nao declarar a pasta "tudo certo" sem antes apontar a divergencia e oferecer atualizacao dessa memoria
 - Em `auditar_setup`, quando `Test-*KbSetupAudit.ps1` existir, o handoff deve citar nominalmente os blocos consolidados produzidos por esse wrapper (`sync/materializacao`, `indice/gate`, `indice/semantica`, `metadata wrapper`, `empacotamento local`, `estado_operacional_sugerido`) em vez de sintetizar essas dimensoes manualmente; a sintese manual so e aceitavel quando o wrapper estiver ausente
 - O campo `estado_operacional_sugerido` reportado pelo wrapper deve ser confrontado com o estado canonico declarado pela skill; se o wrapper sugerir um estado diferente do estado canonico que a evidencia objetiva da auditoria sustenta, o agente deve declarar o estado canonico correto e explicitar a divergencia — nao silenciar nem adotar o sugerido pelo wrapper sem verificacao
+- No fechamento do setup inicial, informar que `nexa` nao e verificada por esta skill (pertence a outro repositorio) e recomendar `xpz-skills-setup` para auditoria do ecossistema completo
 
 ---
 
@@ -664,6 +665,7 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
    - `A)` o usuario exporta o `.xpz` full pela IDE para `XpzExportadosPelaIDE`, e o agente materializa os XMLs depois
    - `B)` o agente tenta gerar o `.xpz` full a partir da pasta nativa da KB, grava esse `.xpz` em `XpzExportadosPelaIDE` e depois materializa os XMLs
 32. Ao oferecer `A)` e `B)`, declarar que `A)` e o caminho preferencial e normalmente mais rapido, enquanto `B)` tende a demorar mais por depender da trilha via `MSBuild`
+32a. No fechamento do setup inicial, informar ao usuario que esta skill nao verifica a presenca de `nexa` nas ferramentas instaladas: `nexa` pertence a outro repositorio e esta fora do escopo desta skill. Recomendar invocar `xpz-skills-setup` para auditar o ecossistema completo de skills, incluindo `nexa`.
 33. Se o usuario escolher `B)`, usar a skill `xpz-msbuild-import-export` e nao improvisar fluxo alternativo de exportacao
 34. Ao declarar qualquer estado canonico de conclusao bem-sucedido (`pronto_para_primeira_materializacao`, `materializado_e_indice_validado` ou `wrappers_atualizados`), gravar `last_setup_audit_run_at` com o timestamp atual no frontmatter de `kb-source-metadata.md`; nao gravar quando o estado for `bootstrap_incompleto` ou `auditoria_de_empacotamento_pendente`; o valor deve ser ISO 8601 com fuso horario, no mesmo formato de `last_xpz_materialization_run_at`
 
