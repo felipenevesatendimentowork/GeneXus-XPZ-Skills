@@ -120,6 +120,7 @@ Do NOT use esta skill para:
 - Seja direto sobre estado operacional, riscos e limites
 - Declare quando o resultado é apenas operacional e ainda depende de confirmação funcional
 - Em operações de import, declare o sub-estado explicitamente pelo nome (`importação real efetiva provada`, `sucesso operacional sem prova de import efetivo`, `importação real falhou por source`, etc.) — não deixe o leitor inferir o nível de prova a partir do relato narrativo
+- Quando o usuário quiser evidência complementar além de `importedItems`, apresentar as duas opções em paralelo: acionar `xpz-msbuild-build` (headless) ou abrir a KB na IDE e executar o build por lá — ambas são opcionais e o resultado do build não reescreve nem substitui o sub-estado de import já declarado
 - Quando a rodada for `ensaio metodologico/experimental`, declarar isso nominalmente no resumo e separar:
   - objetivo metodologico da rodada
   - resultado operacional observado
@@ -283,7 +284,10 @@ Parâmetros específicos de importação:
    - `preview apenas` — preview concluído sem evidência de reconhecimento do objeto esperado
    - `operação concluída, porém pendente de confirmação funcional`
    - quando aplicavel, acumular tambem o marcador narrativo `ensaio metodologico/experimental`, sem substituir a classificacao operacional principal
-13. Recomendar o próximo passo seguro, incluindo reabertura da KB na IDE quando o teste exigir observação posterior
+13. Recomendar o próximo passo seguro; quando o sub-estado for `importação real efetiva provada` e o usuário quiser evidência complementar, apresentar as duas opções em paralelo:
+   - acionar `xpz-msbuild-build` (headless) — `compilou limpo` ou `specify e generate concluídos` reforçam o handoff sem alterar o sub-estado de import declarado
+   - abrir a KB na IDE e executar o build por lá
+   Recomendar reabertura da KB na IDE quando o teste exigir observação posterior, independentemente da opção de build escolhida
 14. Se a exportação gerou um `.xpz` full para a pasta paralela da KB, declarar explicitamente:
    - caminho do artefato gerado
    - status operacional da exportação
