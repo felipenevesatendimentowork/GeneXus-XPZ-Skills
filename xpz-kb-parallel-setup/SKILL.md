@@ -257,6 +257,15 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - retorna `COLLISION_OK` quando a rodada pretendida ainda nao existe
   - retorna `BLOCK: ...` quando a rodada `nn` ja existir para o mesmo prefixo de frente, com sugestao do proximo `nn` livre
   - deve ser o unico ponto local para decidir se o pacote pode ser gravado ou se a frente deve bloquear por colisao
+- Quando o fluxo iterativo de import+build produzir o sub-estado `importação real efetiva provada, geração de runtime pendente` ou o usuário reportar que o comportamento ainda não mudou após import e build, a checagem de frescor de runtime pode ser executada diretamente pelo script da base compartilhada `scripts\Test-GeneXusRuntimeFreshness.ps1` — não requer wrapper local:
+  - `-KbPath` (obrigatório): caminho da KB GeneXus nativa (onde reside `nav_objs.xml`)
+  - `-ObjectName` (obrigatório): nome do objeto GeneXus a verificar
+  - `-ImportedAt` (obrigatório): timestamp do import como linha de corte (string ISO parseable)
+  - `-ObjectType` (opcional): tipo GeneXus do objeto; reservado para uso futuro
+  - `-GeneratorOutputPath` (opcional): pasta de output do gerador; se omitido, deriva como `<KbPath>\CSharpModel\web` — funciona para gerador C#; outros geradores requerem o parâmetro explícito
+  - `-AsJson` (opcional): emite saída JSON estruturada em vez de texto humano
+  - Status de saída possíveis: `runtime-fresh` (nogenreq + artefatos posteriores ao import), `runtime-stale` (genreq ou artefatos anteriores ao import), `runtime-unknown` (objeto não encontrado em `nav_objs.xml` ou artefatos não localizados)
+  - Somente leitura: não grava nada, não abre a KB, não invoca MSBuild
 - A ausencia isolada de `Test-*KbSourceSanity.ps1` nao impede, por si so, classificar a pasta como tendo camada minima de wrappers para materializacao oficial ou para `KbIntelligence`; ele passa a ser esperado quando a KB adota fluxo local de geracao e empacotamento que dependa desse gate.
 - A ausencia isolada de `Test-*KbPackageCollision.ps1` tambem nao impede, por si so, classificar a pasta como tendo camada minima de wrappers para materializacao oficial ou para `KbIntelligence`; ele passa a ser esperado quando a KB adota fluxo local de empacotamento com `import_file.xml` local.
 - Um helper local de notificacao pode existir como apoio operacional, mas nao substitui os wrappers principais
