@@ -57,9 +57,18 @@ Quando true, gera o script de reorg sem executá-lo. Default: false.
 Ignorado quando FailIfReorg=true porque o build falha antes de chegar à reorg.
 
 .PARAMETER AllowReorg
-Switch. Quando presente, sobrescreve FailIfReorg para false e DoNotExecuteReorg para false,
-e exige confirmação interativa antes de prosseguir. É a única forma autorizada de habilitar
-a execução da reorganização do banco de dados.
+Switch. Quando presente, sobrescreve FailIfReorg para false e DoNotExecuteReorg para false.
+Em modo interativo (sem -ConfirmReorg), exige que o usuário digite 'sim' no terminal antes
+de prosseguir. Em modo não-interativo (com -ConfirmReorg), a confirmação é feita pelo
+chamador via parâmetro. É a única forma autorizada de habilitar a reorganização do banco.
+
+.PARAMETER ConfirmReorg
+Switch. Usado em conjunto com -AllowReorg para dispensar o Read-Host interativo.
+Destina-se exclusivamente a processos desanexados (Start-Process) onde não há terminal
+disponível — por exemplo, quando Watch-GeneXusMsBuildLog.ps1 é executado em paralelo.
+Usar -ConfirmReorg sem -AllowReorg é bloqueado por política (exit 46).
+O chamador é responsável por obter confirmação explícita do usuário humano antes de
+passar -ConfirmReorg — este parâmetro não dispensa a confirmação, apenas muda o canal.
 
 .PARAMETER TimeoutSeconds
 Segundos máximos de espera pelo MSBuild. Default 0 = sem timeout.
@@ -112,6 +121,8 @@ param(
     [string]$DoNotExecuteReorg = 'false',
 
     [switch]$AllowReorg,
+
+    [switch]$ConfirmReorg,
 
     [int]$TimeoutSeconds = 0,
 
@@ -461,10 +472,64 @@ function Resolve-BuildStatus {
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings        = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace   = New-Object System.Collections.Generic.List[string]
+$confirmReorgMode       = $null
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
 
 try {
+    # Gate de segurança: -ConfirmReorg sem -AllowReorg não tem sentido e é bloqueado por política
+    if ($ConfirmReorg.IsPresent -and -not $AllowReorg.IsPresent) {
+        Add-BlockingReason -Reason '-ConfirmReorg so pode ser usado em conjunto com -AllowReorg. Para confirmar reorg interativamente, use apenas -AllowReorg. Para modo nao-interativo, use -AllowReorg -ConfirmReorg.'
+        $blocked = [ordered]@{
+            status           = 'bloqueado por politica de seguranca'
+            summary          = '-ConfirmReorg requer -AllowReorg. Execute novamente com -AllowReorg -ConfirmReorg.'
+            exitCode         = 46
+            stage            = 'pre-build'
+            requestedContext = [ordered]@{
+                Configuration         = $Configuration
+                FailIfReorg           = $FailIfReorg
+                DoNotExecuteReorg     = $DoNotExecuteReorg
+                AllowReorgRequested   = $false
+                AllowReorgConfirmed   = $false
+                ConfirmReorgMode      = $confirmReorgMode
+            }
+            observedContext  = [ordered]@{
+                KbOpen            = $false
+                BuildAllDone      = $false
+                ReorgDetected     = $false
+                TimedOut          = $false
+                MsBuildExitCode   = $null
+            }
+            resolvedPaths    = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $KbPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath          = $resolvedLogPath
+            }
+            pathActions      = [ordered]@{ WorkingDirectory = 'blocked-policy' }
+            artifacts        = [ordered]@{
+                ProbeLogPath     = $null
+                MsBuildFilePath  = $null
+                StdOutPath       = $null
+                StdErrPath       = $null
+                ExecutionLogPath = $resolvedLogPath
+            }
+            blockingReasons  = @($script:BlockingReasons)
+            warnings         = @($script:Warnings)
+            strategyTrace    = @($script:StrategyTrace)
+        }
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
     # Gate de segurança: FailIfReorg=false sem -AllowReorg é bloqueado por política
     if ($FailIfReorg -eq 'false' -and -not $AllowReorg.IsPresent) {
         Add-BlockingReason -Reason 'FailIfReorg=false so pode ser habilitado via -AllowReorg com confirmacao interativa explicita. Execute novamente passando -AllowReorg.'
@@ -478,6 +543,8 @@ try {
                 FailIfReorg         = $FailIfReorg
                 DoNotExecuteReorg   = $DoNotExecuteReorg
                 AllowReorgRequested = $false
+                AllowReorgConfirmed = $false
+                ConfirmReorgMode    = $confirmReorgMode
             }
             observedContext  = [ordered]@{
                 KbOpen            = $false
@@ -545,6 +612,7 @@ try {
                 EffectiveDoNotExecuteReorg = $DoNotExecuteReorg
                 AllowReorgRequested        = $AllowReorg.IsPresent
                 AllowReorgConfirmed        = $false
+                ConfirmReorgMode           = $confirmReorgMode
                 TimeoutSeconds             = $TimeoutSeconds
             }
             observedContext  = [ordered]@{
@@ -594,78 +662,88 @@ try {
     $allowReorgConfirmed        = $false
 
     if ($AllowReorg.IsPresent) {
-        Write-Host ''
-        Write-Host 'AVISO: O parametro -AllowReorg foi especificado.'
-        Write-Host ''
-        Write-Host ('KB alvo:      {0}' -f $resolvedKbPath)
-        Write-Host ('GeneXusDir:   {0}' -f $resolvedGeneXusDir)
-        Write-Host ''
-        Write-Host 'A reorganizacao do banco de dados sera executada se o GeneXus detectar'
-        Write-Host 'alteracoes estruturais pendentes. Esta operacao altera permanentemente'
-        Write-Host 'o esquema do banco de dados e nao pode ser desfeita automaticamente.'
-        Write-Host ''
-        $confirmation = Read-Host 'Confirma a execucao com reorg habilitada? (sim para confirmar, qualquer outra entrada cancela)'
+        if ($ConfirmReorg.IsPresent) {
+            $effectiveFailIfReorg       = 'false'
+            $effectiveDoNotExecuteReorg = 'false'
+            $allowReorgConfirmed        = $true
+            $confirmReorgMode           = 'parameter'
+            Add-StrategyTrace -Message 'AllowReorg confirmado via -ConfirmReorg (modo nao-interativo). FailIfReorg=false, DoNotExecuteReorg=false habilitados.'
+        } else {
+            $confirmReorgMode = 'interactive'
+            Write-Host ''
+            Write-Host 'AVISO: O parametro -AllowReorg foi especificado.'
+            Write-Host ''
+            Write-Host ('KB alvo:      {0}' -f $resolvedKbPath)
+            Write-Host ('GeneXusDir:   {0}' -f $resolvedGeneXusDir)
+            Write-Host ''
+            Write-Host 'A reorganizacao do banco de dados sera executada se o GeneXus detectar'
+            Write-Host 'alteracoes estruturais pendentes. Esta operacao altera permanentemente'
+            Write-Host 'o esquema do banco de dados e nao pode ser desfeita automaticamente.'
+            Write-Host ''
+            $confirmation = Read-Host 'Confirma a execucao com reorg habilitada? (sim para confirmar, qualquer outra entrada cancela)'
 
-        if ($confirmation -notin @('sim', 'SIM', 'Sim', 's', 'S')) {
-            Add-BlockingReason -Reason 'Reorg nao confirmada pelo usuario. Execucao cancelada por seguranca.'
-            $aborted = [ordered]@{
-                status           = 'cancelado pelo usuario'
-                summary          = 'Execucao com reorg nao confirmada pelo usuario. Build cancelado por seguranca.'
-                exitCode         = 47
-                stage            = 'pre-build'
-                requestedContext = [ordered]@{
-                    VersionName                = $VersionName
-                    EnvironmentName            = $EnvironmentName
-                    ForceRebuild               = $ForceRebuild
-                    CompileMains               = $CompileMains
-                    DetailedNavigation         = $DetailedNavigation
-                    Configuration              = $Configuration
-                    EffectiveFailIfReorg       = $effectiveFailIfReorg
-                    EffectiveDoNotExecuteReorg = $effectiveDoNotExecuteReorg
-                    AllowReorgRequested        = $true
-                    AllowReorgConfirmed        = $false
-                    TimeoutSeconds             = $TimeoutSeconds
+            if ($confirmation -notin @('sim', 'SIM', 'Sim', 's', 'S')) {
+                Add-BlockingReason -Reason 'Reorg nao confirmada pelo usuario. Execucao cancelada por seguranca.'
+                $aborted = [ordered]@{
+                    status           = 'cancelado pelo usuario'
+                    summary          = 'Execucao com reorg nao confirmada pelo usuario. Build cancelado por seguranca.'
+                    exitCode         = 47
+                    stage            = 'pre-build'
+                    requestedContext = [ordered]@{
+                        VersionName                = $VersionName
+                        EnvironmentName            = $EnvironmentName
+                        ForceRebuild               = $ForceRebuild
+                        CompileMains               = $CompileMains
+                        DetailedNavigation         = $DetailedNavigation
+                        Configuration              = $Configuration
+                        EffectiveFailIfReorg       = $effectiveFailIfReorg
+                        EffectiveDoNotExecuteReorg = $effectiveDoNotExecuteReorg
+                        AllowReorgRequested        = $true
+                        AllowReorgConfirmed        = $false
+                        ConfirmReorgMode           = $confirmReorgMode
+                        TimeoutSeconds             = $TimeoutSeconds
+                    }
+                    observedContext  = [ordered]@{
+                        ActiveVersion     = $null
+                        ActiveEnvironment = $null
+                        KbOpen            = $false
+                        BuildAllDone      = $false
+                        ReorgDetected     = $false
+                        TimedOut          = $false
+                        MsBuildExitCode   = $null
+                    }
+                    resolvedPaths    = [ordered]@{
+                        GeneXusDir       = $resolvedGeneXusDir
+                        MsBuildPath      = $resolvedMsBuildPath
+                        KbPath           = $resolvedKbPath
+                        WorkingDirectory = $probeStage.Diagnostic.resolvedPaths.WorkingDirectory
+                        LogPath          = $resolvedLogPath
+                    }
+                    pathActions      = $probeStage.Diagnostic.pathActions
+                    artifacts        = [ordered]@{
+                        ProbeLogPath     = $probeLogPath
+                        MsBuildFilePath  = $null
+                        StdOutPath       = $null
+                        StdErrPath       = $null
+                        ExecutionLogPath = $resolvedLogPath
+                    }
+                    blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
+                    warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
+                    strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
                 }
-                observedContext  = [ordered]@{
-                    ActiveVersion     = $null
-                    ActiveEnvironment = $null
-                    KbOpen            = $false
-                    BuildAllDone      = $false
-                    ReorgDetected     = $false
-                    TimedOut          = $false
-                    MsBuildExitCode   = $null
+                $abortedJson = ConvertTo-JsonText -InputObject $aborted
+                if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+                    Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $abortedJson
                 }
-                resolvedPaths    = [ordered]@{
-                    GeneXusDir       = $resolvedGeneXusDir
-                    MsBuildPath      = $resolvedMsBuildPath
-                    KbPath           = $resolvedKbPath
-                    WorkingDirectory = $probeStage.Diagnostic.resolvedPaths.WorkingDirectory
-                    LogPath          = $resolvedLogPath
-                }
-                pathActions      = $probeStage.Diagnostic.pathActions
-                artifacts        = [ordered]@{
-                    ProbeLogPath     = $probeLogPath
-                    MsBuildFilePath  = $null
-                    StdOutPath       = $null
-                    StdErrPath       = $null
-                    ExecutionLogPath = $resolvedLogPath
-                }
-                blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
-                warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
-                strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
+                Write-Output $abortedJson
+                exit 47
             }
-            $abortedJson = ConvertTo-JsonText -InputObject $aborted
-            if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
-                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $abortedJson
-            }
-            Write-Output $abortedJson
-            exit 47
+
+            $effectiveFailIfReorg       = 'false'
+            $effectiveDoNotExecuteReorg = 'false'
+            $allowReorgConfirmed        = $true
+            Add-StrategyTrace -Message 'AllowReorg confirmado pelo usuario interativamente. FailIfReorg=false, DoNotExecuteReorg=false habilitados.'
         }
-
-        $effectiveFailIfReorg       = 'false'
-        $effectiveDoNotExecuteReorg = 'false'
-        $allowReorgConfirmed        = $true
-        Add-StrategyTrace -Message 'AllowReorg confirmado pelo usuario. FailIfReorg=false, DoNotExecuteReorg=false habilitados.'
     }
 
     if ($TimeoutSeconds -gt 0) {
@@ -762,6 +840,7 @@ try {
             EffectiveDoNotExecuteReorg = $effectiveDoNotExecuteReorg
             AllowReorgRequested        = $AllowReorg.IsPresent
             AllowReorgConfirmed        = $allowReorgConfirmed
+            ConfirmReorgMode           = $confirmReorgMode
             TimeoutSeconds             = $TimeoutSeconds
         }
         observedContext  = [ordered]@{
@@ -817,6 +896,7 @@ catch {
             EffectiveDoNotExecuteReorg = $DoNotExecuteReorg
             AllowReorgRequested        = $AllowReorg.IsPresent
             AllowReorgConfirmed        = $false
+            ConfirmReorgMode           = $confirmReorgMode
             TimeoutSeconds             = $TimeoutSeconds
         }
         resolvedPaths    = [ordered]@{

@@ -196,7 +196,13 @@ não executa por padrão) reorg necessária.
 - `-FailIfReorg` (Boolean, default `true` — bloqueia build se houver reorg pendente)
 - `-DoNotExecuteReorg` (Boolean, default `false`)
 - `-AllowReorg` (switch — quando presente, define `FailIfReorg=false` e
-  `DoNotExecuteReorg=false`; exige confirmação interativa antes de prosseguir)
+  `DoNotExecuteReorg=false`; em modo interativo exige que o usuário digite `sim` no
+  terminal; em modo não-interativo requer `-ConfirmReorg`)
+- `-ConfirmReorg` (switch — usado em conjunto com `-AllowReorg` para dispensar o
+  `Read-Host` interativo; destina-se a processos desanexados onde não há terminal
+  disponível, como quando `Watch-GeneXusMsBuildLog.ps1` roda em paralelo; proibido
+  sem `-AllowReorg`; o chamador é responsável por confirmar com o usuário humano
+  antes de passar este parâmetro)
 - `-Configuration` (String, opcional — valores válidos: `Release`, `Debug`,
   `Performance Test`; quando informado, emite `SetConfiguration` imediatamente antes
   do `BuildAll`; quando omitido, a configuração ativa da KB é mantida sem alteração)
@@ -211,6 +217,13 @@ não executa por padrão) reorg necessária.
   executando; distinguir timeout do invocador de falha real do MSBuild antes de concluir;
   usar `Watch-GeneXusMsBuildLog.ps1` com o PID do processo e o caminho do log para
   acompanhar a execução em andamento sem depender do chat
+
+> **Padrão de orquestração para builds longos com monitor em paralelo:**
+> Quando `Watch-GeneXusMsBuildLog.ps1` for usado em paralelo com um build de KB grande,
+> o chamador deve iniciar `Invoke-GeneXusKbBuildAll.ps1` como processo desanexado via
+> `Start-Process pwsh`. Nesse caso, `Read-Host` não tem terminal disponível. Use
+> `-AllowReorg -ConfirmReorg` juntos — nunca redirecione stdin como workaround.
+> O chamador é responsável por confirmar com o usuário humano antes de lançar o processo.
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
   detectada, mas validação funcional real depende de inspeção na IDE
@@ -359,6 +372,9 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER executar reorg sem autorização explícita do usuário
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê
+- NEVER passar `-ConfirmReorg` sem `-AllowReorg` — combinação bloqueada por política (exit 46)
+- NEVER usar `-ConfirmReorg` sem ter obtido confirmação explícita do usuário humano antes
+  de lançar o processo — o parâmetro muda o canal de confirmação, não dispensa a confirmação
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER tratar `exitCode = 0` isolado como confirmação funcional
 - NEVER classificar como `compilou limpo` quando stdout ou stderr contiver padrões de erro (`Access denied`, `error MSB`, `: error `, `FAILED`, stack traces), mesmo que exitCode = 0
