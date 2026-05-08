@@ -208,7 +208,9 @@ não executa por padrão) reorg necessária.
 - `reorg necessária detectada` — `FailIfReorg=true` bloqueou o build; reorg gerada mas
   não executada; usuário deve decidir o próximo passo
 - `timeout em KB grande` — wrapper encerrou por timeout mas MSBuild pode ainda estar
-  executando; distinguir timeout do invocador de falha real do MSBuild antes de concluir
+  executando; distinguir timeout do invocador de falha real do MSBuild antes de concluir;
+  usar `Watch-GeneXusMsBuildLog.ps1` com o PID do processo e o caminho do log para
+  acompanhar a execução em andamento sem depender do chat
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
   detectada, mas validação funcional real depende de inspeção na IDE

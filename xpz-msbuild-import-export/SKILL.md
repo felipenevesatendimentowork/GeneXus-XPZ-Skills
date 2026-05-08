@@ -160,7 +160,7 @@ Arquivos de referência e quando carregar:
 
 ## EXPECTED INTERFACE
 
-Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Test-GeneXusKbConsistency.ps1` e `Test-GeneXusImportFileEnvelope.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
+Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Test-GeneXusKbConsistency.ps1`, `Test-GeneXusImportFileEnvelope.ps1` e `Watch-GeneXusMsBuildLog.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
 
 Estado atual da materialização:
 
@@ -171,6 +171,7 @@ Estado atual da materialização:
 - `Invoke-GeneXusXpzImport.ps1`: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado para validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB
+- `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; usar quando o invocador encerrar por timeout em KB grande para acompanhar o MSBuild ainda em execução sem depender do chat
 
 Scripts nesta frente:
 
@@ -193,6 +194,11 @@ Scripts nesta frente:
   - parâmetros opcionais: `-AsJson`
   - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `nao apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
   - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
+- `Watch-GeneXusMsBuildLog.ps1`
+  - status atual: implementado
+  - objetivo: monitorar incrementalmente o log de uma execução headless em andamento; encerra sozinho quando o processo termina; usar especialmente em importações de KB grande onde o invocador pode encerrar por timeout antes do MSBuild concluir
+  - parâmetros obrigatórios: `-Pid`, `-LogPath`
+  - parâmetros opcionais: `-MonitorLog`, `-IntervalSeconds` (default 5), `-SilenceThresholdSeconds` (default 120)
 - `Get-GeneXusKbProperty.ps1`
   - status atual: implementado
   - objetivo: leitura de propriedade em qualquer nível da KB sem alterar nenhum dado

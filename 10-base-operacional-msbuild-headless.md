@@ -598,10 +598,15 @@ Scripts propostos:
   - objetivo: exportar `XPZ` com parâmetros explícitos
 - `Invoke-GeneXusXpzImport.ps1`
   - objetivo: executar importação real apenas em fase já autorizada de teste controlado
+- `Watch-GeneXusMsBuildLog.ps1`
+  - objetivo: monitorar incrementalmente o log de uma execução headless em andamento, sem depender do chat para polling; encerra sozinho quando o processo termina
+  - parâmetros obrigatórios: `-Pid`, `-LogPath`
+  - parâmetros opcionais: `-MonitorLog`, `-IntervalSeconds` (default 5), `-SilenceThresholdSeconds` (default 120)
 
 Estado atual da materialização adicional:
 
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de `XPZ` com parâmetros explícitos e diagnóstico em `JSON`
+- `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; destaca fases do GeneXus (Open, Specify, Generate, Compile, BuildAll, Reorg, Validating subtype group, Close), detecta silêncio prolongado e encerra sozinho quando o processo termina
 
 Parâmetros transversais esperados:
 
