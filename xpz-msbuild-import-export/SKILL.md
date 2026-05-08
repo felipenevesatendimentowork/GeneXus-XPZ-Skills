@@ -119,8 +119,9 @@ Do NOT use esta skill para:
 - Responda no idioma do usuário
 - Seja direto sobre estado operacional, riscos e limites
 - Declare quando o resultado é apenas operacional e ainda depende de confirmação funcional
-- Em operações de import, declare o sub-estado explicitamente pelo nome (`importação real efetiva provada`, `sucesso operacional sem prova de import efetivo`, `importação real falhou por source`, etc.) — não deixe o leitor inferir o nível de prova a partir do relato narrativo
+- Em operações de import, declare o sub-estado explicitamente pelo nome (`importação real efetiva provada`, `sucesso operacional sem prova de import efetivo`, `importação real efetiva provada, efeito não confirmado na IDE`, `importação real efetiva provada, geração de runtime pendente`, `importação real falhou por source`, etc.) — não deixe o leitor inferir o nível de prova a partir do relato narrativo
 - Quando o usuário quiser evidência complementar além de `importedItems`, apresentar as duas opções em paralelo: acionar `xpz-msbuild-build` (headless) ou abrir a KB na IDE e executar o build por lá — ambas são opcionais e o resultado do build não reescreve nem substitui o sub-estado de import já declarado
+- Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado e o usuário reportar que o comportamento ainda não mudou, oferecer explicitamente a `checagem de frescor de runtime` como próximo passo nomeado antes de sugerir nova edição; declarar nominalmente o que será verificado: `nav_objs.xml`, NVG e timestamps dos artefatos gerados; se a checagem indicar artefatos de versão anterior, classificar como `importação real efetiva provada, geração de runtime pendente` e propor reabertura + rebuild antes de qualquer nova edição
 - Quando a rodada for `ensaio metodologico/experimental`, declarar isso nominalmente no resumo e separar:
   - objetivo metodologico da rodada
   - resultado operacional observado
@@ -224,7 +225,7 @@ Parâmetros transversais esperados:
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
-- `-ObjectList`
+- `-ObjectList` — lista de objetos para exportação seletiva; para múltiplos objetos, separar entradas com ponto-e-vírgula (`;`) no formato `Tipo:Nome`; exemplo: `Procedure:ProcA;WebPanel:WPB;Transaction:TrC`; após a exportação, verificar o `.xpz` gerado para confirmar que todos os objetos solicitados estão presentes no pacote; quando exportar um único objeto, o formato `Tipo:Nome` continua válido sem separador
 - `-DependencyType`
 - `-ReferenceType`
 - `-ExportKbInfo`
@@ -288,6 +289,7 @@ Parâmetros específicos de importação:
    - `não apto para prosseguir`
    - `importação real efetiva provada` — `importedItems` contém explicitamente o objeto esperado
    - `importação real efetiva provada, efeito não confirmado na IDE` — `importedItems` contém o objeto esperado, mas build ou execução na IDE ainda exibe comportamento da versão anterior; verificar se KB foi reaberta e se build foi executado após reabertura antes de suspeitar de falha de import
+   - `importação real efetiva provada, geração de runtime pendente` — `importedItems` contém o objeto esperado, build foi executado após reabertura, mas artefatos de runtime ainda refletem versão anterior; indicadores: objeto em `nav_objs.xml` sem `lastUpdate` posterior ao import, NVG gerando saída da versão anterior, timestamp dos artefatos gerados anterior ao timestamp do import; tratar como camada de diagnóstico separada do sub-estado de import e do diagnóstico de IDE desatualizada; diagnosticar pela checagem de frescor de runtime (somente leitura) antes de propor nova edição
    - `sucesso operacional sem prova de import efetivo` — `exitCode=0` mas `importedItems` ausente ou não contém o objeto esperado
    - `importação real falhou por source` — erro rastreável ao conteúdo do objeto importado
    - `importação real falhou por envelope` — erro na estrutura ou envelope do XPZ
@@ -305,6 +307,12 @@ Parâmetros específicos de importação:
    - IDE ainda carregando versão anterior: KB não foi reaberta desde o import, ou foi reaberta mas build não foi executado depois
    - Sintomas concretos de IDE desatualizada: mesmo erro persiste após reabertura + rebuild, propriedades do objeto exibem data/versão anterior ao import, output gerado é idêntico ao da rodada anterior
    - Nenhum desses sintomas invalida o sub-estado de import já declarado — o diagnóstico de IDE desatualizada é camada separada
+   Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado após reabertura da KB e o usuário reportar que o comportamento ainda não mudou, oferecer a `checagem de frescor de runtime` como trilha de diagnóstico nomeada antes de sugerir nova edição:
+   - Verificar `nav_objs.xml`: confirmar se o objeto importado aparece com `lastUpdate` posterior ao timestamp do import
+   - Consultar NVG: confirmar se o navegador de objetos reflete a versão importada
+   - Comparar timestamps dos artefatos gerados (`.cs`, `.aspx`, ou equivalente da instalação) com o timestamp do import
+   - Se qualquer indicador mostrar artefato de versão anterior: classificar como `importação real efetiva provada, geração de runtime pendente` e propor reabertura da KB seguida de novo build antes de qualquer nova edição
+   - Essa checagem é somente leitura, não invasiva e não altera o sub-estado de import já declarado
 14. Se a exportação gerou um `.xpz` full para a pasta paralela da KB, declarar explicitamente:
    - caminho do artefato gerado
    - status operacional da exportação
@@ -370,6 +378,9 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
 - [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
 - [ ] Quando o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito na IDE, o diagnóstico de IDE desatualizada foi tratado como camada separada — não como revisão do sub-estado de import
+- [ ] Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado e o usuário reportar que o comportamento ainda não mudou, a `checagem de frescor de runtime` foi oferecida como próximo passo nomeado antes de sugerir nova edição
+- [ ] O sub-estado `importação real efetiva provada, geração de runtime pendente` foi aplicado quando artefatos de runtime (`nav_objs.xml`, NVG ou timestamps de artefatos gerados) ainda refletiam versão anterior após build confirmado
+- [ ] Quando `-ObjectList` foi usado com múltiplos objetos, o formato `Tipo:Nome` separado por `;` foi documentado ou validado; e o `.xpz` gerado foi verificado para confirmar presença de todos os objetos solicitados
 
 ---
 
