@@ -29,9 +29,12 @@ Tasks avaliadas e descartadas nesta skill estão documentadas em
 
 Orquestre o pipeline de build do GeneXus via `MSBuild` com parâmetros explícitos,
 classificação rastreável de resultado e bloqueio de reorg por padrão. Use
-`Invoke-GeneXusKbSpecifyGenerate.ps1` para verificação leve pós-import e
-`Invoke-GeneXusKbBuildAll.ps1` para validação completa. Nunca execute reorg sem
-autorização explícita do usuário.
+`Invoke-GeneXusKbSpecifyGenerate.ps1` para verificação pós-import — menos invasiva que
+`BuildAll` quando não há alterações estruturais pendentes no banco, mas **capaz de
+disparar reorg real** quando o modelo as contém. Use `Invoke-GeneXusKbBuildAll.ps1`
+para validação completa. Nunca execute reorg sem autorização explícita do usuário.
+Quando houver evidência de alteração estrutural de atributo no import recente, exigir
+confirmação explícita do usuário antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`.
 
 ## PATH RESOLUTION
 
@@ -69,6 +72,13 @@ Do NOT use esta skill para:
 
 - Usar [10-base-operacional-msbuild-headless](../10-base-operacional-msbuild-headless.md)
   como base de infraestrutura compartilhada com `xpz-msbuild-import-export`
+- Antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`, avaliar o contexto do import
+  recente em busca de sinais de alteração estrutural com impacto em banco:
+  - qualquer objeto do tipo `Attribute:` presente em `importedItems` do log de import
+  - mudança de tamanho, tipo, precisão ou subtipo de atributo mencionada pelo usuário
+  - resultado `reorg detectada ou executada` em execução anterior desta sessão
+  Se qualquer sinal estiver presente, exibir aviso explícito e exigir a frase de
+  confirmação `entendo que haverá reorg e concordo que prossiga` antes de executar
 - Tratar `C:\Program Files (x86)` como estritamente somente leitura
 - Garantir que logs, temporários, `.msbuild` e artefatos sejam gerados fora de
   `C:\Program Files (x86)`
@@ -124,8 +134,11 @@ Dois scripts PowerShell, seguindo o mesmo padrão de `xpz-msbuild-import-export`
 
 ### Invoke-GeneXusKbSpecifyGenerate.ps1
 
-Verificação leve: executa `SpecifyAll` seguido de `GenerateOnly`. Sem compilação, sem
-reorg. Mais rápido e mais seguro para o primeiro check após import cirúrgico.
+Executa `SpecifyAll` seguido de `GenerateOnly`. Sem compilação explícita. Mais rápido
+que `BuildAll` para o primeiro check após import cirúrgico — mas **pode disparar
+reorganização real de banco de dados** quando a KB tem alterações estruturais pendentes,
+pois `SpecifyAll` executa reorg internamente nesse caso. Ver gate pré-execução em
+WORKFLOW e nota de comportamento crítico abaixo.
 
 **Parâmetros transversais:**
 
@@ -145,12 +158,22 @@ reorg. Mais rápido e mais seguro para o primeiro check após import cirúrgico.
 
 **Categorias de resultado:**
 
-- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0 e sem padrões de erro em stdout/stderr
+- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0, stderr vazio e sem padrões de alerta em stdout
+- `reorg detectada ou executada` — padrão `Reorganiza` encontrado em stdout; `SpecifyAll` disparou reorganização real de banco de dados; não declarar sucesso; apresentar ao usuário e aguardar instrução explícita
+- `operação concluída, pendente de confirmação funcional` — exitCode 0, mas impedimentos detectados: stderr não vazio, padrões de alerta (`Access denied`) ou eventos pós-build em stdout
 - `erro de specify` — `SpecifyAll` falhou; objetos com referências inválidas ou inconsistência
 - `erro de generate` — `GenerateOnly` falhou após specify bem-sucedido
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes de qualquer etapa de build
-- `operação concluída, pendente de confirmação funcional` — exitCode 0, mas validação
-  funcional ainda depende de build completo ou inspeção na IDE
+
+> **Comportamento crítico conhecido — SpecifyAll não é leve quando há alterações estruturais pendentes:**
+> A task `SpecifyAll` do GeneXus executa internamente: Database Impact Analysis,
+> geração de `ReorganizationScript.txt` e `bldReorganization.cs`, **reorganização real
+> do banco** (`gxexec bldReorganization.cs`), especificação, segunda geração e
+> **eventos pós-build** configurados na KB (ex.: `start cmd`, deploy automático).
+> Esse comportamento é intrínseco à task quando o modelo tem alterações estruturais
+> pendentes e independe de qualquer parâmetro do wrapper. `SpecifyAll` não expõe
+> `FailIfReorg` nem equivalente — ao contrário de `BuildAll`. A classificação
+> `reorg detectada ou executada` sinaliza este cenário como bloqueante.
 
 > **Padrão conhecido:** `dotnet publish` dentro de `GAM\Platforms\*` pode registrar
 > `Access denied` em stdout com exitCode 0. Esse padrão não é erro de specify/generate,
@@ -252,8 +275,21 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
    realizar o probe agora — esta skill não substitui a validação de ambiente
 3. Confirmar que `C:\Program Files (x86)` será tratada como somente leitura
 4. Identificar o objetivo:
-   - verificação leve pós-import cirúrgico → `Invoke-GeneXusKbSpecifyGenerate.ps1`
+   - verificação pós-import cirúrgico → `Invoke-GeneXusKbSpecifyGenerate.ps1`
    - validação completa incluindo compilação → `Invoke-GeneXusKbBuildAll.ps1`
+4a. Se o objetivo for `Invoke-GeneXusKbSpecifyGenerate.ps1`, avaliar sinais de alteração
+    estrutural no contexto do import recente:
+    - `importedItems` do log de import contém qualquer objeto `Attribute:` → sinal presente
+    - usuário mencionou mudança de tamanho, tipo, precisão ou subtipo de atributo → sinal presente
+    - execução anterior nesta sessão retornou `reorg detectada ou executada` → sinal presente
+    Se qualquer sinal estiver presente:
+    - exibir aviso: "Esta execução pode disparar reorganização real de banco de dados,
+      pois o import recente contém alterações estruturais em atributo. A task SpecifyAll
+      do GeneXus executa reorg internamente quando o modelo tem mudanças estruturais
+      pendentes. Para prosseguir, confirme com a frase exata:"
+    - `entendo que haverá reorg e concordo que prossiga`
+    - aguardar a frase exata do usuário — não aceitar paráfrases ou confirmações genéricas
+    - só então executar o script
 4b. Se o usuário informar `-Configuration`:
     - confirmar que o valor é `Release`, `Debug` ou `Performance Test`
     - emitir `SetConfiguration` como step imediatamente anterior ao `BuildAll`
@@ -272,8 +308,11 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
    - resumo de `stderr`
    - caminho do `.msbuild` temporário
    - caminho do log
-9. Escanear stdout e stderr por padrões de erro antes de classificar, mesmo quando exitCode = 0:
-   - padrões relevantes: `Access denied`, `error MSB`, `: error `, `FAILED`, stack traces de exceção
+9. Escanear stdout e stderr por padrões de erro e risco antes de classificar, mesmo quando exitCode = 0:
+   - padrão bloqueante máximo: `Reorganiza` em stdout → status `reorg detectada ou executada`; não declarar sucesso; informar ao usuário e aguardar instrução
+   - eventos pós-build: linhas `start c:` ou `start cmd` em stdout → registrar como warning de processos externos disparados
+   - stderr não vazio: qualquer conteúdo → registrar como warning; impede `specify e generate concluídos`
+   - demais padrões relevantes: `Access denied`, `error MSB`, `: error `, `FAILED`, stack traces de exceção
    - se encontrados: registrar no diagnóstico e usar `operação concluída, pendente de confirmação funcional` em lugar de `compilou limpo`
    Classificar então o resultado em uma das categorias definidas em EXPECTED INTERFACE
 10. Quando o resultado for `reorg necessária detectada`:
@@ -298,9 +337,12 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 - [ ] Ambiente validado por probe antes do build
 - [ ] `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory` e `LogPath` foram
       explicitados
+- [ ] Quando o objetivo era `Invoke-GeneXusKbSpecifyGenerate.ps1`, os sinais de alteração estrutural do import recente foram avaliados antes de executar
+- [ ] Quando havia sinal de alteração estrutural, a confirmação com a frase exata foi exigida e obtida antes de executar
 - [ ] `FailIfReorg=true` foi mantido como default em `BuildAll`, salvo instrução explícita
 - [ ] Reorg só foi autorizada após confirmação explícita do usuário
 - [ ] Quando `reorg necessária detectada`, as três opções foram apresentadas ao usuário
+- [ ] Quando `reorg detectada ou executada` (pós-SpecifyAll), o resultado foi apresentado ao usuário sem ser classificado como sucesso
 - [ ] `Invoke-GeneXusDbImpact.ps1` foi executado antes de `Invoke-GeneXusDbReorg.ps1` quando o objetivo era inspecionar o impacto
 - [ ] `Invoke-GeneXusDbReorg.ps1` recebeu confirmação interativa explícita, mesmo quando precedida de `ImpactDatabaseOnly`
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
@@ -317,6 +359,10 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER tratar `exitCode = 0` isolado como confirmação funcional
 - NEVER classificar como `compilou limpo` quando stdout ou stderr contiver padrões de erro (`Access denied`, `error MSB`, `: error `, `FAILED`, stack traces), mesmo que exitCode = 0
+- NEVER classificar como `specify e generate concluídos` quando stdout contiver padrão `Reorganiza` — o status correto é `reorg detectada ou executada`
+- NEVER tratar stderr não vazio como irrelevante — qualquer conteúdo em stderr deve ser registrado como warning e impede classificação como `specify e generate concluídos`
+- NEVER chamar `Invoke-GeneXusKbSpecifyGenerate.ps1` quando houver sinal de alteração estrutural de atributo no import recente sem a confirmação explícita do usuário com a frase `entendo que haverá reorg e concordo que prossiga`
+- NEVER aceitar paráfrases ou confirmações genéricas no lugar da frase exata de confirmação de reorg
 - NEVER executar `Invoke-GeneXusDbReorg.ps1` sem confirmação interativa explícita do usuário, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
 - NEVER emitir `FromModel` ou `Model` em `ImpactDatabaseOnly` sem validação empírica prévia do comportamento desses parâmetros nesta instalação
 - NEVER emitir `SetConfiguration` implicitamente ou inferir o valor de configuração desejado

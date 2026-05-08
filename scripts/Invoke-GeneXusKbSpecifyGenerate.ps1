@@ -342,12 +342,43 @@ function Resolve-BuildStatus {
         [string]$StdErrText
     )
 
+    # Padrão bloqueante de maior prioridade: reorg real executada dentro do SpecifyAll.
+    # SpecifyAll pode executar Database Impact Analysis, gerar bldReorganization.cs e
+    # executar a reorg internamente quando há alterações estruturais pendentes no banco.
+    # Esse comportamento é intrínseco à task GeneXus e independe de flags do wrapper.
+    if ($StdOutText -match 'Reorganiza') {
+        Add-WarningMessage -Message 'Padrão "Reorganiza" detectado em stdout: SpecifyAll executou reorganização real de banco de dados. Confirmar com o usuário se a reorg era esperada e autorizada antes de declarar qualquer sucesso.'
+        return [ordered]@{
+            Status   = 'reorg detectada ou executada'
+            Summary  = 'SpecifyAll disparou reorganização real de banco de dados (padrão "Reorganiza" encontrado em stdout). Este comportamento é intrínseco à task GeneXus quando há alterações estruturais pendentes. Não declarar sucesso sem confirmação explícita do usuário.'
+            ExitCode = 43
+        }
+    }
+
+    # Eventos pós-build detectados (start c:, start cmd): KB configurada com ações
+    # pós-build que disparam processos externos. Registrar como warning mesmo quando
+    # a classificação principal for bem-sucedida.
+    $postBuildLines = @($StdOutText -split "`r?`n" | Where-Object { $_ -match '^\s+start (c:|cmd)' })
+    if ($postBuildLines.Count -gt 0) {
+        foreach ($evtLine in $postBuildLines) {
+            Add-WarningMessage -Message ('Evento pós-build detectado em stdout: "{0}". A KB disparou processos externos durante o SpecifyAll.' -f $evtLine.Trim())
+        }
+    }
+
+    # Stderr não vazio: qualquer conteúdo em stderr é sinal de risco, independente do exitCode.
+    $stderrNonEmpty = -not [string]::IsNullOrWhiteSpace($StdErrText)
+    if ($stderrNonEmpty) {
+        Add-WarningMessage -Message ('stderr não vazio: conteúdo presente impediu classificação limpa. Inspecionar stderr antes de concluir sobre o resultado.')
+    }
+
     $alertPatterns = @('Access denied')
     $foundAlerts = @($alertPatterns | Where-Object {
         ($StdOutText -match [regex]::Escape($_)) -or ($StdErrText -match [regex]::Escape($_))
     })
 
-    if ($MsBuildExitCode -eq 0 -and $SpecifyDone -and $GenerateDone -and $foundAlerts.Count -eq 0) {
+    $hasImpediment = ($foundAlerts.Count -gt 0) -or $stderrNonEmpty -or ($postBuildLines.Count -gt 0)
+
+    if ($MsBuildExitCode -eq 0 -and $SpecifyDone -and $GenerateDone -and -not $hasImpediment) {
         return [ordered]@{
             Status   = 'specify e generate concluídos'
             Summary  = 'SpecifyAll e GenerateOnly concluídos sem erro operacional.'
@@ -361,7 +392,7 @@ function Resolve-BuildStatus {
         }
         return [ordered]@{
             Status   = 'operação concluída, pendente de confirmação funcional'
-            Summary  = 'SpecifyAll e GenerateOnly concluídos com exitCode 0, mas padrões de alerta detectados em stdout/stderr. Validação funcional necessária antes de concluir sobre o resultado.'
+            Summary  = 'SpecifyAll e GenerateOnly concluídos com exitCode 0, mas impedimentos detectados em stdout/stderr (stderr não vazio, padrões de alerta ou eventos pós-build). Validação funcional necessária antes de concluir sobre o resultado.'
             ExitCode = 0
         }
     }
@@ -533,6 +564,12 @@ try {
     }
 
     $json = ConvertTo-JsonText -InputObject $diagnostic
+
+    # Fallback: gravar sempre no diretório de artefatos, independente de $resolvedLogPath.
+    # Garante rastreabilidade mesmo quando o chamador for interrompido antes de ler o JSON.
+    $artifactResultPath = Join-Path $artifactDirectory 'specifygenerate-result.json'
+    [System.IO.File]::WriteAllText($artifactResultPath, $json + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
+
     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json
     Write-Output $json
     exit $buildStatus.ExitCode
