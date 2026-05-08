@@ -57,6 +57,7 @@ Use esta skill para:
 - configurar o modo de build antes de `BuildAll` via `SetConfiguration` (valores: `Release`, `Debug`, `Performance Test`)
 - classificar resultado de build em categorias operacionais explícitas
 - apoiar decisão do usuário sobre o próximo passo após import
+- resolver sub-estado `importação real efetiva provada, geração de runtime pendente` declarado por `xpz-msbuild-import-export` — quando import está provado mas artefatos de runtime ainda refletem versão anterior, executar build é o passo que atualiza os artefatos gerados; `specify e generate concluídos` ou `compilou limpo` confirmam que o runtime passou a refletir a versão importada
 
 Do NOT use esta skill para:
 - executar reorg sem autorização explícita do usuário
