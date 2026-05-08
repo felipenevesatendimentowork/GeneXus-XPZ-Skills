@@ -242,6 +242,7 @@ Reference files and when to load them:
    - This declaration must come from the user's intent or the front's declared scope — not from reading the workspace first
    - If the expected object list is unclear or has not been declared in this conversation → ask the user before proceeding to step 5
    - Record the declared list as the `round spec` for this round; it is the committed delivery target before the workspace is inspected
+   - The declared round spec is also the authoritative source of `objetos-foco` for any `xpz-sync` invoked in the same session for this front
 5. When the task is packaging, list active XMLs only inside the current front folder and treat them as the candidate batch
    - After listing, verify that the workspace matches the round spec declared in step 4b:
      - Object in round spec but absent from workspace → report the gap explicitly; do NOT silently proceed as if the object were already present
