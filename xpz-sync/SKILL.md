@@ -270,6 +270,7 @@ Os wrappers seguem esta convenção de parâmetros:
     - se o pacote tiver `Source` parcial, separar claramente `sync de objetos aceito` de `refresh de metadado parcial` e preservar os valores estáveis já conhecidos
     - se houver relatorio da primeira materializacao e outro de reprocessamento confirmatorio ou conferencia full, nao misturar os papeis no handoff; identificar explicitamente qual arquivo representa a criacao/atualizacao do acervo e qual arquivo representa apenas verificacao posterior
     - se o `XPZ` oficial da KB trouxer objetos adicionais fora do foco imediato da frente, reportar isso como inesperado para a frente atual, mas tratar como possível mudança paralela legítima vinda da IDE/KB até evidência em contrário
+    - quando o contexto da conversa identificar uma frente ativa com objetos-foco conhecidos (usuário declarou quais objetos está trabalhando ou o contexto da frente é claro), perguntar ou confirmar os objetos esperados antes de executar o sync quando essa informação ainda não tiver sido declarada na conversa; após o sync, estruturar sempre o handoff com as três partes, independentemente de `-ExpectedItems` estar disponível no wrapper: `objetos-foco que voltaram`, `objetos-foco que não voltaram` e `retorno oficial adicional da KB`
     - se `-ExpectedItems` tiver sido informado, classificar explicitamente `itens esperados que voltaram`, `itens esperados que nao voltaram` e `retorno oficial adicional da KB`
     - se `-ExpectedItems` tiver sido informado, emitir tambem um resumo humano curto no console/handoff, sem alarmismo e sem tratar adicionais oficiais ou esperados ausentes como falha automatica
     - se a rodada tiver precisado rerun sem `-ExpectedItems` por divergencia
@@ -291,6 +292,7 @@ Os wrappers seguem esta convenção de parâmetros:
     - se houve falha de opcional comparativo por divergencia wrapper/engine,
       declarar o parametro afetado, o rerun sem ele e que isso nao bloqueou o
       sync principal
+    - quando o contexto identificar uma frente ativa, declarar explicitamente: `objetos-foco que voltaram`, `objetos-foco que não voltaram` e `retorno oficial adicional da KB` — mesmo quando `-ExpectedItems` não foi passado ou não está disponível no wrapper
 20. O resumo Git do item anterior e apenas informativo; nao autoriza `git add`, `commit` ou `push`
 21. Se o usuario nao pedir fechamento Git de forma explicita, o fluxo deve terminar no handoff tecnico e, no maximo, sugerir proximos passos sem executar publicacao
 
@@ -368,3 +370,4 @@ XPZ/XML, nao apenas a ultima mudanca material detectada nos XMLs.
 - NUNCA deixar `kb-source-metadata.md` perder valores estáveis conhecidos porque o `XPZ` veio com `Source` vazio ou incompleto
 - NUNCA classificar automaticamente como erro de processo, contaminacao indevida ou violacao da trilha o simples fato de um `XPZ` oficial vindo da KB trazer objetos adicionais alem do foco da frente
 - NUNCA misturar no mesmo commit da frente atual mudancas paralelas sem decisao explicita so porque aparecem no mesmo workspace
+- NUNCA omitir a estrutura de três partes (`objetos-foco que voltaram`, `objetos-foco que não voltaram`, `retorno oficial adicional da KB`) no handoff quando o contexto da conversa identificar uma frente ativa com objetos-foco conhecidos — isso é obrigatório independentemente de `-ExpectedItems` estar disponível no wrapper
