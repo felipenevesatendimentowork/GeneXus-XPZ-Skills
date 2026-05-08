@@ -206,6 +206,12 @@ não executa por padrão) reorg necessária.
 - `-Configuration` (String, opcional — valores válidos: `Release`, `Debug`,
   `Performance Test`; quando informado, emite `SetConfiguration` imediatamente antes
   do `BuildAll`; quando omitido, a configuração ativa da KB é mantida sem alteração)
+- `-MonitorLogPath` (String, opcional — caminho do arquivo gravado pelo parâmetro
+  `-MonitorLog` de `Watch-GeneXusMsBuildLog.ps1`; quando fornecido e o arquivo existir
+  após o build, o script extrai os timestamps das fases internas (`iniciado`/`terminado`)
+  e popula `timing.phases` no JSON de resultado; sem este parâmetro, `timing.phases`
+  fica vazio mas `timing.probeDurationSeconds`, `timing.msbuildDurationSeconds` e
+  `timing.totalDurationSeconds` são sempre gravados)
 
 **Categorias de resultado:**
 
@@ -224,6 +230,11 @@ não executa por padrão) reorg necessária.
 > `Start-Process pwsh`. Nesse caso, `Read-Host` não tem terminal disponível. Use
 > `-AllowReorg -ConfirmReorg` juntos — nunca redirecione stdin como workaround.
 > O chamador é responsável por confirmar com o usuário humano antes de lançar o processo.
+>
+> Para obter timing por fase no JSON de resultado, defina um caminho para o log do
+> monitor e conecte os dois scripts: passe `-MonitorLog <caminho>` ao Watch e o mesmo
+> `<caminho>` como `-MonitorLogPath` ao build. O build parseia esse arquivo após
+> terminar e popula `timing.phases` com os timestamps de cada fase interna.
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
   detectada, mas validação funcional real depende de inspeção na IDE
