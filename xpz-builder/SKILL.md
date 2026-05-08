@@ -237,7 +237,16 @@ Reference files and when to load them:
      - front folder = `ObjetosGeradosParaImportacaoNaKbNoGenexus\NomeCurto_GUID_YYYYMMDD\`
      - if that front folder already exists for the current front, reuse it
      - that front folder is the active unit of the work front
+4b. Before listing the workspace, declare the round spec for this packaging round:
+   - State explicitly which objects (name + type) are expected in the candidate batch for this round
+   - This declaration must come from the user's intent or the front's declared scope — not from reading the workspace first
+   - If the expected object list is unclear or has not been declared in this conversation → ask the user before proceeding to step 5
+   - Record the declared list as the `round spec` for this round; it is the committed delivery target before the workspace is inspected
 5. When the task is packaging, list active XMLs only inside the current front folder and treat them as the candidate batch
+   - After listing, verify that the workspace matches the round spec declared in step 4b:
+     - Object in round spec but absent from workspace → report the gap explicitly; do NOT silently proceed as if the object were already present
+     - Object in workspace but absent from round spec → classify as potential contaminant; do NOT silently absorb into the batch
+   - If workspace and round spec diverge, require explicit reconciliation before continuing to step 6
 6. Before any package write, execute the deterministic collision gate for the intended `FrontPrefix + nn` in `PacotesGeradosParaImportacaoNaKbNoGenexus`:
    - Prefer the local wrapper `Test-*KbPackageCollision.ps1` when the KB/repository publishes it
    - The wrapper should delegate to the shared engine `scripts\Test-XpzPackageCollision.ps1`
@@ -607,6 +616,8 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] `ObjetosDaKbEmXml` was treated as read-only official snapshot
 - [ ] Current front folder `NomeCurto_GUID_YYYYMMDD` was created or reused explicitly
 - [ ] Active front folder format was validated before packaging; if local rules require `NomeCurto_GUID_YYYYMMDD`, nonconforming folders were reported and realigned before package generation
+- [ ] Round spec was declared (object names + types) before listing the workspace in step 4b — the declaration came from user intent, not from reading the workspace first
+- [ ] After listing the workspace, the round spec was verified against the workspace content, and any divergence (missing object or unexpected extra) was reconciled explicitly before proceeding to the collision gate
 - [ ] When the task was packaging, active XMLs were listed from the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus`
 - [ ] Candidate batch was isolated; no workspace contamination remained
 - [ ] When the front required a new unitary delta, the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus` was isolated explicitly before packaging
@@ -681,6 +692,7 @@ Ao clonar tela customizada WorkWithPlus:
 
 ## CONSTRAINTS
 
+- NEVER list the workspace and infer the candidate batch before declaring the round spec (object names + types expected in this round); the round spec must come from user intent or front scope — not from what happens to be in the workspace folder
 - NEVER invent a Part type GUID not present in the selected template
 - NEVER affirm import or build success — state "requires external IDE validation"
 - NEVER treat `runtime`, `Import File Load`, `Import`, and `Specification` as interchangeable evidence
