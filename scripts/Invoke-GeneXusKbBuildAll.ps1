@@ -80,6 +80,13 @@ Configuração de build a aplicar antes do BuildAll. Valores válidos: Release, 
 Performance Test. Quando omitido, a configuração ativa da KB é mantida sem alteração.
 Emite SetConfiguration imediatamente antes do BuildAll.
 
+.PARAMETER MonitorLogPath
+Caminho opcional do log gravado por Watch-GeneXusMsBuildLog.ps1.
+Quando fornecido e o arquivo existir após o build, o script parseia os marcadores
+'iniciado'/'terminado' do log do monitor para extrair os timestamps de cada fase
+interna do build e popular 'timing.phases' no JSON de resultado.
+Sem este parâmetro, 'timing.phases' fica vazio mas probe/msbuild/total são registrados.
+
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
 #>
@@ -125,6 +132,8 @@ param(
     [switch]$ConfirmReorg,
 
     [int]$TimeoutSeconds = 0,
+
+    [string]$MonitorLogPath,
 
     [switch]$VerboseLog
 )
@@ -413,6 +422,69 @@ function Get-TextSummary {
     return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 30)
 }
 
+function Get-NowIso {
+    return [DateTime]::Now.ToString('yyyy-MM-ddTHH:mm:sszzz')
+}
+
+function Get-DurationSeconds {
+    param([string]$StartIso, [string]$EndIso)
+    if ([string]::IsNullOrWhiteSpace($StartIso) -or [string]::IsNullOrWhiteSpace($EndIso)) {
+        return $null
+    }
+    return [int]([DateTime]::Parse($EndIso) - [DateTime]::Parse($StartIso)).TotalSeconds
+}
+
+function Get-PhaseTimings {
+    param([string]$MonitorLogPath)
+
+    if ([string]::IsNullOrWhiteSpace($MonitorLogPath) -or
+        -not (Test-Path -LiteralPath $MonitorLogPath -PathType Leaf)) {
+        return @()
+    }
+
+    $lines  = [System.IO.File]::ReadAllLines($MonitorLogPath)
+    $starts = [ordered]@{}
+    $phases = New-Object System.Collections.Generic.List[object]
+
+    foreach ($line in $lines) {
+        # Formato Watch: [yyyy-MM-dd HH:mm:ss] ========== <fase> iniciado/terminado ==========
+        if ($line -match '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+={3,}\s+(.+?)\s+(iniciado|terminado)\s+={3,}') {
+            $ts    = $Matches[1]
+            $name  = $Matches[2].Trim()
+            $state = $Matches[3]
+            if ($state -eq 'iniciado') {
+                $starts[$name] = $ts
+            } elseif ($state -eq 'terminado' -and $starts.Contains($name)) {
+                $phases.Add([ordered]@{
+                    name            = $name
+                    start           = $starts[$name]
+                    end             = $ts
+                    durationSeconds = Get-DurationSeconds -StartIso $starts[$name] -EndIso $ts
+                })
+                $starts.Remove($name)
+            }
+        }
+    }
+
+    return @($phases)
+}
+
+function Get-TimingSection {
+    $scriptEnd = Get-NowIso
+    return [ordered]@{
+        scriptStart            = $script:TimingLog['scriptStart']
+        probeStart             = $script:TimingLog['probeStart']
+        probeEnd               = $script:TimingLog['probeEnd']
+        probeDurationSeconds   = Get-DurationSeconds -StartIso $script:TimingLog['probeStart']  -EndIso $script:TimingLog['probeEnd']
+        msbuildStart           = $script:TimingLog['msbuildStart']
+        msbuildEnd             = $script:TimingLog['msbuildEnd']
+        msbuildDurationSeconds = Get-DurationSeconds -StartIso $script:TimingLog['msbuildStart'] -EndIso $script:TimingLog['msbuildEnd']
+        scriptEnd              = $scriptEnd
+        totalDurationSeconds   = Get-DurationSeconds -StartIso $script:TimingLog['scriptStart']  -EndIso $scriptEnd
+        phases                 = Get-PhaseTimings -MonitorLogPath $MonitorLogPath
+    }
+}
+
 function Resolve-BuildStatus {
     param(
         [int]$MsBuildExitCode,
@@ -472,9 +544,11 @@ function Resolve-BuildStatus {
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings        = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace   = New-Object System.Collections.Generic.List[string]
+$script:TimingLog       = [ordered]@{}
 $confirmReorgMode       = $null
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
+$script:TimingLog['scriptStart'] = Get-NowIso
 
 try {
     # Gate de segurança: -ConfirmReorg sem -AllowReorg não tem sentido e é bloqueado por política
@@ -519,6 +593,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
+        $blocked['timing'] = Get-TimingSection
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -572,6 +647,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
+        $blocked['timing'] = Get-TimingSection
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -589,7 +665,9 @@ try {
 
     $artifactDirectory = New-ArtifactDirectory
     $probeLogPath = Join-Path $artifactDirectory 'probe-stage.json'
+    $script:TimingLog['probeStart'] = Get-NowIso
     $probeStage = Invoke-ProbeStage -ProbeLogPath $probeLogPath
+    $script:TimingLog['probeEnd'] = Get-NowIso
 
     Add-StrategyTrace -Message ('Probe executado antes do build com exitCode {0}.' -f $probeStage.ExitCode)
 
@@ -644,6 +722,7 @@ try {
             strategyTrace    = @($probeDiagnostic.strategyTrace + $script:StrategyTrace)
         }
 
+        $blocked['timing'] = Get-TimingSection
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
@@ -731,7 +810,8 @@ try {
                     warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
                     strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
                 }
-                $abortedJson = ConvertTo-JsonText -InputObject $aborted
+                $aborted['timing'] = Get-TimingSection
+            $abortedJson = ConvertTo-JsonText -InputObject $aborted
                 if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
                     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $abortedJson
                 }
@@ -771,7 +851,9 @@ try {
     [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-Utf8NoBomEncoding))
     Add-StrategyTrace -Message ('Arquivo .msbuild temporario gerado em: {0}' -f $msBuildFilePath)
 
+    $script:TimingLog['msbuildStart'] = Get-NowIso
     $msBuildResult   = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
+    $script:TimingLog['msbuildEnd'] = Get-NowIso
     $msBuildExitCode = $msBuildResult.ExitCode
     $timedOut        = $msBuildResult.TimedOut
 
@@ -874,6 +956,7 @@ try {
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
     }
 
+    $diagnostic['timing'] = Get-TimingSection
     $json = ConvertTo-JsonText -InputObject $diagnostic
     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json
     Write-Output $json
@@ -923,6 +1006,7 @@ catch {
         strategyTrace    = @($script:StrategyTrace)
     }
 
+    $failure['timing'] = Get-TimingSection
     $failureJson = ConvertTo-JsonText -InputObject $failure
     try {
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
