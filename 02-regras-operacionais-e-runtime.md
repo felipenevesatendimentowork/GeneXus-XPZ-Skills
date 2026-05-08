@@ -2176,3 +2176,11 @@ Funcionar como resumo decisório sem esconder os limites da evidência.
 - Hipótese: mesmo com anexos representativos, `WorkWithForWeb` continua entre os tipos mais sensiveis a `pattern`, `parent` transacional e contexto gerado; por isso, casos muito distantes do molde documentado ainda podem pedir paralelo bruto mais proximo
 - Hipótese: as familias `F3` e `F4` de `Transaction` ainda ficam mais seguras com molde bruto comparavel adicional, por terem densidade estrutural maior e ainda nao terem anexo completo proprio
 - Inferência forte: para o envelope externo do XPZ observado, a especificacao desta propria base ja e suficiente para evitar inventar `Objects.xml` isolado ou hierarquia externa sem prova local
+
+## Validacao funcional pos-import: objetos com insumo externo oficial
+
+- `Regra operacional`: quando o XPZ importado contiver objeto que consome insumo externo oficial (planilha, arquivo de dados, configuracao externa), a prova de import nao encerra a frente funcional.
+- `Regra operacional`: o agente deve declarar explicitamente que o import provou que o objeto entrou na KB com a estrutura esperada, mas nao provou que o objeto se comporta corretamente com o insumo real.
+- `Regra operacional`: a confirmacao funcional exige teste com o insumo oficial na versao correta e no formato esperado pelo objeto; esse teste e responsabilidade da frente funcional, nao da trilha de import.
+- `Regra operacional`: essa camada complementa os sub-estados ja definidos na skill `xpz-msbuild-import-export` — em particular `importacao real efetiva provada` — com consciencia explicita do insumo externo como dimensao de validacao separada.
+- `Regra operacional`: ausencia de teste funcional com insumo real nao invalida o sub-estado de import ja declarado; sao camadas independentes.
