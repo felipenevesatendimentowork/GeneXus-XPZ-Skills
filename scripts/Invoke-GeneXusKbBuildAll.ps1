@@ -294,14 +294,14 @@ function New-MsBuildProjectContent {
       <Output TaskParameter="TaskOutput" PropertyName="OpenOutput" />
     </OpenKnowledgeBase>
     <Message Text="__KB_OPEN__=true" Importance="High" />
-    <SetActiveVersion Condition="'`$(KBVersion)' != ''" VersionName="`$(KBVersion)" />
-    <SetActiveEnvironment Condition="'`$(KBEnvironment)' != ''" EnvironmentName="`$(KBEnvironment)" />
     <GetActiveVersion CaptureOutput="true">
       <Output TaskParameter="TaskOutput" PropertyName="ActiveVersionOutput" />
     </GetActiveVersion>
     <GetActiveEnvironment CaptureOutput="true">
       <Output TaskParameter="TaskOutput" PropertyName="ActiveEnvironmentOutput" />
     </GetActiveEnvironment>
+    <SetActiveVersion Condition="'`$(KBVersion)' != ''" VersionName="`$(KBVersion)" />
+    <SetActiveEnvironment Condition="'`$(KBEnvironment)' != ''" EnvironmentName="`$(KBEnvironment)" />
     <SetConfiguration Condition="'`$(KBConfiguration)' != ''" Configuration="`$(KBConfiguration)" />
     <BuildAll
         ForceRebuild="`$(ForceRebuild)"
@@ -314,8 +314,6 @@ function New-MsBuildProjectContent {
     </BuildAll>
     <Message Text="__BUILDALL_DONE__=true" Importance="High" />
     <Message Text="__OPEN_OUTPUT__=`$(OpenOutput)" Importance="High" />
-    <Message Text="__ACTIVE_VERSION__=`$(ActiveVersionOutput)" Importance="High" />
-    <Message Text="__ACTIVE_ENVIRONMENT__=`$(ActiveEnvironmentOutput)" Importance="High" />
     <CloseKnowledgeBase />
     <OnError ExecuteTargets="CloseOnError" />
   </Target>
@@ -711,10 +709,18 @@ try {
     $combinedOutput = $stdOutText + $stdErrText
     $reorgDetected  = [bool]($combinedOutput -match '(?i)reorgan')
 
+    # Detecta falha de SetActiveVersion (versão informada não existe na KB)
+    $setVersionFailed = [bool]($stdOutText -match 'Set Active Version falhou')
+
     $activeVersionOutput     = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
     $activeEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'"
 
-    if (-not [string]::IsNullOrWhiteSpace($VersionName) -and [string]::IsNullOrWhiteSpace($activeVersionOutput)) {
+    if ($setVersionFailed) {
+        $actualVersion = if (-not [string]::IsNullOrWhiteSpace($activeVersionOutput)) { $activeVersionOutput } else { '(desconhecida)' }
+        Add-BlockingReason -Reason ("SetActiveVersion falhou — a versao '{0}' nao existe nesta KB. A versao ativa no momento da abertura era '{1}'. Para usar a versao ativa, omita o parametro -VersionName." -f $VersionName, $actualVersion)
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($VersionName) -and [string]::IsNullOrWhiteSpace($activeVersionOutput) -and -not $setVersionFailed) {
         Add-WarningMessage -Message 'Versao solicitada, mas o retorno de GetActiveVersion veio vazio.'
     }
     if (-not [string]::IsNullOrWhiteSpace($EnvironmentName) -and [string]::IsNullOrWhiteSpace($activeEnvironmentOutput)) {
