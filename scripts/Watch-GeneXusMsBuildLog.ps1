@@ -81,12 +81,31 @@ $script:phasePatterns = @(
 
 # ── Estado do monitor ─────────────────────────────────────────────────────────
 
-$script:monitorStream = $null
+$script:monitorStream    = $null
+$script:statusLineActive = $false   # true enquanto a linha de silencio esta na tela sem \n
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+function Confirm-StatusLine {
+    # Se ha uma linha de status ao vivo (sem \n), fecha-a antes de imprimir conteudo real.
+    if ($script:statusLineActive) {
+        Write-Host ''
+        $script:statusLineActive = $false
+    }
+}
+
+function Write-Status {
+    # Imprime/atualiza a linha de silencio in-place no console. Nao vai para o arquivo.
+    param([string]$Message, [string]$Color = 'DarkGray')
+    $line    = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
+    $padded  = $line.PadRight([Math]::Max(0, [Console]::WindowWidth - 1))
+    Write-Host "`r$padded" -NoNewline -ForegroundColor $Color
+    $script:statusLineActive = $true
+}
+
 function Write-Mon {
     param([string]$Message, [string]$Color = 'Gray')
+    Confirm-StatusLine
     $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
     Write-Host $line -ForegroundColor $Color
     if ($null -ne $script:monitorStream) {
@@ -216,7 +235,7 @@ try {
                 Write-Mon "SILENCIO ha ${SilenceThresholdSeconds}s — $procStatus" 'DarkYellow'
             } else {
                 $procLabel = if ($isAlive) { 'ativo' } else { 'encerrado' }
-                Write-Mon "PID $ProcessId $procLabel | sem novas linhas | silencio: ${silenceSec}s" 'DarkGray'
+                Write-Status "PID $ProcessId $procLabel | sem novas linhas | silencio: ${silenceSec}s"
             }
         }
 
