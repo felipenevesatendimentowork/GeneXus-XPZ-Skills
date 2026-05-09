@@ -97,6 +97,7 @@ Regras de uso:
 - `Regra operacional`: com gate de indice bloqueado, leitura pontual so e aceitavel para diagnostico minimo da incompatibilidade em documentacao local, estrutura, wrappers e metadados operacionais; nao montar, testar existencia, listar ou abrir caminho de XML oficial de objeto para responder pergunta de negocio.
 - `Regra operacional`: o gate do indice deve ser sequencial e atomico; nao testar, listar ou abrir caminho filho de uma camada antes de validar a camada pai, como `KbIntelligence\kb-intelligence.sqlite` antes de `KbIntelligence`.
 - `Regra operacional`: se o wrapper local documentado de consulta do indice estiver ausente, nao listar `scripts` nem procurar wrappers alternativos, backups ou nomes parecidos; tratar como defasagem da pasta paralela e oferecer atualizacao via setup.
+- `Regra operacional`: scripts do motor com parâmetros totalmente dinâmicos por execução não requerem wrapper local na pasta paralela — devem ser chamados diretamente pelo caminho absoluto do motor; wrapper local só se justifica quando há parâmetros estáticos da KB a encapsular.
 
 ## Evidencia complementar de gerador local
 
