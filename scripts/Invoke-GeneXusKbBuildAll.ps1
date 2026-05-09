@@ -491,7 +491,17 @@ function Get-PhaseTimings {
 }
 
 function Get-TimingSection {
+    # scriptEnd capturado antes do sleep para nao inflar totalDurationSeconds
     $scriptEnd = Get-NowIso
+
+    # Aguarda Watch drenar as linhas finais do log antes de ler as fases.
+    # Watch dorme 2s apos detectar que o processo morreu e so entao grava os
+    # marcadores restantes. Com intervalo de polling de 3s, o pior caso e
+    # ~5s apos o termino do MSBuild. 6s garante a janela completa.
+    if (-not [string]::IsNullOrWhiteSpace($MonitorLogPath)) {
+        Start-Sleep -Seconds 6
+    }
+
     return [ordered]@{
         scriptStart            = $script:TimingLog['scriptStart']
         probeStart             = $script:TimingLog['probeStart']
