@@ -35,6 +35,9 @@ disparar reorg real** quando o modelo as contém. Use `Invoke-GeneXusKbBuildAll.
 para validação completa. Nunca execute reorg sem autorização explícita do usuário.
 Quando houver evidência de alteração estrutural de atributo no import recente, exigir
 confirmação explícita do usuário antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`.
+Ao executar `BuildAll`, sempre lançar `Watch-GeneXusMsBuildLog.ps1` em janela visível
+separada (`Start-Process pwsh -NoExit`) antes de aguardar o resultado — seguir a seção
+**ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**.
 
 ## PATH RESOLUTION
 
@@ -488,7 +491,8 @@ Campos relevantes:
    - apresentar ao usuário o que reorg significa neste contexto
    - exigir confirmação explícita antes de prosseguir
    - só então emitir `FailIfReorg=false` e `DoNotExecuteReorg=false`
-8. Executar o script escolhido e capturar:
+8. Executar o script escolhido seguindo a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**
+   (para `BuildAll`: processo desanexado + Watch em janela visível + `run_in_background`) e capturar:
    - `exitCode`
    - resumo de `stdout`
    - resumo de `stderr`
