@@ -18,6 +18,11 @@ Classifica o resultado em seis categorias operacionais:
 Por padrão, FailIfReorg=true bloqueia o build se reorganização for necessária, sem executá-la.
 Reorg só ocorre quando -AllowReorg é passado e o usuário confirma interativamente.
 
+Quando -MonitorLogPath é fornecido, o script aguarda 6 segundos após o MSBuild terminar
+antes de ler o arquivo — tempo necessário para Watch-GeneXusMsBuildLog.ps1 drenar as
+linhas finais do log (Watch dorme 2s após detectar que o processo morreu; com intervalo
+de polling de 3-5s, o pior caso é ~5s). Esse delay não é contabilizado em totalDurationSeconds.
+
 .PARAMETER KbPath
 Caminho da KB a ser usada no build.
 

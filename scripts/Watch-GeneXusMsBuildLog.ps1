@@ -9,10 +9,20 @@
     encerra automaticamente quando o processo termina.
 
     Nao depende do chat para polling — roda como processo independente no
-    terminal do Windows.
+    terminal do Windows. Recomenda-se iniciar com -NoExit para que a janela
+    permita ao usuario ler o output apos o build e fecha-la manualmente.
 
     Fases destacadas: Open, Specify, Generate, Compile, BuildAll, Reorgan/Reorg,
     Validating subtype group, Close.
+
+    Durante periodos sem nova linha no log, exibe um contador de silencio
+    in-place (sobrescrevendo a ultima linha da tela com \r) — sem gerar nova
+    linha a cada poll. Apenas fases, alertas e mensagens de estado geram linhas
+    novas. O arquivo -MonitorLog nao recebe o contador de silencio.
+
+    Quando usado com Invoke-GeneXusKbBuildAll.ps1, passar o mesmo caminho como
+    -MonitorLog aqui e -MonitorLogPath no build permite que o JSON de resultado
+    inclua timing.phases com duracao de cada fase interna.
 
 .PARAMETER ProcessId
     PID do processo MSBuild a monitorar. Alias: -Pid.
@@ -33,15 +43,24 @@
     Padrao: 120. Intervalo valido: 30-3600.
 
 .EXAMPLE
-    .\Watch-GeneXusMsBuildLog.ps1 -Pid 12345 -LogPath "C:\Temp\msbuild.stdout.log"
+    .\Watch-GeneXusMsBuildLog.ps1 -Pid 12345 -LogPath "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-exemplo\msbuild.stdout.log"
 
 .EXAMPLE
-    .\Watch-GeneXusMsBuildLog.ps1 `
-        -Pid 12345 `
-        -LogPath "C:\Temp\msbuild.stdout.log" `
-        -MonitorLog "C:\Temp\monitor.log" `
-        -IntervalSeconds 5 `
-        -SilenceThresholdSeconds 180
+    # Iniciado pelo agente com -NoExit para janela ficar aberta apos o build:
+    Start-Process pwsh -ArgumentList @(
+        '-NoExit', '-NoProfile', '-File', '.\Watch-GeneXusMsBuildLog.ps1',
+        '-Pid', '12345',
+        '-LogPath',    'C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-exemplo\msbuild.stdout.log',
+        '-MonitorLog', 'C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-exemplo\monitor.log',
+        '-IntervalSeconds', '5',
+        '-SilenceThresholdSeconds', '180'
+    )
+
+.NOTES
+    Nao usar C:\Temp\ como destino de LogPath ou MonitorLog quando o script e
+    iniciado como processo filho desanexado (Start-Process) — processos filhos
+    nao tem acesso de escrita a C:\Temp\ neste ambiente. Usar pasta sob o
+    repositorio da skill (ex.: GeneXus-XPZ-Skills\Temp\).
 #>
 
 [CmdletBinding()]
