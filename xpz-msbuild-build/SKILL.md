@@ -94,8 +94,10 @@ Do NOT use esta skill para:
   - efeito funcional observado depois no GeneXus
 - Classificar o resultado de cada execução em uma das categorias definidas em WORKFLOW
 - Registrar `stdout`, `stderr`, `exitCode`, caminho do `.msbuild` temporário e log
-- Recomendar reabertura da KB na IDE após builds relevantes para observar warning ou
-  efeito colateral de host
+- Recomendar reabertura da KB na IDE somente quando houver warning ou efeito colateral
+  detectado no build (ex: extensão ausente, `Access denied`, stderr não vazio), ou quando
+  o contexto da solicitação indicar que o objetivo é validar a aplicação em execução —
+  não mencionar IDE nem URL em builds sem warning onde apenas "faça um build" foi pedido
 - Exigir confirmação explícita antes de qualquer execução de reorg
 - Tratar `ImpactDatabaseOnly` como pré-requisito de inspeção antes de autorizar `ReorganizeOnly` explícito
 - Exigir confirmação interativa obrigatória antes de `ReorganizeOnly`, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
@@ -514,8 +516,10 @@ Campos relevantes:
     - aguardar instrução explícita
     - se o usuário escolher `Invoke-GeneXusDbImpact.ps1`: executar, apresentar resultado e caminho do script; só prosseguir para reorg após nova instrução explícita do usuário
     - se o usuário escolher `Invoke-GeneXusDbReorg.ps1`: exigir confirmação interativa mesmo que `ImpactDatabaseOnly` já tenha rodado na mesma sessão
-11. Recomendar reabertura da KB na IDE quando o build for relevante ou quando houver
-    warning estrutural (ex: extensão ausente)
+11. Recomendar reabertura da KB na IDE somente se houver warning ou efeito colateral
+    detectado no build (ex: extensão ausente, `Access denied`, stderr não vazio), ou se
+    o contexto indicar que o objetivo é validar a aplicação em execução; não mencionar
+    IDE nem URL quando o pedido foi apenas "faça um build" e o resultado foi limpo
 12. Não declarar sucesso funcional apenas por `exitCode = 0`
 
 ---
