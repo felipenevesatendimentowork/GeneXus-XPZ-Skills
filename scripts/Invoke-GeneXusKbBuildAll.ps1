@@ -557,9 +557,14 @@ function Resolve-BuildStatus {
     }
 
     if ($MsBuildExitCode -eq 0 -and $BuildAllDone) {
+        $cleanSummary = if ($ReorgDetected -and $AllowReorgConfirmed) {
+            'BuildAll concluiu sem erro. Reorganizacao do banco executada com sucesso.'
+        } else {
+            'BuildAll concluiu sem erro e sem reorg detectada.'
+        }
         return [ordered]@{
             Status   = 'compilou limpo'
-            Summary  = 'BuildAll concluiu sem erro e sem reorg detectada.'
+            Summary  = $cleanSummary
             ExitCode = 0
         }
     }
