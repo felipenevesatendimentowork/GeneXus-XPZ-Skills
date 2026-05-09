@@ -442,7 +442,23 @@ function Get-PhaseTimings {
         return @()
     }
 
-    $lines  = [System.IO.File]::ReadAllLines($MonitorLogPath)
+    # Leitura com FileShare.ReadWrite — Watch pode ainda estar com o arquivo aberto
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $fs     = [System.IO.FileStream]::new(
+        $MonitorLogPath,
+        [System.IO.FileMode]::Open,
+        [System.IO.FileAccess]::Read,
+        [System.IO.FileShare]::ReadWrite
+    )
+    $reader = [System.IO.StreamReader]::new($fs, [System.Text.Encoding]::UTF8)
+    try {
+        $l = $reader.ReadLine()
+        while ($null -ne $l) { $lines.Add($l); $l = $reader.ReadLine() }
+    } finally {
+        $reader.Dispose()
+        $fs.Dispose()
+    }
+
     $starts = [ordered]@{}
     $phases = New-Object System.Collections.Generic.List[object]
 
