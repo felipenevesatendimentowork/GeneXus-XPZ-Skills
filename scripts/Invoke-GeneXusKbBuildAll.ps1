@@ -466,19 +466,21 @@ function Get-PhaseTimings {
         foreach ($line in $lines) {
             # Formato Watch: [yyyy-MM-dd HH:mm:ss] ========== <fase> iniciado/terminado ==========
             if ($line -match '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+={3,}\s+(.+?)\s+(iniciado|terminado)\s+={3,}') {
-                $ts    = $Matches[1]
-                $name  = $Matches[2].Trim()
-                $state = $Matches[3]
+                $ts       = $Matches[1]
+                # Normaliza espacos para fechar pares com grafia inconsistente do GeneXus
+                # ex.: "Get Active Version" (iniciado) / "GetActiveVersion" (terminado)
+                $normName = ($Matches[2].Trim()) -replace '\s+', ''
+                $state    = $Matches[3]
                 if ($state -eq 'iniciado') {
-                    $starts[$name] = $ts
-                } elseif ($state -eq 'terminado' -and $starts.Contains($name)) {
+                    $starts[$normName] = $ts
+                } elseif ($state -eq 'terminado' -and $starts.Contains($normName)) {
                     [void]$phases.Add([ordered]@{
-                        name            = $name
-                        start           = $starts[$name]
+                        name            = $normName
+                        start           = $starts[$normName]
                         end             = $ts
-                        durationSeconds = Get-DurationSeconds -StartIso $starts[$name] -EndIso $ts
+                        durationSeconds = Get-DurationSeconds -StartIso $starts[$normName] -EndIso $ts
                     })
-                    $starts.Remove($name)
+                    $starts.Remove($normName)
                 }
             }
         }
