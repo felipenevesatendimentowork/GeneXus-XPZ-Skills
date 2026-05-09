@@ -564,6 +564,7 @@ Campos relevantes:
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi classificado em categoria explícita
 - [ ] Sucesso operacional foi separado de confirmação funcional
+- [ ] Quando a frente foi descrita por fluxo funcional ("o objeto que X", "a tela que abre ao Y", "o objeto chamado quando Z") em vez de referência direta ao nome, foi confirmado que o objeto em `importedItems` é o alvo executado pelo fluxo descrito antes de declarar a frente encerrada — independente do tipo de objeto
 - [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado; se `false`, a ausência foi documentada e justificada explicitamente
 
 ---

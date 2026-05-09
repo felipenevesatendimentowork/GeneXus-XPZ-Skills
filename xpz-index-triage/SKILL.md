@@ -15,6 +15,8 @@ Usar o indice derivado da KB como trilha inicial de triagem antes de expandir a 
 
 O indice e artefato derivado. Ele nao substitui os XMLs oficiais e nao autoriza conclusao funcional automatica.
 
+Em fluxos acionados por botao, link, action ou event, nome plausivel de WebPanel ou popup nao e evidencia suficiente de que ele e o alvo executado pelo fluxo real. O caller deve ser resolvido antes de qualquer leitura ou edicao do objeto-alvo.
+
 Antes de usar o indice como base de triagem, executar obrigatoriamente o gate via `Test-*KbGate.ps1`. O gate verifica em sequencia: estrutura da pasta paralela via `Test-*KbStructure.ps1`, existencia da pasta `KbIntelligence`, do SQLite, semantica de inventario e frescor via `index-metadata`, existencia de `kb-source-metadata.md` e `last_xpz_materialization_run_at`, e compara timestamps. Nao fazer verificacao manual de frescor, semantica ou estrutura — todas as verificacoes sao encapsuladas no gate script, que e o unico ponto de execucao autorizado. Se `Test-*KbGate.ps1` nao existir em `scripts/`, tratar isso como bloqueio estrutural equivalente a `BLOCK:` do proprio script — encerrar a pergunta de negocio e oferecer atualizacao via `xpz-kb-parallel-setup`; nao compensar com verificacao manual, consulta direta ao indice ou qualquer outra alternativa.
 
 - se o gate retornar `GATE_OK`, o indice esta apto para triagem inicial
@@ -47,6 +49,7 @@ Use esta skill para:
 - pergunta funcional curta que precise de triagem inicial antes da leitura do XML oficial
 - necessidade de decidir quais XMLs oficiais devem ser abertos primeiro
 - necessidade de reduzir varredura ampla do acervo `ObjetosDaKbEmXml`
+- identificar qual objeto e efetivamente aberto ou executado por uma acao, botao, link ou evento em tela GeneXus ("qual popup esse botao abre?", "qual objeto e chamado pelo evento X?", "o que abre ao clicar em Y?")
 
 Do NOT use this skill for:
 - leitura estrutural de XML bruto isolado sem depender do indice
@@ -78,6 +81,12 @@ Do NOT use this skill for:
   - `show-evidence`
   - `impact-basic`
   - `functional-trace-basic`
+- Quando a pergunta ou solicitacao de edicao vier ancorada em fluxo de navegacao ("nesta tela clico em X", "o popup aberto por Y", "o objeto chamado pelo evento Z"), executar sub-fluxo obrigatorio de resolucao de alvo antes de liberar leitura ou edicao:
+  1. Identificar o objeto caller citado pelo usuario
+  2. Localizar o evento ou acao real no XML do caller (`Event`, `Action`, `Link`, `Window.Object`, `Create(...)`, `formatLink`, `context.NewWindow`, URL gerada)
+  3. Resolver o objeto efetivamente aberto ou executado
+  4. Quando houver mais de um alvo plausivel, declarar a ambiguidade explicitamente e confirmar o alvo com o usuario antes de prosseguir
+  5. Produzir o bloco de handoff auditavel de resolucao de alvo (ver COMMUNICATION) antes de liberar leitura ou edicao
 - Executar a triagem inicial apropriada
 - Nao executar consulta substantiva do indice antes de `GATE_OK`; `search-objects`, `list-by-type`, `object-info`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` e `functional-trace-basic` so podem rodar depois que o gate terminar liberado
 - Depois de `GATE_OK`, ir direto para a consulta substantiva minima necessaria; nao abrir `scripts/README-kb-intelligence.md`, nao listar `scripts` e nao reinspecionar o wrapper local se a pergunta ja puder ser atendida com consulta simples como `search-objects` ou `object-info`
@@ -116,6 +125,13 @@ Do NOT use this skill for:
   - `Leitura adicional do XML`
   - `Inferencia forte`
   - `Hipotese`
+- Quando o sub-fluxo de resolucao de alvo tiver sido executado, produzir bloco de handoff auditavel antes de liberar leitura ou edicao:
+  ```
+  Caller confirmado: <nome do objeto caller>
+  Evento/Acao: <nome do evento ou acao no caller>
+  Alvo resolvido: <nome do objeto efetivamente aberto/executado>
+  Evidencia: <trecho do XML do caller que aponta para o alvo>
+  ```
 - Nao prometer impacto runtime completo
 - Nao prometer conclusao funcional fechada quando o indice apenas apontar trilha de leitura
 
@@ -241,6 +257,7 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negocio e oferecer `xpz-kb-
 - NUNCA compensar falha de `index-metadata` ou ausencia de `last_xpz_materialization_run_at` lendo manualmente JSON de validacao, SQLite direto, `kb-source-metadata.md` isolado, datas de arquivo, `updated`, `generated_at`, `source_xpz` ou XML oficial para responder a pergunta de negocio
 - NUNCA abrir XML oficial de objeto para responder pergunta de negocio quando o gate de compatibilidade/frescor estiver bloqueado
 - NUNCA normalizar trabalho sem indice como alternativa economica quando o repositorio adota `KbIntelligence`; indice ausente ou defasado exige oferta de atualizacao
+- NUNCA editar ou liberar edicao de objeto-alvo de fluxo ancorado em acao ou evento ("nesta tela clico em X", "o popup aberto por Y", "o objeto chamado pelo evento Z") com base apenas em similaridade nominal — evidencia do caller real e obrigatoria antes da primeira edicao
 - NUNCA substituir `nexa`
 - NUNCA substituir `xpz-reader`
 - NUNCA executar `Query-*KbIntelligence.ps1` ou chamar qualquer consulta ao indice sem ter verificado primeiro que `Test-*KbGate.ps1` existe em `scripts/` e executado o gate com retorno `GATE_OK`; ausencia do gate script e bloqueio estrutural, nao licenca para consultar o indice diretamente

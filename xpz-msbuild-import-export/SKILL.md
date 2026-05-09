@@ -395,6 +395,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado e o usuário reportar que o comportamento ainda não mudou, a `checagem de frescor de runtime` foi oferecida como próximo passo nomeado antes de sugerir nova edição
 - [ ] O sub-estado `importação real efetiva provada, geração de runtime pendente` foi aplicado quando artefatos de runtime (`nav_objs.xml` com `ObjStatus=genreq` ou timestamps de artefatos gerados anteriores ao import) ainda refletiam versão anterior após build confirmado; NVG pode ser consultado manualmente como indicador complementar, mas não integra a checagem somente leitura automatizada
 - [ ] Quando `-ObjectList` foi usado com múltiplos objetos, o formato `Tipo:Nome` separado por `;` foi documentado ou validado; e o `.xpz` gerado foi verificado para confirmar presença de todos os objetos solicitados
+- [ ] Quando a frente foi descrita por fluxo funcional e o usuário reportar "não mudou no navegador" após import confirmado, foi verificado primeiro (1) se o objeto importado é o alvo executado pelo fluxo real, antes de (2) checar frescor de runtime ou (3) propor nova edição
 
 ---
 
