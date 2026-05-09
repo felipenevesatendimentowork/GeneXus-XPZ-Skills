@@ -528,7 +528,8 @@ function Resolve-BuildStatus {
         [bool]$KbOpen,
         [bool]$BuildAllDone,
         [bool]$ReorgDetected,
-        [bool]$TimedOut
+        [bool]$TimedOut,
+        [bool]$AllowReorgConfirmed
     )
 
     if ($TimedOut) {
@@ -547,7 +548,7 @@ function Resolve-BuildStatus {
         }
     }
 
-    if ($KbOpen -and -not $BuildAllDone -and $ReorgDetected) {
+    if ($KbOpen -and -not $BuildAllDone -and $ReorgDetected -and -not $AllowReorgConfirmed) {
         return [ordered]@{
             Status   = 'reorg necessaria detectada'
             Summary  = 'FailIfReorg bloqueou o build. Reorganizacao do banco detectada mas nao executada. Decida o proximo passo: executar reorg com -AllowReorg ou abrir a KB na IDE.'
@@ -925,11 +926,12 @@ try {
     }
 
     $buildStatus = Resolve-BuildStatus `
-        -MsBuildExitCode $msBuildExitCode `
-        -KbOpen $kbOpen `
-        -BuildAllDone $buildAllDone `
-        -ReorgDetected $reorgDetected `
-        -TimedOut $timedOut
+        -MsBuildExitCode    $msBuildExitCode `
+        -KbOpen             $kbOpen `
+        -BuildAllDone       $buildAllDone `
+        -ReorgDetected      $reorgDetected `
+        -TimedOut           $timedOut `
+        -AllowReorgConfirmed $allowReorgConfirmed
 
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execucao MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
