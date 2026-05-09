@@ -92,6 +92,22 @@ Quando fornecido e o arquivo existir após o build, o script parseia os marcador
 interna do build e popular 'timing.phases' no JSON de resultado.
 Sem este parâmetro, 'timing.phases' fica vazio mas probe/msbuild/total são registrados.
 
+.PARAMETER StartWatcher
+Switch. Quando presente, o próprio wrapper dispara Watch-GeneXusMsBuildLog.ps1 em janela
+visível separada antes de iniciar o MSBuild. Requer -MonitorLogPath. O watcher recebe o
+PID do processo wrapper como alvo de monitoramento e o mesmo caminho de -MonitorLogPath
+para gravar o log de fases. O JSON de resultado registra watcherContext.watcherLaunched
+e watcherContext.watcherPid para evidência auditável. Se o watcher falhar ao iniciar,
+o build prossegue com um warning — não bloqueia a execução.
+
+.PARAMETER WatcherIntervalSeconds
+Intervalo de polling em segundos do watcher. Repassado a Watch-GeneXusMsBuildLog.ps1.
+Padrão: 5. Intervalo válido: 1-60.
+
+.PARAMETER WatcherSilenceThresholdSeconds
+Segundos sem nova linha no log antes de o watcher emitir alerta de silêncio.
+Repassado a Watch-GeneXusMsBuildLog.ps1. Padrão: 120. Intervalo válido: 30-3600.
+
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
 #>
@@ -139,6 +155,14 @@ param(
     [int]$TimeoutSeconds = 0,
 
     [string]$MonitorLogPath,
+
+    [switch]$StartWatcher,
+
+    [ValidateRange(1, 60)]
+    [int]$WatcherIntervalSeconds = 5,
+
+    [ValidateRange(30, 3600)]
+    [int]$WatcherSilenceThresholdSeconds = 120,
 
     [switch]$VerboseLog
 )
@@ -219,6 +243,45 @@ function Resolve-ProbeScriptPath {
         throw "Probe script not found: $probePath"
     }
     return $probePath
+}
+
+function Start-WatcherProcess {
+    param(
+        [string]$LogFilePath,
+        [string]$MonitorLogFilePath,
+        [int]$Interval,
+        [int]$SilenceThreshold
+    )
+
+    $scriptDirectory = Split-Path -Parent $PSCommandPath
+    $watcherScript   = Join-Path $scriptDirectory 'Watch-GeneXusMsBuildLog.ps1'
+    $script:WatcherContext['watcherScriptPath']     = $watcherScript
+    $script:WatcherContext['watcherMonitorLogPath'] = $MonitorLogFilePath
+
+    if (-not (Test-Path -LiteralPath $watcherScript -PathType Leaf)) {
+        Add-WarningMessage -Message ('Watch-GeneXusMsBuildLog.ps1 nao localizado em: {0}. Watcher nao iniciado.' -f $watcherScript)
+        $script:WatcherContext['watcherLaunchError'] = 'script nao localizado'
+        return
+    }
+
+    try {
+        $watchArgs = @(
+            '-NoExit', '-NoProfile',
+            '-File', $watcherScript,
+            '-ProcessId', $PID,
+            '-LogPath', $LogFilePath,
+            '-MonitorLog', $MonitorLogFilePath,
+            '-IntervalSeconds', $Interval,
+            '-SilenceThresholdSeconds', $SilenceThreshold
+        )
+        $watchProc = Start-Process pwsh -ArgumentList $watchArgs -PassThru
+        $script:WatcherContext['watcherLaunched'] = $true
+        $script:WatcherContext['watcherPid']      = $watchProc.Id
+        Add-StrategyTrace -Message ('Watcher iniciado automaticamente: PID={0}, script={1}' -f $watchProc.Id, $watcherScript)
+    } catch {
+        Add-WarningMessage -Message ('Falha ao iniciar watcher: {0}. Build prossegue sem watcher.' -f $_.Exception.Message)
+        $script:WatcherContext['watcherLaunchError'] = $_.Exception.Message
+    }
 }
 
 function Invoke-ProbeStage {
@@ -593,6 +656,14 @@ $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings        = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace   = New-Object System.Collections.Generic.List[string]
 $script:TimingLog       = [ordered]@{}
+$script:WatcherContext  = [ordered]@{
+    startWatcherRequested = $StartWatcher.IsPresent
+    watcherLaunched       = $false
+    watcherPid            = $null
+    watcherMonitorLogPath = $null
+    watcherScriptPath     = $null
+    watcherLaunchError    = $null
+}
 $confirmReorgMode       = $null
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
@@ -614,6 +685,7 @@ try {
                 AllowReorgRequested   = $false
                 AllowReorgConfirmed   = $false
                 ConfirmReorgMode      = $confirmReorgMode
+                StartWatcherRequested = $StartWatcher.IsPresent
             }
             observedContext  = [ordered]@{
                 KbOpen            = $false
@@ -637,6 +709,7 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            watcherContext   = $script:WatcherContext
             blockingReasons  = @($script:BlockingReasons)
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
@@ -662,12 +735,13 @@ try {
             exitCode         = 46
             stage            = 'pre-build'
             requestedContext = [ordered]@{
-                Configuration       = $Configuration
-                FailIfReorg         = $FailIfReorg
-                DoNotExecuteReorg   = $DoNotExecuteReorg
-                AllowReorgRequested = $false
-                AllowReorgConfirmed = $false
-                ConfirmReorgMode    = $confirmReorgMode
+                Configuration         = $Configuration
+                FailIfReorg           = $FailIfReorg
+                DoNotExecuteReorg     = $DoNotExecuteReorg
+                AllowReorgRequested   = $false
+                AllowReorgConfirmed   = $false
+                ConfirmReorgMode      = $confirmReorgMode
+                StartWatcherRequested = $StartWatcher.IsPresent
             }
             observedContext  = [ordered]@{
                 KbOpen            = $false
@@ -691,6 +765,63 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            watcherContext   = $script:WatcherContext
+            blockingReasons  = @($script:BlockingReasons)
+            warnings         = @($script:Warnings)
+            strategyTrace    = @($script:StrategyTrace)
+        }
+        $blocked['timing'] = Get-TimingSection
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
+    # Gate de segurança: -StartWatcher requer -MonitorLogPath
+    if ($StartWatcher.IsPresent -and [string]::IsNullOrWhiteSpace($MonitorLogPath)) {
+        Add-BlockingReason -Reason '-StartWatcher requer -MonitorLogPath. Forneca o caminho do log do monitor para que watcher e build possam ser conectados.'
+        $blocked = [ordered]@{
+            status           = 'bloqueado por politica de seguranca'
+            summary          = '-StartWatcher requer -MonitorLogPath. Execute novamente informando -MonitorLogPath com o caminho do log do monitor.'
+            exitCode         = 46
+            stage            = 'pre-build'
+            requestedContext = [ordered]@{
+                Configuration         = $Configuration
+                FailIfReorg           = $FailIfReorg
+                DoNotExecuteReorg     = $DoNotExecuteReorg
+                AllowReorgRequested   = $AllowReorg.IsPresent
+                AllowReorgConfirmed   = $false
+                ConfirmReorgMode      = $confirmReorgMode
+                StartWatcherRequested = $StartWatcher.IsPresent
+            }
+            observedContext  = [ordered]@{
+                KbOpen            = $false
+                BuildAllDone      = $false
+                ReorgDetected     = $false
+                TimedOut          = $false
+                MsBuildExitCode   = $null
+            }
+            resolvedPaths    = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $KbPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath          = $resolvedLogPath
+            }
+            pathActions      = [ordered]@{ WorkingDirectory = 'blocked-policy' }
+            artifacts        = [ordered]@{
+                ProbeLogPath     = $null
+                MsBuildFilePath  = $null
+                StdOutPath       = $null
+                StdErrPath       = $null
+                ExecutionLogPath = $resolvedLogPath
+            }
+            watcherContext   = $script:WatcherContext
             blockingReasons  = @($script:BlockingReasons)
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
@@ -739,6 +870,7 @@ try {
                 AllowReorgRequested        = $AllowReorg.IsPresent
                 AllowReorgConfirmed        = $false
                 ConfirmReorgMode           = $confirmReorgMode
+                StartWatcherRequested      = $StartWatcher.IsPresent
                 TimeoutSeconds             = $TimeoutSeconds
             }
             observedContext  = [ordered]@{
@@ -765,6 +897,7 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            watcherContext   = $script:WatcherContext
             blockingReasons  = @($probeDiagnostic.blockingReasons + $script:BlockingReasons)
             warnings         = @($probeDiagnostic.warnings)
             strategyTrace    = @($probeDiagnostic.strategyTrace + $script:StrategyTrace)
@@ -828,6 +961,7 @@ try {
                         AllowReorgRequested        = $true
                         AllowReorgConfirmed        = $false
                         ConfirmReorgMode           = $confirmReorgMode
+                        StartWatcherRequested      = $StartWatcher.IsPresent
                         TimeoutSeconds             = $TimeoutSeconds
                     }
                     observedContext  = [ordered]@{
@@ -854,6 +988,7 @@ try {
                         StdErrPath       = $null
                         ExecutionLogPath = $resolvedLogPath
                     }
+                    watcherContext   = $script:WatcherContext
                     blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
                     warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
                     strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -898,6 +1033,14 @@ try {
 
     [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-Utf8NoBomEncoding))
     Add-StrategyTrace -Message ('Arquivo .msbuild temporario gerado em: {0}' -f $msBuildFilePath)
+
+    if ($StartWatcher.IsPresent) {
+        Start-WatcherProcess `
+            -LogFilePath          $stdOutPath `
+            -MonitorLogFilePath   $MonitorLogPath `
+            -Interval             $WatcherIntervalSeconds `
+            -SilenceThreshold     $WatcherSilenceThresholdSeconds
+    }
 
     $script:TimingLog['msbuildStart'] = Get-NowIso
     $msBuildResult   = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
@@ -972,6 +1115,7 @@ try {
             AllowReorgRequested        = $AllowReorg.IsPresent
             AllowReorgConfirmed        = $allowReorgConfirmed
             ConfirmReorgMode           = $confirmReorgMode
+            StartWatcherRequested      = $StartWatcher.IsPresent
             TimeoutSeconds             = $TimeoutSeconds
         }
         observedContext  = [ordered]@{
@@ -998,6 +1142,7 @@ try {
             StdErrPath       = $stdErrPath
             ExecutionLogPath = $resolvedLogPath
         }
+        watcherContext   = $script:WatcherContext
         stdoutSummary    = Get-TextSummary -Text $stdOutText
         stderrSummary    = Get-TextSummary -Text $stdErrText
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
@@ -1029,6 +1174,7 @@ catch {
             AllowReorgRequested        = $AllowReorg.IsPresent
             AllowReorgConfirmed        = $false
             ConfirmReorgMode           = $confirmReorgMode
+            StartWatcherRequested      = $StartWatcher.IsPresent
             TimeoutSeconds             = $TimeoutSeconds
         }
         resolvedPaths    = [ordered]@{
@@ -1048,6 +1194,7 @@ catch {
             StdErrPath       = $null
             ExecutionLogPath = $resolvedLogPath
         }
+        watcherContext   = $script:WatcherContext
         stdoutSummary    = @()
         stderrSummary    = @()
         blockingReasons  = @($_.Exception.Message)

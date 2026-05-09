@@ -35,9 +35,13 @@ disparar reorg real** quando o modelo as contém. Use `Invoke-GeneXusKbBuildAll.
 para validação completa. Nunca execute reorg sem autorização explícita do usuário.
 Quando houver evidência de alteração estrutural de atributo no import recente, exigir
 confirmação explícita do usuário antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`.
-Ao executar `BuildAll`, sempre lançar `Watch-GeneXusMsBuildLog.ps1` em janela visível
-separada (`Start-Process pwsh -NoExit`) antes de aguardar o resultado — seguir a seção
-**ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**.
+`BuildAll` sem watcher visível não é fluxo válido. Use `-StartWatcher` ao chamar
+`Invoke-GeneXusKbBuildAll.ps1` — o wrapper garante o lançamento automático em janela
+visível e registra evidência auditável no JSON (`watcherContext.watcherLaunched`). A
+única exceção permitida é quando há justificativa operacional explícita e documentada
+(ex.: ambiente sem `pwsh` no PATH, CI headless sem terminal) — nesse caso declarar
+explicitamente ao usuário e registrar `watcherContext.watcherLaunched: false` como
+evidência de ausência. Seguir a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**.
 
 ## PATH RESOLUTION
 
@@ -216,7 +220,21 @@ não executa por padrão) reorg necessária.
   após o build, o script extrai os timestamps das fases internas (`iniciado`/`terminado`)
   e popula `timing.phases` no JSON de resultado; sem este parâmetro, `timing.phases`
   fica vazio mas `timing.probeDurationSeconds`, `timing.msbuildDurationSeconds` e
-  `timing.totalDurationSeconds` são sempre gravados)
+  `timing.totalDurationSeconds` são sempre gravados; obrigatório quando `-StartWatcher`
+  for passado — bloqueado por política com exit 46 se ausente)
+- `-StartWatcher` (switch — quando presente, o próprio wrapper dispara
+  `Watch-GeneXusMsBuildLog.ps1` em janela visível com `Start-Process pwsh` antes de
+  iniciar o MSBuild; requer `-MonitorLogPath`; o watcher recebe o PID do processo
+  wrapper como alvo de monitoramento; o resultado JSON inclui `watcherContext` com
+  `watcherLaunched`, `watcherPid`, `watcherScriptPath`, `watcherMonitorLogPath` e
+  `watcherLaunchError`; se o watcher falhar ao iniciar, o build prossegue com warning —
+  não bloqueia a execução)
+- `-WatcherIntervalSeconds` (Int, default `5` — intervalo de polling em segundos
+  repassado ao watcher; usado apenas quando `-StartWatcher` está presente;
+  intervalo válido: 1-60)
+- `-WatcherSilenceThresholdSeconds` (Int, default `120` — segundos sem nova linha
+  no log antes de o watcher emitir alerta de silêncio; repassado ao watcher; usado
+  apenas quando `-StartWatcher` está presente; intervalo válido: 30-3600)
 
   > **Limitação conhecida de `timing.phases`:** somente fases com par completo
   > (`iniciado` + `terminado`) aparecem na lista. Fases cujo `terminado` nunca é
@@ -357,7 +375,8 @@ $buildArgs = @(
     '-KbPath',         'C:\KBs\<nome-da-kb>',
     '-WorkingDirectory', $testDir,        # obrigatorio — pasta ja criada no passo 1
     '-LogPath',          $buildLog,       # onde o JSON de resultado sera gravado
-    '-MonitorLogPath',   $monitorLog      # conecta com Watch para timing.phases
+    '-MonitorLogPath',   $monitorLog,     # conecta com Watch para timing.phases
+    '-StartWatcher'                       # wrapper lanca o watcher automaticamente
     # adicionar '-AllowReorg', '-ConfirmReorg' apenas se reorg foi autorizada pelo usuario
 )
 
@@ -369,9 +388,12 @@ $buildProc = Start-Process pwsh -ArgumentList $buildArgs `
 
 - `-WorkingDirectory`: pasta criada no passo 1 — não inventar outro caminho.
 - `-LogPath`: onde o JSON de resultado será gravado ao final do build.
-- `-MonitorLogPath`: mesmo caminho que será passado como `-MonitorLog` ao Watch (passo 5).
+- `-MonitorLogPath`: mesmo caminho do log do monitor — obrigatório quando `-StartWatcher` está presente.
+- `-StartWatcher`: o wrapper dispara `Watch-GeneXusMsBuildLog.ps1` automaticamente antes do MSBuild; elimina o passo 5 do fluxo externo quando usado.
 - `-NoNewWindow`: build roda invisível em segundo plano.
 - `-PassThru`: retorna o objeto de processo com o PID.
+
+> **Com `-StartWatcher`, o Passo 5 (Watch externo) pode ser omitido** — o wrapper já cuidou do lançamento. O Passo 4 (aguardar artifact dir) ainda é necessário quando se quer o `msbuildLog` para fins de diagnose, mas não para o watcher em si.
 
 ### Passo 4 — Aguardar o artifact dir aparecer
 
@@ -542,12 +564,14 @@ Campos relevantes:
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi classificado em categoria explícita
 - [ ] Sucesso operacional foi separado de confirmação funcional
+- [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado; se `false`, a ausência foi documentada e justificada explicitamente
 
 ---
 
 ## CONSTRAINTS
 
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
+- NEVER executar `BuildAll` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
 - NEVER executar reorg sem autorização explícita do usuário
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê
 - NEVER passar `-ConfirmReorg` sem `-AllowReorg` — combinação bloqueada por política (exit 46)
