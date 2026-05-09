@@ -442,47 +442,52 @@ function Get-PhaseTimings {
         return @()
     }
 
-    # Leitura com FileShare.ReadWrite — Watch pode ainda estar com o arquivo aberto
-    $lines = [System.Collections.Generic.List[string]]::new()
-    $fs     = [System.IO.FileStream]::new(
-        $MonitorLogPath,
-        [System.IO.FileMode]::Open,
-        [System.IO.FileAccess]::Read,
-        [System.IO.FileShare]::ReadWrite
-    )
-    $reader = [System.IO.StreamReader]::new($fs, [System.Text.Encoding]::UTF8)
     try {
-        $l = $reader.ReadLine()
-        while ($null -ne $l) { $lines.Add($l); $l = $reader.ReadLine() }
-    } finally {
-        $reader.Dispose()
-        $fs.Dispose()
-    }
+        # Leitura com FileShare.ReadWrite — Watch pode ainda estar com o arquivo aberto
+        $lines = New-Object System.Collections.Generic.List[string]
+        $fs = New-Object -TypeName System.IO.FileStream -ArgumentList @(
+            $MonitorLogPath,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::ReadWrite
+        )
+        $reader = New-Object -TypeName System.IO.StreamReader -ArgumentList @($fs, [System.Text.Encoding]::UTF8)
+        try {
+            $l = $reader.ReadLine()
+            while ($null -ne $l) { [void]$lines.Add($l); $l = $reader.ReadLine() }
+        } finally {
+            $reader.Dispose()
+            $fs.Dispose()
+        }
 
-    $starts = [ordered]@{}
-    $phases = New-Object System.Collections.Generic.List[object]
+        $starts = [ordered]@{}
+        $phases = New-Object System.Collections.ArrayList
 
-    foreach ($line in $lines) {
-        # Formato Watch: [yyyy-MM-dd HH:mm:ss] ========== <fase> iniciado/terminado ==========
-        if ($line -match '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+={3,}\s+(.+?)\s+(iniciado|terminado)\s+={3,}') {
-            $ts    = $Matches[1]
-            $name  = $Matches[2].Trim()
-            $state = $Matches[3]
-            if ($state -eq 'iniciado') {
-                $starts[$name] = $ts
-            } elseif ($state -eq 'terminado' -and $starts.Contains($name)) {
-                $phases.Add([ordered]@{
-                    name            = $name
-                    start           = $starts[$name]
-                    end             = $ts
-                    durationSeconds = Get-DurationSeconds -StartIso $starts[$name] -EndIso $ts
-                })
-                $starts.Remove($name)
+        foreach ($line in $lines) {
+            # Formato Watch: [yyyy-MM-dd HH:mm:ss] ========== <fase> iniciado/terminado ==========
+            if ($line -match '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+={3,}\s+(.+?)\s+(iniciado|terminado)\s+={3,}') {
+                $ts    = $Matches[1]
+                $name  = $Matches[2].Trim()
+                $state = $Matches[3]
+                if ($state -eq 'iniciado') {
+                    $starts[$name] = $ts
+                } elseif ($state -eq 'terminado' -and $starts.Contains($name)) {
+                    [void]$phases.Add([ordered]@{
+                        name            = $name
+                        start           = $starts[$name]
+                        end             = $ts
+                        durationSeconds = Get-DurationSeconds -StartIso $starts[$name] -EndIso $ts
+                    })
+                    $starts.Remove($name)
+                }
             }
         }
-    }
 
-    return @($phases)
+        return @($phases)
+    } catch {
+        Add-WarningMessage -Message ('Get-PhaseTimings falhou: {0}' -f $_.Exception.Message)
+        return @()
+    }
 }
 
 function Get-TimingSection {
