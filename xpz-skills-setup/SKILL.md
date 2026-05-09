@@ -36,6 +36,8 @@ de um novo usuário.
 - Não instalar as ferramentas — apenas gerenciar o registro das skills dentro delas
 - Não registrar skills de outros repositórios (ex: `nexa`)
 - Não tocar em configurações das ferramentas além do diretório de skills
+- Verificar existência de diretórios com `Test-Path` individual por ferramenta — nunca
+  agrupar em hashtable ou bloco de verificação coletiva
 
 Os caminhos abaixo são os esperados por ferramenta no Windows. Verificar a existência
 de cada caminho antes de usar — não assumir que estão criados:
