@@ -214,12 +214,12 @@ não executa por padrão) reorg necessária.
   `timing.totalDurationSeconds` são sempre gravados)
 
   > **Limitação conhecida de `timing.phases`:** somente fases com par completo
-  > (`iniciado` + `terminado` com nome idêntico) aparecem na lista. Fases cujo
-  > `terminado` nunca é emitido — por erro ou abort — são silenciosamente omitidas.
-  > Adicionalmente, o GeneXus emite alguns marcadores com grafia inconsistente entre
-  > `iniciado` e `terminado` (ex.: `Get Active Version iniciado` /
-  > `GetActiveVersion terminado`); esses pares também ficam de fora. Isso é comportamento
-  > do GeneXus, não da skill.
+  > (`iniciado` + `terminado`) aparecem na lista. Fases cujo `terminado` nunca é
+  > emitido — por erro ou abort — são silenciosamente omitidas (ex.: `Atualização
+  > de configuração da web` quando o GeneXus falha antes de concluí-la). Pares com
+  > grafia inconsistente entre `iniciado` e `terminado` (ex.: `Get Active Version`
+  > vs `GetActiveVersion`) são normalizados e fechados corretamente; o campo `name`
+  > no JSON usa a grafia do `terminado`.
 
 **Categorias de resultado:**
 
