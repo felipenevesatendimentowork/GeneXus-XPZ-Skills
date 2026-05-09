@@ -302,6 +302,157 @@ autoriza explicitamente a execução. Exige confirmação interativa obrigatóri
 
 ---
 
+## ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL
+
+Esta seção descreve o fluxo completo para executar `Invoke-GeneXusKbBuildAll.ps1`
+com `Watch-GeneXusMsBuildLog.ps1` em paralelo, sem bloquear a conversa com o usuário.
+
+### Por que processo desanexado
+
+`Invoke-GeneXusKbBuildAll.ps1` usa `Start-Process` internamente para o MSBuild e
+`Wait-Process` para aguardar o resultado. Se chamado diretamente pelo agente via
+PowerShell tool, bloqueia o agente durante todo o build — que pode durar minutos.
+A solução é lançar o script como processo filho desanexado e usar `run_in_background: true`
+no `Wait-Process` externo, liberando o agente para conversar com o usuário enquanto
+o build corre.
+
+### Passo 1 — Preparar pastas e caminhos
+
+```powershell
+$testDir    = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-<nome-descritivo>"
+New-Item -Path $testDir -ItemType Directory -Force | Out-Null
+
+$monitorLog  = "$testDir\monitor.log"
+$buildLog    = "$testDir\build-all.log"
+$buildStdout = "$testDir\build-proc-stdout.txt"
+$buildStderr = "$testDir\build-proc-stderr.txt"
+```
+
+- `$testDir` fica sob `Temp\` do repositório da skill — processos filhos têm permissão de escrita aqui.
+- Nunca usar `C:\Temp\` ou pastas fora do repositório — processos desanexados não têm acesso.
+- Escolher um nome descritivo que identifique o build (ex.: `xpz-build-20260508-pos-import`).
+
+### Passo 2 — Capturar dirs existentes antes de iniciar
+
+```powershell
+$artifactBase = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-msbuild-build"
+$dirsBefore   = @([System.IO.Directory]::GetDirectories($artifactBase))
+```
+
+O script cria um dir com GUID aleatório em `$artifactBase`. Capturar a lista antes
+do início permite identificar o dir novo por diferença — sem depender de timestamp.
+
+### Passo 3 — Iniciar o build como processo desanexado
+
+```powershell
+$scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Invoke-GeneXusKbBuildAll.ps1"
+
+$buildArgs = @(
+    '-NonInteractive', '-NoProfile', '-File', $scriptPath,
+    '-KbPath',         'C:\KBs\<nome-da-kb>',
+    '-WorkingDirectory', $testDir,        # obrigatorio — pasta ja criada no passo 1
+    '-LogPath',          $buildLog,       # onde o JSON de resultado sera gravado
+    '-MonitorLogPath',   $monitorLog      # conecta com Watch para timing.phases
+    # adicionar '-AllowReorg', '-ConfirmReorg' apenas se reorg foi autorizada pelo usuario
+)
+
+$buildProc = Start-Process pwsh -ArgumentList $buildArgs `
+    -RedirectStandardOutput $buildStdout `
+    -RedirectStandardError  $buildStderr `
+    -NoNewWindow -PassThru
+```
+
+- `-WorkingDirectory`: pasta criada no passo 1 — não inventar outro caminho.
+- `-LogPath`: onde o JSON de resultado será gravado ao final do build.
+- `-MonitorLogPath`: mesmo caminho que será passado como `-MonitorLog` ao Watch (passo 5).
+- `-NoNewWindow`: build roda invisível em segundo plano.
+- `-PassThru`: retorna o objeto de processo com o PID.
+
+### Passo 4 — Aguardar o artifact dir aparecer
+
+```powershell
+$artifactDir = $null
+for ($i = 0; $i -lt 40; $i++) {
+    Start-Sleep -Milliseconds 500
+    $newDirs = @([System.IO.Directory]::GetDirectories($artifactBase) |
+                 Where-Object { $dirsBefore -notcontains $_ })
+    if ($newDirs.Count -gt 0) { $artifactDir = $newDirs[0]; break }
+}
+if ($null -eq $artifactDir) {
+    # build falhou antes de criar o dir — ler stderr para diagnose
+    return
+}
+$msbuildLog = Join-Path $artifactDir "msbuild.stdout.log"
+```
+
+- O loop aguarda até 20 s (40 × 500 ms). Em hardware lento pode ser necessário aumentar.
+- **Usar diff de arrays** (`$dirsBefore -notcontains $_`), nunca indexar `[0]` diretamente
+  no resultado do `Where-Object` — quando há um único resultado, indexar retorna o primeiro
+  **caractere** da string, não o item.
+
+### Passo 5 — Abrir Watch em janela visível
+
+```powershell
+$watchScript = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Watch-GeneXusMsBuildLog.ps1"
+
+Start-Process pwsh -ArgumentList @(
+    '-NoExit',                            # janela permanece aberta apos o Watch terminar
+    '-NoProfile',
+    '-File',    $watchScript,
+    '-ProcessId',   $buildProc.Id,
+    '-LogPath',     $msbuildLog,          # msbuild.stdout.log dentro do artifact dir
+    '-MonitorLog',  $monitorLog,          # mesmo caminho que -MonitorLogPath do build
+    '-IntervalSeconds', '5'               # default; diminuir so em testes curtos
+)
+```
+
+- Sem `-NoNewWindow` e sem redirect: Watch abre em janela nova visível ao usuário.
+- `-NoExit`: a janela permanece aberta após Watch encerrar, para o usuário ler com calma e fechar manualmente.
+- Watch exibe o contador de silêncio in-place (sem scroll) e imprime uma nova linha apenas quando há conteúdo real (fase, alerta, início/fim).
+- O arquivo `$monitorLog` recebe apenas linhas reais — não o contador de silêncio.
+
+### Passo 6 — Aguardar em background sem bloquear a conversa
+
+```powershell
+# Este bloco deve ser executado com run_in_background: true no PowerShell tool.
+# O agente fica disponível para conversar com o usuário enquanto o build corre.
+# Quando Wait-Process retornar, o runtime notifica o agente automaticamente.
+
+Write-Host "Build PID=$($buildProc.Id) | Watch aberto | aguardando..."
+$buildProc | Wait-Process -Timeout 600    # 10 min; ajustar para KBs grandes
+Write-Host "BUILD CONCLUIDO | exit=$($buildProc.ExitCode) | log=$buildLog"
+```
+
+**Importante:** o bloco inteiro (incluindo `Wait-Process`) deve estar em um único
+comando com `run_in_background: true`. Não dividir em dois comandos separados.
+
+### Passo 7 — Ler o resultado quando notificado
+
+Quando a notificação de conclusão chegar, ler o JSON com o `Read` tool (sem prompt de permissão):
+
+```
+Read tool → $buildLog (build-all.log)
+```
+
+Campos relevantes:
+- `status` — categoria de resultado (ver EXPECTED INTERFACE)
+- `exitCode` — código de saída do MSBuild
+- `summary` — descrição legível do resultado
+- `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
+- `timing.phases` — lista de fases com `name`, `start`, `end`, `durationSeconds`
+- `observedContext.ReorgDetected` — se reorg foi detectada
+- `stdoutSummary` / `stderrSummary` — amostras de stdout e stderr para diagnose
+
+### Observações críticas
+
+- **Não usar `C:\Temp\`** para nenhum arquivo: processos filhos desanexados não têm acesso.
+- **Não bloquear** a conversa com `Wait-Process` sem `run_in_background: true`.
+- **`-ConfirmReorg` sem `-AllowReorg`** é bloqueado pelo script (exit 46) — nunca passar um sem o outro.
+- **`-ConfirmReorg`** substitui o `Read-Host` interativo, mas não dispensa a confirmação do usuário humano — obtê-la antes de lançar o processo.
+- **Ler resultado com `Read` tool**, não com `PowerShell(Get-Content ...)` — evita prompt desnecessário.
+
+---
+
 ## WORKFLOW
 
 1. Reler [10-base-operacional-msbuild-headless](../10-base-operacional-msbuild-headless.md)
