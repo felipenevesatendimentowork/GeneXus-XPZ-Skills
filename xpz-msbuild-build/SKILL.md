@@ -213,6 +213,14 @@ não executa por padrão) reorg necessária.
   fica vazio mas `timing.probeDurationSeconds`, `timing.msbuildDurationSeconds` e
   `timing.totalDurationSeconds` são sempre gravados)
 
+  > **Limitação conhecida de `timing.phases`:** somente fases com par completo
+  > (`iniciado` + `terminado` com nome idêntico) aparecem na lista. Fases cujo
+  > `terminado` nunca é emitido — por erro ou abort — são silenciosamente omitidas.
+  > Adicionalmente, o GeneXus emite alguns marcadores com grafia inconsistente entre
+  > `iniciado` e `terminado` (ex.: `Get Active Version iniciado` /
+  > `GetActiveVersion terminado`); esses pares também ficam de fora. Isso é comportamento
+  > do GeneXus, não da skill.
+
 **Categorias de resultado:**
 
 - `compilou limpo` — `BuildAll` concluiu com exitCode 0, sem reorg detectada e sem padrões de erro em stdout/stderr
