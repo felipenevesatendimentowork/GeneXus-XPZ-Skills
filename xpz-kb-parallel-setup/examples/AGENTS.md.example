@@ -84,6 +84,11 @@ Wrappers esperados:
   `<Attribute>` sem depender de `Object/@type`.
 - `Notify-TaskComplete.ps1`: helper opcional de notificacao operacional.
 
+Scripts do motor com parâmetros totalmente dinâmicos por execução (ex:
+`Watch-GeneXusMsBuildLog.ps1`, cujo `-Pid` e `-LogPath` variam a cada build)
+nao requerem wrapper local — sao chamados diretamente pelo caminho absoluto
+do motor.
+
 ## Triagem Por Indice
 
 Para qualquer pergunta sobre existencia, localizacao, impacto tecnico, dependentes,
