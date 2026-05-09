@@ -212,6 +212,8 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negocio e oferecer `xpz-kb-
    - dependentes e dependencias
    - evidencia de relacao especifica
    - triagem funcional curta
+   - resolucao de alvo de navegacao (pergunta ou solicitacao de edicao ancorada em acao, botao, link ou evento: "qual popup esse botao abre?", "o objeto chamado pelo evento X", "nesta tela clico em Y")
+9a. Se a natureza for resolucao de alvo de navegacao, executar o sub-fluxo obrigatorio de resolucao de alvo (ver RESPONSIBILITIES) antes de prosseguir: identificar caller, localizar evento/acao no XML do caller, resolver objeto efetivamente aberto, confirmar alvo com o usuario se houver ambiguidade e produzir o bloco de handoff auditavel; so entao continuar para o step 10
 10. Escolher a consulta do indice mais adequada
 11. So depois de `GATE_OK`, executar a consulta substantiva minima necessaria sem leitura lateral de `scripts`, `scripts/README-kb-intelligence.md` ou reinspecao do wrapper quando a pergunta ja couber em `search-objects` ou `object-info`
     - para pergunta simples de existencia/localizacao nominal ou listagem por tipo, usar diretamente `search-objects`, `list-by-type` ou `object-info` conforme a pergunta, usando os parametros documentados em **QUERY PARAMETER REFERENCE**; nao abrir o wrapper para confirmar assinatura
