@@ -467,18 +467,22 @@ function Get-PhaseTimings {
             # Formato Watch: [yyyy-MM-dd HH:mm:ss] ========== <fase> iniciado/terminado ==========
             if ($line -match '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+={3,}\s+(.+?)\s+(iniciado|terminado)\s+={3,}') {
                 $ts       = $Matches[1]
-                # Normaliza espacos para fechar pares com grafia inconsistente do GeneXus
-                # ex.: "Get Active Version" (iniciado) / "GetActiveVersion" (terminado)
-                $normName = ($Matches[2].Trim()) -replace '\s+', ''
+                $rawName  = $Matches[2].Trim()
+                # Chave normalizada (sem espacos) para fechar pares com grafia inconsistente
+                # do GeneXus (ex.: "Get Active Version" iniciado / "GetActiveVersion" terminado).
+                # O campo name no JSON usa o rawName do terminado — forma canonica do GeneXus.
+                $normName = $rawName -replace '\s+', ''
                 $state    = $Matches[3]
                 if ($state -eq 'iniciado') {
-                    $starts[$normName] = $ts
+                    # Guarda [normName] -> [ts, rawName] para recuperar o nome original do iniciado
+                    # (usado apenas como fallback; terminado sobrescreve o rawName no JSON)
+                    $starts[$normName] = @{ ts = $ts; rawName = $rawName }
                 } elseif ($state -eq 'terminado' -and $starts.Contains($normName)) {
                     [void]$phases.Add([ordered]@{
-                        name            = $normName
-                        start           = $starts[$normName]
+                        name            = $rawName          # nome do terminado (forma canonica)
+                        start           = $starts[$normName].ts
                         end             = $ts
-                        durationSeconds = Get-DurationSeconds -StartIso $starts[$normName] -EndIso $ts
+                        durationSeconds = Get-DurationSeconds -StartIso $starts[$normName].ts -EndIso $ts
                     })
                     $starts.Remove($normName)
                 }
