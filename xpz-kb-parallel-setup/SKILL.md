@@ -21,6 +21,11 @@ Esta skill e de invocacao obrigatoria antes de qualquer acao de consulta, triage
    ```powershell
    & "<caminho-absoluto-de-Test-*KbSetupFreshness.ps1>"
    ```
+2a. Declarar na conversa o resultado obtido pelo script antes de prosseguir:
+    - se `GATE_ONLY`: registrar "Test-*KbSetupFreshness.ps1 retornou GATE_ONLY"
+    - se `AUDIT_REQUIRED: <motivo>`: registrar "Test-*KbSetupFreshness.ps1 retornou AUDIT_REQUIRED — <motivo>"
+    - se script ausente (verificado no passo 1): registrar "Test-*KbSetupFreshness.ps1 ausente — auditoria completa necessária"
+    - se erro inesperado: registrar o erro antes de decidir o próximo passo
 3. Seguir o output:
    - `AUDIT_REQUIRED: <motivo>` → prosseguir com auditoria completa (WORKFLOW passo 1)
    - `GATE_ONLY` → executar `Test-*KbGate.ps1`; se `GATE_OK`, gravar `last_setup_audit_run_at` com timestamp atual em `kb-source-metadata.md` e liberar o fluxo normal; se `BLOCK`, prosseguir com auditoria completa (WORKFLOW passo 1)
