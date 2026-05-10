@@ -18,6 +18,8 @@ Também já existe uma implementação inicial de `scripts/Invoke-GeneXusXpzImpo
 
 Esta base não substitui o fluxo oficial atual da trilha paralela da KB, não altera o comportamento das demais skills `xpz-*` e não trata sucesso operacional como evidência suficiente de sucesso funcional.
 
+Este documento é par de `02-regras-operacionais-e-runtime.md`, não downstream dele. Achados empíricos de scripts MSBuild — incompatibilidades de tasks, comportamento verificado de API, evidências de execução em KB real — pertencem aqui. Regras transversais sobre estrutura XPZ/XML e runtime GeneXus pertencem a `02-regras`.
+
 ## Objetivo
 
 Consolidar as diretrizes operacionais, restrições, riscos conhecidos e evidências de validação da skill dedicada à importação e exportação de `XPZ` do GeneXus por automação headless baseada em `MSBuild`, sem depender da operação manual pela IDE.

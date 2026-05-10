@@ -26,6 +26,7 @@ Consolidar regras de geracao, clonagem conservadora, materializacao, serializaca
 - `Regra documentada`: conceitos como `Base Table`, `Extended Table`, navegacao de `For each`, `Load`, `Refresh` e `Refresh Grid` pertencem ao runtime/especificacao do GeneXus e nao podem ser inferidos apenas da forma do XML.
 - `Inferência forte`: certos sinais estruturais do XML permitem falar em risco runtime relativo, desde que a fala seja qualificada e nao prometa comportamento real sem teste.
 - `Hipótese`: quanto mais denso o objeto em `events`, `grid`, `Level`, `AttributeProperties`, `parent`, `pattern` e links contextuais, maior tende a ser a sensibilidade a navegacao, carga de dados e comportamento nao trivial em execucao.
+- `Regra operacional`: achados empíricos específicos de scripts MSBuild headless — incompatibilidades de tasks, comportamentos verificados de API, evidências de execução em KB real — pertencem a `10-base-operacional-msbuild-headless.md`, não a este documento; `10-base` é par deste documento, não downstream dele.
 
 ## Niveis de confianca de fonte
 
