@@ -101,7 +101,12 @@ Do NOT use esta skill para:
 - Recomendar reabertura da KB na IDE somente quando houver warning ou efeito colateral
   detectado no build (ex: extensão ausente, `Access denied`, stderr não vazio), ou quando
   o contexto da solicitação indicar que o objetivo é validar a aplicação em execução —
-  não mencionar IDE nem URL em builds sem warning onde apenas "faça um build" foi pedido
+  não mencionar IDE nem URL em builds sem warning onde apenas "faça um build" foi pedido;
+  quando a condição estiver presente (ex: stderr não vazio), formular a recomendação como
+  consequência determinística da evidência encontrada — citar o padrão específico detectado
+  e recomendar explicitamente (ex: "stderr não estava vazio: [padrão]; recomendo reabrir
+  a KB na IDE para conferência funcional antes de tratar o build como validado"); não
+  enquadrar como sugestão condicional ao interesse do usuário
 - Exigir confirmação explícita antes de qualquer execução de reorg
 - Tratar `ImpactDatabaseOnly` como pré-requisito de inspeção antes de autorizar `ReorganizeOnly` explícito
 - Exigir confirmação interativa obrigatória antes de `ReorganizeOnly`, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
@@ -135,6 +140,8 @@ Arquivos de referência e quando carregar:
 | [README.md](../README.md) | Sempre — regras editoriais e posicionamento da base |
 | [10-base-operacional-msbuild-headless.md](../10-base-operacional-msbuild-headless.md) | Sempre — base de infraestrutura MSBuild compartilhada |
 | [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) | Regras operacionais e restrições da trilha XPZ |
+
+Skills externas não listadas nesta tabela não devem ser carregadas durante a execução desta skill sem necessidade concreta derivada do contexto específico da tarefa.
 
 ---
 
