@@ -65,7 +65,7 @@ Wrappers esperados:
   `KbIntelligence\kb-intelligence.sqlite`.
 - `Query-<NomeKb>KbIntelligence.ps1`: consulta o indice derivado, inclusive
   `index-metadata`.
-- `Test-<NomeKb>KbGate.ps1`: gate de frescor — verifica estrutura, SQLite,
+- `Test-<NomeKb>KbIndexGate.ps1`: gate de frescor — verifica estrutura, SQLite,
   timestamps e retorna `GATE_OK` ou lanca `BLOCK: <motivo>`; deve ser o unico
   ponto de execucao do gate.
 - `Test-<NomeKb>KbSourceSanity.ps1`: wrapper consultivo para XMLs locais da
@@ -95,12 +95,12 @@ Para qualquer pergunta sobre existencia, localizacao, impacto tecnico, dependent
 dependencias ou investigacao funcional curta sobre objetos desta KB, usar
 `xpz-index-triage`. O gate e o unico ponto de entrada para o indice:
 
-1. Verificar se `scripts/Test-<NomeKb>KbGate.ps1` existe.
+1. Verificar se `scripts/Test-<NomeKb>KbIndexGate.ps1` existe.
    - Se ausente: encerrar a consulta e oferecer atualizacao via
      `xpz-kb-parallel-setup`.
 2. Executar o gate:
    ```powershell
-   & "C:\Dev\Prod\Gx_<NomeKb>\scripts\Test-<NomeKb>KbGate.ps1" #gate
+   & "C:\Dev\Prod\Gx_<NomeKb>\scripts\Test-<NomeKb>KbIndexGate.ps1" #gate
    ```
    - `GATE_OK` → prosseguir com `xpz-index-triage`.
    - `BLOCK: <motivo>` → encerrar a consulta e oferecer rebuild do indice.

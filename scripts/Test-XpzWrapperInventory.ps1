@@ -55,7 +55,7 @@ if (-not (Test-Path -LiteralPath $SkillsExamplesPath -PathType Container)) {
     exit 0
 }
 
-# Inferir prefixo KB a partir dos scripts existentes (ex: Test-MyCinemaKbGate.ps1 -> MyCinema)
+# Inferir prefixo KB a partir dos scripts existentes (ex: Test-MyCinemaKbIndexGate.ps1 -> MyCinema)
 $kbPrefix = $null
 foreach ($f in Get-ChildItem -LiteralPath $scriptsPath -Filter '*.ps1' -Name | Sort-Object) {
     if ($f -match '^[A-Za-z]+-([A-Za-z0-9]+)Kb[A-Za-z]') {

@@ -121,7 +121,7 @@ Consequencias operacionais:
 
 - todo indice gerado antes da introducao de `schema_version` e tratado automaticamente como incompativel e bloqueia qualquer consulta com mensagem explicita de rebuild
 - quando o motor evoluir para schema `"2"`, todo indice `"1"` bloqueia da mesma forma — comportamento esperado, nao bug
-- o erro de schema version e detectado pelo proprio `Query-KbIntelligenceIndex.py` antes de qualquer query, incluindo `index-metadata`; portanto o gate `Test-*KbGate.ps1` tambem falha com `BLOCK:` em indices incompativeis
+- o erro de schema version e detectado pelo proprio `Query-KbIntelligenceIndex.py` antes de qualquer query, incluindo `index-metadata`; portanto o gate `Test-*KbIndexGate.ps1` tambem falha com `BLOCK:` em indices incompativeis
 - a resposta correta a qualquer bloqueio por schema e rebuild via `Build-KbIntelligenceIndex.ps1`, nunca contorno por leitura direta do SQLite ou dos XMLs
 
 ## Triagem exploratoria no PowerShell

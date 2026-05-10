@@ -28,11 +28,11 @@ Esta skill e de invocacao obrigatoria antes de qualquer acao de consulta, triage
     - se erro inesperado: registrar o erro antes de decidir o próximo passo
 3. Seguir o output:
    - `AUDIT_REQUIRED: <motivo>` → prosseguir com auditoria completa (WORKFLOW passo 1)
-   - `GATE_ONLY` → executar `Test-*KbGate.ps1`; se `GATE_OK`, gravar `last_setup_audit_run_at` com timestamp atual em `kb-source-metadata.md` e liberar o fluxo normal; se `BLOCK`, prosseguir com auditoria completa (WORKFLOW passo 1)
+   - `GATE_ONLY` → executar `Test-*KbIndexGate.ps1`; se `GATE_OK`, gravar `last_setup_audit_run_at` com timestamp atual em `kb-source-metadata.md` e liberar o fluxo normal; se `BLOCK`, prosseguir com auditoria completa (WORKFLOW passo 1)
 
 O agente nao deve raciocinar sobre timestamps por conta propria nem substituir a execucao do script por verificacao manual de datas ou de arquivos.
 
-Quando acionada pelo gatilho global, "auditoria completa" significa: executar `Test-*KbSetupAudit.ps1` (se existir) seguido de `Test-*KbGate.ps1` (se existir), verificar que `estado_operacional_sugerido` e compativel com a tarefa em curso e liberar o fluxo somente apos `GATE_OK`. Nao acionar o WORKFLOW de criacao/documentacao (passos 1-7b) — esse WORKFLOW e reservado para quando o usuario pede explicitamente setup, atualizacao ou auditoria.
+Quando acionada pelo gatilho global, "auditoria completa" significa: executar `Test-*KbSetupAudit.ps1` (se existir) seguido de `Test-*KbIndexGate.ps1` (se existir), verificar que `estado_operacional_sugerido` e compativel com a tarefa em curso e liberar o fluxo somente apos `GATE_OK`. Nao acionar o WORKFLOW de criacao/documentacao (passos 1-7b) — esse WORKFLOW e reservado para quando o usuario pede explicitamente setup, atualizacao ou auditoria.
 
 Apos o setup ser concluido com sucesso, qualquer consulta de existencia, localizacao ou triagem de XML deve ser roteada para `xpz-index-triage` antes de abrir arquivos individuais, quando a pasta adotar `KbIntelligence`.
 
@@ -53,7 +53,7 @@ Dentro de `modo_atualizacao`, separar primeiro a intencao operacional antes de a
 
 Em `auditar_setup`, concluir primeiro a auditoria minima obrigatoria e so depois oferecer proximos passos. Antes disso, nao oferecer `sincronizar XPZ novamente`, `rebuild do indice` ou equivalentes como resposta-padrao a um pedido de "refazer setup".
 
-Quando `auditar_setup` detectar `INVENTORY_SHORT_NAMING` no campo `wrappers/inventario` da saida de `Test-*KbSetupAudit.ps1`: os scripts listados existem com naming curto (ex: `Test-KbGate.ps1`) em vez do naming canonico com prefixo KB (ex: `Test-wsEducacaoSpTesteKbGate.ps1`). Essa divergencia NAO e opcional, NAO pode ser descartada como "convencao consistente aceita", NAO e neutralizada por `GATE_OK`, `STRUCTURE_OK` ou pelo fato de os scripts funcionarem operacionalmente. O naming curto e uma divergencia do padrao desta skill. O agente deve: classificar cada script SHORT_NAMING como CUSTOMIZADO com acao de renome na tabela de 8.h; oferecer `atualizar_bootstrap_local` para executar os renomes; incluir os renomes na lista de trabalho da sessao corrente — nao adiar para sessao futura nem condicionar a confirmacao a que o usuario mencione o problema primeiro.
+Quando `auditar_setup` detectar `INVENTORY_SHORT_NAMING` no campo `wrappers/inventario` da saida de `Test-*KbSetupAudit.ps1`: os scripts listados existem com naming curto (ex: `Test-KbIndexGate.ps1`) em vez do naming canonico com prefixo KB (ex: `Test-wsEducacaoSpTesteKbIndexGate.ps1`). Essa divergencia NAO e opcional, NAO pode ser descartada como "convencao consistente aceita", NAO e neutralizada por `GATE_OK`, `STRUCTURE_OK` ou pelo fato de os scripts funcionarem operacionalmente. O naming curto e uma divergencia do padrao desta skill. O agente deve: classificar cada script SHORT_NAMING como CUSTOMIZADO com acao de renome na tabela de 8.h; oferecer `atualizar_bootstrap_local` para executar os renomes; incluir os renomes na lista de trabalho da sessao corrente — nao adiar para sessao futura nem condicionar a confirmacao a que o usuario mencione o problema primeiro.
 
 ## PATH RESOLUTION
 
@@ -75,7 +75,7 @@ Use esta skill para:
 - Validar se a pasta paralela da KB esta pronta para `sync`, geracao de XML ou empacotamento
 - Preparar a pasta paralela da KB para uso de indice derivado em `KbIntelligence`
 - Auditar setup de pasta paralela existente sem necessariamente corrigir todos os wrappers na mesma rodada
-- Corrigir wrapper local defasado ou reprovado por gate, especialmente quando a evidencia vier de `Test-*KbMetadataWrapper.ps1`, `Test-*KbGate.ps1` ou `Test-*KbStructure.ps1`
+- Corrigir wrapper local defasado ou reprovado por gate, especialmente quando a evidencia vier de `Test-*KbMetadataWrapper.ps1`, `Test-*KbIndexGate.ps1` ou `Test-*KbStructure.ps1`
 - Atualizar wrappers de pasta paralela com historico de uso para incorporar novos scripts previstos pela base metodologica compartilhada
 - Detectar que o `AGENTS.md` da pasta paralela esta desatualizado em relacao ao padrao canonico atual — por exemplo, ausencia de secao `## Triagem Por Indice`, lista de wrappers incompleta ou outras secoes ausentes identificadas por comparacao com `examples/AGENTS.md.example`
 - Verificar se o naming dos diretorios de container em `ObjetosDaKbEmXml` corresponde ao GUID real de cada objeto — especialmente `Folder/`, `Module/` e `PackagedModule/` — e propor correcao quando houver inversao ou divergencia
@@ -228,7 +228,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 | `Test-*KbFullSnapshot.ps1` | sempre (fluxo oficial de materializacao) | `pronto_para_primeira_materializacao` |
 | `Query-*KbIntelligence.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Rebuild-*KbIntelligenceIndex.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
-| `Test-*KbGate.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
+| `Test-*KbIndexGate.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Get-*KbMetadata.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Test-*KbMetadataWrapper.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Test-*KbStructure.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
@@ -243,7 +243,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 - Quando a pasta paralela da KB adotar `KbIntelligence`, a pasta `scripts` tambem deve prever wrappers locais finos para:
   - consulta do indice derivado em `KbIntelligence\kb-intelligence.sqlite`
   - regeneracao e validacao do indice a partir de `ObjetosDaKbEmXml`
-  - execucao do gate de frescor (`Test-*KbGate.ps1`): chama o wrapper de consulta local com `-Query index-metadata`, le `kb-source-metadata.md`, compara timestamps e retorna `GATE_OK` ou lanca `BLOCK: <motivo>`; depende de `Query-*KbIntelligence.ps1` na mesma pasta; deve ser o unico ponto de execucao do gate de frescor
+  - execucao do gate de frescor (`Test-*KbIndexGate.ps1`): chama o wrapper de consulta local com `-Query index-metadata`, le `kb-source-metadata.md`, compara timestamps e retorna `GATE_OK` ou lanca `BLOCK: <motivo>`; depende de `Query-*KbIntelligence.ps1` na mesma pasta; deve ser o unico ponto de execucao do gate de frescor
   - leitura de campos chave de `kb-source-metadata.md` (`Get-*KbMetadata.ps1`): elimina o padrao recorrente de `Select-String + regex` inline nos chamadores; expoe ao menos `last_xpz_materialization_run_at`, `kb_name` e `source_guid`
     - contrato semantico canonico dos tres campos:
       - `last_xpz_materialization_run_at`: campo de topo ou frontmatter de `kb-source-metadata.md`
@@ -298,7 +298,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - [Test-KbSourceSanity.example.ps1](examples/Test-KbSourceSanity.example.ps1)
   - [Test-KbPackageCollision.example.ps1](examples/Test-KbPackageCollision.example.ps1)
   - [Notify-TaskComplete.example.ps1](examples/Notify-TaskComplete.example.ps1)
-  - [Test-KbGate.example.ps1](examples/Test-KbGate.example.ps1)
+  - [Test-KbIndexGate.example.ps1](examples/Test-KbIndexGate.example.ps1)
   - [Get-KbMetadata.example.ps1](examples/Get-KbMetadata.example.ps1)
   - [Test-KbMetadataWrapper.example.ps1](examples/Test-KbMetadataWrapper.example.ps1)
   - [Test-KbSetupAudit.example.ps1](examples/Test-KbSetupAudit.example.ps1)
@@ -324,7 +324,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 
 ## GATE DE COMPATIBILIDADE OPERACIONAL
 
-Antes de trabalho substantivo em uma pasta paralela da KB que declare uso de `KbIntelligence`, validar quatro camadas na ordem exata executada pelo `Test-*KbGate.ps1`:
+Antes de trabalho substantivo em uma pasta paralela da KB que declare uso de `KbIntelligence`, validar quatro camadas na ordem exata executada pelo `Test-*KbIndexGate.ps1`:
 
 1. Estrutura (primeira camada, executada via `Test-*KbStructure.ps1`): pastas funcionais esperadas, `README.md`, `AGENTS.md`, `kb-source-metadata.md`, `ObjetosDaKbEmXml`, `KbIntelligence` e scripts minimos com os nomes corretos. Se `Test-KbStructure` retornar qualquer coisa diferente de `STRUCTURE_OK`, o gate bloqueia imediatamente — nao avancar para camadas internas.
 2. Wrappers: scripts locais funcionais em `scripts`, incluindo consulta do indice com suporte a `index-metadata`, regeneracao/validacao do indice com `-FailOnValidationFailure` e materializacao XPZ/XML com refresh compulsorio do indice.
@@ -414,7 +414,7 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
 7. Quando houver `README.md` local na pasta paralela, registrar ali tambem a identificacao da pasta nativa da KB e a regra de somente leitura em linguagem clara
 7a. Se a pasta paralela adota `KbIntelligence`, incluir obrigatoriamente no `AGENTS.md` local a secao `## Triagem Por Indice` com:
     - Roteamento: perguntas de existencia/localizacao/impacto tecnico/relacoes/investigacao funcional curta → `xpz-index-triage`
-    - Gate: `Test-*KbGate.ps1` como unica porta de entrada; gate bloqueado impede pesquisa ampla, triagem substantiva e varredura de XMLs
+    - Gate: `Test-*KbIndexGate.ps1` como unica porta de entrada; gate bloqueado impede pesquisa ampla, triagem substantiva e varredura de XMLs
     - Regra explicita: nao compensar gate bloqueado com leitura manual de SQLite, JSON de validacao, `kb-source-metadata.md` ou XML oficial
     - Fonte normativa: `ObjetosDaKbEmXml` para confirmacao somente apos gate liberado
   Esta secao e pre-requisito para declarar o setup como concluido; sem ela, agentes podem rotear perguntas de triagem para `nexa` (regra generica "tarefa GeneXus → nexa") em vez de `xpz-index-triage`, furando o gate. Em `modo_criacao`, criar a secao junto com o restante do `AGENTS.md`. Em `modo_atualizacao`, verificar e adicionar se ausente (ver passo 8.g).
@@ -462,7 +462,7 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
    - Em pedido generico de auditoria, comecar por `auditar_setup`; se a auditoria encontrar um caso deterministico de wrapper defasado que esta skill manda corrigir, trocar explicitamente para `corrigir_wrapper_local` e comunicar ao usuario antes da escrita usando a formula: "a auditoria encontrou um caso deterministico de correcao; vou mudar explicitamente para `corrigir_wrapper_local` antes da escrita"
    - Conta como caso deterministico de correcao para fins dessa transicao:
      - `Get-*KbMetadata.ps1` defasado contra o formato real de `kb-source-metadata.md` ja coberto pelo example atual, com `Test-*KbMetadataWrapper.ps1` bloqueando por esse motivo especifico — fluxo obrigatorio definido em 8.a.iii
-     - qualquer outro wrapper bloqueado por `Test-*KbMetadataWrapper.ps1` ou `Test-*KbGate.ps1` por razao funcional conhecida e inequivoca, com example atual que ja cobre o formato real do dado local; criterio: a correcao e local, observavel no proprio wrapper e nao depende de decisao editorial do usuario sobre o que preservar
+     - qualquer outro wrapper bloqueado por `Test-*KbMetadataWrapper.ps1` ou `Test-*KbIndexGate.ps1` por razao funcional conhecida e inequivoca, com example atual que ja cobre o formato real do dado local; criterio: a correcao e local, observavel no proprio wrapper e nao depende de decisao editorial do usuario sobre o que preservar
    - Nao conta como caso deterministico — a transicao nao deve ocorrer quando:
      - a auditoria minima ainda nao foi concluida: gate ainda nao rodou, wrappers de 8.a ainda nao foram todos classificados ou naming de `ObjetosDaKbEmXml` (8.g2) ainda nao foi encerrado
      - o wrapper e CUSTOMIZADO com diferenca de logica ou parametros que exijam decisao explicita do usuario sobre o que preservar
@@ -473,13 +473,13 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
 
 Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao antes de iniciar 8.a; se o gatilho global nao foi verificado ainda, executar 7b agora antes de prosseguir com qualquer passo do bloco.
 
-8.a Inspecionar `scripts/` e categorizar cada script previsto pela base metodologica em uma de tres classes. Quando a pasta adota `KbIntelligence`, os scripts obrigatorios canonicos a classificar sao, no minimo: `Update-*KbFromXpz.ps1`, `Test-*KbFullSnapshot.ps1`, `Query-*KbIntelligence.ps1`, `Rebuild-*KbIntelligenceIndex.ps1`, `Test-*KbGate.ps1`, `Get-*KbMetadata.ps1`, `Test-*KbMetadataWrapper.ps1`, `Test-*KbStructure.ps1` e `Test-*KbSetupAudit.ps1`. Esta lista e normativa para a classificacao em 8.a.ii independentemente do que a versao local de `Test-*KbStructure.ps1` verificar — o escopo do checklist do gate local pode estar defasado em relacao ao padrao atual, mas a obrigacao de classificar todos esses scripts nao depende do gate.
+8.a Inspecionar `scripts/` e categorizar cada script previsto pela base metodologica em uma de tres classes. Quando a pasta adota `KbIntelligence`, os scripts obrigatorios canonicos a classificar sao, no minimo: `Update-*KbFromXpz.ps1`, `Test-*KbFullSnapshot.ps1`, `Query-*KbIntelligence.ps1`, `Rebuild-*KbIntelligenceIndex.ps1`, `Test-*KbIndexGate.ps1`, `Get-*KbMetadata.ps1`, `Test-*KbMetadataWrapper.ps1`, `Test-*KbStructure.ps1` e `Test-*KbSetupAudit.ps1`. Esta lista e normativa para a classificacao em 8.a.ii independentemente do que a versao local de `Test-*KbStructure.ps1` verificar — o escopo do checklist do gate local pode estar defasado em relacao ao padrao atual, mas a obrigacao de classificar todos esses scripts nao depende do gate.
 
 8.a.i A validacao de parse dos scripts esperados e executada automaticamente por `Test-*KbStructure.ps1`: o script roda `[System.Management.Automation.Language.Parser]::ParseFile()` sobre cada wrapper e adiciona entradas `PARSE_ERROR` ao relatorio se houver erros. Se o gate retornou `GATE_OK` (que depende de `STRUCTURE_OK`), todos os scripts passaram o parser sem erros — nenhuma execucao manual adicional e necessaria para erros. Se o gate bloqueou com mensagem de parse, corrigir o script apontado antes de continuar. ATENCAO: `GATE_OK` e `STRUCTURE_OK` provam ausencia de erros de parse, mas NAO cobrem warnings de parse — `[System.Management.Automation.Language.Parser]::ParseFile()` retorna warnings em parametro separado que o gate nao inspeciona; warnings de parse (ex: interpolacao ambigua como `"$field: $value"` em vez de `"${field}: $value"`) indicam divergencia funcional real e classificam o script como CUSTOMIZADO em 8.a.ii mesmo quando o gate passou; GATE_OK prova exclusivamente que cada script passou o parser sem erros — isso e tudo que o gate prova em relacao a 8.a; a classificacao EQUIVALENTE / AUSENTE / CUSTOMIZADO de cada script e determinada individualmente em 8.a.ii e GATE_OK nao substitui, antecipa nem influencia essa classificacao; em especial, scripts listados em `INVENTORY_SHORT_NAMING` nao podem ser declarados EQUIVALENTE com base em GATE_OK mesmo que o gate tenha passado sem erros.
 
 8.a.ii Classificar cada script que passou em 8.a.i em uma de tres classes:
     - AUSENTE: script previsto que ainda nao existe localmente
-    - EQUIVALENTE: script que passou em 8.a.i e cuja logica e equivalente ao exemplo correspondente; diferencas apenas de nome KB no sentido de prefixo KB presente no nome local mas ausente no exemplo (ex: `Test-FabricaBrasilKbGate.ps1` no lugar de `Test-KbGate.example.ps1`) sao toleradas e nao constituem divergencia; essa tolerancia NAO se aplica ao sentido inverso — script cujo nome NAO contem o prefixo KB quando deveria conter (ex: `Test-KbGate.ps1` em vez de `Test-wsEducacaoSpTesteKbGate.ps1`) nao pode ser classificado como EQUIVALENTE mesmo que o conteudo seja identico ao exemplo; esse caso e detectado pelo `INVENTORY_SHORT_NAMING` e classifica o script como CUSTOMIZADO com acao obrigatoria de renome; para ser EQUIVALENTE, nenhum parametro pode ter default hardcoded apontando para arquivo que nao existe no disco e o caminho de engine inferido no corpo do script — tipicamente `Join-Path $SharedSkillsRoot 'scripts\<nome>.ps1'` — deve apontar para arquivo que existe no motor compartilhado; engine path apontando para arquivo inexistente classifica o script como CUSTOMIZADO; adicionalmente, para o papel especifico de `Test-*KbStructure.ps1`, o script deve emitir `STRUCTURE_OK` via `Write-Output`, nao via `Write-Host` — a diferenca e funcional porque o gate filtra `$_ -is [string]` no output redirecionado via `*>&1` e `Write-Host` emite `InformationRecord` (nao `string`), quebrando o gate silenciosamente; para qualquer script, a ausencia de warnings de parse e criterio adicional de EQUIVALENTE — warnings retornados pelo segundo parametro de `[System.Management.Automation.Language.Parser]::ParseFile()` nao sao capturados pelo gate e devem ser verificados manualmente quando houver suspeita; script com warning de parse confirmado e CUSTOMIZADO, nao EQUIVALENTE
+    - EQUIVALENTE: script que passou em 8.a.i e cuja logica e equivalente ao exemplo correspondente; diferencas apenas de nome KB no sentido de prefixo KB presente no nome local mas ausente no exemplo (ex: `Test-FabricaBrasilKbIndexGate.ps1` no lugar de `Test-KbIndexGate.example.ps1`) sao toleradas e nao constituem divergencia; essa tolerancia NAO se aplica ao sentido inverso — script cujo nome NAO contem o prefixo KB quando deveria conter (ex: `Test-KbIndexGate.ps1` em vez de `Test-wsEducacaoSpTesteKbIndexGate.ps1`) nao pode ser classificado como EQUIVALENTE mesmo que o conteudo seja identico ao exemplo; esse caso e detectado pelo `INVENTORY_SHORT_NAMING` e classifica o script como CUSTOMIZADO com acao obrigatoria de renome; para ser EQUIVALENTE, nenhum parametro pode ter default hardcoded apontando para arquivo que nao existe no disco e o caminho de engine inferido no corpo do script — tipicamente `Join-Path $SharedSkillsRoot 'scripts\<nome>.ps1'` — deve apontar para arquivo que existe no motor compartilhado; engine path apontando para arquivo inexistente classifica o script como CUSTOMIZADO; adicionalmente, para o papel especifico de `Test-*KbStructure.ps1`, o script deve emitir `STRUCTURE_OK` via `Write-Output`, nao via `Write-Host` — a diferenca e funcional porque o gate filtra `$_ -is [string]` no output redirecionado via `*>&1` e `Write-Host` emite `InformationRecord` (nao `string`), quebrando o gate silenciosamente; para qualquer script, a ausencia de warnings de parse e criterio adicional de EQUIVALENTE — warnings retornados pelo segundo parametro de `[System.Management.Automation.Language.Parser]::ParseFile()` nao sao capturados pelo gate e devem ser verificados manualmente quando houver suspeita; script com warning de parse confirmado e CUSTOMIZADO, nao EQUIVALENTE
     - CUSTOMIZADO: script que existe com diferencas de logica, parametros adicionais, fluxo alterado ou qualquer mudanca alem da substituicao de nome KB; tambem e CUSTOMIZADO qualquer script com parametro cujo default hardcoded aponta para arquivo inexistente, mesmo que a logica seja identica ao exemplo — o default quebrado e divergencia de configuracao efetiva, nao mera diferenca de nome; IMPORTANTE: para classificar como CUSTOMIZADO e obrigatorio ler o exemplo canonico correspondente e identificar a divergencia concreta — observar que o script local tem implementacao completa (em vez de ser thin wrapper) nao e evidencia suficiente, pois o proprio exemplo canonico pode ser uma implementacao completa; sem leitura do exemplo e identificacao de divergencia especifica, o script deve ser classificado como EQUIVALENTE
 
 8.a.iii Para o papel especifico de `Get-*KbMetadata.ps1`, a equivalencia exige contrato funcional minimo verificavel:
@@ -516,7 +516,7 @@ Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao an
     - Apos renomear, atualizar referencias ao nome antigo nos demais scripts locais:
       - `Update-KbFromXpz.ps1` (ou equivalente local) → ajustar o default de `IndexUpdateScriptPath` e qualquer mencao ao nome antigo
       - `Test-KbStructure.ps1` (ou equivalente local) → ajustar a lista de scripts esperados para usar o nome novo
-      - `Test-KbGate.ps1` → se referenciar o nome antigo, ajustar
+      - `Test-KbIndexGate.ps1` → se referenciar o nome antigo, ajustar
     - Atualizar entradas correspondentes em `.claude\settings.json` (remover entrada antiga, adicionar entrada nova)
     - Aguardar aprovacao explicita do usuario antes de renomear ou alterar qualquer script por este motivo
 
@@ -558,7 +558,7 @@ Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao an
     - Informar ao usuario que o indice `KbIntelligence`, se existente, deve ser regenerado: o tipo dos objetos ja estava correto, mas o campo `path` dos registros ainda reflete o nome antigo da pasta e ficara desatualizado ate o rebuild
 
 8.g2.vii Criterio de parada por evidencia suficiente na verificacao de naming:
-    - Se `Test-*KbStructure.ps1` retornou `STRUCTURE_OK`, `Test-*KbGate.ps1` retornou `GATE_OK` e a verificacao de naming concluiu cada diretorio presente como conforme ou divergente com base no proprio XML local, considerar a verificacao de naming encerrada — nao prolongar procurando catalogos externos, caminhos fora da pasta paralela ou amostras extras apenas para reconfirmar tipos ja identificados
+    - Se `Test-*KbStructure.ps1` retornou `STRUCTURE_OK`, `Test-*KbIndexGate.ps1` retornou `GATE_OK` e a verificacao de naming concluiu cada diretorio presente como conforme ou divergente com base no proprio XML local, considerar a verificacao de naming encerrada — nao prolongar procurando catalogos externos, caminhos fora da pasta paralela ou amostras extras apenas para reconfirmar tipos ja identificados
     - Este criterio fecha a verificacao de naming (8.g2); nao fecha o diagnostico completo de `auditar_setup`. O fechamento completo exige ainda que o passo 8.a tenha classificado todos os wrappers canonicos obrigatorios para o cenario adotado e que nenhum permaneca AUSENTE sem decisao explicita do usuario — `STRUCTURE_OK + GATE_OK` sem essa classificacao completa nao autoriza declarar `wrappers_atualizados`
     - Falha de uma tentativa intermediaria de glob, listagem ou busca nao autoriza expandir o escopo; apenas trocar para uma leitura local mais simples e direta do XML do diretorio em teste
     - Excecao operacional: se o XML local ja permitir identificar o tipo canonico pela propria estrutura — por exemplo, raiz `<Attribute>` — isso basta; nao exigir `Object/@type` nem consulta adicional externa para fechar a auditoria
@@ -587,18 +587,18 @@ Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao an
 8.g3.vi No handoff final de `modo_atualizacao`, quando 8.g3 foi executado, listar separadamente a classificacao de `Test-*KbSourceSanity.ps1` e `Test-*KbPackageCollision.ps1`; nao substituir esse detalhe por resumo agregado como "9 scripts presentes", "scripts parseados" ou equivalente
 
 8.g3.vii Criterio de parada curta por pendencia isolada de empacotamento:
-    - Se `Test-*KbStructure.ps1` retornou `STRUCTURE_OK`, `Test-*KbGate.ps1` retornou `GATE_OK`, a verificacao de naming ja fechou sem divergencia e a unica lacuna objetiva remanescente do fluxo de empacotamento local for `Test-*KbPackageCollision.ps1 = AUSENTE`, autorizar fechamento curto do diagnostico
+    - Se `Test-*KbStructure.ps1` retornou `STRUCTURE_OK`, `Test-*KbIndexGate.ps1` retornou `GATE_OK`, a verificacao de naming ja fechou sem divergencia e a unica lacuna objetiva remanescente do fluxo de empacotamento local for `Test-*KbPackageCollision.ps1 = AUSENTE`, autorizar fechamento curto do diagnostico
     - Nessa situacao, nao prolongar a sessao com reinspecao extensa dos wrappers ja estabilizados, comparacoes repetitivas contra exemplos canonicos ou leitura manual extra de scripts que ja estao operacionais pelo contexto local
     - Basta declarar explicitamente: `sync/materializacao = OK`, `indice/gate = OK`, `empacotamento local = PENDENTE`, `Test-*KbSourceSanity.ps1 = <classe apurada>`, `Test-*KbPackageCollision.ps1 = AUSENTE` e oferecer a criacao do wrapper faltante
     - Essa saida curta nao autoriza mascarar `CUSTOMIZADO`, `AUSENTE` adicional ou memoria local desatualizada; se surgir qualquer outra lacuna objetiva alem do wrapper de colisao ausente, retomar o fluxo normal de auditoria
-    - Quando existir wrapper local `Test-*KbSetupAudit.ps1`, o agente deve executa-lo e usar sua saida como consolidacao do handoff de `auditar_setup`; isso vale para o criterio de parada curta e para qualquer outro fechamento de `auditar_setup`; ainda assim, `Test-*KbGate.ps1`, `Test-*KbMetadataWrapper.ps1` e os wrappers de empacotamento permanecem como evidencia primaria e o estado canonico declarado no handoff deve ser um dos estados desta skill, nao apenas o `estado_operacional_sugerido` do wrapper
+    - Quando existir wrapper local `Test-*KbSetupAudit.ps1`, o agente deve executa-lo e usar sua saida como consolidacao do handoff de `auditar_setup`; isso vale para o criterio de parada curta e para qualquer outro fechamento de `auditar_setup`; ainda assim, `Test-*KbIndexGate.ps1`, `Test-*KbMetadataWrapper.ps1` e os wrappers de empacotamento permanecem como evidencia primaria e o estado canonico declarado no handoff deve ser um dos estados desta skill, nao apenas o `estado_operacional_sugerido` do wrapper
 
 8.g4 Consolidacao de handoff via `Test-*KbSetupAudit.ps1` (executar imediatamente antes de 8.h quando a intencao for `auditar_setup`):
     - Verificar se `Test-*KbSetupAudit.ps1` existe na pasta `scripts` local
     - Se existir: executa-lo e reproduzir na resposta ao usuario todas as linhas de saida do wrapper — em especial todas as linhas `wrappers/inventario:` exatamente como emitidas (se ha duas linhas `wrappers/inventario:`, ambas devem aparecer; nunca resumir, omitir ou parafrasear essas linhas); citar nominalmente os blocos consolidados (`sync/materializacao`, `indice/gate`, `metadata wrapper`, `empacotamento local`, `wrappers/inventario`, `estado_operacional_sugerido`); comparar `estado_operacional_sugerido` com o estado canonico que a evidencia objetiva da auditoria sustenta; se houver divergencia, declarar o estado canonico correto e explicitar a divergencia ao usuario; nao adotar o sugerido pelo wrapper sem verificacao; a saida do wrapper consolida dimensoes operacionais mas NAO substitui a classificacao individual dos scripts — 8.a.ii e a tabela de 8.h continuam obrigatorios mesmo quando `Test-*KbSetupAudit.ps1` existe e passou
     - Se nao existir: sintetizar as dimensoes manualmente conforme as regras de 8.h; registrar o wrapper como AUSENTE na tabela de scripts de 8.h
     - Quando a saida incluir `wrappers/inventario: INVENTORY_GAPS: <lista>`: classificar cada wrapper listado como AUSENTE na tabela de scripts de 8.h e oferecer `atualizar_bootstrap_local` como proximo passo imediato antes de encerrar o handoff; nao tratar `INVENTORY_GAPS` como observacao informativa nem como item opcional para "incorporacao futura"
-    - Quando a saida incluir `wrappers/inventario: INVENTORY_SHORT_NAMING: <lista>`: os scripts existem com naming curto (ex: `Test-KbGate.ps1`) em vez do naming canonico com prefixo KB (ex: `Test-wsEducacaoSpTesteKbGate.ps1`); classificar cada wrapper listado como CUSTOMIZADO na tabela de scripts de 8.h com acao "renomear para naming canonico"; oferecer `atualizar_bootstrap_local` para executar os renomes; o rename envolve: criar o arquivo com o nome canonico (conteudo identico mas com referencias internas a scripts irmaos atualizadas para o nome canonico), validar parse, excluir o arquivo de nome curto; atualizar `AGENTS.md` com os nomes canonicos; nao encerrar sem propor essa correcao
+    - Quando a saida incluir `wrappers/inventario: INVENTORY_SHORT_NAMING: <lista>`: os scripts existem com naming curto (ex: `Test-KbIndexGate.ps1`) em vez do naming canonico com prefixo KB (ex: `Test-wsEducacaoSpTesteKbIndexGate.ps1`); classificar cada wrapper listado como CUSTOMIZADO na tabela de scripts de 8.h com acao "renomear para naming canonico"; oferecer `atualizar_bootstrap_local` para executar os renomes; o rename envolve: criar o arquivo com o nome canonico (conteudo identico mas com referencias internas a scripts irmaos atualizadas para o nome canonico), validar parse, excluir o arquivo de nome curto; atualizar `AGENTS.md` com os nomes canonicos; nao encerrar sem propor essa correcao
     - Quando a saida incluir ambos `INVENTORY_SHORT_NAMING` e `INVENTORY_GAPS`: o script de auditoria os emite como duas linhas `wrappers/inventario:` separadas — tratar cada linha de forma independente; SHORT_NAMING → CUSTOMIZADO com rename, GAPS → AUSENTE com criacao; ignorar qualquer uma das duas linhas e proibido e invalida a tabela de 8.h
 
 8.g5 Verificar se o `AGENTS.md` local contem regra irrestrita de invocacao de `nexa` para qualquer tarefa GeneXus:
@@ -661,14 +661,14 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
    - wrapper de conferencia full reaproveitando o wrapper diario
    - wrapper de consulta do indice derivado, se a KB local adotar `KbIntelligence`
    - wrapper de regeneracao e validacao do indice derivado, se a KB local adotar `KbIntelligence`
-   - `Test-*KbGate.ps1`, se a KB local adotar `KbIntelligence`
+   - `Test-*KbIndexGate.ps1`, se a KB local adotar `KbIntelligence`
    - `Get-*KbMetadata.ps1`, se a KB local adotar `KbIntelligence`
    - `Test-*KbMetadataWrapper.ps1`, se a KB local adotar `KbIntelligence`
    - `Test-*KbStructure.ps1`, se a KB local adotar `KbIntelligence`
    - helper local opcional de notificacao, se houver necessidade operacional
-20. Se os scripts `Test-*KbGate.ps1`, `Get-*KbMetadata.ps1`, `Test-*KbMetadataWrapper.ps1` e `Test-*KbStructure.ps1` forem criados ou confirmados durante o setup ou atualizacao, registrar os padroes de allowlist correspondentes em `.claude\settings.json` da pasta paralela da KB:
+20. Se os scripts `Test-*KbIndexGate.ps1`, `Get-*KbMetadata.ps1`, `Test-*KbMetadataWrapper.ps1` e `Test-*KbStructure.ps1` forem criados ou confirmados durante o setup ou atualizacao, registrar os padroes de allowlist correspondentes em `.claude\settings.json` da pasta paralela da KB:
    - Para cada script, adicionar uma entrada no array `permissions.allow` no formato `PowerShell(& "<caminho-absoluto-do-script>" *)`
-   - Usar o nome real do script no caminho (ex: `Test-FabricaBrasilKbGate.ps1`), nao o nome sanitizado do exemplo
+   - Usar o nome real do script no caminho (ex: `Test-FabricaBrasilKbIndexGate.ps1`), nao o nome sanitizado do exemplo
    - Se `.claude\settings.json` ainda nao existir, criar com estrutura minima
    - Se `.claude\settings.json` ja existir, ler o conteudo atual, verificar quais padroes ja estao presentes e inserir apenas os ausentes; nao remover nem sobrescrever entradas ja existentes
    - Tratar essa etapa como parte do bootstrap ou da atualizacao, nao como pendencia manual posterior; o agente deve executar isso antes de declarar o estado de conclusao
@@ -704,7 +704,7 @@ PastaParalelaDaKb/
     Test-KbFullSnapshot.ps1
     Query-KbIntelligence.ps1
     Rebuild-KbIntelligenceIndex.ps1
-    Test-KbGate.ps1
+    Test-KbIndexGate.ps1
     Get-KbMetadata.ps1
     Test-KbMetadataWrapper.ps1
     Test-KbStructure.ps1

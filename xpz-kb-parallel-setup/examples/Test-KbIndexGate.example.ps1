@@ -22,10 +22,10 @@ Caminho opcional para o wrapper local de verificacao de estrutura.
 Quando omitido, usa Test-KbStructure.ps1 na mesma pasta deste script.
 
 .EXAMPLE
-.\Test-KbGate.ps1
+.\Test-KbIndexGate.ps1
 
 .EXAMPLE
-& (Join-Path $kbRoot 'scripts\Test-FabricaBrasilKbGate.ps1')
+& (Join-Path $kbRoot 'scripts\Test-FabricaBrasilKbIndexGate.ps1')
 #>
 
 param(

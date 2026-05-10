@@ -17,7 +17,7 @@ Caminho opcional para a raiz da pasta paralela da KB.
 Quando omitido, usa a pasta pai de `scripts`.
 
 .PARAMETER GateWrapperPath
-Caminho opcional para `Test-KbGate.ps1`.
+Caminho opcional para `Test-KbIndexGate.ps1`.
 
 .PARAMETER MetadataWrapperTestPath
 Caminho opcional para `Test-KbMetadataWrapper.ps1`.
@@ -60,7 +60,7 @@ if (-not $KbRoot) {
 }
 
 if (-not $GateWrapperPath) {
-    $GateWrapperPath = Join-Path $PSScriptRoot 'Test-KbGate.ps1'
+    $GateWrapperPath = Join-Path $PSScriptRoot 'Test-KbIndexGate.ps1'
 }
 
 if (-not $MetadataWrapperTestPath) {
