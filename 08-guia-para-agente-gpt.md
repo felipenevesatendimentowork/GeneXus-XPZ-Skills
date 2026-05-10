@@ -1054,3 +1054,33 @@ Regras da escada:
 - Regra operacional: quando `Procedure` de relatorio simples estiver coberta por molde canonico da trilha, rotular a resposta como baseada em `molde sanitizado`; quando houver escalada, rotular explicitamente `XML real da KB atual`, `XML real de outra KB` ou `hipotese`
 - Hipótese: no caso de `WorkWithForWeb`, os anexos ajudam a prototipar, mas ainda nao eliminam a necessidade de cautela extra quando o caso concreto depender fortemente de `pattern` gerado e contexto do objeto pai
 - Hipótese: nem todos os tipos da base chegaram nesse mesmo nivel de cobertura; para varios deles ainda prevalece a orientacao por familia + molde bruto comparavel
+
+## Risco de inferência inconsciente em investigações
+
+Complemento ao sistema de níveis de confiança de `02-regras-operacionais-e-runtime.md`.
+
+O risco mais difícil de detectar não é o agente que sabe que está especulando e não sinaliza.
+É o agente que acredita estar reportando observação direta quando está, na prática, consolidando
+por contexto — e por isso não percebe que deveria qualificar.
+
+Três padrões concretos identificados empiricamente (2026-05-10):
+
+- **Inferência por proximidade estrutural**: atribuir propriedade de uma linha a outra linha
+  vizinha da mesma família, sem query literal da linha específica. Exemplo: concluir que o
+  `EntityTypeNamespace` de um tipo é K2BTools porque os tipos vizinhos na mesma tabela têm
+  esse namespace, sem ler o campo da linha alvo diretamente.
+
+- **COUNT sem granularidade reportado como narrativa sobre elementos**: transformar um total
+  agregado por critério textual em afirmação sobre elementos individuais sem verificar se
+  todos têm o mesmo nome/tipo. Exemplo: "37 registros de FormDesigner" quando o COUNT mistura
+  dois nomes distintos (`FormDesigner`=1, `FormDesignerPart`=36).
+
+- **Consolidação de evidências de contexto sem preservar origem**: agrupar itens do mesmo
+  provider/contexto em um único bloco e, ao redigir, deixar a proximidade sugerir vínculo
+  que não foi provado. Exemplo: listar GUIDs de um provider junto ao trecho sobre um tipo
+  específico sem declarar explicitamente a qual tipo cada GUID pertence.
+
+Regra operacional: ao revisar ou registrar achados de investigação — próprios ou de outro
+agente — verificar explicitamente se cada afirmação tem fonte direta rastreável (linha lida,
+query executada, coluna nominada) ou se é inferência por consolidação de contexto. Em caso
+de dúvida, qualificar como `Inferência forte` ou `Hipótese` antes de registrar como fato.
