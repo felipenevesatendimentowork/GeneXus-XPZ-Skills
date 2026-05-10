@@ -102,6 +102,7 @@ Do NOT use this skill for:
   - `Hipotese`
 - Explicitar o limite metodologico quando a triagem nao cobrir a semantica necessaria
 - Reconhecer quando a KB local ainda nao expoe wrapper compativel com a capacidade desejada e tratar isso como adaptacao local pendente, nao como falha metodologica do indice
+- Quando a busca no indice for motivada por warning de GeneXus sobre provider ausente, item desconhecido, designer ou metadado de extensao: classificar o item citado antes de interpretar o resultado — (a) objeto GeneXus exportavel comum; (b) metadado interno ou part; (c) designer/provider de extensao; (d) tipo desconhecido. Resultado negativo do indice para item tipo (b), (c) ou (d) deve ser reportado como conclusao limitada: "nao encontrado no indice derivado nem no XPZ/XML" — nunca "nao existe na KB". Consultar regra conceitual em `02-regras-operacionais-e-runtime.md` secao "Limite do XPZ/XML frente a providers e extensoes GeneXus".
 
 ---
 

@@ -2191,3 +2191,14 @@ Funcionar como resumo decisório sem esconder os limites da evidência.
 - `Regra operacional`: a confirmacao funcional exige teste com o insumo oficial na versao correta e no formato esperado pelo objeto; esse teste e responsabilidade da frente funcional, nao da trilha de import.
 - `Regra operacional`: essa camada complementa os sub-estados ja definidos na skill `xpz-msbuild-import-export` — em particular `importacao real efetiva provada` — com consciencia explicita do insumo externo como dimensao de validacao separada.
 - `Regra operacional`: ausencia de teste funcional com insumo real nao invalida o sub-estado de import ja declarado; sao camadas independentes.
+
+## Limite do XPZ/XML frente a providers e extensoes GeneXus
+
+- `Regra operacional`: o acervo XPZ/XML materializado em `ObjetosDaKbEmXml` e fonte normativa para objetos GeneXus exportaveis comuns; ele nao cobre metadados internos de providers, designers ou extensoes que a KB persiste diretamente no banco interno.
+- `Regra operacional`: quando um warning de abertura, build ou export da KB mencionar provider ausente, item desconhecido, designer, part ou metadado de extensao, classificar o item citado antes de buscar no XPZ/XML: (a) objeto GeneXus exportavel comum; (b) part/metadado interno; (c) designer/provider de extensao; (d) tipo desconhecido.
+- `Regra operacional`: se a busca no XPZ/XML for negativa e o item nao pertencer a categoria (a), a conclusao deve ser limitada: "nao encontrado no XPZ/XML" — nunca "nao existe na KB".
+- `Regra operacional`: as seis verbalizacoes canonicas de conclusao para esse caso sao, em ordem de certeza crescente: `nao encontrado no XPZ/XML`, `nao exportado como objeto comum`, `possivel metadado interno de provider`, `confirmado em tabela interna da KB`, `provider ausente ou incompativel no ambiente`, `remocao requer ferramenta oficial ou suporte`.
+- `Regra operacional`: nunca usar apenas o resultado negativo da busca no XPZ/XML para concluir que o warning de provider e falso ou que nao ha residuo na KB.
+- `Regra operacional`: termos que devem acionar classificacao antes de concluir ausencia: `FormDesigner`, `WebPanelDesigner`, `SDPanelDesigner`, `Object Designer`, `FormDesignerPart`, `provider GUID`, `extension provider`, `item desconhecido` e qualquer GUID nao reconhecido citado em warning de abertura ou build.
+- `Regra operacional`: referencia textual a K2B, K2BTools ou nome de framework no XML exportado nao e, por si so, evidencia de provider ausente; pode ser consumo legitimo de design system ou framework. Nao confundir objeto funcional com metadado interno de designer.
+- `Regra operacional`: diagnostico SQL somente leitura no banco interno da KB e o caminho para evidencia de segunda camada, quando o XPZ/XML nao cobrir o item. Esse diagnostico so deve ser sugerido quando houver evidencia concreta de provider/item desconhecido na abertura ou build, e nunca como varredura de rotina.

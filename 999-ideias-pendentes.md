@@ -690,24 +690,33 @@ Entity WHERE EntityTypeId=161: 36 entidades
   Cada uma com EntityLastVersionId=1
 ```
 
-*EntityVersionComposition — pais das FormDesignerPart (18 WebPanels distintos):*
+*EntityVersionComposition — pais das FormDesignerPart (225 distintos, verificado 2026-05-10):*
 ```
 CardPhotoActions, CardPhotoCompact, CardWithSummary, CardWithSummaryVariant1,
 DetailPopOver, DetailVariant1, DetailVariant2, DetailWithPhoto,
 GenericEntityList, GenericEntityListWithImage, K2BT_SimplePriceList,
 NotificationList, PhotoWithTitle, SelectedItem, SelectedItemTag,
-StructuredList, StructuredPeopleList, Timeline
+StructuredList, StructuredPeopleList, Timeline, [+ 207 outros]
 ```
-Cada um aparece com 2 linhas de composição de `FormDesignerPart`.
+Os 18 nomes acima são a amostra parcial citada no relato original — todos confirmados presentes.
+O total real é 225 pais distintos, incluindo WebPanels de negócio, GAMExample, K2BTools,
+layouts Orion, wrappers e outros objetos da KB.
+
+Distribuição de linhas de composição por pai (verificado 2026-05-10):
+- 217 pais com 36 linhas cada
+- 6 pais com 72 linhas cada
+- 2 pais com 108 linhas cada
 
 **Divergências encontradas no relato do agente externo:**
 1. `EntityTypeNamespace=K2BTools` atribuído ao FormDesigner (EntityTypeId=161) — **incorreto**; namespace é vazio.
 2. `EntityVersion.EntityVersionName='FormDesigner': 37 ocorrências` — **incorreto**; são 1 para 'FormDesigner' e 36 para 'FormDesignerPart'.
 3. GUID `562b39a3` associado ao "contexto FormDesigner" — **impreciso**; é o GUID do WebPanelDesigner na EntityVersionProperties; a row em Entity com esse GUID é Root (EntityTypeId=1), não FormDesigner.
+4. "18 WebPanels distintos" como pais das FormDesignerPart — **incorreto**; o total real é 225. O relato original truncou o resultado da query sem sinalizar. Esta divergência foi propagada para o registro do 999 e corrigida aqui em 2026-05-10 por verificação empírica própria.
+5. "Cada um aparece com 2 linhas de composição" — **incorreto**; a distribuição real é 36/72/108 linhas por pai, conforme verificado em 2026-05-10.
 
-Essas imprecisões não invalidam o diagnóstico central, mas afetam queries de busca: uma
-query filtrando `Namespace='K2BTools'` não encontraria FormDesigner, gerando novo falso
-negativo.
+As divergências 1, 2 e 3 não invalidam o diagnóstico central, mas afetam queries de busca
+(ex.: filtro `Namespace='K2BTools'` não encontraria FormDesigner). As divergências 4 e 5
+não afetam o diagnóstico de provider ausente, mas eram imprecisões factuais no registro.
 
 ### Tabelas candidatas para diagnóstico
 
@@ -730,7 +739,20 @@ negativo.
 3. O GeneXus documenta oficialmente o esquema `EntityType`/`Entity`/`EntityVersion`? Se não, há risco de quebra em upgrade — essa limitação precisa ficar documentada explicitamente junto com a capacidade.
 4. A normalização `Server=localhost` a partir de `<HostName>localhost</HostName>` (e não de `<ServerInstance>`) é confiável em todos os ambientes? Verificar se `HostName` sempre está presente ou se a derivação deve usar `ServerInstance` como fallback.
 
-### Limiar para implementar
+### Frente de regras conceituais — encerrada em 2026-05-10
+
+A dimensão de **regras de classificação e comunicação** desta ideia foi tratada como frente
+separada e aplicada diretamente nas skills e na base compartilhada:
+
+- `02-regras-operacionais-e-runtime.md` — nova seção "Limite do XPZ/XML frente a providers
+  e extensoes GeneXus" com as oito regras operacionais conceituais
+- `xpz-reader/SKILL.md` — bullet de classificação de item antes de concluir ausência
+- `xpz-index-triage/SKILL.md` — bullet análogo para resultado negativo do índice
+
+O que permanece pendente nesta entrada é apenas a capacidade de **diagnóstico SQL somente
+leitura** no banco interno da KB, coberta pelo limiar abaixo.
+
+### Limiar para implementar (diagnóstico SQL)
 
 Implementar quando houver: (a) resposta para a questão 1 acima (home no setup ou skill
 própria), e (b) caso concreto adicional de warning de provider em KB diferente que confirme
