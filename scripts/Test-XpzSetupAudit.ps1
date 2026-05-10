@@ -176,11 +176,14 @@ if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
     $inventoryStatus = 'INVENTORY_UNKNOWN: motor Test-XpzWrapperInventory.ps1 ausente'
 }
 
+$hasInventoryGaps = $inventoryStatus -match '\bINVENTORY_GAPS\b'
+
 $suggestedState = switch ($true) {
+    ($syncStatus -eq 'PENDENTE') { 'pronto_para_primeira_materializacao'; break }
+    ($hasInventoryGaps) { 'atualizacao_metodologica_pendente'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'NAO_ADOTADO') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'PENDENTE') { 'auditoria_de_empacotamento_pendente'; break }
-    ($syncStatus -eq 'PENDENTE') { 'pronto_para_primeira_materializacao'; break }
     default { 'wrappers_atualizados' }
 }
 
