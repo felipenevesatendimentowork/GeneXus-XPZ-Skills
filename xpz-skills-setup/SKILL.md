@@ -66,12 +66,35 @@ Use esta skill para:
 - Detectar skills ausentes, órfãs ou com vínculo quebrado nas ferramentas instaladas
 - Registrar uma nova skill adicionada ao repositório
 - Remover o registro de uma skill removida do repositório
+- Verificar se o AGENTS.md global do usuário tem as práticas recomendadas para uso das skills XPZ
 
 Do NOT use this skill para:
 - Instalar Codex, Claude Code ou OpenCode na máquina
 - Registrar skills de outros repositórios (ex: `nexa`, skills GeneXus oficiais)
 - Preparar ou auditar a pasta paralela de uma KB GeneXus (use `xpz-kb-parallel-setup`)
 - Sincronizar XPZ de uma KB (use `xpz-sync`)
+
+---
+
+## AGENTS.MD RECOMENDADO
+
+As práticas abaixo afetam diretamente o comportamento das skills XPZ em qualquer
+ferramenta de agente. Ao configurar um novo ambiente, verificar se o AGENTS.md
+global do usuário (ex: `~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`) contém ao
+menos estas regras:
+
+```markdown
+## Ferramentas de busca e shell
+
+- Nunca usar `cd "path" && <comando>` — o harness bloqueia esse padrão
+  incondicionalmente ("Compound command contains cd with path operation").
+  Nenhuma entrada na allowlist contorna esse bloqueio.
+- Para listar ou buscar arquivos: usar as ferramentas nativas `Glob` e `Grep`
+  com path absoluto.
+- Quando inevitável usar o shell, passar o path direto ao comando:
+  - `Get-ChildItem -Path "C:\..."` em vez de `cd "C:\..." && Get-ChildItem`
+  - `git -C "C:\..." <cmd>` em vez de `cd "C:\..." && git <cmd>`
+```
 
 ---
 
@@ -92,3 +115,7 @@ Do NOT use this skill para:
 6. Aguardar confirmação explícita do usuário
 7. Executar as correções aprovadas
 8. Confirmar resultado por ferramenta
+9. Verificar se o AGENTS.md global do usuário contém as práticas recomendadas
+   (seção `## AGENTS.MD RECOMENDADO`); se não contiver, apresentar o bloco
+   sugerido e oferecer orientação — nunca editar o AGENTS.md do usuário
+   automaticamente
