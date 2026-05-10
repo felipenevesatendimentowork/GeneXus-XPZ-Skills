@@ -672,7 +672,11 @@ Os três compartilham o mesmo `ProviderId=be15a055` (K2B Object Designer). Esse 
 `EntityVersionProperties`.
 
 O GUID `562b39a3` pertence ao **WebPanelDesigner**, não ao FormDesigner. A row em `Entity`
-com `EntityGuid=562b39a3` tem `EntityTypeId=1` (Root). Não é uma entidade FormDesigner.
+com `EntityGuid=562b39a3` tem `EntityTypeId=1` (Root) e `EntityId=155`. Não é uma entidade
+FormDesigner. O detalhe estrutural: `EntityId=155` coincide com o `EntityTypeId` do
+WebPanelDesigner — padrão que sugere que tipos de designer se registram como entidades Root
+com `EntityId = seu próprio EntityTypeId`. Não documentado oficialmente; observação empírica
+desta KB.
 
 *EntityVersion — instâncias FormDesignerPart:*
 ```
