@@ -690,33 +690,32 @@ Entity WHERE EntityTypeId=161: 36 entidades
   Cada uma com EntityLastVersionId=1
 ```
 
-*EntityVersionComposition — pais das FormDesignerPart (225 distintos, verificado 2026-05-10):*
+*EntityVersionComposition — pais das FormDesignerPart (18 WebPanels distintos, verificados 2026-05-10):*
 ```
 CardPhotoActions, CardPhotoCompact, CardWithSummary, CardWithSummaryVariant1,
 DetailPopOver, DetailVariant1, DetailVariant2, DetailWithPhoto,
 GenericEntityList, GenericEntityListWithImage, K2BT_SimplePriceList,
 NotificationList, PhotoWithTitle, SelectedItem, SelectedItemTag,
-StructuredList, StructuredPeopleList, Timeline, [+ 207 outros]
+StructuredList, StructuredPeopleList, Timeline
 ```
-Os 18 nomes acima são a amostra parcial citada no relato original — todos confirmados presentes.
-O total real é 225 pais distintos, incluindo WebPanels de negócio, GAMExample, K2BTools,
-layouts Orion, wrappers e outros objetos da KB.
+Cada um aparece com 2 linhas de composição de `FormDesignerPart` (36 linhas totais / 18 pais).
+Lista completa, não parcial: query verificada com `COUNT(DISTINCT CompoundEntityId)=18`
+e `rows_not_matching_exact_version_join=0`.
 
-Distribuição de linhas de composição por pai (verificado 2026-05-10):
-- 217 pais com 36 linhas cada
-- 6 pais com 72 linhas cada
-- 2 pais com 108 linhas cada
+Nota: WebPanelDesigner (EntityTypeId=155) e SDPanelDesigner (EntityTypeId=156) não possuem
+entradas em `EntityVersionComposition` como componentes nesta KB — apenas FormDesigner (161)
+tem linhas de composição. Isso implica que o escopo desta query é completo para
+"WebPanels com composição de FormDesignerPart", mas incompleto para audit total de
+resíduos K2BTools internos (que exigiria checar outros ângulos além de ComponentEntityTypeId=161).
 
 **Divergências encontradas no relato do agente externo:**
 1. `EntityTypeNamespace=K2BTools` atribuído ao FormDesigner (EntityTypeId=161) — **incorreto**; namespace é vazio.
 2. `EntityVersion.EntityVersionName='FormDesigner': 37 ocorrências` — **incorreto**; são 1 para 'FormDesigner' e 36 para 'FormDesignerPart'.
 3. GUID `562b39a3` associado ao "contexto FormDesigner" — **impreciso**; é o GUID do WebPanelDesigner na EntityVersionProperties; a row em Entity com esse GUID é Root (EntityTypeId=1), não FormDesigner.
-4. "18 WebPanels distintos" como pais das FormDesignerPart — **incorreto**; o total real é 225. O relato original truncou o resultado da query sem sinalizar. Esta divergência foi propagada para o registro do 999 e corrigida aqui em 2026-05-10 por verificação empírica própria.
-5. "Cada um aparece com 2 linhas de composição" — **incorreto**; a distribuição real é 36/72/108 linhas por pai, conforme verificado em 2026-05-10.
 
-As divergências 1, 2 e 3 não invalidam o diagnóstico central, mas afetam queries de busca
-(ex.: filtro `Namespace='K2BTools'` não encontraria FormDesigner). As divergências 4 e 5
-não afetam o diagnóstico de provider ausente, mas eram imprecisões factuais no registro.
+Essas imprecisões não invalidam o diagnóstico central, mas afetam queries de busca: uma
+query filtrando `Namespace='K2BTools'` não encontraria FormDesigner, gerando novo falso
+negativo.
 
 ### Tabelas candidatas para diagnóstico
 
