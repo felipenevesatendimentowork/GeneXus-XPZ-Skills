@@ -615,3 +615,123 @@ parâmetro `-p:kbLocation=<caminho>`, reusando o arquivo permanente da instalaç
 Implementar quando houver: (a) verificação empírica do efeito real de `CompressData='true'`
 confirmando operação segura sem efeito colateral grave, e (b) caso concreto de KB com
 degradação de performance pós-import que se beneficiaria da compactação.
+
+## Diagnóstico SQL somente leitura do banco interno da KB para provider/item desconhecido
+
+**Origem:** sugestão recebida de agente externo em 2026-05-10, verificada empiricamente na
+mesma sessão contra `GX_KB_wsEducacaoSpTeste`.
+
+### Problema concreto que motiva a ideia
+
+As skills XPZ operam sobre XPZ/XML exportados, acervo `ObjetosDaKbEmXml` e índice derivado
+SQLite (`KbIntelligence`). Nenhuma dessas camadas cobre o banco interno da KB (`GX_KB_*`
+no SQL Server ou LocalDB). Metadados de designer de providers como K2BTools são persistidos
+diretamente no banco interno em tabelas como `EntityType`, `Entity`, `EntityVersion` e
+`EntityVersionComposition` — e nunca aparecem em XPZ exportado.
+
+O risco prático é o **falso negativo**: agente busca `FormDesigner`, `K2B Object Designer`
+ou o GUID do provider no XPZ/XML, não encontra nada, e conclui prematuramente que não há
+resíduo do K2BTools na KB. No caso real (verificado empiricamente), havia resíduo — 36
+entidades `FormDesignerPart` e 3 registros de tipo de designer com `ProviderId` do K2BTools
+— mas tudo confinado ao banco interno.
+
+O risco inverso também existe: ao encontrar os registros no SQL, o agente se sentir
+autorizado a propor deleção. As tabelas envolvem metamodelo, versionamento e composição
+interna da KB. Diagnóstico SQL serve para evidência e suporte; nunca para limpeza direta.
+
+### Contexto empírico verificado — KB wsEducacaoSpTeste (2026-05-10)
+
+**Ambiente:**
+- KB: `C:\KBs\wsEducacaoSpTeste`
+- Banco: `GX_KB_wsEducacaoSpTeste`
+- `knowledgebase.connection`: `<ServerInstance>DESKTOPW11AJRS</ServerInstance>`, `<IntegratedSecurity>False</IntegratedSecurity>`, `<HostName>localhost</HostName>`
+- String de conexão que funciona empiricamente: `Server=localhost;Database=GX_KB_wsEducacaoSpTeste;Integrated Security=True;Encrypt=False;TrustServerCertificate=True`
+- Nota: o arquivo `knowledgebase.connection` registra `IntegratedSecurity=False` (campo GeneXus próprio), mas o SQL Server aceita Windows auth com `Integrated Security=True` normalmente. A leitura direta do campo `IntegratedSecurity` do XML não deve ser usada para montar a string de conexão sem esse ajuste.
+
+**Achados confirmados empiricamente:**
+
+*EntityType — tipos de designer registrados:*
+```
+EntityTypeId=155  EntityTypeName=WebPanelDesigner  EntityTypeNamespace=K2BTools
+EntityTypeId=156  EntityTypeName=SDPanelDesigner   EntityTypeNamespace=K2BTools
+EntityTypeId=161  EntityTypeName=FormDesigner      EntityTypeNamespace=''  (vazio)
+```
+Importante: `FormDesigner` **não** tem `Namespace=K2BTools`. Uma query que filtre por
+`Namespace='K2BTools'` **não** encontrará FormDesigner.
+
+*EntityVersion — registros de tipo com ProviderId do K2BTools:*
+
+Três registros em `EntityVersion` com `EntityTypeId=1` (Root), `EntityVersionId=1`:
+```
+EntityVersionName=WebPanelDesigner  GUID=562b39a3-dde2-4349-9252-e9e69090c53e  ProviderId=be15a055-f4cc-408a-9218-c71184d2bc61
+EntityVersionName=SDPanelDesigner   GUID=a84e76c6-ccf5-4b03-a9d2-7c31c3d717e6  ProviderId=be15a055-f4cc-408a-9218-c71184d2bc61
+EntityVersionName=FormDesigner      GUID=0b6c8a65-e172-4196-a2b6-abd64ebd96d6  ProviderId=be15a055-f4cc-408a-9218-c71184d2bc61
+```
+Os três compartilham o mesmo `ProviderId=be15a055` (K2B Object Designer). Esse GUID
+`be15a055` é o identificador do provider K2BTools — aparece 3 vezes em
+`EntityVersionProperties`.
+
+O GUID `562b39a3` pertence ao **WebPanelDesigner**, não ao FormDesigner. A row em `Entity`
+com `EntityGuid=562b39a3` tem `EntityTypeId=1` (Root). Não é uma entidade FormDesigner.
+
+*EntityVersion — instâncias FormDesignerPart:*
+```
+EntityVersion WHERE EntityTypeId=161: 36 registros
+  Todos com EntityVersionName='FormDesignerPart'  (não 'FormDesigner')
+EntityVersion WHERE EntityVersionName='FormDesigner': 1 registro
+  (é o registro de tipo, TypeId=1/Root, não uma instância FormDesigner)
+```
+Total de ocorrências com algum nome contendo "FormDesigner": 37 (1 + 36), mas são dois
+nomes distintos — não 37 registros para o mesmo nome.
+
+*Entity:*
+```
+Entity WHERE EntityTypeId=161: 36 entidades
+  Cada uma com EntityLastVersionId=1
+```
+
+*EntityVersionComposition — pais das FormDesignerPart (18 WebPanels distintos):*
+```
+CardPhotoActions, CardPhotoCompact, CardWithSummary, CardWithSummaryVariant1,
+DetailPopOver, DetailVariant1, DetailVariant2, DetailWithPhoto,
+GenericEntityList, GenericEntityListWithImage, K2BT_SimplePriceList,
+NotificationList, PhotoWithTitle, SelectedItem, SelectedItemTag,
+StructuredList, StructuredPeopleList, Timeline
+```
+Cada um aparece com 2 linhas de composição de `FormDesignerPart`.
+
+**Divergências encontradas no relato do agente externo:**
+1. `EntityTypeNamespace=K2BTools` atribuído ao FormDesigner (EntityTypeId=161) — **incorreto**; namespace é vazio.
+2. `EntityVersion.EntityVersionName='FormDesigner': 37 ocorrências` — **incorreto**; são 1 para 'FormDesigner' e 36 para 'FormDesignerPart'.
+3. GUID `562b39a3` associado ao "contexto FormDesigner" — **impreciso**; é o GUID do WebPanelDesigner na EntityVersionProperties; a row em Entity com esse GUID é Root (EntityTypeId=1), não FormDesigner.
+
+Essas imprecisões não invalidam o diagnóstico central, mas afetam queries de busca: uma
+query filtrando `Namespace='K2BTools'` não encontraria FormDesigner, gerando novo falso
+negativo.
+
+### Tabelas candidatas para diagnóstico
+
+- `EntityType` — tipos de designer; campos úteis: `EntityTypeId`, `EntityTypeName`, `EntityTypeNamespace`
+- `Entity` — instâncias; campos úteis: `EntityId`, `EntityGuid`, `EntityTypeId`, `EntityLastVersionId`
+- `EntityVersion` — versões e propriedades XML; campos úteis: `EntityVersionId`, `EntityTypeId`, `EntityVersionName`, `EntityVersionProperties`, `EntityVersionTimestamp`
+- `EntityVersionComposition` — composição pai-filho; campos úteis: `ComponentEntityTypeId`, `ComponentEntityId`, `CompoundEntityTypeId`, `CompoundEntityId`, `CompoundEntityVersionId`
+- `[OBJECT]` — opcional, apenas para tentar correlacionar com objetos GeneXus comuns exportáveis
+
+### Escopo de uso
+
+- Usar apenas quando houver evidência de provider/item desconhecido na abertura/build/export da KB **e** a busca no XPZ/XML não localizar o item
+- A consulta SQL é somente leitura; serve para diagnóstico e geração de relatório para suporte, não para correção
+- Nunca recomendar remoção direta por SQL de entidades internas da KB
+
+### Questões abertas antes de implementar
+
+1. A `xpz-kb-parallel-setup` já lê `knowledgebase.connection`? Se sim, a string de conexão pode ser derivada automaticamente no contexto de setup — esse seria o home natural para a capacidade.
+2. O acesso deve ser via script PowerShell com `System.Data.SqlClient` no motor compartilhado, ou apenas documentado como procedimento narrativo para o agente executar inline?
+3. O GeneXus documenta oficialmente o esquema `EntityType`/`Entity`/`EntityVersion`? Se não, há risco de quebra em upgrade — essa limitação precisa ficar documentada explicitamente junto com a capacidade.
+4. A normalização `Server=localhost` a partir de `<HostName>localhost</HostName>` (e não de `<ServerInstance>`) é confiável em todos os ambientes? Verificar se `HostName` sempre está presente ou se a derivação deve usar `ServerInstance` como fallback.
+
+### Limiar para implementar
+
+Implementar quando houver: (a) resposta para a questão 1 acima (home no setup ou skill
+própria), e (b) caso concreto adicional de warning de provider em KB diferente que confirme
+o padrão de busca para além do caso K2BTools verificado aqui.
