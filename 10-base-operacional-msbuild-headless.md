@@ -1060,4 +1060,15 @@ Set*/Reset* nos níveis KB/Version/Environment/Generator/DataStore, `SetObjectPr
 
 - `Get*Property` pode ser invocado de forma segura como diagnóstico pré-operação; o script `Get-GeneXusKbProperty.ps1` tem interface definida em `xpz-msbuild-import-export/SKILL.md`
 - `SetConfiguration` deve ser emitido apenas mediante instrução explícita do usuário, antes do `BuildAll`, com valor validado
-- nenhuma das tasks Get* foi testada em execução real nesta frente; a confirmação atual é de acessibilidade no assembly, não de comportamento funcional em KB real
+- `GetVersionProperty` e `GetKnowledgeBaseProperty` foram testadas em execução real na KB `wsEducacaoSpTeste` em 2026-05-10; as demais tasks `Get*` permanecem confirmadas apenas por acessibilidade no assembly
+
+### Achado Empírico: Incompatibilidade GetVersionProperty Name vs SetActiveVersion
+
+Testado em execução real em 2026-05-10 na KB `wsEducacaoSpTeste`:
+
+- `GetVersionProperty -Name Name` → `"Design"` (nome descritivo da versão)
+- `GetKnowledgeBaseProperty -Name Name` → `"wsEducacaoSpTeste"` (nome da KB)
+- `SetActiveVersion` com `VersionName="Design"` → falha: `A versão 'Design' não existe`
+- exportação sem `-VersionName` → sucesso; `GetActiveVersion` confirmou `"wsEducacaoSpTeste"` como identificador ativo
+
+Conclusão: `GetVersionProperty -Name Name` retorna propriedade de metadados descritiva da versão, não o identificador aceito por `SetActiveVersion`. Para posicionar versão antes de exportação ou importação, usar `GetActiveVersion` como fonte do identificador — nunca `GetVersionProperty -Name Name`.
