@@ -530,6 +530,13 @@ try {
 
     Add-StrategyTrace -Message ('Probe executado antes da exportação com exitCode {0}.' -f $probeStage.ExitCode)
 
+    if (-not [string]::IsNullOrWhiteSpace($VersionName)) {
+        Add-StrategyTrace -Message 'VersionName informado explicitamente — confirmar que o valor e identificador aceito por SetActiveVersion (obtido via GetActiveVersion), nao nome descritivo de GetVersionProperty -Name Name.'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($EnvironmentName)) {
+        Add-StrategyTrace -Message 'EnvironmentName informado explicitamente — confirmar que o valor e identificador aceito por SetActiveEnvironment (obtido via GetActiveEnvironment), nao nome descritivo de GetEnvironmentProperty -Name Name.'
+    }
+
     if ($probeStage.ExitCode -ne 0) {
         Add-BlockingReason -Reason 'Probe não apto para prosseguir bloqueou a exportação.'
         $probeDiagnostic = $probeStage.Diagnostic
@@ -732,6 +739,9 @@ try {
 
     if ($exportExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}.' -f $msBuildExitCode)
+        if ($stdOutText -match "A versão '([^']+)' não existe") {
+            Add-BlockingReason -Reason ("SetActiveVersion rejeitou VersionName '$($Matches[1])' — provavel incompatibilidade entre nome descritivo retornado por GetVersionProperty e identificador aceito pela task; para exportar da versao ativa, omitir -VersionName.")
+        }
     }
 
     if (-not [string]::IsNullOrWhiteSpace($exportedFileMarker) -and -not $fileExists) {

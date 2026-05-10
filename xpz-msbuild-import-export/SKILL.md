@@ -104,6 +104,8 @@ Do NOT use esta skill para:
 - Declarar `importação real efetiva provada` apenas quando `importedItems` contiver explicitamente o objeto esperado; `exitCode=0` com `importedItems` ausente ou vazio classifica como `sucesso operacional sem prova de import efetivo` — nunca como import concluído
 - Quando a task carregada não expuser `UpdateFile` nem `ImportKBInformation`, o wrapper de preview deve bloquear esses parâmetros cedo
 - Tratar `Get*Property` como operação de leitura segura, sem efeito sobre a KB
+- Não usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName` em exportação ou importação; esse valor é o nome descritivo da versão (ex: `"Design"`), não o identificador aceito por `SetActiveVersion` (ex: `"wsEducacaoSpTeste"`); para obter o identificador compatível, usar `GetActiveVersion`
+- Não usar o valor retornado por `GetEnvironmentProperty -Name Name` como `-EnvironmentName` pelo mesmo motivo; usar `GetActiveEnvironment` para obter o identificador ativo compatível
 - Validar `-Level` e `-Name` explicitamente antes de emitir a task; exigir `-Target`
   quando `-Level` for `Generator`, `DataStore` ou `Object`
 - Nunca inferir o nome da propriedade; sempre exigir `-Name` explícito
@@ -213,6 +215,7 @@ Scripts nesta frente:
   - parâmetros opcionais: `-Target` (obrigatório quando `-Level` for `Generator`, `DataStore` ou `Object`; nome do generator, datastore ou objeto), `-GeneXusDir`, `-MsBuildPath`, `-VersionName`, `-EnvironmentName`, `-VerboseLog`
   - saída esperada: `status` (`leitura concluída` | `falha de leitura`), `level`, `target` (quando aplicável), `propertyName`, `propertyValue`, `exitCode`, caminho do log
   - tasks confirmadas no assembly: `GetKnowledgeBaseProperty`, `GetVersionProperty`, `GetEnvironmentProperty`, `GetGeneratorProperty` (parâmetro opcional `Generator`), `GetDataStoreProperty` (parâmetro opcional `DataStore`), `GetObjectProperty` (parâmetro `Object` obrigatório); todas expõem `Name` e `PropertyValue` como interface comum
+  - incompatibilidade conhecida e verificada empiricamente: `GetVersionProperty -Name Name` retorna o nome descritivo da versão (ex: `"Design"`), não o identificador aceito por `SetActiveVersion` (ex: `"wsEducacaoSpTeste"`); `GetEnvironmentProperty -Name Name` tem a mesma incompatibilidade com `SetActiveEnvironment`; para obter o identificador compatível com essas tasks de posicionamento, usar `GetActiveVersion` e `GetActiveEnvironment`
 
 Contrato inicial específico de `Test-GeneXusMsBuildSetup.ps1`:
 
@@ -284,6 +287,7 @@ Parâmetros específicos de importação:
    - Este gate é não invasivo: lê apenas o arquivo local, não abre KB, não requer GeneXus instalado
    - Aplicar mesmo quando o arquivo vier de geração anterior já validada — o gate é obrigatório por rodada, não por sessão
 7. Só depois abrir a KB e confirmar versão ativa e `Environment` ativo quando aplicável
+   Quando o objetivo for confirmar versão e Environment para usar em `-VersionName`/`-EnvironmentName`, usar `GetActiveVersion` e `GetActiveEnvironment` — nunca `GetVersionProperty -Name Name` nem `GetEnvironmentProperty -Name Name`, pois esses retornam propriedades de metadados incompatíveis com o identificador aceito por `SetActiveVersion`/`SetActiveEnvironment` (verificado empiricamente: `GetVersionProperty -Name Name` retornou `"Design"` enquanto `GetActiveVersion` retornou `"wsEducacaoSpTeste"` na mesma KB)
 8. Se o objetivo for inspeção, priorizar:
    - `PreviewMode`
    - `UpdateFile`, quando suportado pela task carregada
@@ -395,6 +399,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado e o usuário reportar que o comportamento ainda não mudou, a `checagem de frescor de runtime` foi oferecida como próximo passo nomeado antes de sugerir nova edição
 - [ ] O sub-estado `importação real efetiva provada, geração de runtime pendente` foi aplicado quando artefatos de runtime (`nav_objs.xml` com `ObjStatus=genreq` ou timestamps de artefatos gerados anteriores ao import) ainda refletiam versão anterior após build confirmado; NVG pode ser consultado manualmente como indicador complementar, mas não integra a checagem somente leitura automatizada
 - [ ] Quando `-ObjectList` foi usado com múltiplos objetos, o formato `Tipo:Nome` separado por `;` foi documentado ou validado; e o `.xpz` gerado foi verificado para confirmar presença de todos os objetos solicitados
+- [ ] Quando `-VersionName` ou `-EnvironmentName` foram informados explicitamente, confirmar que o valor veio de `GetActiveVersion`/`GetActiveEnvironment` ou de fonte comprovadamente compatível com `SetActiveVersion`/`SetActiveEnvironment` — nunca de `GetVersionProperty -Name Name` nem de `GetEnvironmentProperty -Name Name`
 - [ ] Quando a frente foi descrita por fluxo funcional e o usuário reportar "não mudou no navegador" após import confirmado, foi verificado primeiro (1) se o objeto importado é o alvo executado pelo fluxo real, antes de (2) checar frescor de runtime ou (3) propor nova edição
 
 ---
@@ -406,6 +411,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - NEVER tratar importação real como comportamento implícito
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER chamar MSBuild para preview ou import sem antes executar `Test-GeneXusImportFileEnvelope.ps1` no arquivo alvo
+- NEVER usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName`; para exportar da versão ativa, omitir `-VersionName`; se for necessário posicionar versão explicitamente, obter o identificador via `GetActiveVersion`, não via `GetVersionProperty`
 - ABORT se `KbPath`, versão, `Environment`, pacote ou destino de logs estiverem ambíguos
 - ABORT se não houver ambiente controlado compatível com a fase solicitada
 - ABORT se a operação não puder produzir trilha rastreável de logs e artefatos
