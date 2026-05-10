@@ -735,6 +735,26 @@ negativo.
 - A consulta SQL é somente leitura; serve para diagnóstico e geração de relatório para suporte, não para correção
 - Nunca recomendar remoção direta por SQL de entidades internas da KB
 
+### Cuidados metodológicos para o diagnóstico SQL
+
+Derivados da análise de três imprecisões introduzidas durante a investigação desta KB
+(2026-05-10), cada uma com mecanismo de origem distinto:
+
+- **Namespace**: citar o valor de `EntityTypeNamespace` somente com query literal que retorne
+  a linha específica (`WHERE EntityTypeId = <id>`). Nunca inferir por proximidade com linhas
+  vizinhas da mesma família — tipos de designer da mesma extensão podem ter namespaces
+  diferentes entre si.
+
+- **Contagem de EntityVersion**: citar contagem de linhas relacionadas a um nome somente
+  com `GROUP BY EntityVersionName`. COUNT sem agrupamento por nome vira narrativa ambígua
+  quando o critério de busca casa com nomes distintos (ex.: `FormDesigner` e
+  `FormDesignerPart` são dois nomes, não um).
+
+- **GUIDs**: citar GUID somente com a linha exata de origem, a coluna em que apareceu e o
+  `EntityVersionName` da linha. GUIDs de providers distintos podem aparecer juntos na mesma
+  busca textual; agrupar sem preservar a cardinalidade "tipo → GUID → coluna → linha de
+  origem" produz associação incorreta.
+
 ### Questões abertas antes de implementar
 
 1. A `xpz-kb-parallel-setup` já lê `knowledgebase.connection`? Se sim, a string de conexão pode ser derivada automaticamente no contexto de setup — esse seria o home natural para a capacidade.
