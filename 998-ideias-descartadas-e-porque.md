@@ -1152,3 +1152,147 @@ não expõe.
 
 **Não reavaliar** salvo evidência de que o produto `KnowledgeMatrix` passou a estar
 disponível na instalação padrão do GeneXus 18 com as tasks descomentadas e documentadas.
+
+## Validador de payload textual — acentuação degradada em e-mail/HTML
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** gate pré-empacotamento que verificaria, em partes de objetos com payload textual destinado a humano (templates de e-mail, mensagens, conteúdo HTML), se palavras que deveriam estar acentuadas aparecem sem acento — `Contribuicao` no lugar de `Contribuição`, `Nao` no lugar de `Não`, `usuario` no lugar de `usuário`, etc. Diferente do gate de mojibake (entrada própria em 999), que detecta bytes corrompidos por interpretação dupla de encoding, este gate detectaria perda silenciosa de acentos — caractere acentuado convertido a ASCII sem sinal visível de defeito.
+
+**Por que foi descartada:**
+
+Depende de conhecimento específico da KB. O gate só funciona com uma lista de tokens esperados acentuados, calibrada por KB ou por template — vocabulário próprio do projeto. KB em inglês não precisa do gate. KB em português pode ter `configuracao` intencional em identificador no meio de texto. Sem essa lista calibrada por contexto, o gate vira ruído de falso positivo.
+
+As skills XPZ deste repositório cuidam da movimentação de objetos GeneXus via XPZ/XML e são deliberadamente agnósticas ao conteúdo semântico do que está sendo movido. Mojibake cabe porque é defeito estrutural de bytes detectável sem conhecer a KB. Degradação de acentos não cabe porque exige conhecer o que aquela KB específica espera ver — responsabilidade natural do agente local que conhece os templates da KB, ou de camada de QA do projeto (revisão de templates antes do empacotamento, validação runtime do conteúdo gerado, testes funcionais).
+
+Forçar isso para dentro das skills XPZ exigiria ponto de extensão por KB (lista de tokens), quebrando a agnosticidade ao conteúdo, e abriria precedente para outras validações de domínio (formato de documento, presença de cláusulas legais, etc.) que pertencem ao agente local, não às skills compartilhadas.
+
+**Não reavaliar** salvo evidência de que existe um mecanismo de detecção genérico (independente de vocabulário específico de KB) para distinguir acento perdido por defeito de acento ausente por intenção — sem o que o falso positivo torna o gate inutilizável.
+
+## Encadeamento obrigatório SpecifyGenerate → BuildAll como fluxo padrão
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** proposta de forçar a sequência "Specify+Generate primeiro, BuildAll só depois quando a fase leve passar" como fluxo padrão da skill `xpz-msbuild-build`. A ideia subjacente: falhar cedo na fase leve evita o custo de um BuildAll completo que vai falhar de qualquer forma; em tese, economia de tempo, tokens e logs.
+
+**Por que foi descartada:**
+
+Avaliação dupla — uma parte já está implementada, e a parte que faltaria tem contraindicação documentada.
+
+**Já implementado:** a separação em duas fases existe como dois scripts disponíveis em `xpz-msbuild-build` — `Invoke-GeneXusKbSpecifyGenerate.ps1` (fase leve) e `Invoke-GeneXusKbBuildAll.ps1` (fase completa). O GUIDELINE da skill orienta explicitamente quando usar cada um: SpecifyGenerate para verificação pós-import cirúrgico, BuildAll para validação completa. O WORKFLOW passo 4 faz o agente escolher entre os dois conforme o objetivo. Esta parte da proposta externa já está coberta — a skill apenas não força sequência obrigatória.
+
+**Contraindicação para encadear:** a própria SKILL.md documenta comportamento crítico — `SpecifyAll` **não é leve quando há alterações estruturais pendentes**, porque a task executa internamente Database Impact Analysis, geração de script de reorganização e **reorganização real de banco**. `SpecifyAll` não expõe `FailIfReorg` nem equivalente, ao contrário de `BuildAll`. A skill exige confirmação por frase exata antes de SpecifyGenerate quando há sinal de alteração estrutural no import recente.
+
+Forçar o encadeamento obrigatório implicaria: todo BuildAll teria de passar antes pelo gate de confirmação de reorg da SpecifyGenerate — inclusive quando o usuário só quer validação completa em KB sem alteração estrutural pendente. Pior: criaria caminhos de execução onde SpecifyGenerate dispara reorg, BuildAll não é nem chamado, e o objetivo original ("validar build completo") fica em estado parcial sem que o usuário tenha pedido para tocar no banco.
+
+A escolha atual da skill — manter os dois scripts disponíveis sem encadear — é intencional e fundamentada nessa contraindicação.
+
+**Não reavaliar** salvo evidência de que `SpecifyAll` passou a expor mecanismo equivalente a `FailIfReorg`, eliminando o risco de reorg implícita disparada pela fase leve.
+
+## Bloco de verificação pós-import (reexport, delta verification, diagnóstico de assimilação) como frente própria
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** bloco de quatro facetas proposto pelo agente externo como reforço da skill `xpz-msbuild-import-export`:
+
+1. **Verificação pós-import** — depois do import, checar se a KB ativa realmente assimilou os objetos; não confiar só em `exitCode=0`
+2. **Reexport controlado de confirmação** — importar, reexportar os mesmos objetos, comparar com a frente local; "XML certo na frente, KB ainda errada"
+3. **Modo delta verification** — confirmar que apenas os objetos esperados foram importados/alterados
+4. **Diagnóstico de assimilação** — classificar resultado em "importou e assimilou" vs "importou mas KB manteve shape antigo" vs "importou parcialmente"
+
+**Por que foi descartado como frente própria:**
+
+Avaliação tripla, cada motivação fechando uma das pontas do bloco:
+
+**Reexport controlado (faceta 2):** descartado por custo de tempo. Reexportar logo depois de importar, apenas para conferir a importação, gasta tempo demais para o ganho de garantia oferecido. Cada reexport em KB de tamanho médio/grande custa minutos de MSBuild adicional para apenas confirmar algo que outras técnicas (checksum, consulta SQL no banco interno da KB) podem confirmar a custo menor.
+
+**Verificação pós-import e diagnóstico de assimilação (facetas 1 e 4):** investigação técnica já encaminhada em entrada própria de 999 — "CalculateChecksums + AreObjectsEqual — diagnóstico de integridade de objeto pré/pós-operação". Aquela entrada cobre o mesmo problema central (gap entre "import executado" e "objeto mudou da forma esperada") com meio técnico concreto a ser validado empiricamente. Duplicar como frente própria criaria duas entradas com sobreposição editorial sem agregar conteúdo novo.
+
+**Taxonomia de cenários de assimilação isolada (faceta 4 sem meio técnico):** a classificação conceitual "importou e assimilou totalmente" vs "importou parcialmente" vs "KB resistiu" tem valor de comunicação ao usuário, mas sozinha — sem meio técnico que a alimente — não é frente. Quando algum meio técnico for implementado (checksum via `CalculateChecksums`, consulta SQL no banco interno da KB conforme entrada própria em 999, ou parsing estruturado do log de import), a taxonomia entra como refinamento de classificação na skill `xpz-msbuild-import-export` no momento da implementação. Não precisa de entrada própria em 999 enquanto isso.
+
+**Delta verification (faceta 3):** depende dos mesmos meios técnicos (checksum ou consulta SQL); é caso particular da verificação geral, não frente paralela.
+
+**Não reavaliar** salvo evidência de que: (a) reexport controlado passou a ter custo aceitável por algum mecanismo novo (export incremental real, comparação parcial sem reexport completo), **ou** (b) algum meio técnico distinto dos já cobertos em 999 emergir como abordagem viável para verificação imediata pós-import.
+
+## Consulta pronta de callers como capacidade nova de xpz-index-triage
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** proposta de adicionar à skill `xpz-index-triage` consulta para responder perguntas como "quem chama a procedure X?" e "quais call sites ainda usam o objeto antigo?".
+
+**Por que foi descartado:**
+
+A capacidade já existe na skill. `xpz-index-triage/SKILL.md` documenta explicitamente as consultas `who-uses`, `what-uses`, `impact-basic` e `functional-trace-basic`, expostas pelo wrapper `Query-*KbIntelligence.ps1`. Há ainda sub-fluxo obrigatório de **resolução de alvo de navegação** — quando a pergunta vem ancorada em "qual objeto é aberto por este botão" ou "o popup chamado pelo evento Y", a skill resolve caller→alvo antes de qualquer leitura ou edição.
+
+Mapeamento direto das duas perguntas do agente externo:
+
+- "quem chama a procedure X?" → `who-uses Procedure:X`
+- "quais call sites ainda usam o objeto antigo?" → operacionalmente o mesmo `who-uses` aplicado ao nome antigo durante uma migração; o estado atual do índice já responde quem ainda referencia o nome a substituir
+
+Provável origem do gap percebido pelo agente externo: a proposta foi redigida sem inspecionar a skill atual.
+
+**Leitura ambiciosa não coberta — não justifica entrada nova:**
+
+Existe uma leitura mais ambiciosa de "objeto antigo" que de fato não está coberta: comparar dois snapshots históricos da KB para descobrir callers que **antes** referenciavam o objeto antigo e ainda não foram migrados, com versionamento histórico do índice. Essa interpretação é forçada — a frase mais natural é "callers que ainda referenciam o objeto antigo", que `who-uses` já responde olhando o estado atual. Sem sinal concreto de demanda por versionamento histórico de callers, essa capacidade não vira frente — exigiria escopo bem maior (histórico no índice) por ganho marginal frente ao estado atual.
+
+**Não reavaliar** salvo surgimento de caso concreto que exija comparação de callers entre snapshots históricos distintos da KB, justificando versionamento histórico do índice como capacidade nova.
+
+## Consulta de migração (Origem → Destino) como capacidade própria
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** proposta de adicionar a `xpz-index-triage` consulta que, dado um par (Origem, Destino) de objetos GeneXus, listaria os callers da Origem para o agente saber quem precisa ser editado para passar a chamar Destino.
+
+**Por que foi descartada na forma original:**
+
+A consulta de dados subjacente é literalmente `who-uses Origem`, capacidade já existente no índice e exposta pelo wrapper `Query-*KbIntelligence.ps1`. O par "Origem → Destino" não muda o que o índice retorna — é apenas **intenção operacional** declarada pelo usuário, fora do índice. A diferença frente a 4.1 é puramente cosmética (formato de apresentação com linguagem de migração).
+
+**Ângulo que sobreviveu como entrada nova em 999:**
+
+Durante a avaliação ficou claro que existe uma evolução real adjacente, distinta da cosmética: registrar no SQLite **o local exato** de cada referência (qual part, qual bloco nominal, linha aproximada, contexto curto) durante o build do índice. Isso transforma `who-uses` em "te referenciam aqui, aqui e aqui", permitindo edição cirúrgica em lote sem abrir os XMLs dos callers. Frente registrada como "Expansão do índice SQLite para fingerprint de call site" em 999.
+
+**Não reavaliar** na forma original — a consulta de migração é só `who-uses` com rótulo de intenção; o ângulo estrutural sobrevive na entrada de fingerprint em 999.
+
+## Consulta de família funcional como capacidade nova de xpz-index-triage
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** proposta de adicionar a `xpz-index-triage` consultas como "objetos de composição de e-mail", "objetos de parâmetros", "bridges de envio" — busca por agrupamento semântico/funcional em linguagem natural, sem depender de nome exato ou tipo estrutural.
+
+**Por que foi descartada como capacidade própria:**
+
+A classe de pergunta proposta é exatamente a que a entrada legada em 999 "LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual" já cobre como caso de uso central. Ambas dependem da mesma infraestrutura (camada vetorial de embeddings sobre o acervo XML), respondem a mesma classe de pergunta (intenção semântica em linguagem natural → conjunto de candidatos relevantes) e têm o mesmo limite (não substituem leitura do XML para conclusão funcional).
+
+A diferença de redação entre os dois prompts não esconde diferença de conteúdo. Os exemplos do agente externo ("objetos de composição de e-mail", "bridges de envio") seriam atendidos pelo mesmo mecanismo previsto na entrada vetorial — embedding da pergunta, busca por similaridade no vector store, retorno dos candidatos com maior aderência semântica.
+
+**Por que não foi ampliada na entrada vetorial existente:**
+
+A entrada vetorial em 999 está com `FALTA AVALIAR` em ambos os campos (Importância e Maturidade). Acrescentar exemplos novos ali agora misturaria duas tarefas distintas — expandir conteúdo e avaliar prioridade — que esta sessão decidiu manter separadas. A sessão dedicada de inventário de entradas legadas, quando ocorrer, pode incorporar os exemplos do agente externo na entrada vetorial junto com a avaliação de prioridade.
+
+**Não reavaliar** como capacidade própria. Se a entrada vetorial em 999 virar frente de implementação, esta classe de consulta entra automaticamente no escopo dela.
+
+## Playbooks operacionais e casos reais sanitizados como frentes próprias
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**O que era:** proposta de adicionar à documentação das skills XPZ duas categorias de conteúdo:
+
+- **Playbooks** — roteiros passo-a-passo para situações operacionais específicas: "quando desconfiar de codificação de caracteres", "quando importou mas a KB parece antiga", "quando um atributo mudou de tipo".
+- **Casos reais sanitizados** — exemplos concretos documentados: mojibake em templates de e-mail, drift de tipagem em WB_Parametros, migração de chamadores entre procedures.
+
+**Por que foram descartados como frentes próprias:**
+
+Ambas as categorias são **complementos naturais** das frentes técnicas já registradas em 999, não frentes independentes. Cada roteiro e cada caso real depende da ferramenta correspondente existir:
+
+- roteiro "desconfiar de codificação" depende do gate de mojibake (entrada própria em 999, "Gate de mojibake/UTF-8 por bytes em XML pré-empacotamento")
+- roteiro "atributo mudou de tipo" depende do detector de drift de tipagem (entrada própria em 999, "Drift de tipagem entre delta empacotado e snapshot oficial")
+- roteiro "import passou mas KB parece antiga" depende dos meios técnicos de verificação pós-import (entrada própria em 999, "CalculateChecksums + AreObjectsEqual — diagnóstico de integridade de objeto pré/pós-operação")
+- caso real "mojibake em e-mails" só vira material útil quando o gate de mojibake estiver implementado
+- caso real "drift em WB_Parametros" só vira material útil quando o detector de drift estiver implementado
+- caso real "caller migration de procedures" já é parcialmente coberto pela consulta `who-uses` existente em `xpz-index-triage`; documentar é trivial quando houver demanda
+
+Sem as ferramentas técnicas, roteiros viram especulativos e casos reais não têm trilha para reprodução. Quando uma frente técnica em 999 virar trabalho real, o roteiro correspondente e o caso real correspondente nascem junto como parte do mesmo escopo — não fazem frente separada.
+
+A base compartilhada já tem onde encaixar esse conteúdo quando ele existir: `08-guia-para-agente-gpt.md` para roteiros operacionais; `01h-moldes-sanitizados-metadados-e-artefatos.md` para casos sanitizados. A infraestrutura editorial está pronta; só falta a substância técnica que as frentes em 999 vão produzir.
+
+**Não reavaliar** como frentes independentes. Quando uma frente técnica em 999 virar implementação, incluir roteiro e caso real no escopo dela.

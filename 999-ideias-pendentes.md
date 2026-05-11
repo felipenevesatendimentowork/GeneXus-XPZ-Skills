@@ -1,6 +1,16 @@
 # Ideias Pendentes
 
+Cada entrada usa dois campos curtos logo abaixo do titulo:
+
+- **Importância** — quanto dói se a ideia nunca for implementada. Valores: `baixa` (útil mas dispensável), `média` (gap real com workaround manual), `alta` (risco de dano efetivo, como contaminação de KB, perda de trabalho ou falso negativo crítico).
+- **Maturidade** — quão pronta a ideia está para virar frente de implementação. Valores: `ideia` (direção identificada, decisões de design em aberto), `pesquisa feita` (direção técnica resolvida, falta gatilho de caso real), `pronta para implementar` (caso concreto identificado, decisões fechadas, falta executar).
+
+Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos ate que sejam revistas em sessao dedicada.
+
 ## LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** sugestao recebida em 2026-04-25 para exploracao futura.
 
@@ -47,6 +57,9 @@ Redis com modulo de busca vetorial (RediSearch / HNSW). Open source e gratuito. 
 
 ## Baseline conhecido no sanity e na revisao de objeto legado
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** ideia discutida em 2026-04-29 e adiada para frente separada.
 
 ### Problema concreto que motiva a ideia
@@ -77,6 +90,9 @@ Essa camada nao substituiria `xmlWellFormed`, `sourceSanityStatus` nem os gates 
 - Como impedir que baseline ruim vire permissao implicita para aceitar piora nova?
 
 ## Wrapper compartilhado para auditoria de naming de `ObjetosDaKbEmXml`
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliacao de sugestao de agente externo em 2026-05-01.
 
@@ -112,6 +128,9 @@ O limiar de maturidade ainda nao foi atingido. O conjunto de tipos de container 
 
 ## Rename de `kb-source-metadata.md` para `kb-parallel-state.md`
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** avaliacao de resultado de setup em 2026-05-03.
 
 ### Problema concreto que motiva a ideia
@@ -134,6 +153,9 @@ Aguardar ate que haja uma frente de refatoracao maior no motor compartilhado ou 
 - O rename deve ser feito com compatibilidade retroativa (suporte temporario aos dois nomes) ou como corte limpo?
 
 ## CreateOfflineDatabase
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
 
@@ -166,6 +188,9 @@ Risco contido: o SQLite gerado é um artefato de app mobile, não o banco centra
 Implementar quando houver: (a) KB concreta com Native Mobile Offline no portfólio onde a automação headless do build seja requisito real, ou (b) solicitação explícita de cobertura desse pipeline.
 
 ## Tríade de diagnóstico de schema: WriteDatabaseSchema + WriteKnowledgeBaseSchema + CompareSchemas
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
 
@@ -204,6 +229,9 @@ Implementar quando houver caso concreto de diagnóstico de drift DB-KB que a IDE
 
 ## CheckAndInstallDatabase
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** referência encontrada em fonte externa de código como sinônimo de Reorg, avaliação de domínio Database, 2026-05-06.
 
 ### Problema concreto que motiva a ideia
@@ -233,6 +261,9 @@ Reavaliar somente se: (a) for identificado que a task existe em caminho acessív
 
 ## DeleteObject — limpeza headless pós-import
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
 
 ### Problema concreto que motiva a ideia
@@ -259,6 +290,9 @@ Candidato prioritário entre as tasks do domínio de versionamento. Fecha gap co
 
 ## CreateVersion — snapshot pré-import de baixo risco
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
 
 ### Problema concreto que motiva a ideia
@@ -283,6 +317,9 @@ A alternativa existente para o mesmo problema — cópia da pasta da KB (LocalDB
 - `CreateVersion` com `Parent=*Trunk` cria versão diretamente de Root sem abrir fluxo de merge?
 
 ## RevertToVersion — rollback de snapshot, gate muito restritivo
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
 
@@ -310,6 +347,9 @@ Consequência para o fluxo XPZ: se o import foi feito diretamente na Root (cená
 
 ## RestoreRevision — desfazer cirúrgico por objeto
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
 
 ### Problema concreto que motiva a ideia
@@ -331,6 +371,9 @@ Para usar `RestoreRevision` é necessário saber o `RevisionId` concreto do esta
 - Se não houver, faz sentido implementar o wrapper mesmo exigindo que o usuário forneça o `RevisionId` explicitamente?
 
 ## Leitura da wiki 24612 (Team Development MSBuild Tasks)
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de prompt externo sobre domínio de Versionamento (Team Development MSBuild), 2026-05-07.
 
@@ -354,6 +397,9 @@ As tasks avaliadas nesta frente (`CreateVersion`, `RevertToVersion`, `MergeVersi
 - Mecanismo de listagem de revisões de objetos (necessário para `RestoreRevision`)
 
 ## RestoreModule — pré-requisito de build para KBs com dependências de módulo
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de prompt externo sobre domínio Módulos (MSBuild Tasks), 2026-05-07.
 Documentação oficial confirmada em `46830.html` da instalação local. Task registrada em
@@ -400,6 +446,9 @@ verificar antes do build se a KB tem módulos instalados e, em caso afirmativo, 
   falha ou usa o cache existente?
 
 ## InstallModule / UpdateModule / GetModulesServer / AddModulesServer — gestão de dependências headless
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de prompt externo sobre domínio Módulos (MSBuild Tasks), 2026-05-07.
 Documentação oficial confirmada em `46830.html` e `45933.html` da instalação local. Tasks
@@ -449,6 +498,9 @@ das mesmas dependências de módulo que a KB de origem.
   KB ou por instalação?
 
 ## GetCategoryObjects — seleção de objetos por categoria para Export/Import
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
 Documentada no índice `3908.html` da instalação oficial.
@@ -504,6 +556,9 @@ de organização de objetos, tornando a seleção por categoria mais prática qu
 ---
 
 ## CalculateChecksums + AreObjectsEqual — diagnóstico de integridade de objeto pré/pós-operação
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
 Tasks registradas em `Genexus.Tasks.targets`; **sem documentação oficial em `3908.html`**.
@@ -571,6 +626,9 @@ de que o objeto mudou da forma esperada.
 
 ## CompressKB — manutenção da KB após importações de grande volume
 
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
+
 **Origem:** avaliação de prompt externo sobre domínio Outros (MSBuild Tasks), 2026-05-07.
 Arquivo `CompressKB.msbuild` confirmado como presente na instalação oficial do GeneXus 18,
 idêntico em todas as instalações inspecionadas (21 linhas).
@@ -617,6 +675,9 @@ confirmando operação segura sem efeito colateral grave, e (b) caso concreto de
 degradação de performance pós-import que se beneficiaria da compactação.
 
 ## Diagnóstico SQL somente leitura do banco interno da KB para provider/item desconhecido
+
+**Importância:** FALTA AVALIAR
+**Maturidade:** FALTA AVALIAR
 
 **Origem:** sugestão recebida de agente externo em 2026-05-10, verificada empiricamente na
 mesma sessão contra `GX_KB_wsEducacaoSpTeste`.
@@ -780,3 +841,386 @@ leitura** no banco interno da KB, coberta pelo limiar abaixo.
 Implementar quando houver: (a) resposta para a questão 1 acima (home no setup ou skill
 própria), e (b) caso concreto adicional de warning de provider em KB diferente que confirme
 o padrão de busca para além do caso K2BTools verificado aqui.
+
+## Gate de mojibake/UTF-8 por bytes em XML pré-empacotamento
+
+**Importância:** alta
+**Maturidade:** ideia
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+### Problema concreto que motiva a ideia
+
+Payloads textuais de objetos GeneXus podem entrar no fluxo de empacotamento com bytes corrompidos por interpretação dupla de encoding (clássico `Ã§` no lugar de `ç`, `Ã£` no lugar de `ã`, `NÃ£o` no lugar de `Não`, `usuÃ¡rio` no lugar de `usuário`). Causas típicas: arquivo salvo em CP1252 e lido como UTF-8, ou o inverso, com a conversão silenciosa em alguma etapa intermediária do fluxo (export da IDE, edição manual, conversão de encoding por ferramenta externa).
+
+Se esse texto entra num `import_file.xml` e é importado pela IDE, o conteúdo fica permanentemente errado na KB de destino — só corrigível por novo import corretivo após localizar todos os pontos contaminados.
+
+Detecção visual em terminal não é confiável: o terminal pode estar mascarando o problema (renderizando bytes incorretos como caracteres certos por configuração de fonte/encoding) ou inventando-o (mostrando lixo onde os bytes estão corretos). A verificação tem de ser **por bytes**, não por render.
+
+### Direção técnica proposta
+
+Wrapper `.ps1` no motor compartilhado, candidato a nome `Test-XmlMojibakeSanity.ps1`:
+
+- entrada: path de arquivo XML, ou pasta + glob recursivo
+- algoritmo: ler bytes brutos, procurar sequências características de mojibake UTF-8↔CP1252 (`Ã[\x80-\xBF]`, `Â[\x80-\xBF]` em contexto suspeito, etc.) com lista finita e bem documentada de assinaturas
+- saída estruturada: `OK` ou lista de arquivos com ofsets e contexto suspeito
+- política de falha: a definir entre bloqueio rígido e alerta
+
+Skills consumidoras:
+
+- `xpz-builder`: gate pré-empacotamento, chamado antes de gerar `import_file.xml`
+- `xpz-msbuild-import-export`: gate opcional pré-import, como camada extra de defesa
+- wrapper local da pasta paralela pode chamar no fluxo de empacotamento local
+
+A escolha por script (e não por regra textual em SKILL.md) segue a preferência metodológica desta base: comportamento determinístico mora em `.ps1`, regra textual em skill fica reservada para o que exige julgamento de agente.
+
+### Perguntas a responder antes de decidir
+
+- Qual a lista exata de assinaturas de mojibake a detectar? Falso positivo aqui é caro — bloquear pacote legítimo é pior que deixar passar um caso raro.
+- O gate **bloqueia** o empacotamento ou apenas **alerta**? Depende de quanto o repositório-alvo admite texto legado com acentuação degradada.
+- O escopo cobre apenas `Source` e equivalentes textuais editáveis, ou inclui `Description`, `Documentation` e nomes de identificadores?
+- Há caso real recente de mojibake em pacote dentro do portfólio que sirva para calibrar a heurística empiricamente?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) caso real de mojibake detectado em pacote do portfólio para calibrar empiricamente as assinaturas e a política de bloqueio/alerta, e (b) decisão fechada sobre escopo de partes do XML cobertas.
+
+## Gate de dependências GeneXus no empacotamento de delta
+
+**Importância:** alta
+**Maturidade:** ideia
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+### Problema concreto que motiva a ideia
+
+Ao gerar um delta XPZ alterando um `Attribute` (ou qualquer objeto referenciado por outros), é tentador empacotar só o objeto modificado. Em GeneXus, porém, esse atributo aparece **estruturalmente embutido** em outros objetos:
+
+- `Transaction` que tem o atributo no seu level
+- `SDT` que espelha o atributo (campo de mesmo nome e mesmo tipo)
+- `DataProvider` que produz ou lê o atributo
+- `WebPanel`/Work With que exibe ou recebe o atributo
+- `Procedure` que lê ou escreve o atributo
+
+Se o pacote contém só o atributo e os dependentes ficam de fora:
+
+- a Transaction importada ainda carrega a definição anterior embutida (não há rebuild automático da estrutura do level)
+- SDTs continuam com o tipo antigo, gerando type-drift silencioso
+- callers compilam contra o shape antigo
+- o build pode até passar e a aplicação rodar errada sem erro visível
+
+O extremo oposto também é problema: empacotar tudo que toca o atributo gera pacote inflado e arrasta objetos não relacionados ao delta real, aumentando risco do import.
+
+Hoje a decisão do que entra no pacote é narrativa do agente, sem consulta sistemática à grade real de dependências.
+
+### Direção técnica proposta
+
+Separar duas camadas:
+
+**Camada determinística (`.ps1`):** consulta de dependências. Dado um conjunto de objetos `S`, retornar todos os objetos da KB que referenciam algum objeto de `S`, classificados por tipo de referência (estrutural embutida em level vs uso por chamada em Source vs apenas leitura em Rules, etc.). Dado puro — se o SQLite de `KbIntelligence` já tem a grade de referências, é uma query nova; se não tem, há frente preparatória de extrair essa grade dos XMLs no build do índice.
+
+**Camada de julgamento (regra textual em `xpz-builder`):** dado o resultado da consulta acima, o agente apresenta ao usuário a sugestão de "pacote mínimo coerente". O gate não automatiza a inclusão — força o agente a **declarar explicitamente** quais dependentes está deixando de fora e por quê. Regra mínima textual em `xpz-builder`: "ao empacotar um objeto que tem dependentes, listá-los explicitamente e justificar exclusões".
+
+Handshake entre skills:
+
+- `xpz-builder` é o consumidor (vai empacotar)
+- `xpz-index-triage` é o provedor da consulta (já é o lugar natural de "quem chama/referencia quem")
+- conecta também com os itens "callers/migração" do mesmo prompt externo (a serem avaliados separadamente)
+
+### Parentesco com a frente de drift de tipagem
+
+Esta entrada e "Drift de tipagem entre Attribute, SDT, DataProvider e callers" (entrada subsequente) são parentes próximas, mas com perguntas distintas:
+
+- esta entrada pergunta **"quem mais precisa entrar no pacote?"**
+- a entrada de drift pergunta **"o que está no pacote bate com o que está na KB de destino?"**
+
+Ambas consomem a mesma grade de dependências, mas com semânticas diferentes. Mantidas como entradas separadas porque os limiares de implementação podem divergir; se uma virar frente, a outra deve ser reavaliada na mesma sessão para decidir se entra junto.
+
+### Perguntas a responder antes de decidir
+
+- O SQLite de `KbIntelligence` já registra a grade de referências entre objetos? Se sim, qual a granularidade — só "objeto A referencia objeto B" ou também o tipo de referência (embutida em level, chamada em Source, leitura em Rules)?
+- Se a grade não existir no índice atual, qual o custo de extrair durante o build do índice? Há heurística estrutural confiável por tipo de objeto (level de Transaction, structure de SDT, source de Procedure, etc.)?
+- O gate deve **bloquear** o empacotamento na ausência de declaração explícita sobre dependentes, ou apenas **exigir manifesto** que o agente liste e justifique?
+- Como o gate se comporta quando a KB de destino é diferente da KB de origem (cenário de migração entre KBs)? A grade da KB de origem pode não cobrir referências que existem apenas na destino.
+
+### Limiar para implementar
+
+Implementar quando houver: (a) confirmação empírica de que o SQLite atual cobre (ou pode cobrir com custo aceitável) a grade de referências entre objetos com granularidade suficiente, e (b) caso real recente de empacotamento que deixou dependente importante de fora e contaminou KB de destino, para calibrar a política do gate.
+
+## Drift de tipagem entre delta empacotado e snapshot oficial
+
+**Importância:** alta
+**Maturidade:** ideia
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**Filiação editorial:** esta entrada é o caso prático concreto da camada de comparação proposta de forma abstrata em "Baseline conhecido no sanity e na revisao de objeto legado" (mesma seção 999). Se uma das duas virar frente de implementação, a outra deve ser reavaliada na mesma sessão.
+
+### Problema concreto que motiva a ideia
+
+Cenário típico: o agente recebe pedido para alterar o atributo `Email` e gera um delta XPZ declarando o tipo `Character(60)`. O snapshot oficial em `ObjetosDaKbEmXml` mostra que `Email` na KB atual está como `Numeric(15)`. Se o delta é importado, o tipo na KB é sobrescrito silenciosamente. A aplicação rodando depende do tipo atual — registros existentes, callers compilados, banco com coluna no tipo antigo — e quebra em cascata só depois, no build ou em runtime, longe do momento do import.
+
+Causas típicas:
+
+- agente gerou o delta a partir de premissa antiga (snapshot que tinha em contexto não era o snapshot atual)
+- source do delta foi redigido com tipo errado por engano de transcrição
+- drift interno na própria KB que já existia antes do delta — atributo com um tipo, SDT que deveria espelhar com tipo diferente — detectável só lendo o snapshot
+
+Variações estruturais do mesmo problema:
+
+- Attribute no delta com tipo X, snapshot com tipo Y
+- SDT no delta com campo de tipo X, atributo homônimo no snapshot com tipo Y
+- DataProvider no delta retornando shape que não bate com SDT consumidor já existente no snapshot
+- Procedure no delta com parâmetro de tipo X, callers no snapshot chamando com tipo Y
+
+Hoje `xpz-builder` valida XML bem-formado e sanity absoluto do `Source` do delta, mas não compara o tipo do que entra contra o tipo do que já está no snapshot. Há ponto cego entre "`import_file.xml` válido" e "`import_file.xml` coerente com o snapshot oficial da KB que vai recebê-lo".
+
+### Direção técnica proposta
+
+Mesmo padrão das outras frentes determinísticas: separar camadas.
+
+**Camada determinística (`.ps1`):** para cada objeto no delta, extrair os tipos relevantes (tipo do Attribute, tipos dos campos do SDT, assinaturas de parâmetros de Procedure, etc.) e comparar contra o mesmo objeto em `ObjetosDaKbEmXml`. Saída estruturada por objeto: `same`, `drifted (tipo X → tipo Y)`, `new (não existe no snapshot)`.
+
+Variante adicional sem delta: passar só o snapshot e detectar **drift interno** entre objetos que deveriam espelhar tipos (Attribute ↔ SDT homônimo, Procedure parameter ↔ caller signature).
+
+**Camada de julgamento (regra textual em `xpz-builder`):** dado o resultado da comparação, o agente apresenta o drift detectado ao usuário com classificação de risco e exige confirmação explícita para drifts não triviais. Classificação proposta:
+
+- drift estrutural em level de Transaction → alto risco
+- drift em parâmetro de Procedure com callers existentes → médio risco
+- novo objeto (não existe no snapshot) → baixo risco, apenas declarar
+
+### Parentesco com item de dependências GeneXus
+
+Esta entrada e "Gate de dependências GeneXus no empacotamento de delta" consomem a mesma grade de informações estruturais do snapshot, mas com perguntas distintas:
+
+- gate de dependências pergunta "quem mais precisa entrar no pacote?"
+- esta entrada pergunta "o que está no pacote bate com o snapshot?"
+
+Mantidas separadas porque os limiares de implementação podem divergir; se uma virar frente, a outra deve ser reavaliada na mesma sessão.
+
+### Perguntas a responder antes de decidir
+
+- A extração de tipo é confiável por leitura estrutural do XML para todos os tipos de objeto envolvidos (Attribute, SDT, DataProvider, Procedure, Transaction level)? Quais part-types do XML carregam essa informação?
+- O drift interno detectável só pelo snapshot (Attribute vs SDT homônimo) deve viver em script separado ou na mesma ferramenta de comparação delta-vs-snapshot?
+- O gate deve **bloquear** o empacotamento quando houver drift de alto risco, ou apenas **exigir manifesto** que o agente liste e justifique?
+- Como a saída se integra com o gate de dependências (1.2)? Drift de tipagem em objeto que tem dependentes não incluídos é cenário composto que precisa de tratamento conjunto.
+
+### Limiar para implementar
+
+Implementar quando houver: (a) caso real recente de drift de tipagem detectado tarde demais (no build ou em runtime) que tenha gerado dano efetivo, para calibrar a classificação de risco, e (b) decisão fechada se a frente vai junto com o gate de dependências (1.2) ou separada — depende de quanto da infraestrutura de leitura estrutural é compartilhada entre as duas.
+
+## Parsing estruturado de log de build — agrupamento, classificação e resumo de impacto
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** avaliação de prompt externo em 2026-05-11. Fusão dos itens 3.1 (agrupador de causa raiz, P0 no prompt externo), 3.3 (classificador de erro por tipo, P1) e 3.4 (resumo de impacto — causa direta vs cascata, P1) do mesmo prompt. Os três sempre serão discutidos juntos: mesmo insumo (log do MSBuild), mesma técnica (heurísticas sobre mensagens), mesmo consumidor (`xpz-msbuild-build`).
+
+### Problema concreto que motiva a ideia
+
+Quando `Invoke-GeneXusKbBuildAll.ps1` retorna `compilou com erros`, hoje o agente reporta o status e expõe o log bruto. O usuário precisa ler dezenas ou centenas de linhas para identificar a causa real. Em casos típicos de GeneXus, dezenas de erros derivam de **uma única causa raiz** — um atributo com tipo errado pode gerar erros em cascata em todos os SDTs, DataProviders e Procedures que o consomem. Sem agrupamento, o usuário pode gastar tempo investigando um erro derivado em vez da causa.
+
+A skill atual classifica o **resultado da operação** em categorias claras ("compilou com erros", "reorg detectada ou executada", etc.), mas não classifica nem agrupa **os erros individuais dentro do log**.
+
+### Três camadas da mesma frente
+
+**Agrupamento por causa raiz (item 3.1 do prompt externo):** dado um log com N erros, identificar quais são derivados de uma mesma causa estrutural e apresentar apenas a causa raiz com os derivados como "cascata de M erros relacionados".
+
+**Classificação por tipo de causa (item 3.3 do prompt externo):** rotular cada causa raiz por categoria:
+
+- erro de conteúdo — Source GeneXus mal-formado, sintaxe incorreta
+- erro de tipagem — drift de tipo detectado em tempo de build
+- erro de dependência — objeto chamado/referenciado não existe ou referência quebrada
+- erro de encoding — bytes corrompidos detectados em compile
+- erro de reorg — banco/schema desalinhado com o modelo
+
+**Resumo de impacto (item 3.4 do prompt externo):** separar objetos que falharam por causa direta dos que falharam por efeito cascata, declarando explicitamente o grafo de impacto.
+
+### Direção técnica proposta
+
+Camada determinística (`.ps1`): parser estruturado do log do MSBuild que extrai erros, normaliza mensagens, identifica grafos de derivação por nome de objeto/atributo, agrupa por causa raiz, classifica por padrão de mensagem. Saída estruturada (JSON) consumível pelo agente.
+
+Camada de julgamento (regra textual em `xpz-msbuild-build`): apresentação ao usuário do parsing estruturado, com formatação que enfatiza causa raiz e oculta derivações repetitivas até que o usuário peça.
+
+### Loop de feedback com gates upstream
+
+A categoria de classificação (1.1 encoding, 1.2 dependência, 1.3 tipagem) mapeia diretamente para os gates upstream propostos em outras entradas desta seção. Um erro classificado como "tipagem" que aparece no build é, em tese, um caso que o gate de drift de tipagem (1.3) deveria ter pego antes. Esse mapeamento fecha um loop de feedback: erro classificado X no build → revisar gate X upstream.
+
+O valor real desse loop só se materializa quando pelo menos um gate upstream estiver implementado e gerando casos de teste reais de "erro que escapou".
+
+### Perguntas a responder antes de decidir
+
+- As mensagens de erro do GeneXus 18 nesta instalação têm formato estável o suficiente para heurística confiável? Em que medida mudam entre minor versions? É necessário um catálogo empírico de mensagens por categoria como pré-requisito.
+- Como distinguir erros que vêm de specify do GeneXus, errors de generate, erros de compile (Java/C#) e erros de MSBuild puro? Cada fonte tem padrão próprio.
+- Como tratar erros sem objeto identificável (erro de infraestrutura, erro de configuração de ambiente)? Categoria residual "ambiente"?
+- Falso negativo (não identificar derivação que existia) é melhor ou pior que falso positivo (agrupar erros não relacionados)? Provavelmente falso negativo é menos ruim — não esconde nada do usuário.
+- Quanto do parsing deve viver em script vs ser delegado ao agente? Pattern matching é determinístico; correlação semântica entre erros pode exigir julgamento.
+
+### Limiar para implementar
+
+Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 dependências ou 1.3 drift de tipagem) implementado e em uso real, gerando casos concretos de "erro que escapou ao gate" para calibrar o classificador empiricamente; e (b) catálogo empírico de mensagens de erro do GeneXus 18 mapeado por categoria, construído a partir de logs reais de build com erro.
+
+## Manifesto semântico de pacote — saída agregada dos gates de empacotamento
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** avaliação de prompt externo em 2026-05-11.
+
+**Filiação editorial:** esta entrada é a saída agregada das frentes "Gate de mojibake/UTF-8 por bytes em XML pré-empacotamento", "Gate de dependências GeneXus no empacotamento de delta" e "Drift de tipagem entre delta empacotado e snapshot oficial" (todas em 999). Sem pelo menos uma dessas frentes implementada, o manifesto fica oco — o invólucro existe mas as seções "dependências confirmadas/presumidas" e "riscos" não têm conteúdo estruturado para preencher.
+
+### Problema concreto que motiva a ideia
+
+Hoje o agente narra o pacote durante a sessão de empacotamento: o que entrou, o que deliberadamente ficou de fora e por quê, riscos avaliados. Quando a sessão fecha, essa narrativa some. Restam apenas `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` na pasta de pacotes — opaco para auditoria posterior.
+
+Em frente longa, ou em handoff entre agentes (mesmo entre sessões consecutivas do mesmo agente), perder essa camada custa caro. Outro agente que pegue o mesmo `import_file.xml` daqui a duas semanas precisa reconstruir do zero o raciocínio de inclusão/exclusão. Não há fonte persistente da **intenção** de empacotamento, apenas do resultado.
+
+Diferente do log de import (que registra o que aconteceu no MSBuild), o manifesto mostra o que se pretendia fazer e por quê.
+
+### Conteúdo proposto
+
+Quatro seções derivadas das frentes upstream:
+
+- **objetos alterados** — lista de objetos no pacote (já trivial sem dependência de outra frente)
+- **dependências confirmadas** — referenciados pelos objetos alterados que foram **incluídos** no pacote por decisão explícita; alimentada pelo gate de dependências
+- **dependências presumidas** — referenciados pelos objetos alterados que foram **deixados de fora** por decisão explícita, com justificativa; alimentada pelo mesmo gate
+- **riscos** — alertas detectados pelos gates de mojibake, drift e qualquer outro gate que vier a existir; categorizados por severidade
+
+### Direção técnica proposta
+
+Camada determinística (saída de scripts): cada gate upstream emite resultado estruturado (JSON) que serve como insumo do manifesto.
+
+Camada de julgamento (regra textual em `xpz-builder`): consolidar os resultados estruturados, adicionar a narrativa de inclusão/exclusão deliberada e gerar o manifesto final como artefato persistente no momento do empacotamento.
+
+### Decisões editoriais ainda em aberto
+
+- **Formato:** JSON estruturado (consumível por outro agente), MD legível (consumível por humano), ou ambos? A combinação JSON + MD lado a lado tende a inflar custo de manutenção; um único formato consumível por ambos os públicos seria mais limpo.
+- **Posição:** raiz de `PacotesGeradosParaImportacaoNaKbNoGenexus` junto com `import_file.xml`, ou subpasta dedicada? A regra atual exige que a pasta permaneça plana — manifesto na raiz parece natural.
+- **Nomenclatura:** `NomeCurto_GUID_YYYYMMDD_nn.manifest.{ext}` segue o padrão atual de prefixo de frente.
+- **Versionamento Git:** por default, `PacotesGeradosParaImportacaoNaKbNoGenexus` não é versionada; manifesto pode ser exceção por valor de auditoria, mas isso é decisão de política do repositório, não automatismo do agente.
+- **Produtor:** `xpz-builder` é o consumidor natural; manifesto seria saída adicional do mesmo fluxo de empacotamento, não wrapper separado.
+
+### Perguntas a responder antes de decidir
+
+- A camada de "dependências presumidas" exige enumerar **todos** os referenciados não incluídos, ou apenas aqueles que o gate de dependências sinalizou como potencialmente relevantes? A primeira opção é exaustiva mas pode ser ruidosa; a segunda é seletiva mas depende de heurística confiável no gate.
+- O manifesto deve ser regenerável a partir do `import_file.xml` sozinho, ou pressupõe acesso ao contexto da sessão de empacotamento? Regenerável tem custo (re-rodar gates contra o snapshot atual), mas dá robustez de auditoria.
+- Há valor em manifesto também para a saída do build (causa raiz, classificação, impacto — entrada "Parsing estruturado de log de build")? Ou manifesto é estritamente da fase de empacotamento?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 dependências ou 1.3 drift de tipagem) implementado e em uso real, gerando saída estruturada que sirva de conteúdo para uma das seções do manifesto; e (b) decisão editorial fechada sobre formato, posição, nomenclatura e política de versionamento Git.
+
+## Expansão do índice SQLite para fingerprint de call site
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** avaliação de prompt externo em 2026-05-11. Surgiu como evolução adjacente à proposta original "Consulta de migração (Origem → Destino)" — a leitura cosmética foi descartada para 998; o ângulo estrutural sobrevive aqui.
+
+### Problema concreto que motiva a ideia
+
+A consulta `who-uses Procedure:X` no índice atual retorna a lista de objetos que referenciam o alvo — apenas os nomes. Para editar cirurgicamente cada caller (substituir referência antiga por nova, ajustar parâmetros, remover uso obsoleto), o agente precisa abrir o XML de cada caller e localizar o local exato da referência. Em uma migração que afeta 20 ou 30 callers, isso vira leitura manual extensiva mesmo com o índice ajudando a triagem inicial.
+
+O índice já varre todos os XMLs uma vez durante o build (`Build-KbIntelligenceIndex.py`). Agregar **o local** de cada referência no mesmo passo de varredura é custo marginal frente ao trabalho já realizado.
+
+### Direção técnica proposta
+
+Estender o schema do SQLite para registrar, em cada relação de referência entre objetos, metadados de localização:
+
+- `part` — qual part-type do XML contém a referência (Event, Action, Source, Rules, Conditions, Layout, etc.)
+- `block` — nome do bloco nominal dentro do part (qual Event, qual Action, etc.) quando aplicável
+- `line` — linha aproximada no Source quando aplicável
+- `context` — trecho curto do XML em torno da referência, para o agente confirmar antes de editar
+
+Resultado: `who-uses Procedure:X` passa a retornar não só "estes N objetos te referenciam" mas "te referenciam aqui — `WPRelatorio` no Event 'Refresh' linha ~47, `PRecalcular` no Source linha ~12, etc.".
+
+### Por que **não** substitui a frente vetorial em 999
+
+A frente "LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual" e esta entrada respondem perguntas diferentes:
+
+- **Vetorial:** descoberta semântica por intenção em linguagem natural ("qual procedure atualiza o saldo de estoque mensal?"); ajuda a achar **o quê** quando o nome do objeto é desconhecido
+- **Fingerprint no SQLite:** endereçamento estrutural preciso ("onde exatamente cada caller referencia este alvo?"); ajuda a achar **onde** quando os nomes já são conhecidos
+
+São complementares. Implementar uma não dispensa a outra. Custos de implementação são muito diferentes — vetorial exige camada nova completa (embeddings, vector store, novo wrapper); fingerprint é evolução incremental do índice atual.
+
+### Perguntas a responder antes de decidir
+
+- Qual a granularidade de localização que de fato basta para edição cirúrgica? Part + bloco nominal é suficiente, ou precisa linha aproximada e trecho de contexto também?
+- O custo de varredura adicional durante o build do índice é aceitável? Validar empiricamente em KB grande (~15k objetos).
+- O schema atual do SQLite comporta a expansão sem migração disruptiva? Provavelmente sim (nova tabela de localizações vinculada à tabela de relações), mas precisa confirmação.
+- A informação de fingerprint deve ser exposta como capacidade nova no wrapper local (`who-uses-detailed`?), ou enriquecer a saída de `who-uses` existente? Compatibilidade retroativa é uma decisão editorial.
+- Como tratar referências em part-types com formato não-linear (Layout XML, Rules, Conditions)? "Linha aproximada" não faz sentido em todos os casos.
+
+### Limiar para implementar
+
+Implementar quando houver: (a) caso real recente de migração em lote (10+ callers) que tenha custado caro por leitura manual de XML após o `who-uses` apontar os nomes; e (b) decisão fechada sobre granularidade do fingerprint (qual nível de localização vale o custo de armazenar e manter).
+
+## Correção de acentuação pt-BR degradada nos SKILL.md
+
+**Importância:** alta
+**Maturidade:** pronta para implementar
+
+**Origem:** avaliação de prompt externo em 2026-05-11 com verificação empírica feita na mesma sessão.
+
+### Problema concreto confirmado empiricamente
+
+Varredura nos 10 SKILL.md do repositório em 2026-05-11 confirmou degradação de acentuação pt-BR generalizada. **Mojibake real (bytes corrompidos `Ã§`/`Ã£`/etc.) não existe** — o agente externo que reportou o problema possivelmente viu renderização errada de UTF-8 válido como CP1252 no terminal dele. O defeito real é de outra natureza: acentos perdidos por degradação a ASCII em palavras pt-BR. Exemplos colhidos diretamente de `xpz-index-triage/SKILL.md`:
+
+- "indice derivado" → `índice derivado`
+- **"O indice e artefato derivado"** → `O índice é artefato derivado` (caso clássico apontado pelo usuário — `e` conjunção onde devia ser `é` verbo, mudando completamente o sentido)
+- "nao substitui... e nao autoriza conclusao funcional automatica" → `não substitui... e não autoriza conclusão funcional automática`
+- "gate e obrigatorio... existencia" → `é obrigatório... existência`
+
+Distribuição por arquivo (palavras inequivocamente acentuadas detectadas por regex restrito; número real é maior — cada `e`/`area`/`referencia` etc. é falso negativo do regex):
+
+| arquivo | hits |
+|---|---|
+| xpz-kb-parallel-setup | 331 |
+| xpz-sync | 99 |
+| xpz-index-triage | 98 |
+| xpz-msbuild-build | 22 |
+| xpz-msbuild-import-export | 17 |
+| xpz-builder | 10 |
+| xpz-doc-builder | 5 |
+| xpz-daemon | 3 |
+| xpz-skills-setup | 3 |
+| xpz-reader | 2 |
+| **total** | **590+** |
+
+### Direção técnica proposta
+
+**Correção manual contextual, não substituição cega por regex.** Algumas palavras têm forma válida com ou sem acento:
+
+- `esta` pode ser `está` (verbo) ou `esta` (pronome demonstrativo — válido sem acento)
+- `tem` pode ser `tem` (3ª p. singular, válido) ou `têm` (3ª p. plural)
+- `vem` pode ser `vem` (3ª p. singular, válido) ou `vêm` (3ª p. plural)
+- `e` é a conjunção (válida) ou `é` o verbo
+- `so` é forma estrangeira (raramente válida no contexto) ou `só`
+
+Substituição em massa por regex causaria regressões. A correção precisa ser decisão contextual linha a linha.
+
+### Por que é frente própria, dedicada e sequencial
+
+Três motivos para frente separada:
+
+- **Volume**: 590+ hits no regex restrito; número real maior. `xpz-kb-parallel-setup` sozinho concentra 331 — execução não cabe em sessão genérica.
+- **Risco de revisão cega**: substituição mecânica gera regressões nas palavras ambíguas listadas acima.
+- **Política de edição segura de MD longo**: regra do `AGENTS.md` global exige edições pequenas, locais, ancoradas por seção, com releitura imediata após cada gravação. Aplicar isso em centenas de pontos pede sessão dedicada.
+
+### Plano de execução proposto
+
+1. Sessão dedicada para a correção, com escopo declarado: "correção de acentuação pt-BR degradada nos SKILL.md".
+2. Atacar um SKILL.md por vez, começando pelos menores (xpz-reader, xpz-daemon, xpz-skills-setup, xpz-doc-builder, xpz-builder) para calibrar a estratégia.
+3. Para cada arquivo: ler integralmente, gerar lista de correções propostas, aplicar em edições pequenas e ancoradas por seção, reler trecho alterado após cada gravação.
+4. `xpz-kb-parallel-setup` (331 hits) provavelmente exige sessão própria adicional só para ele.
+5. Atualizar lista quando concluir cada arquivo; preservar rastreabilidade do progresso.
+
+### Perguntas a responder antes de começar a sessão de execução
+
+- Há regras editoriais do repositório que justifiquem manter alguma palavra sem acento intencionalmente? (Provavelmente não, mas confirmar antes de tratar todos os hits como defeito.)
+- O processo deve cobrir só SKILL.md, ou também varrer arquivos `.md` da base compartilhada (`01-...`, `02-...`, etc.) na mesma sessão dedicada? A varredura desta sessão olhou só SKILL.md.
+- Há `.example.ps1` ou outros artefatos das skills com texto pt-BR que mereçam o mesmo tratamento na mesma sessão?
+
+### Limiar para implementar
+
+**Pronto agora.** Não há gate técnico, não há pesquisa pendente, não há decisão de design em aberto. Falta apenas alocar sessão dedicada com escopo declarado.
