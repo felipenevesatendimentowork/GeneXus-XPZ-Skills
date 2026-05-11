@@ -297,8 +297,8 @@ Parâmetros específicos de importação:
 10. Se o objetivo for importação real, exigir autorização explícita e ambiente controlado
 11. Capturar e relatar:
    - `exitCode`
-   - `stdoutSignals` com campos semânticos do domínio (ex: `importWarnings`, `exportMarkerFound`/`gxWarnings`) — somente nos scripts que executam MSBuild de import/export; scripts de leitura pura omitem o campo
-   - `stderrContent` — linhas reais de stderr após filtrar ruído GeneXus 18
+   - `stdoutSignals` com campos semânticos do domínio (ex: `importWarnings`, `exportMarkerFound`/`gxWarnings`) — presente nos scripts de import/export; omitido nos scripts cujos sinais de domínio já fluem por campos próprios (`observedContext`, `propertyValue`, `consistencyResult`)
+   - `stderrContent` — linhas reais de stderr após filtrar ruído GeneXus 18; pode conter o padrão lateral `mismatched input ']' expecting 'default'`, documentado em `10-base-operacional-msbuild-headless.md` como ruído de runtime não bloqueante — não confundir com falha operacional
    - `stderrFilteredNoise` — linhas filtradas do ruído GeneXus 18 (`context [anonymous] N:N attribute component isn't defined`)
    - caminho do `.msbuild`
    - caminho do log
