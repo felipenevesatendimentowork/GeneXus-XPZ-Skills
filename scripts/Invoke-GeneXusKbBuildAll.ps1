@@ -1091,7 +1091,8 @@ try {
     # O GeneXus nao conta isso como erro: stdout reporta "0 avisos, 0 erros".
     # Evidencia empirica: FabricaBrasil18 e wsEducacaoSpTeste em 2026-05-10, sempre 3x,
     # mesma posicao, independente do conteudo da KB. Filtrar antes de classificar.
-    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
+    $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
     if ($buildStatus.Status -eq 'compilou limpo' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
         $buildStatus = [ordered]@{
@@ -1163,8 +1164,9 @@ try {
             ExecutionLogPath = $resolvedLogPath
         }
         watcherContext   = $script:WatcherContext
-        stdoutSummary    = Get-TextSummary -Text $stdOutText
-        stderrSummary    = Get-TextSummary -Text $stdErrText
+        stdoutSummary        = Get-TextSummary -Text $stdOutText
+        stderrSummary        = Get-TextSummary -Text $stdErrFiltered
+        stderrFilteredNoise  = Get-TextSummary -Text $stdErrFilteredNoise
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
