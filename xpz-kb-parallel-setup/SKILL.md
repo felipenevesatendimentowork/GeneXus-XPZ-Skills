@@ -28,7 +28,7 @@ Esta skill e de invocacao obrigatoria antes de qualquer acao de consulta, triage
     - se erro inesperado: registrar o erro antes de decidir o próximo passo
 3. Seguir o output:
    - `AUDIT_REQUIRED: <motivo>` → prosseguir com auditoria completa (WORKFLOW passo 1)
-   - `GATE_ONLY` → executar `Test-*KbIndexGate.ps1`; se `GATE_OK`, gravar `last_setup_audit_run_at` com timestamp atual em `kb-source-metadata.md` e liberar o fluxo normal; se `BLOCK`, prosseguir com auditoria completa (WORKFLOW passo 1)
+   - `GATE_ONLY` → executar `Test-*KbIndexGate.ps1`; se `GATE_OK`, liberar o fluxo normal; se `BLOCK`, prosseguir com auditoria completa (WORKFLOW passo 1)
 
 O agente nao deve raciocinar sobre timestamps por conta propria nem substituir a execucao do script por verificacao manual de datas ou de arquivos.
 
@@ -126,7 +126,7 @@ Do NOT use this skill for:
 - Tratar qualquer memoria local de setup que diga `ainda nao materializada`, `aguardando primeiro XPZ` ou equivalente como estado provisório; depois da primeira materializacao oficial bem-sucedida, esse estado nao deve continuar sendo apresentado como atual
 - Tratar `KbIntelligence\kb-intelligence.sqlite` como dono do metadado `last_index_build_run_at` na tabela `metadata`; esse horario deve ser igual ou posterior a `last_xpz_materialization_run_at` para permitir triagem ampla e geracao de objetos de importacao
 - Tratar `kb-source-metadata.md` e a saida de `-Query index-metadata` do wrapper local como fonte efetiva dos timestamps operacionais; `AGENTS.md` e `README.md` locais funcionam como memoria auxiliar humana e devem ser mantidos coerentes com esses valores efetivos
-- Tratar `last_setup_audit_run_at` em `kb-source-metadata.md` como timestamp da ultima execucao de setup ou auditoria de setup concluida com sucesso nesta pasta paralela; gravar esse campo imediatamente apos declarar qualquer estado canonico de conclusao bem-sucedido (`pronto_para_primeira_materializacao`, `materializado_e_indice_validado`, `wrappers_atualizados`); nao gravar quando a conclusao for `bootstrap_incompleto` ou `auditoria_de_empacotamento_pendente`, pois esses estados indicam conclusao parcial e nao garantem que a proxima invocacao pode confiar no setup como integro
+- Tratar `last_setup_audit_run_at` em `kb-source-metadata.md` como timestamp da ultima execucao de setup ou auditoria de setup concluida com sucesso nesta pasta paralela; gravar esse campo imediatamente apos declarar qualquer estado canonico de conclusao bem-sucedido (`pronto_para_primeira_materializacao`, `materializado_e_indice_validado`, `wrappers_atualizados`); nao gravar quando a conclusao for `bootstrap_incompleto`, `auditoria_de_empacotamento_pendente` ou `atualizacao_metodologica_pendente`, pois esses estados indicam conclusao parcial e nao garantem que a proxima invocacao pode confiar no setup como integro
 - Explicar que o fluxo oficial de materializacao XPZ/XML deve chamar a regeneracao/validacao do indice derivado compulsoriamente apos atualizar `ObjetosDaKbEmXml`
 - Explicar que, apos processamento bem-sucedido, um `.xpz` em `XpzExportadosPelaIDE` pode ser renomeado para `processado_<nome-original>.xpz`
 - Tratar `ObjetosGeradosParaImportacaoNaKbNoGenexus` como area de trabalho para XMLs temporarios destinados a importacao manual na IDE
