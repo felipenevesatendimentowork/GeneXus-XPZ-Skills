@@ -85,7 +85,7 @@ Do NOT use this skill for:
 - Never affirm import or build compatibility — structural analysis only
 - When the task depends on a local KB parallel folder structure, require that structure to be clarified or validated first via `xpz-kb-parallel-setup`
 - When the object analyzed is a WWP PatternInstance (`WorkWithPlus*`): flag as structural anomaly any duplicate nodes in `<attribute>`, `<gridAttribute>`, or `<parameter>`; `parentGuid` inconsistent with the object name; and references to attributes apparently absent from the current model — if the user intends to package or clone the object, encaminhar para `xpz-builder`
-- When the analysis is motivated by a GeneXus warning about an unknown provider, unknown item, designer, or extension metadata: classify the cited item before searching the XPZ/XML — (a) common exportable GeneXus object; (b) internal part or metadata; (c) designer or extension provider; (d) unknown type. If the XPZ/XML search returns no result and the item is not type (a), state only the limited conclusion: "not found in XPZ/XML" — never "does not exist in the KB". Refer to the conceptual boundary rule in `02-regras-operacionais-e-runtime.md` section "Limite do XPZ/XML frente a providers e extensoes GeneXus".
+- When the analysis is motivated by a GeneXus warning about an unknown provider, unknown item, designer, or extension metadata: classify the cited item before searching the XPZ/XML — (a) common exportable GeneXus object; (b) internal part or metadata; (c) designer or extension provider; (d) unknown type. If the XPZ/XML search returns no result and the item is not type (a), state only the limited conclusion: "not found in XPZ/XML" — never "does not exist in the KB". Refer to the conceptual boundary rule in `02-regras-operacionais-e-runtime.md` section "Limite do XPZ/XML frente a providers e extensões GeneXus".
 
 ---
 
@@ -401,7 +401,7 @@ Reference files and when to load them:
    - Risk level
    - Part types: present / expected / missing — or N/A if the type is confirmed in [01b] as using no Parts
    - For report `Procedure`, anomaly layer and escalation recommendation (`sanitized canonical template still fits` vs `escalate to comparable real XML`)
-   - For report `Procedure`, basis used labeled as exactly one of: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB`, or `hipotese`
+   - For report `Procedure`, basis used labeled as exactly one of: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB`, or `hipótese`
    - Identity fields: `fullyQualifiedName`, `name`, `parent`, `parentGuid`, `parentType`, `moduleGuid`
    - Confidence level for each conclusion
    - Any structural anomalies detected
