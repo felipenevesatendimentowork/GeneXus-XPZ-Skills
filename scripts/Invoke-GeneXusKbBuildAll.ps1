@@ -1102,6 +1102,18 @@ try {
         }
     }
 
+    if ($buildStatus.Status -eq 'compilou limpo') {
+        $stdOutBlockingPattern = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
+        if ($stdOutText -match $stdOutBlockingPattern) {
+            $matchedPattern = ([regex]::Match($stdOutText, $stdOutBlockingPattern)).Value
+            $buildStatus = [ordered]@{
+                Status   = 'operacao concluida, pendente de confirmacao funcional'
+                Summary  = "BuildAll concluiu sem erro de MSBuild, mas stdout contem padrao de alerta: '$matchedPattern'. Verifique stdoutSummary no diagnostico."
+                ExitCode = 0
+            }
+        }
+    }
+
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execucao MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
     }
