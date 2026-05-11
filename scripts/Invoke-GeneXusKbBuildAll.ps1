@@ -1235,8 +1235,13 @@ catch {
             ExecutionLogPath = $resolvedLogPath
         }
         watcherContext   = $script:WatcherContext
-        stdoutSummary    = @()
-        stderrSummary    = @()
+        stdoutSignals        = [ordered]@{
+            blockingPattern = $null
+            postBuildEvents = @()
+            buildWarnings   = @()
+        }
+        stderrContent        = @()
+        stderrFilteredNoise  = @()
         blockingReasons  = @($_.Exception.Message)
         warnings         = @()
         strategyTrace    = @($script:StrategyTrace)

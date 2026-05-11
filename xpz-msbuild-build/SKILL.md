@@ -486,8 +486,9 @@ Campos relevantes:
 - `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
 - `timing.phases` — lista de fases com `name`, `start`, `end`, `durationSeconds`
 - `observedContext.ReorgDetected` — se reorg foi detectada
-- `stdoutSummary` / `stderrSummary` — amostras de stdout e stderr para diagnose; `stderrSummary` contém apenas conteúdo real — ruído estrutural do GeneXus 18 já foi removido
-- `stderrFilteredNoise` — ruído estrutural removido de `stderrSummary`; quando `stderrSummary` está vazio e `stderrFilteredNoise` tem conteúdo, o build é limpo e nenhuma recomendação de IDE deve ser emitida
+- `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado, ou `null`), `postBuildEvents` (linhas `start c:` / `start cmd`), `buildWarnings` (linhas de warning com posição)
+- `stderrContent` — linhas reais de stderr após remoção do ruído estrutural do GeneXus 18
+- `stderrFilteredNoise` — ruído estrutural removido de stderr; quando `stderrContent` está vazio e `stderrFilteredNoise` tem conteúdo, o build é limpo e nenhuma recomendação de IDE deve ser emitida
 
 ### Observações críticas
 
