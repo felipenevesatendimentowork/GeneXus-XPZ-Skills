@@ -38,7 +38,7 @@ Do NOT use this skill for:
 - Analisar um XML isolado sem intenção de atualizar a documentação (use `xpz-reader`)
 - Gerar ou clonar objetos XPZ para empacotamento (use `xpz-builder`)
 - Tratar o SQLite do KB Intelligence como fonte normativa no lugar dos XMLs oficiais
-- Localizar objetos no acervo da KB por nome ou tipo (usar `xpz-index-triage` primeiro quando houver indice KbIntelligence disponivel)
+- Localizar objetos no acervo da KB por nome ou tipo (usar `xpz-index-triage` primeiro quando houver índice KbIntelligence disponível)
 
 ---
 
@@ -102,7 +102,7 @@ Se o repositório ainda mantiver wrappers especializados, eles devem ser tratado
 
 1. Identificar se o pedido é `inventory`, `advanced-docs` ou `update-section`
 2. Se a pasta paralela da KB ainda não estiver montada, validada ou mapeada para este repositório → **ABORT** e usar `xpz-kb-parallel-setup`
-   - Quando houver indice KbIntelligence disponivel e a tarefa exigir selecionar ou localizar objetos do corpus para documentar, invocar `xpz-index-triage` antes de abrir XMLs para orientar a selecao
+   - Quando houver índice KbIntelligence disponível e a tarefa exigir selecionar ou localizar objetos do corpus para documentar, invocar `xpz-index-triage` antes de abrir XMLs para orientar a seleção
 3. Resolver a raiz do repositório pelo contexto
 4. Localizar `scripts\` e confirmar a existência do script adequado
 5. Confirmar ou derivar caminhos de entrada e saída
@@ -114,7 +114,7 @@ Se o repositório ainda mantiver wrappers especializados, eles devem ser tratado
 9. Quando a documentação gerar ou preservar links de linha para XML GeneXus, rotular o papel do trecho citado: `Source efetivo`, `Rules/parm`, `metadado XML`, `chamada no chamador` ou `assinatura no chamado`
 10. Se a documentação afirmar que objeto A chama objeto B, validar que o link de linha aponta para o `Source` efetivo de A ou para metadado explícito de chamada em A; linha de `parm(...)` em B deve ser descrita apenas como assinatura do chamado
 11. Se usar saída do KB Intelligence, declarar que a fonte imediata é índice técnico derivado e que a fonte normativa continua sendo o XML oficial em `ObjetosDaKbEmXml`; quando houver evidência citada, preservar referência ao XML oficial, papel do trecho citado e nível de confiança
-12. Quando a documentação tiver natureza funcional, separar explicitamente `Evidencia direta`, `Leitura adicional do XML`, `Inferencia forte` e `Hipotese`
+12. Quando a documentação tiver natureza funcional, separar explicitamente `Evidência direta`, `Leitura adicional do XML`, `Inferência forte` e `Hipótese`
 13. Reler o início do arquivo gerado ou alterado, a seção modificada e a transição seguinte
 14. Reportar o que foi criado, atualizado ou substituído
 
