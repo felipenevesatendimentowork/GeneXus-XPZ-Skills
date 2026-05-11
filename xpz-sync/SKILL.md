@@ -20,29 +20,29 @@ Identificar a raiz do repositório pelo contexto, localizar os scripts de sincro
 
 Quando o mesmo `XPZ` for reprocessado após atualização do arquivo exportado, tratar o novo resultado como um novo snapshot daquele insumo, não como repetição irrelevante do processamento anterior. A classificação `updated` versus `unchanged` pertence ao resultado daquele processamento específico.
 
-Os nomes das pastas sao apenas padroes sugeridos quando o usuario nao informar outros. O que manda e a funcao da pasta no fluxo.
+Os nomes das pastas são apenas padrões sugeridos quando o usuário não informar outros. O que manda é a função da pasta no fluxo.
 
-Quando a base compartilhada ganhar um parametro operacional relevante, isso
-significa apenas que a capacidade existe no motor compartilhado. A exposicao em
-wrappers locais continua sendo decisao local e pode estar defasada. Nesses
-casos, o agente deve reconhecer a defasagem como oportunidade de adaptacao
-local, propor a mudanca ao usuario e aguardar aprovacao explicita; nao deve
-alterar wrappers locais por conta propria.
+Quando a base compartilhada ganhar um parâmetro operacional relevante, isso
+significa apenas que a capacidade existe no motor compartilhado. A exposição em
+wrappers locais continua sendo decisão local e pode estar defasada. Nesses
+casos, o agente deve reconhecer a defasagem como oportunidade de adaptação
+local, propor a mudança ao usuário e aguardar aprovação explícita; não deve
+alterar wrappers locais por conta própria.
 
-A superficie do wrapper local tambem pode ficar temporariamente a frente, atras
-ou levemente desalinhada em relacao ao motor compartilhado efetivo daquela pasta
-paralela da KB. Quando a falha atingir apenas um parametro opcional de
-conferencia/comparacao e o sync principal continuar viavel, tratar o caso como
-divergencia wrapper/engine: rerodar sem o opcional, registrar o incidente no
-relato e nao classificar isso automaticamente como bloqueio da operacao
+A superfície do wrapper local também pode ficar temporariamente à frente, atrás
+ou levemente desalinhada em relação ao motor compartilhado efetivo daquela pasta
+paralela da KB. Quando a falha atingir apenas um parâmetro opcional de
+conferência/comparação e o sync principal continuar viável, tratar o caso como
+divergência wrapper/engine: rerodar sem o opcional, registrar o incidente no
+relato e não classificar isso automaticamente como bloqueio da operação
 principal.
 
-Os `.example.ps1` da base metodologica podem servir como referencia para
-consertar ou reconstruir wrappers locais finais, mas nao substituem o wrapper
-local real e nao devem ser usados como fallback automatico de execucao no fluxo
+Os `.example.ps1` da base metodológica podem servir como referência para
+consertar ou reconstruir wrappers locais finais, mas não substituem o wrapper
+local real e não devem ser usados como fallback automático de execução no fluxo
 normal da pasta paralela da KB.
 
-Se a pasta paralela da KB ainda nao estiver montada, validada ou mapeada, parar e usar `xpz-kb-parallel-setup` antes do `sync`.
+Se a pasta paralela da KB ainda não estiver montada, validada ou mapeada, parar e usar `xpz-kb-parallel-setup` antes do `sync`.
 
 ## PATH RESOLUTION
 
@@ -61,10 +61,10 @@ Use esta skill para:
 - Usuário quer rodar o script de sincronização ou de snapshot
 
 Do NOT use this skill para:
-- Gerar ou construir pacotes XPZ para importacao manual na IDE (use `xpz-builder`)
+- Gerar ou construir pacotes XPZ para importação manual na IDE (use `xpz-builder`)
 - Analisar estrutura interna de um XML isolado (use `xpz-reader`)
-- Instalar ou gerenciar monitoramento automatico de pastas XPZ (use `xpz-daemon`)
-- Localizar objetos no acervo da KB por nome ou tipo (usar `xpz-index-triage` quando houver indice KbIntelligence disponivel)
+- Instalar ou gerenciar monitoramento automático de pastas XPZ (use `xpz-daemon`)
+- Localizar objetos no acervo da KB por nome ou tipo (usar `xpz-index-triage` quando houver índice KbIntelligence disponível)
 - Preparar, explicar ou validar a estrutura inicial da pasta paralela da KB (use `xpz-kb-parallel-setup`)
 
 ---
@@ -87,13 +87,13 @@ Quando o usuário não informar nomes alternativos, adotar estas subpastas na ra
 - `ObjetosDaKbEmXml`: acervo oficial somente leitura para agentes
 - `XpzExportadosPelaIDE`: entrada dos `.xpz` exportados pela IDE
 - `scripts`: wrappers `.ps1` que tratam `XPZ`
-- `Temp`: destino de artefatos efemeros de execucao, como diretorios temporarios de wrappers, logs auxiliares e saidas intermediarias
-- `KbIntelligence`: pasta do indice SQLite derivado e regeneravel, quando esse fluxo estiver adotado na KB
+- `Temp`: destino de artefatos efêmeros de execução, como diretórios temporários de wrappers, logs auxiliares e saídas intermediárias
+- `KbIntelligence`: pasta do índice SQLite derivado e regenerável, quando esse fluxo estiver adotado na KB
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus`: saída de XMLs temporários para importação manual, organizada por frente em subpastas `NomeCurto_GUID_YYYYMMDD`; essa subpasta é a unidade ativa da frente
 - `PacotesGeradosParaImportacaoNaKbNoGenexus`: saída de pacotes `.xml` e, quando necessário, `.xpz`
 - após processamento bem-sucedido, o `.xpz` consumido pode ser renomeado para `processado_<nome-original>.xpz`
 - por padrão, novos fluxos devem ignorar arquivos com prefixo `processado_`
-- se o usuario apontar explicitamente como entrada da rodada um arquivo com prefixo `processado_`, tratar isso como alerta operacional de naming inconsistente, pedir confirmacao antes de seguir e deixar o `InputPath` informado prevalecer se o usuario confirmar
+- se o usuário apontar explicitamente como entrada da rodada um arquivo com prefixo `processado_`, tratar isso como alerta operacional de naming inconsistente, pedir confirmação antes de seguir e deixar o `InputPath` informado prevalecer se o usuário confirmar
 - se alguma subpasta ainda não existir, criar nesta ordem:
   1. `scripts`
   2. `Temp`
@@ -107,30 +107,30 @@ Quando o usuário não informar nomes alternativos, adotar estas subpastas na ra
 
 ---
 
-## MAPEAMENTO INTENCAO -> FUNCAO DA PASTA
+## MAPEAMENTO INTENÇÃO -> FUNÇÃO DA PASTA
 
-- Se a intencao for materializar `XPZ` exportado pela IDE para consulta futura do agente:
-  - usar a pasta com funcao de acervo materializado da KB
-  - essa pasta recebe XMLs individuais por objeto apos a quebra do `full.xml`
-- Se a intencao for atualizar acervo materializado com `XPZ` parcial:
-  - usar a mesma pasta com funcao de acervo materializado da KB
-  - nunca usar a pasta de geracao para importacao como destino dessa materializacao
-- Se a intencao for gerar XML novo ou copia alterada para importar na IDE:
-  - usar a pasta com funcao de geracao para importacao
-  - essa pasta recebe apenas XMLs novos ou copias alteradas geradas pelo agente
-  - cada frente deve usar sua propria subpasta `NomeCurto_GUID_YYYYMMDD`
-- Se a intencao for guardar `XPZ` exportado pela IDE:
-  - usar a pasta com funcao de entrada de `XPZ`
-  - essa pasta nao e acervo materializado nem area de geracao de XML
+- Se a intenção for materializar `XPZ` exportado pela IDE para consulta futura do agente:
+  - usar a pasta com função de acervo materializado da KB
+  - essa pasta recebe XMLs individuais por objeto após a quebra do `full.xml`
+- Se a intenção for atualizar acervo materializado com `XPZ` parcial:
+  - usar a mesma pasta com função de acervo materializado da KB
+  - nunca usar a pasta de geração para importação como destino dessa materialização
+- Se a intenção for gerar XML novo ou cópia alterada para importar na IDE:
+  - usar a pasta com função de geração para importação
+  - essa pasta recebe apenas XMLs novos ou cópias alteradas geradas pelo agente
+  - cada frente deve usar sua própria subpasta `NomeCurto_GUID_YYYYMMDD`
+- Se a intenção for guardar `XPZ` exportado pela IDE:
+  - usar a pasta com função de entrada de `XPZ`
+  - essa pasta não é acervo materializado nem área de geração de XML
 
 ---
 
 ## REGRAS DE NAMING
 
-- Ao materializar acervo vindo de `XPZ`, organizar os arquivos em subpastas por tipo amigavel de objeto GeneXus
-- Ao materializar acervo vindo de `XPZ`, usar nomes amigaveis dos objetos como nome principal dos XMLs
-- Nao usar GUID como nome principal de pasta ou arquivo da materializacao
-- GUID, `parentGuid`, `parentType` e `moduleGuid` servem como metadados de apoio, nao como eixo principal de organizacao
+- Ao materializar acervo vindo de `XPZ`, organizar os arquivos em subpastas por tipo amigável de objeto GeneXus
+- Ao materializar acervo vindo de `XPZ`, usar nomes amigáveis dos objetos como nome principal dos XMLs
+- Não usar GUID como nome principal de pasta ou arquivo da materialização
+- GUID, `parentGuid`, `parentType` e `moduleGuid` servem como metadados de apoio, não como eixo principal de organização
 
 ---
 
@@ -151,37 +151,37 @@ Os wrappers seguem esta convenção de parâmetros:
 - `-InputPath` *(obrigatório)* — caminho para `.xpz`, XML ou pasta contendo o XML
 - `-VerifyOnly` *(switch)* — só confere, não regrava
 - `-FullSnapshot` *(switch)* — compara snapshot completo do acervo
-- `XPZ` full define apenas o insumo; nao define, por si so, o modo de verificacao
-- para materializacao normal, inclusive carga inicial por `XPZ` full vindo da IDE ou por export headless via `MSBuild`, nao presumir `-FullSnapshot` como padrao implicito nem como atalho ergonomico
-- usar `-FullSnapshot` somente em um destes casos: pedido explicito do usuario por conferencia full, uso do wrapper especifico de conferencia full, ou exigencia nominal da documentacao local do repositorio
+- `XPZ` full define apenas o insumo; não define, por si só, o modo de verificação
+- para materialização normal, inclusive carga inicial por `XPZ` full vindo da IDE ou por export headless via `MSBuild`, não presumir `-FullSnapshot` como padrão implícito nem como atalho ergonômico
+- usar `-FullSnapshot` somente em um destes casos: pedido explícito do usuário por conferência full, uso do wrapper específico de conferência full, ou exigência nominal da documentação local do repositório
 - `-ReportPath` *(opcional)* — salva relatório JSON
 - `-KeepReport` *(switch)* — mantém relatório mesmo sem erro
-- quando houver primeira materializacao seguida de reprocessamento confirmatorio ou conferencia full, nao sobrescrever silenciosamente o relatorio principal da primeira materializacao com o relatorio da segunda passagem
-- nesses casos, usar caminhos separados para cada relatorio ou deixar explicito no handoff qual arquivo corresponde a `materializacao` e qual corresponde a `confirmacao`/`conferencia`
+- quando houver primeira materialização seguida de reprocessamento confirmatório ou conferência full, não sobrescrever silenciosamente o relatório principal da primeira materialização com o relatório da segunda passagem
+- nesses casos, usar caminhos separados para cada relatório ou deixar explícito no handoff qual arquivo corresponde a `materializacao` e qual corresponde a `confirmacao`/`conferencia`
 - `-ExpectedItems` *(opcional)* — lista de itens esperados da frente atual no formato `Tipo:Nome`, usada apenas para classificação comparativa entre foco esperado e retorno oficial da KB
-- a disponibilidade desse parametro no motor compartilhado nao autoriza presumir
-  que wrappers locais da pasta paralela da KB ja o exponham; se o wrapper local
-  ainda nao o aceitar, tratar isso como oportunidade de atualizacao local,
-  mencionar ao usuario e aguardar aprovacao explicita antes de qualquer ajuste
-- se o wrapper local aceitar `-ExpectedItems`, mas a execucao falhar no motor
+- a disponibilidade desse parâmetro no motor compartilhado não autoriza presumir
+  que wrappers locais da pasta paralela da KB já o exponham; se o wrapper local
+  ainda não o aceitar, tratar isso como oportunidade de atualização local,
+  mencionar ao usuário e aguardar aprovação explícita antes de qualquer ajuste
+- se o wrapper local aceitar `-ExpectedItems`, mas a execução falhar no motor
   compartilhado efetivo por incompatibilidade restrita a esse opcional
-  comparativo, tratar como divergencia wrapper/engine e nao como bloqueio
-  automatico do sync principal
+  comparativo, tratar como divergência wrapper/engine e não como bloqueio
+  automático do sync principal
 - quando a falha ficar restrita a esse opcional, rerodar sem `-ExpectedItems`,
-  concluir a materializacao se o restante do fluxo estiver sao e registrar no
-  handoff que a comparacao esperada x retorno oficial ficou indisponivel naquela
+  concluir a materialização se o restante do fluxo estiver são e registrar no
+  handoff que a comparação esperada x retorno oficial ficou indisponível naquela
   rodada por incompatibilidade do engine
-- se a falha atribuida a `-ExpectedItems` revelar quebra da materializacao,
-  contrato principal do wrapper, refresh obrigatorio do indice ou outro impacto
+- se a falha atribuída a `-ExpectedItems` revelar quebra da materialização,
+  contrato principal do wrapper, refresh obrigatório do índice ou outro impacto
   central no fluxo oficial, continuar tratando o caso como bloqueio real
 - `-KbMetadataPath` *(opcional)* — salva metadados da KB em formato Markdown
 - se esse parâmetro estiver ativo no wrapper local, `kb-source-metadata.md` faz parte normal do fluxo e pode ser reescrito a cada processamento
-- quando `kb-source-metadata.md` for reescrito, ele deve registrar `last_xpz_materialization_run_at` como horario do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudanca material
+- quando `kb-source-metadata.md` for reescrito, ele deve registrar `last_xpz_materialization_run_at` como horário do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudança material
 - se o `XPZ` vier com `Source` vazio, incompleto ou ausente, o wrapper deve preservar valores estáveis conhecidos e emitir warning de refresh parcial; isso não invalida o sync de objetos
-- depois de materializacao XPZ/XML bem-sucedida em `ObjetosDaKbEmXml`, o wrapper local deve acionar compulsoriamente a regeneracao/validacao do indice derivado por wrapper local de `KbIntelligence`
-- evidencia clara desse encadeamento significa declaracao local explicita no `README.md`/`AGENTS.md` ou chamada observavel no proprio wrapper local; nao presumir essa capacidade apenas porque a base compartilhada a exige
-- se o wrapper local de regeneracao do indice estiver ausente ou defasado, ou se o wrapper de materializacao nao encadear esse refresh, tratar como bloqueio operacional do sync normal e oferecer ao usuario atualizacao via `xpz-kb-parallel-setup` antes de seguir
-- nao apresentar `sync` seguido de regeneracao manual separada do indice como fluxo normal em pasta que adota `KbIntelligence`
+- depois de materialização XPZ/XML bem-sucedida em `ObjetosDaKbEmXml`, o wrapper local deve acionar compulsoriamente a regeneração/validação do índice derivado por wrapper local de `KbIntelligence`
+- evidência clara desse encadeamento significa declaração local explícita no `README.md`/`AGENTS.md` ou chamada observável no próprio wrapper local; não presumir essa capacidade apenas porque a base compartilhada a exige
+- se o wrapper local de regeneração do índice estiver ausente ou defasado, ou se o wrapper de materialização não encadear esse refresh, tratar como bloqueio operacional do sync normal e oferecer ao usuário atualização via `xpz-kb-parallel-setup` antes de seguir
+- não apresentar `sync` seguido de regeneração manual separada do índice como fluxo normal em pasta que adota `KbIntelligence`
 - `-NoGitSummary` *(switch)* — suprime resumo Git no final
 
 ### Wrapper de conferência full
@@ -194,7 +194,7 @@ Os wrappers seguem esta convenção de parâmetros:
 ## WORKFLOW
 
 1. Identificar se é atualização diária ou conferência de full snapshot
-2. Se a pasta paralela da KB ainda nao estiver montada, validada ou mapeada para este repositorio → **ABORT** e usar `xpz-kb-parallel-setup`
+2. Se a pasta paralela da KB ainda não estiver montada, validada ou mapeada para este repositório → **ABORT** e usar `xpz-kb-parallel-setup`
 3. Resolver a raiz do repositório pelo contexto
 4. Ler o `README.md` local para identificar os nomes dos wrappers
 5. Distinguir explicitamente as áreas operacionais locais:
@@ -204,7 +204,7 @@ Os wrappers seguem esta convenção de parâmetros:
    - `PacotesGeradosParaImportacaoNaKbNoGenexus` = área de pacotes gerados localmente, mantida plana sem subpastas por frente
    - `scripts` = wrappers `.ps1` que tratam os `XPZ`
    - se o objeto ainda não voltou da KB por export oficial, o trabalho deve permanecer em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
-6. Se o usuario informou nomes alternativos para as pastas, reportar na conversa o mapeamento entre nome real e funcao
+6. Se o usuário informou nomes alternativos para as pastas, reportar na conversa o mapeamento entre nome real e função
    - documentar isso em arquivo somente quando a documentação local exigir ou quando o usuário pedir
 7. Se detectar alterações locais indevidas em `ObjetosDaKbEmXml`, reportar isso como incidente de processo:
    - Preservar o material de trabalho em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
@@ -215,86 +215,86 @@ Os wrappers seguem esta convenção de parâmetros:
    - Não tratar esse caso como detalhe operacional; ele bloqueia o fluxo até saneamento explícito do snapshot oficial
    - Se o usuário estiver em frente de delta ainda não reexportado pela KB, orientar explicitamente que o trabalho continue em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, não no acervo oficial
 8. Confirmar o `InputPath` com o usuário se não foi fornecido
-9. Quando o fluxo envolver materializacao de `XPZ` completo:
+9. Quando o fluxo envolver materialização de `XPZ` completo:
    - quebrar o `full.xml` em XMLs individuais por objeto
-   - gravar a saida na pasta com funcao de acervo materializado
-   - organizar por tipo amigavel de objeto GeneXus
-   - usar nomes amigaveis de objeto como nome principal dos XMLs
+   - gravar a saída na pasta com função de acervo materializado
+   - organizar por tipo amigável de objeto GeneXus
+   - usar nomes amigáveis de objeto como nome principal dos XMLs
 10. Quando o fluxo envolver `XPZ` parcial:
-    - atualizar a mesma pasta com funcao de acervo materializado
-    - nao desviar a materializacao para a pasta de geracao para importacao
+    - atualizar a mesma pasta com função de acervo materializado
+    - não desviar a materialização para a pasta de geração para importação
     - se o mesmo arquivo `XPZ` for reexportado/atualizado e reprocessado, tratar o novo processamento pelo conteúdo e pelo `lastUpdate` resultante, não pela memória do processamento anterior
     - se houver `-ExpectedItems`, usar esse contexto apenas para comparar foco esperado versus retorno oficial; a materialização continua seguindo tudo que a KB devolveu oficialmente
-11. Se a pasta adota `KbIntelligence`, validar que o wrapper local de materializacao encadeia refresh compulsorio do indice apos sync bem-sucedido que nao seja `VerifyOnly`
-    - considerar evidencia clara apenas quando isso estiver documentado explicitamente no repositorio local ou observavel no codigo do proprio wrapper local
-    - se o wrapper nao tiver essa capacidade, bloquear o sync normal antes de executar e oferecer atualizacao via `xpz-kb-parallel-setup`
-    - nao executar sync normal esperando corrigir o indice manualmente depois
-    - nao usar o wrapper antigo para atualizar `kb-source-metadata.md` e depois regenerar o indice manualmente como substituto da correcao de compatibilidade
-    - nao usar `.example.ps1` da base compartilhada como substituto temporario do wrapper local real ausente
+11. Se a pasta adota `KbIntelligence`, validar que o wrapper local de materialização encadeia refresh compulsório do índice após sync bem-sucedido que não seja `VerifyOnly`
+    - considerar evidência clara apenas quando isso estiver documentado explicitamente no repositório local ou observável no código do próprio wrapper local
+    - se o wrapper não tiver essa capacidade, bloquear o sync normal antes de executar e oferecer atualização via `xpz-kb-parallel-setup`
+    - não executar sync normal esperando corrigir o índice manualmente depois
+    - não usar o wrapper antigo para atualizar `kb-source-metadata.md` e depois regenerar o índice manualmente como substituto da correção de compatibilidade
+    - não usar `.example.ps1` da base compartilhada como substituto temporário do wrapper local real ausente
 12. Montar o comando com os parâmetros corretos
-    - para materializacao normal do `XPZ` em `ObjetosDaKbEmXml`, nao acrescentar `-FullSnapshot` por conta propria
-    - nao reinterpretar `XPZ` full como autorizacao implicita para `-FullSnapshot`; export full e conferencia full sao coisas diferentes
-    - usar `-FullSnapshot` apenas quando o usuario pedir conferencia full, quando o wrapper especifico de conferencia for o escolhido ou quando a documentacao local tornar isso requisito explicito
-    - tratar nome iniciado por `processado_` como heuristica forte de artefato ja consumido, nao como verdade absoluta sobre o conteudo do arquivo
-    - se o `InputPath` explicitamente informado pelo usuario apontar para arquivo com prefixo `processado_`, emitir alerta curto, pedir confirmacao e prosseguir somente se o usuario confirmar esse arquivo como insumo correto da rodada atual
+    - para materialização normal do `XPZ` em `ObjetosDaKbEmXml`, não acrescentar `-FullSnapshot` por conta própria
+    - não reinterpretar `XPZ` full como autorização implícita para `-FullSnapshot`; export full e conferência full são coisas diferentes
+    - usar `-FullSnapshot` apenas quando o usuário pedir conferência full, quando o wrapper específico de conferência for o escolhido ou quando a documentação local tornar isso requisito explícito
+    - tratar nome iniciado por `processado_` como heurística forte de artefato já consumido, não como verdade absoluta sobre o conteúdo do arquivo
+    - se o `InputPath` explicitamente informado pelo usuário apontar para arquivo com prefixo `processado_`, emitir alerta curto, pedir confirmação e prosseguir somente se o usuário confirmar esse arquivo como insumo correto da rodada atual
     - se houver opcional comparativo como `-ExpectedItems`, lembrar que a
-      exposicao no wrapper local nao prova compatibilidade integral do motor
-      compartilhado efetivo; se a primeira execucao falhar apenas nesse ponto,
+      exposição no wrapper local não prova compatibilidade integral do motor
+      compartilhado efetivo; se a primeira execução falhar apenas nesse ponto,
       preparar rerun sem o opcional antes de concluir bloqueio do sync
 13. Executar via Bash com `pwsh -File ...`
-    - se a execucao falhar com indicio claro de divergencia wrapper/engine
-      restrita a opcional de comparacao, rerodar uma vez sem o parametro
+    - se a execução falhar com indício claro de divergência wrapper/engine
+      restrita a opcional de comparação, rerodar uma vez sem o parâmetro
       opcional antes de classificar o caso como bloqueio
-    - se o rerun sem opcional concluir a materializacao e os gates obrigatorios,
+    - se o rerun sem opcional concluir a materialização e os gates obrigatórios,
       registrar sucesso do sync principal com incidente em capability opcional
     - se o rerun sem opcional repetir falha central ou expuser problema fora do
       escopo comparativo, tratar como bloqueio real do sync
-14. Se a materializacao XPZ/XML em `ObjetosDaKbEmXml` foi concluida com sucesso e nao era `VerifyOnly`, confirmar na saida do wrapper ou em evidencia local clara que o refresh compulsorio do indice derivado tambem foi executado
-    - em pasta que adota `KbIntelligence`, ausencia de evidencia do refresh deve ser tratada como falha ou defasagem operacional do wrapper local
-    - nao compensar essa ausencia com rebuild manual separado do indice como se fosse fluxo normal
-    - se o wrapper nao produzir evidencia suficiente do refresh, encerrar com bloqueio de compatibilidade e oferecer atualizacao via `xpz-kb-parallel-setup`
+14. Se a materialização XPZ/XML em `ObjetosDaKbEmXml` foi concluída com sucesso e não era `VerifyOnly`, confirmar na saída do wrapper ou em evidência local clara que o refresh compulsório do índice derivado também foi executado
+    - em pasta que adota `KbIntelligence`, ausência de evidência do refresh deve ser tratada como falha ou defasagem operacional do wrapper local
+    - não compensar essa ausência com rebuild manual separado do índice como se fosse fluxo normal
+    - se o wrapper não produzir evidência suficiente do refresh, encerrar com bloqueio de compatibilidade e oferecer atualização via `xpz-kb-parallel-setup`
 15. Se o processamento foi concluído com sucesso, permitir renomear o `.xpz` consumido para `processado_<nome-original>.xpz`
-16. Reportar: objetos criados, atualizados, ignorados, resíduos removidos, refresh do indice e resumo Git
-    - se o resumo do wrapper expuser `MaterializationInterpretation`, usar esse campo como leitura principal do resultado em vez de inferir pela combinacao solta de `Created`, `Updated` e `Unchanged`
+16. Reportar: objetos criados, atualizados, ignorados, resíduos removidos, refresh do índice e resumo Git
+    - se o resumo do wrapper expuser `MaterializationInterpretation`, usar esse campo como leitura principal do resultado em vez de inferir pela combinação solta de `Created`, `Updated` e `Unchanged`
     - explicar que `updated` significa que o wrapper materializou conteúdo mais novo/relevante para o acervo naquele processamento
     - explicar que `unchanged` significa que o item já tinha no acervo oficial conteúdo compatível ou mais novo, tipicamente com `lastUpdate` igual ou superior ao XML vindo do `XPZ`
-    - explicar que `updated`/`unchanged` pertencem ao processamento do `XPZ` contra o arquivo materializado atual, nao ao estado Git do repositorio
-    - nunca afirmar `primeira carga` ou equivalente quando `Created = 0` e `Unchanged > 0`; essa combinacao, sozinha, nao comprova primeira materializacao e normalmente indica snapshot ja existente confirmado contra o insumo atual
-    - explicar que um item pode aparecer como `unchanged` no sync porque o arquivo local ja esta igual ao conteudo vindo do `XPZ`, mesmo que esse mesmo arquivo ainda tenha diff pendente no Git contra o ultimo commit
-    - quando houver resumo Git, apresentar essa camada separadamente como comparacao do worktree contra o commit atual, sem reclassificar o resultado do sync
+    - explicar que `updated`/`unchanged` pertencem ao processamento do `XPZ` contra o arquivo materializado atual, não ao estado Git do repositório
+    - nunca afirmar `primeira carga` ou equivalente quando `Created = 0` e `Unchanged > 0`; essa combinação, sozinha, não comprova primeira materialização e normalmente indica snapshot já existente confirmado contra o insumo atual
+    - explicar que um item pode aparecer como `unchanged` no sync porque o arquivo local já está igual ao conteúdo vindo do `XPZ`, mesmo que esse mesmo arquivo ainda tenha diff pendente no Git contra o último commit
+    - quando houver resumo Git, apresentar essa camada separadamente como comparação do worktree contra o commit atual, sem reclassificar o resultado do sync
     - se o mesmo `XPZ` tiver sido reprocessado após atualização do arquivo, deixar explícito que a comparação relevante é com o conteúdo do insumo reprocessado e com o estado atual do acervo, não com o relatório antigo
     - se `kb-source-metadata.md` tiver sido reescrito pelo wrapper, tratar isso como artefato normal do fluxo, não como evidência automática de mudança funcional na frente
-    - se a pasta ainda carregar memoria local provisoria do setup dizendo que `ObjetosDaKbEmXml` nao foi materializada, `aguardando primeiro XPZ` ou equivalente, atualizar ou neutralizar esse estado quando a primeira materializacao oficial tiver sido concluida com sucesso
-    - so afirmar conteudo especifico de `kb-source-metadata.md`, como versao do GeneXus, build, GUID da KB, usuario ou caminho `Source`, quando esse metadado tiver aparecido explicitamente na saida real do wrapper ou quando o proprio `kb-source-metadata.md` tiver sido aberto e lido nominalmente na rodada atual
-    - quando nenhuma dessas duas fontes aceitaveis tiver mostrado o metadado, limitar o resumo ao que o wrapper efetivamente retornou
+    - se a pasta ainda carregar memória local provisória do setup dizendo que `ObjetosDaKbEmXml` não foi materializada, `aguardando primeiro XPZ` ou equivalente, atualizar ou neutralizar esse estado quando a primeira materialização oficial tiver sido concluída com sucesso
+    - só afirmar conteúdo específico de `kb-source-metadata.md`, como versão do GeneXus, build, GUID da KB, usuário ou caminho `Source`, quando esse metadado tiver aparecido explicitamente na saída real do wrapper ou quando o próprio `kb-source-metadata.md` tiver sido aberto e lido nominalmente na rodada atual
+    - quando nenhuma dessas duas fontes aceitáveis tiver mostrado o metadado, limitar o resumo ao que o wrapper efetivamente retornou
     - se o pacote tiver `Source` parcial, separar claramente `sync de objetos aceito` de `refresh de metadado parcial` e preservar os valores estáveis já conhecidos
-    - se houver relatorio da primeira materializacao e outro de reprocessamento confirmatorio ou conferencia full, nao misturar os papeis no handoff; identificar explicitamente qual arquivo representa a criacao/atualizacao do acervo e qual arquivo representa apenas verificacao posterior
+    - se houver relatório da primeira materialização e outro de reprocessamento confirmatório ou conferência full, não misturar os papéis no handoff; identificar explicitamente qual arquivo representa a criação/atualização do acervo e qual arquivo representa apenas verificação posterior
     - se o `XPZ` oficial da KB trouxer objetos adicionais fora do foco imediato da frente, reportar isso como inesperado para a frente atual, mas tratar como possível mudança paralela legítima vinda da IDE/KB até evidência em contrário
     - quando o contexto da conversa identificar uma frente ativa com objetos-foco conhecidos (usuário declarou quais objetos está trabalhando ou o contexto da frente é claro), perguntar ou confirmar os objetos esperados antes de executar o sync quando essa informação ainda não tiver sido declarada na conversa; após o sync, estruturar sempre o handoff com as três partes, independentemente de `-ExpectedItems` estar disponível no wrapper: `objetos-foco que voltaram`, `objetos-foco que não voltaram` e `retorno oficial adicional da KB`
-    - se `-ExpectedItems` tiver sido informado, classificar explicitamente `itens esperados que voltaram`, `itens esperados que nao voltaram` e `retorno oficial adicional da KB`
-    - se `-ExpectedItems` tiver sido informado, emitir tambem um resumo humano curto no console/handoff, sem alarmismo e sem tratar adicionais oficiais ou esperados ausentes como falha automatica
-    - se a rodada tiver precisado rerun sem `-ExpectedItems` por divergencia
-      wrapper/engine, separar explicitamente `sync principal concluido` de
-      `comparacao opcional indisponivel nesta rodada`
+    - se `-ExpectedItems` tiver sido informado, classificar explicitamente `itens esperados que voltaram`, `itens esperados que não voltaram` e `retorno oficial adicional da KB`
+    - se `-ExpectedItems` tiver sido informado, emitir também um resumo humano curto no console/handoff, sem alarmismo e sem tratar adicionais oficiais ou esperados ausentes como falha automática
+    - se a rodada tiver precisado rerun sem `-ExpectedItems` por divergência
+      wrapper/engine, separar explicitamente `sync principal concluído` de
+      `comparação opcional indisponível nesta rodada`
 17. Quando um objeto voltar da KB via `xpz` e for materializado no acervo oficial, tratar esse XML do acervo como a fonte mais confiável para alterações futuras; não reutilizar cópia intermediária/delta sem comparar com o acervo atualizado
 18. Ao preparar commit ou handoff após o `sync`, separar explicitamente:
     - artefato da frente atual = resultado que o processamento atual confirmou como pertencente à frente em curso
-    - mudanca paralela legitima vinda da KB/IDE = item devolvido oficialmente pela KB no `XPZ`, ainda que fora do foco imediato da frente
-    - mudanca lateral indevida = alteracao feita pelo agente fora do escopo da fase ou fora do fluxo oficial esperado
-    - nao agrupar no mesmo commit da frente atual mudancas paralelas sem decisao explicita, mas nao tratar automaticamente o retorno oficial adicional da KB como erro
-19. O handoff tecnico minimo deve declarar:
+    - mudança paralela legítima vinda da KB/IDE = item devolvido oficialmente pela KB no `XPZ`, ainda que fora do foco imediato da frente
+    - mudança lateral indevida = alteração feita pelo agente fora do escopo da fase ou fora do fluxo oficial esperado
+    - não agrupar no mesmo commit da frente atual mudanças paralelas sem decisão explícita, mas não tratar automaticamente o retorno oficial adicional da KB como erro
+19. O handoff técnico mínimo deve declarar:
     - comando/wrapper executado e `InputPath` usado
-    - se a rodada foi materializacao normal, reprocessamento confirmatorio ou conferencia full
-    - relatorio principal usado para a conclusao e, quando houver, relatorio separado de verificacao posterior
-    - `MaterializationInterpretation` quando o wrapper expuser esse campo; caso contrario, limitar a leitura aos contadores e warnings reais
-    - evidencia usada para afirmar refresh do indice ou bloqueio que impediu essa conclusao
+    - se a rodada foi materialização normal, reprocessamento confirmatório ou conferência full
+    - relatório principal usado para a conclusão e, quando houver, relatório separado de verificação posterior
+    - `MaterializationInterpretation` quando o wrapper expuser esse campo; caso contrário, limitar a leitura aos contadores e warnings reais
+    - evidência usada para afirmar refresh do índice ou bloqueio que impediu essa conclusão
     - se `kb-source-metadata.md` foi lido nominalmente na rodada atual ou apenas reescrito pelo wrapper
-    - se houve falha de opcional comparativo por divergencia wrapper/engine,
-      declarar o parametro afetado, o rerun sem ele e que isso nao bloqueou o
+    - se houve falha de opcional comparativo por divergência wrapper/engine,
+      declarar o parâmetro afetado, o rerun sem ele e que isso não bloqueou o
       sync principal
     - quando o contexto identificar uma frente ativa, declarar explicitamente: `objetos-foco que voltaram`, `objetos-foco que não voltaram` e `retorno oficial adicional da KB` — mesmo quando `-ExpectedItems` não foi passado ou não está disponível no wrapper
-20. O resumo Git do item anterior e apenas informativo; nao autoriza `git add`, `commit` ou `push`
-21. Se o usuario nao pedir fechamento Git de forma explicita, o fluxo deve terminar no handoff tecnico e, no maximo, sugerir proximos passos sem executar publicacao
+20. O resumo Git do item anterior é apenas informativo; não autoriza `git add`, `commit` ou `push`
+21. Se o usuário não pedir fechamento Git de forma explícita, o fluxo deve terminar no handoff técnico e, no máximo, sugerir próximos passos sem executar publicação
 
 ---
 
@@ -325,13 +325,13 @@ PastaParalelaDaKb/
 ```
 
 O arquivo `kb-source-metadata.md`, quando exposto pelo wrapper local via
-`-KbMetadataPath`, e artefato normal de processamento e pode ser reescrito em
-cada sync. Ele deve preservar valores estaveis conhecidos quando o `XPZ` atual
+`-KbMetadataPath`, é artefato normal de processamento e pode ser reescrito em
+cada sync. Ele deve preservar valores estáveis conhecidos quando o `XPZ` atual
 vier com metadados de `Source` vazios ou parciais.
 
-Esse arquivo tambem e o local esperado de `last_xpz_materialization_run_at`.
-Esse horario representa a ultima solicitacao/processamento de materializacao
-XPZ/XML, nao apenas a ultima mudanca material detectada nos XMLs.
+Esse arquivo também é o local esperado de `last_xpz_materialization_run_at`.
+Esse horário representa a última solicitação/processamento de materialização
+XPZ/XML, não apenas a última mudança material detectada nos XMLs.
 
 ---
 
@@ -340,34 +340,34 @@ XPZ/XML, nao apenas a ultima mudanca material detectada nos XMLs.
 - NUNCA editar XMLs manualmente — todo o trabalho é delegado ao script
 - NUNCA assumir caminhos absolutos privados — sempre derivar da raiz do repositório
 - NUNCA assumir os nomes dos wrappers sem consultar o `README.md` local
-- NUNCA executar `sync` normal enquanto a pasta paralela da KB ainda estiver indefinida, nao montada ou nao validada
+- NUNCA executar `sync` normal enquanto a pasta paralela da KB ainda estiver indefinida, não montada ou não validada
 - NUNCA mover arquivos entre pastas de trabalho e acervo — responsabilidade do fluxo oficial
-- NUNCA criar ou mover automaticamente `.xpz` para dentro de `XpzExportadosPelaIDE` como se essa pasta fosse saída do agente; ela e a entrada gravada pelo usuario/IDE
+- NUNCA criar ou mover automaticamente `.xpz` para dentro de `XpzExportadosPelaIDE` como se essa pasta fosse saída do agente; ela é a entrada gravada pelo usuário/IDE
 - NUNCA renomear o `.xpz` para `processado_<nome-original>.xpz` antes de sucesso claro no processamento
 - NUNCA selecionar por padrão um arquivo já marcado com prefixo `processado_`
 - NUNCA tratar XML local gerado para importação manual como se já fosse snapshot oficial da KB
-- NUNCA materializar `XPZ` completo ou parcial na pasta de geracao para importacao
-- NUNCA usar GUID como estrutura principal de saida da materializacao
-- NUNCA organizar o acervo materializado com `guid`, `parentGuid`, `parentType` ou `moduleGuid` como eixo principal de navegacao
+- NUNCA materializar `XPZ` completo ou parcial na pasta de geração para importação
+- NUNCA usar GUID como estrutura principal de saída da materialização
+- NUNCA organizar o acervo materializado com `guid`, `parentGuid`, `parentType` ou `moduleGuid` como eixo principal de navegação
 - NUNCA criar, alterar, mover, renomear ou sobrescrever arquivos em `ObjetosDaKbEmXml` fora do fluxo oficial do script `.ps1`
-- NUNCA encerrar sync XPZ/XML bem-sucedido sem refresh compulsorio do indice derivado quando a KB adotar `KbIntelligence`
-- NUNCA executar sync normal em pasta que adota `KbIntelligence` se o wrapper local de materializacao ainda nao encadeia refresh compulsorio do indice; oferecer atualizacao via `xpz-kb-parallel-setup`
-- NUNCA descrever `sync` seguido de rebuild manual separado do indice como fluxo normal em pasta que adota `KbIntelligence`
-- NUNCA usar sync por wrapper antigo para reparar metadado de materializacao quando o proprio wrapper esta defasado; primeiro atualizar/validar wrappers pela trilha de setup
-- NUNCA selecionar automaticamente por padrao um arquivo com prefixo `processado_` quando houver outros candidatos plausiveis para a rodada atual
-- NUNCA tratar prefixo `processado_` como bloqueio absoluto quando o usuario tiver apontado explicitamente o `InputPath`; primeiro emitir alerta operacional e exigir confirmacao explicita
+- NUNCA encerrar sync XPZ/XML bem-sucedido sem refresh compulsório do índice derivado quando a KB adotar `KbIntelligence`
+- NUNCA executar sync normal em pasta que adota `KbIntelligence` se o wrapper local de materialização ainda não encadeia refresh compulsório do índice; oferecer atualização via `xpz-kb-parallel-setup`
+- NUNCA descrever `sync` seguido de rebuild manual separado do índice como fluxo normal em pasta que adota `KbIntelligence`
+- NUNCA usar sync por wrapper antigo para reparar metadado de materialização quando o próprio wrapper está defasado; primeiro atualizar/validar wrappers pela trilha de setup
+- NUNCA selecionar automaticamente por padrão um arquivo com prefixo `processado_` quando houver outros candidatos plausíveis para a rodada atual
+- NUNCA tratar prefixo `processado_` como bloqueio absoluto quando o usuário tiver apontado explicitamente o `InputPath`; primeiro emitir alerta operacional e exigir confirmação explícita
 - NUNCA antecipar atualização manual de `ObjetosDaKbEmXml`
 - NUNCA prosseguir com sync normal quando `ObjetosDaKbEmXml` estiver dirty fora do fluxo oficial; primeiro preserve, restaure e trate como incidente de processo
 - NUNCA tratar edição detectada ou pretendida em `ObjetosDaKbEmXml` para delta ainda não reexportado oficialmente pela KB como detalhe operacional; isso é erro explícito de processo
-- NUNCA assumir a raiz de `ObjetosGeradosParaImportacaoNaKbNoGenexus` como lote ativo de importacao; o lote ativo deve viver na subpasta da frente `NomeCurto_GUID_YYYYMMDD`
+- NUNCA assumir a raiz de `ObjetosGeradosParaImportacaoNaKbNoGenexus` como lote ativo de importação; o lote ativo deve viver na subpasta da frente `NomeCurto_GUID_YYYYMMDD`
 - NUNCA criar subpastas por frente dentro de `PacotesGeradosParaImportacaoNaKbNoGenexus`; essa area de pacotes deve permanecer plana
 - NUNCA reutilizar automaticamente artefato de importação/delta como base de nova alteração se o mesmo objeto já tiver voltado da KB e sido materializado no acervo oficial
-- NUNCA criar script novo se o repositorio ja tiver fluxo oficial previsto nas skills ou em `scripts/`
+- NUNCA criar script novo se o repositório já tiver fluxo oficial previsto nas skills ou em `scripts/`
 - Antes de gerar novo delta de objeto já retornado da KB, comparar a cópia intermediária com o XML atual do acervo e rebasear no acervo se houver defasagem
 - Se o script não for encontrado na raiz resolvida, reportar o erro e perguntar ao usuário antes de tentar qualquer alternativa
 - NUNCA tratar reprocessamento do mesmo `XPZ` atualizado como se o resultado anterior ainda fosse autoritativo
 - NUNCA tratar regravação de `kb-source-metadata.md` pelo wrapper como mudança funcional automática da frente atual
 - NUNCA deixar `kb-source-metadata.md` perder valores estáveis conhecidos porque o `XPZ` veio com `Source` vazio ou incompleto
-- NUNCA classificar automaticamente como erro de processo, contaminacao indevida ou violacao da trilha o simples fato de um `XPZ` oficial vindo da KB trazer objetos adicionais alem do foco da frente
-- NUNCA misturar no mesmo commit da frente atual mudancas paralelas sem decisao explicita so porque aparecem no mesmo workspace
+- NUNCA classificar automaticamente como erro de processo, contaminação indevida ou violação da trilha o simples fato de um `XPZ` oficial vindo da KB trazer objetos adicionais além do foco da frente
+- NUNCA misturar no mesmo commit da frente atual mudanças paralelas sem decisão explícita só porque aparecem no mesmo workspace
 - NUNCA omitir a estrutura de três partes (`objetos-foco que voltaram`, `objetos-foco que não voltaram`, `retorno oficial adicional da KB`) no handoff quando o contexto da conversa identificar uma frente ativa com objetos-foco conhecidos — isso é obrigatório independentemente de `-ExpectedItems` estar disponível no wrapper
