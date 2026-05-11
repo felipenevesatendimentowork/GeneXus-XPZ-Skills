@@ -260,12 +260,10 @@ function Get-RegexValue {
     return $match.Groups[1].Value.Trim()
 }
 
-function Get-TextSummary {
+function Split-NonEmptyLines {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
-    return @($Text -split "(`r`n|`n|`r)" |
-        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-        Select-Object -First 20)
+    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 }
 
 function Get-StepSummaries {
@@ -412,8 +410,8 @@ if ($fixMode) {
                 ExecutionLogPath = $resolvedLogPath
             }
             msbuildExitCode = $null
-            stdoutSummary   = @()
-            stderrSummary   = @()
+            stderrContent        = @()
+            stderrFilteredNoise  = @()
             blockingReasons = @('Confirmação de Fix="true" negada pelo usuário.')
             warnings        = @()
             strategyTrace   = @()
@@ -486,8 +484,8 @@ try {
                 ExecutionLogPath = $resolvedLogPath
             }
             msbuildExitCode = $null
-            stdoutSummary   = @()
-            stderrSummary   = @()
+            stderrContent        = @()
+            stderrFilteredNoise  = @()
             blockingReasons = @($probeDiag.blockingReasons + $script:BlockingReasons)
             warnings        = @($probeDiag.warnings)
             strategyTrace   = @($probeDiag.strategyTrace + $script:StrategyTrace)
@@ -525,6 +523,8 @@ try {
 
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
+    $stdErrNoise    = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
     $consistencyResult = Build-ConsistencyResult -StdOutText $stdOutText -MsBuildExitCode $msBuildExitCode
     $scriptExitCode    = Resolve-ScriptExitCode -MsBuildExitCode $msBuildExitCode -ConsistencyResult $consistencyResult
@@ -573,8 +573,8 @@ try {
             ExecutionLogPath = $resolvedLogPath
         }
         msbuildExitCode = $msBuildExitCode
-        stdoutSummary   = Get-TextSummary -Text $stdOutText
-        stderrSummary   = Get-TextSummary -Text $stdErrText
+        stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
+        stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
         blockingReasons = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings        = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace   = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -619,8 +619,8 @@ catch {
             ExecutionLogPath = $resolvedLogPath
         }
         msbuildExitCode = $null
-        stdoutSummary   = @()
-        stderrSummary   = @()
+        stderrContent        = @()
+        stderrFilteredNoise  = @()
         blockingReasons = @($_.Exception.Message)
         warnings        = @()
         strategyTrace   = @($script:StrategyTrace)
