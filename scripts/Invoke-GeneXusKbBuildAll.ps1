@@ -1110,10 +1110,6 @@ try {
         Add-WarningMessage -Message 'Recomenda-se abrir a KB na IDE para inspecionar a reorganizacao gerada antes de decidir executa-la.'
     }
 
-    if ($buildStatus.Status -eq 'compilou limpo') {
-        Add-WarningMessage -Message 'Recomenda-se reabrir a KB na IDE para observar warnings ou efeitos colaterais de host.'
-    }
-
     if ($buildStatus.Status -eq 'operacao concluida, pendente de confirmacao funcional' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
         $stderrPreview = (($stdErrFiltered -split "`n") | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
         Add-WarningMessage -Message "Stderr nao vazio detectado apos build: $stderrPreview"
