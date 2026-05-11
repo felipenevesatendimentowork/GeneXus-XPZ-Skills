@@ -94,6 +94,15 @@ menos estas regras:
 - Quando inevitável usar o shell, passar o path direto ao comando:
   - `Get-ChildItem -Path "C:\..."` em vez de `cd "C:\..." && Get-ChildItem`
   - `git -C "C:\..." <cmd>` em vez de `cd "C:\..." && git <cmd>`
+
+## Cherry-pick em worktrees
+
+- Ao fazer cherry-pick com `git -C <path>`, sempre passar o hash do commit
+  literal — nunca `HEAD@{0}`, `HEAD~1` ou outras refs relativas. Refs em
+  `git -C` se resolvem no contexto do path target (main), não da sessão
+  de origem; `HEAD@{0}` aponta para o último commit do destino, não do
+  worktree onde o commit acabou de ser feito. Capturar o hash do
+  `git commit` que acabou de rodar, ou via `git -C <worktree> rev-parse HEAD`.
 ```
 
 ---
