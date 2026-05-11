@@ -108,9 +108,9 @@ If the main need is to prepare or validate the initial folder structure around t
 - A phased front is a legitimate pattern when a GeneXus operational limitation makes a safe monolithic package impractical; in that case, splitting the delivery into sequential rounds is part of the methodology, not an ad hoc workaround
 - Classify the package intent explicitly before packaging as exactly one of:
   - `pacote funcional` = objetivo principal e alterar comportamento funcional esperado
-  - `pacote experimental` = objetivo principal e testar serializacao, roundtrip IDE/XPZ, preservacao textual, envelope ou comportamento metodologico do fluxo
-  - `pacote arquitetural` = objetivo principal e reorganizar estrutura, dependencias ou forma de implementacao sem provar sozinho mudanca funcional
-  - `pacote cirurgico` = objetivo principal e corrigir falha localizada ou objeto pontual com delta minimo
+  - `pacote experimental` = objetivo principal e testar serialização, roundtrip IDE/XPZ, preservação textual, envelope ou comportamento metodológico do fluxo
+  - `pacote arquitetural` = objetivo principal e reorganizar estrutura, dependências ou forma de implementação sem provar sozinho mudança funcional
+  - `pacote cirurgico` = objetivo principal e corrigir falha localizada ou objeto pontual com delta mínimo
 - Treat that package-intent classification as mandatory narrative context, not as optional labeling
 - Require a single primary intent per package; if the candidate batch mixes functional change, textual experiment, and architectural adjustment without clear separability, **ABORT** for confirmation or split the package plan before writing
 - For `pacote experimental`, describe the expected proof narrowly and do not imply functional validation unless an external IDE/import/specification step actually covered it
@@ -261,7 +261,7 @@ Reference files and when to load them:
    - `pacote arquitetural`
    - `pacote cirurgico`
    - if the candidate batch does not have one dominant primary intent, **ABORT** and require split or explicit confirmation before packaging
-   - if the case is `pacote experimental`, state the bounded proof target explicitly, such as `serializacao`, `roundtrip IDE/XPZ`, `preservacao textual`, or `envelope/importacao`
+   - if the case is `pacote experimental`, state the bounded proof target explicitly, such as `serialização`, `roundtrip IDE/XPZ`, `preservação textual`, or `envelope/importação`
    - if the case is `pacote experimental`, do NOT narrate the package as if it already proved business behavior
 8. Evaluate batch isolation before packaging:
    - If more than one plausible batch is present inside the current front folder → **ABORT**
@@ -359,7 +359,7 @@ Reference files and when to load them:
    - Simple report `Procedure` → use the canonical sanitized family from [05b-procedure-relatorio-familias-e-templates](../05b-procedure-relatorio-familias-e-templates.md) first when the case fits simple F2/F3 coverage and the selected block is marked as `molde pronto`
    - Other types → use sanitized representative from [08-guia-para-agente-gpt](../08-guia-para-agente-gpt.md) materialization rules
    - For simple report `Procedure`, escalate to comparable real XML only when the request falls outside the documented simple family, when the initial attempt plus one short structural corrective attempt already failed, or when KB-local dialect/localism appears
-   - For simple report `Procedure`, every output or handoff must label the basis used as exactly one of: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB`, or `hipotese`
+   - For simple report `Procedure`, every output or handoff must label the basis used as exactly one of: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB`, or `hipótese`
    - If the object has already returned from the KB via official XPZ processing, prefer the current XML in the official corpus over any older delta/import working copy when selecting the base for a new change
    - Before cloning identity fields, classify the container from comparable corpus XML using `Object/@parentType` — never from the directory name in `ObjetosDaKbEmXml`, which varies across KBs:
      - `00000000-0000-0000-0000-000000000008` = Module/Folder (user-created container; GeneXus IDE shows "Module/Folder: X" in Properties)
