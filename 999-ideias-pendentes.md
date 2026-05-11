@@ -1215,11 +1215,15 @@ Três motivos para frente separada:
 4. `xpz-kb-parallel-setup` (331 hits) provavelmente exige sessão própria adicional só para ele.
 5. Atualizar lista quando concluir cada arquivo; preservar rastreabilidade do progresso.
 
-### Perguntas a responder antes de começar a sessão de execução
+### Perguntas respondidas em 2026-05-11 (antes de iniciar execução)
 
-- Há regras editoriais do repositório que justifiquem manter alguma palavra sem acento intencionalmente? (Provavelmente não, mas confirmar antes de tratar todos os hits como defeito.)
-- O processo deve cobrir só SKILL.md, ou também varrer arquivos `.md` da base compartilhada (`01-...`, `02-...`, etc.) na mesma sessão dedicada? A varredura desta sessão olhou só SKILL.md.
-- Há `.example.ps1` ou outros artefatos das skills com texto pt-BR que mereçam o mesmo tratamento na mesma sessão?
+- **Há regras editoriais que justifiquem manter alguma palavra sem acento?** Não. Todos os hits são defeitos.
+- **O escopo cobre só SKILL.md ou também outros `.md`?** Todos os `.md` do repositório, incluindo `historico/` (~70 arquivos).
+- **Os `.example.ps1` com comentários pt-BR entram?** Sim — qualquer `.ps1` com texto em português legível por agente deve ter acentuação correta.
+
+### Regra operacional para palavras ambíguas
+
+Qualquer palavra cujo acento muda o sentido — `e/é`, `esta/está`, `tem/têm`, `vem/vêm`, `so/só`, e análogos — deve ser perguntada ao usuário antes de alterar. Nunca corrigir por inferência mecânica nesses casos.
 
 ### Limiar para implementar
 
