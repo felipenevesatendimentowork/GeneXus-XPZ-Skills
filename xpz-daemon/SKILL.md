@@ -40,7 +40,7 @@ Use esta skill para:
 Do NOT use this skill para:
 - Processar ou sincronizar um `.xpz` manualmente (use `xpz-sync`)
 - Preparar ou validar a estrutura da pasta paralela da KB (use `xpz-kb-parallel-setup`)
-- Gerar ou clonar objetos XPZ para importacao (use `xpz-builder`)
+- Gerar ou clonar objetos XPZ para importação (use `xpz-builder`)
 - Analisar estrutura de XML isolado (use `xpz-reader`)
 
 ---
