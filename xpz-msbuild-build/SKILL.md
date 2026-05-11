@@ -405,11 +405,11 @@ $scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Invoke-GeneXusKbBuild
 $buildArgs = @(
     '-NonInteractive', '-NoProfile', '-File', $scriptPath,
     '-KbPath',         'C:\KBs\<nome-da-kb>',
-    '-WorkingDirectory', $testDir,        # obrigatorio — pasta ja criada no passo 1
-    '-LogPath',          $buildLog,       # onde o JSON de resultado sera gravado
+    '-WorkingDirectory', $testDir,        # obrigatório — pasta já criada no passo 1
+    '-LogPath',          $buildLog,       # onde o JSON de resultado será gravado
     '-MonitorLogPath',   $monitorLog,     # conecta com Watch para timing.phases
-    '-StartWatcher'                       # wrapper lanca o watcher automaticamente
-    # adicionar '-AllowReorg', '-ConfirmReorg' apenas se reorg foi autorizada pelo usuario
+    '-StartWatcher'                       # wrapper lança o watcher automaticamente
+    # adicionar '-AllowReorg', '-ConfirmReorg' apenas se reorg foi autorizada pelo usuário
 )
 
 $buildProc = Start-Process pwsh -ArgumentList $buildArgs `
@@ -455,13 +455,13 @@ $msbuildLog = Join-Path $artifactDir "msbuild.stdout.log"
 $watchScript = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Watch-GeneXusMsBuildLog.ps1"
 
 Start-Process pwsh -ArgumentList @(
-    '-NoExit',                            # janela permanece aberta apos o Watch terminar
+    '-NoExit',                            # janela permanece aberta após o Watch terminar
     '-NoProfile',
     '-File',    $watchScript,
     '-ProcessId',   $buildProc.Id,
     '-LogPath',     $msbuildLog,          # msbuild.stdout.log dentro do artifact dir
     '-MonitorLog',  $monitorLog,          # mesmo caminho que -MonitorLogPath do build
-    '-IntervalSeconds', '5'               # default; diminuir so em testes curtos
+    '-IntervalSeconds', '5'               # default; diminuir só em testes curtos
 )
 ```
 
