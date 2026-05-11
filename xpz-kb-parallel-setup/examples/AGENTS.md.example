@@ -10,12 +10,19 @@
   <YYYY-MM-DD>.
 <!-- PREENCHER: data no formato YYYY-MM-DD -->
 
-## Regra critica da pasta nativa da KB
+## Regra crítica da pasta nativa da KB
 
-`C:\KBs\<NomeKb>` e terreno proibido para gravacao por agentes.
+`C:\KBs\<NomeKb>` é terreno proibido para gravação por agentes.
 
-Agentes nao devem criar, editar, mover, renomear ou excluir arquivos nessa pasta.
-Leitura e permitida apenas quando o fluxo operacional explicito realmente exigir.
+Agentes não devem criar, editar, mover, renomear ou excluir arquivos nessa pasta.
+Leitura é permitida apenas quando o fluxo operacional explícito realmente exigir.
+
+Invocar o GeneXus via MSBuild headless (ex: `Invoke-GeneXusKbBuildAll.ps1`,
+`Invoke-GeneXusKbSpecifyGenerate.ps1`) não é gravação por agentes — é o GeneXus
+operando a KB como parte do seu funcionamento normal. O agente é o chamador do
+processo; quem grava na KB é o próprio GeneXus. Essa distinção é intencional:
+proibir o agente de manipular arquivos diretamente não proíbe invocar operações
+GeneXus autorizadas pelo usuário.
 
 ## Estrutura funcional da pasta paralela da KB
 
