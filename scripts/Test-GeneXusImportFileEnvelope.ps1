@@ -33,7 +33,7 @@ $rawXml = Get-Content -LiteralPath $InputPath -Raw -Encoding UTF8
 
 $result = [ordered]@{
     inputPath       = (Resolve-Path -LiteralPath $InputPath).Path
-    status          = "nao apto para prosseguir"
+    status          = "não apto para prosseguir"
     xmlWellFormed   = $false
     rootElement     = $null
     checks          = [ordered]@{
@@ -230,7 +230,7 @@ if ($failFindings.Count -eq 0 -and $warnFindings.Count -eq 0) {
 } elseif ($failFindings.Count -eq 0) {
     $result.status = "apto com ressalvas"
 } else {
-    $result.status = "nao apto para prosseguir"
+    $result.status = "não apto para prosseguir"
 }
 
 if ($AsJson) { $result | ConvertTo-Json -Depth 6 } else { [pscustomobject]$result }

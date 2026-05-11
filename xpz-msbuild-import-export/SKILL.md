@@ -195,7 +195,7 @@ Scripts nesta frente:
   - objetivo: validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB, não requer GeneXus instalado
   - parâmetros obrigatórios: `-InputPath` (caminho do `import_file.xml`)
   - parâmetros opcionais: `-AsJson`
-  - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `nao apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
+  - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `não apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
   - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
 - `Watch-GeneXusMsBuildLog.ps1`
   - status atual: implementado
@@ -281,7 +281,7 @@ Parâmetros específicos de importação:
 6b. Quando o objetivo for importação (preview ou real), executar o gate de validação do envelope **antes de qualquer chamada ao MSBuild**:
    - Chamar `Test-GeneXusImportFileEnvelope.ps1 -InputPath <caminho> -AsJson`
    - Interpretar o resultado:
-     - `nao apto para prosseguir` → **ABORT**; apresentar `blockingReasons` ao usuário antes de prosseguir; não chamar MSBuild
+     - `não apto para prosseguir` → **ABORT**; apresentar `blockingReasons` ao usuário antes de prosseguir; não chamar MSBuild
      - `apto com ressalvas` → apresentar `warnings`; exigir confirmação explícita do usuário antes de prosseguir para preview ou import real
      - `apto para prosseguir` → prosseguir normalmente
    - Este gate é não invasivo: lê apenas o arquivo local, não abre KB, não requer GeneXus instalado
@@ -416,4 +416,4 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - ABORT se `KbPath`, versão, `Environment`, pacote ou destino de logs estiverem ambíguos
 - ABORT se não houver ambiente controlado compatível com a fase solicitada
 - ABORT se a operação não puder produzir trilha rastreável de logs e artefatos
-- ABORT se `Test-GeneXusImportFileEnvelope.ps1` retornar `nao apto para prosseguir`
+- ABORT se `Test-GeneXusImportFileEnvelope.ps1` retornar `não apto para prosseguir`

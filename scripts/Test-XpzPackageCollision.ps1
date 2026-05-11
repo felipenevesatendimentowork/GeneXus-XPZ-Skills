@@ -88,7 +88,7 @@ Get-ChildItem -LiteralPath $OutputDir -File | ForEach-Object {
 if ($null -ne $collidingPath) {
     $nextFree = Get-NextFreeRound -UsedRounds $usedRounds -StartAt ($requestedRound + 1)
     $nextFreeFormatted = $nextFree.ToString(('D{0}' -f $width))
-    throw "BLOCK: _$NN ja existe para o front $FrontPrefix, proximo livre: _$nextFreeFormatted"
+    throw "BLOCK: _$NN já existe para o front $FrontPrefix, próximo livre: _$nextFreeFormatted"
 }
 
 'COLLISION_OK'

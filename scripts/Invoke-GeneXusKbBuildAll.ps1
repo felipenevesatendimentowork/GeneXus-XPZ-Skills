@@ -847,10 +847,10 @@ try {
     Add-StrategyTrace -Message ('Probe executado antes do build com exitCode {0}.' -f $probeStage.ExitCode)
 
     if ($probeStage.ExitCode -ne 0) {
-        Add-BlockingReason -Reason 'Probe nao apto para prosseguir bloqueou o build.'
+        Add-BlockingReason -Reason 'Probe não apto para prosseguir bloqueou o build.'
         $probeDiagnostic = $probeStage.Diagnostic
         $blocked = [ordered]@{
-            status           = 'nao apto para prosseguir'
+            status           = 'não apto para prosseguir'
             summary          = 'Probe bloqueou o build.'
             exitCode         = $probeStage.ExitCode
             stage            = 'probe'
