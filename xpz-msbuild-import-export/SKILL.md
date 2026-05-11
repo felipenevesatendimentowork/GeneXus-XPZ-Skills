@@ -91,7 +91,7 @@ Do NOT use esta skill para:
 - Sucesso operacional de uma fase nao autoriza recompor automaticamente pacote acumulado para a fase seguinte; a proxima rodada deve preferir o delta novo ainda nao validado
 - Exigir que o probe (sondagem técnica inicial) devolva diagnóstico estruturado com `status`, `summary`, `resolvedPaths`, `checks`, `blockingReasons`, `warnings` e `strategyTrace`
 - Preferir `JSON` como formato canônico inicial desse diagnóstico
-- Registrar `stdout`, `stderr`, `exitCode`, caminho do `.msbuild` temporário e caminho do log
+- Registrar `stdoutSignals` (campos semânticos por domínio), `stderrContent`, `stderrFilteredNoise`, `exitCode`, caminho do `.msbuild` temporário e caminho do log
 - Validar a assinatura efetiva do wrapper e da task antes de assumir formato de parâmetro sensível de exportação ou importação
 - Em exportação full da KB, preferir o atalho ergonômico `-FullExport` do wrapper local quando ele existir; manter `ExportAll='true'` apenas como compatibilidade com contratos antigos
 - Privilegiar `PreviewMode` e, quando suportado pela task carregada, `UpdateFile` antes de importação real
@@ -297,8 +297,9 @@ Parâmetros específicos de importação:
 10. Se o objetivo for importação real, exigir autorização explícita e ambiente controlado
 11. Capturar e relatar:
    - `exitCode`
-   - resumo de `stdout`
-   - resumo de `stderr`
+   - `stdoutSignals` com campos semânticos do domínio (ex: `importWarnings`, `exportMarkerFound`/`gxWarnings`) — somente nos scripts que executam MSBuild de import/export; scripts de leitura pura omitem o campo
+   - `stderrContent` — linhas reais de stderr após filtrar ruído GeneXus 18
+   - `stderrFilteredNoise` — linhas filtradas do ruído GeneXus 18 (`context [anonymous] N:N attribute component isn't defined`)
    - caminho do `.msbuild`
    - caminho do log
    - artefatos gerados ou consumidos
@@ -392,7 +393,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] O gate de envelope retornou `apto para prosseguir` ou `apto com ressalvas` com confirmação explícita do usuário
 - [ ] O gate de envelope não foi ignorado por presunção de que o arquivo já havia sido validado anteriormente
 - [ ] Importação real só ocorreu com autorização explícita
-- [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
+- [ ] `stdoutSignals`, `stderrContent`, `stderrFilteredNoise`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
 - [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
 - [ ] Quando o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito na IDE, o diagnóstico de IDE desatualizada foi tratado como camada separada — não como revisão do sub-estado de import
