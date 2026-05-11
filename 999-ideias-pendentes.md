@@ -5,7 +5,7 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 - **Importância** — quanto dói se a ideia nunca for implementada. Valores: `baixa` (útil mas dispensável), `média` (gap real com workaround manual), `alta` (risco de dano efetivo, como contaminação de KB, perda de trabalho ou falso negativo crítico).
 - **Maturidade** — quão pronta a ideia está para virar frente de implementação. Valores: `ideia` (direção identificada, decisões de design em aberto), `pesquisa feita` (direção técnica resolvida, falta gatilho de caso real), `pronta para implementar` (caso concreto identificado, decisões fechadas, falta executar).
 
-Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos ate que sejam revistas em sessao dedicada.
+Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
 ## LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual
 
