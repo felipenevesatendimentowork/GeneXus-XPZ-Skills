@@ -175,7 +175,7 @@ WORKFLOW e nota de comportamento crítico abaixo.
 
 **Categorias de resultado:**
 
-- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0, stderr vazio e sem padrões de alerta em stdout
+- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0, sem padrões de alerta em stdout e sem conteúdo real em stderr após filtro de ruído estrutural conhecido (ver padrão abaixo)
 - `reorg detectada ou executada` — padrão `Reorganiza` encontrado em stdout; `SpecifyAll` disparou reorganização real de banco de dados; não declarar sucesso; apresentar ao usuário e aguardar instrução explícita
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, mas impedimentos detectados: stderr não vazio, padrões de alerta (`Access denied`) ou eventos pós-build em stdout
 - `erro de specify` — `SpecifyAll` falhou; objetos com referências inválidas ou inconsistência
@@ -196,6 +196,13 @@ WORKFLOW e nota de comportamento crítico abaixo.
 > `Access denied` em stdout com exitCode 0. Esse padrão não é erro de specify/generate,
 > mas impede classificar como `specify e generate concluídos` — usar `operação concluída,
 > pendente de confirmação funcional` e listar o padrão encontrado no diagnóstico.
+
+> **Padrão conhecido — ruído estrutural do GeneXus 18 em stderr:**
+> O GeneXus 18 escreve exatamente 3 linhas `context [anonymous] 1:12 attribute component
+> isn't defined` no stderr durante o `SpecifyAll`. `Invoke-GeneXusKbSpecifyGenerate.ps1`
+> filtra esse padrão antes de classificar o status — uma execução bem-sucedida cujo stderr
+> contenha apenas esse ruído é classificada como `specify e generate concluídos`. Ver nota
+> expandida com evidência técnica completa na seção `Invoke-GeneXusKbBuildAll.ps1`.
 
 ### Invoke-GeneXusKbBuildAll.ps1
 
@@ -286,12 +293,19 @@ não executa por padrão) reorg necessária.
 > **Padrão conhecido — ruído estrutural do GeneXus 18 em stderr:**
 > O GeneXus 18 escreve exatamente 3 linhas `context [anonymous] 1:12 attribute component
 > isn't defined` no stderr durante o `SpecifyAll` — task executada internamente pelo
-> `BuildAll`. O próprio GeneXus não conta isso como erro: stdout reporta "0 avisos,
-> 0 erros". A mensagem é estrutural da task: verificado empiricamente em FabricaBrasil18
-> e wsEducacaoSpTeste em 2026-05-10, sempre 3 ocorrências, mesma posição `1:12`,
-> independente do conteúdo da KB. `Invoke-GeneXusKbBuildAll.ps1` filtra esse padrão
-> antes de classificar o status — um `BuildAll` bem-sucedido cujo stderr contenha apenas
-> esse ruído é classificado como `compilou limpo`.
+> `BuildAll` e diretamente por `Invoke-GeneXusKbSpecifyGenerate.ps1`. O próprio GeneXus
+> não conta isso como erro: stdout reporta "0 avisos, 0 erros". Evidência empírica
+> acumulada: FabricaBrasil18 e wsEducacaoSpTeste em 2026-05-10, environments
+> `.Net Environment`, `NETFrameworkSQLServer` e `NETPostgreSQL`, sempre 3 ocorrências,
+> mesma posição `1:12`, independente do conteúdo ou de alterações recentes na KB.
+> Origem técnica rastreada: `SpecifyAll` invoca `Genexus.MsBuild.Tasks.dll`, que
+> referencia `Artech.Genexus.Common` e `Antlr4.StringTemplate`; o warning vaza do
+> runtime de templates StringTemplate durante a montagem da changed objects list, antes
+> de qualquer especificação real. A IDE absorve essa saída sem registrá-la no `Build.log`;
+> artefatos gerados em modo headless são equivalentes aos gerados pela IDE. Ambos os
+> scripts filtram esse padrão antes de classificar o status — uma execução bem-sucedida
+> cujo stderr contenha apenas esse ruído é classificada como `compilou limpo` /
+> `specify e generate concluídos`.
 
 ### Invoke-GeneXusDbImpact.ps1
 

@@ -323,14 +323,10 @@ function Get-RegexValue {
     return $match.Groups[1].Value.Trim()
 }
 
-function Get-TextSummary {
+function Split-NonEmptyLines {
     param([string]$Text)
-
-    if ([string]::IsNullOrWhiteSpace($Text)) {
-        return @()
-    }
-
-    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 30)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
+    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 }
 
 function Resolve-BuildStatus {
@@ -502,6 +498,12 @@ try {
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
 
+    # GeneXus 18 grava exatamente 3 linhas "context [anonymous] N:N attribute component
+    # isn't defined" no stderr durante SpecifyAll — ruído sistêmico do modo headless;
+    # a IDE absorve sem registrar. Filtrar antes de classificar.
+    $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
+
     $specifyDoneMarker  = Get-MarkerValue -Text $stdOutText -Marker '__SPECIFY_DONE__='
     $generateDoneMarker = Get-MarkerValue -Text $stdOutText -Marker '__GENERATE_DONE__='
     $specifyDone  = ($specifyDoneMarker -eq 'true')
@@ -517,7 +519,17 @@ try {
         Add-WarningMessage -Message 'Environment solicitado, mas o retorno de GetActiveEnvironment veio vazio.'
     }
 
-    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone -StdOutText $stdOutText -StdErrText $stdErrText
+    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone -StdOutText $stdOutText -StdErrText $stdErrFiltered
+
+    $stdOutBlockingPatternRegex = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
+    $blockingPatternMatch       = [regex]::Match($stdOutText, $stdOutBlockingPatternRegex)
+    $detectedBlockingPattern    = if ($blockingPatternMatch.Success) { $blockingPatternMatch.Value } else { $null }
+
+    $postBuildEventLines = @([regex]::Matches($stdOutText, '(?im)^\s*(start\s+c:|start\s+cmd)[^\r\n]*') |
+                             ForEach-Object { $_.Value.Trim() })
+
+    $buildWarningLines   = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
+                             ForEach-Object { $_.Value.Trim() })
 
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
@@ -556,8 +568,13 @@ try {
             StdErrPath       = $stdErrPath
             ExecutionLogPath = $resolvedLogPath
         }
-        stdoutSummary    = Get-TextSummary -Text $stdOutText
-        stderrSummary    = Get-TextSummary -Text $stdErrText
+        stdoutSignals        = [ordered]@{
+            blockingPattern = $detectedBlockingPattern
+            postBuildEvents = $postBuildEventLines
+            buildWarnings   = $buildWarningLines
+        }
+        stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
+        stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrFilteredNoise
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -603,8 +620,13 @@ catch {
             StdErrPath       = $null
             ExecutionLogPath = $resolvedLogPath
         }
-        stdoutSummary    = @()
-        stderrSummary    = @()
+        stdoutSignals        = [ordered]@{
+            blockingPattern = $null
+            postBuildEvents = @()
+            buildWarnings   = @()
+        }
+        stderrContent        = @()
+        stderrFilteredNoise  = @()
         blockingReasons  = @($_.Exception.Message)
         warnings         = @()
         strategyTrace    = @($script:StrategyTrace)
