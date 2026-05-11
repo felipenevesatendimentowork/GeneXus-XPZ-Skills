@@ -489,14 +489,10 @@ function Get-RegexValue {
     return $match.Groups[1].Value.Trim()
 }
 
-function Get-TextSummary {
+function Split-NonEmptyLines {
     param([string]$Text)
-
-    if ([string]::IsNullOrWhiteSpace($Text)) {
-        return @()
-    }
-
-    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 20)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
+    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 }
 
 function Get-MatchingLines {
@@ -718,7 +714,10 @@ try {
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
-    $importedItems = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
+    $stdErrNoise    = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
+    $importedItems      = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
+    $importWarningLines = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') | ForEach-Object { $_.Value.Trim() })
 
     $importExitCode = Get-ImportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedUpdateFilePath $resolvedUpdateFilePath
     if ($importExitCode -eq 0) {
@@ -773,8 +772,11 @@ try {
             ExecutionLogPath = $resolvedLogPath
         }
         importedItems = $importedItems
-        stdoutSummary = Get-TextSummary -Text $stdOutText
-        stderrSummary = Get-TextSummary -Text $stdErrText
+        stdoutSignals = [ordered]@{
+            importWarnings = $importWarningLines
+        }
+        stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
+        stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
         blockingReasons = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -822,8 +824,11 @@ catch {
             ExecutionLogPath = $resolvedLogPath
         }
         importedItems = @()
-        stdoutSummary = @()
-        stderrSummary = @()
+        stdoutSignals = [ordered]@{
+            importWarnings = @()
+        }
+        stderrContent        = @()
+        stderrFilteredNoise  = @()
         blockingReasons = @($_.Exception.Message)
         warnings = @()
         strategyTrace = @($script:StrategyTrace)
