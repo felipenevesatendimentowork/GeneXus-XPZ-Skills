@@ -1114,6 +1114,11 @@ try {
         }
     }
 
+    if ($stdOutText -match '(?im)^\s*(start\s+c:|start\s+cmd)') {
+        $postBuildMatch = ([regex]::Match($stdOutText, '(?im)^\s*(start\s+c:|start\s+cmd)[^\r\n]*')).Value.Trim()
+        Add-WarningMessage -Message "Evento pos-build detectado em stdout — processo externo pode ter sido disparado: '$postBuildMatch'"
+    }
+
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execucao MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
     }
