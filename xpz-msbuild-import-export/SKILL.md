@@ -85,10 +85,10 @@ Do NOT use esta skill para:
 - Distinguir claramente:
   - sucesso operacional da chamada
   - efeito funcional observado depois no GeneXus
-- Classificar explicitamente quando a rodada for `ensaio metodologico/experimental`, especialmente em casos de serializacao, roundtrip controlado, prova de wrapper, prova de envelope, exportacao headless, `PreviewMode` ou importacao de teste sem validacao funcional posterior
-- Em `ensaio metodologico/experimental`, nao narrar o resultado como mudanca funcional validada; limitar a conclusao ao que a evidencia realmente cobriu
-- Quando a estrategia segura exigir mais de uma fase, tratar cada rodada como incremento controlado e validar build/import antes da fase seguinte
-- Sucesso operacional de uma fase nao autoriza recompor automaticamente pacote acumulado para a fase seguinte; a proxima rodada deve preferir o delta novo ainda nao validado
+- Classificar explicitamente quando a rodada for `ensaio metodológico/experimental`, especialmente em casos de serialização, roundtrip controlado, prova de wrapper, prova de envelope, exportação headless, `PreviewMode` ou importação de teste sem validação funcional posterior
+- Em `ensaio metodológico/experimental`, não narrar o resultado como mudança funcional validada; limitar a conclusão ao que a evidência realmente cobriu
+- Quando a estratégia segura exigir mais de uma fase, tratar cada rodada como incremento controlado e validar build/import antes da fase seguinte
+- Sucesso operacional de uma fase não autoriza recompor automaticamente pacote acumulado para a fase seguinte; a próxima rodada deve preferir o delta novo ainda não validado
 - Exigir que o probe (sondagem técnica inicial) devolva diagnóstico estruturado com `status`, `summary`, `resolvedPaths`, `checks`, `blockingReasons`, `warnings` e `strategyTrace`
 - Preferir `JSON` como formato canônico inicial desse diagnóstico
 - Registrar `stdoutSignals` (campos semânticos por domínio), `stderrContent`, `stderrFilteredNoise`, `exitCode`, caminho do `.msbuild` temporário e caminho do log
@@ -110,7 +110,7 @@ Do NOT use esta skill para:
   quando `-Level` for `Generator`, `DataStore` ou `Object`
 - Nunca inferir o nome da propriedade; sempre exigir `-Name` explícito
 - Quando recortes sucessivos isolarem erro residual de `Source`, `Specification` ou referência não resolvida em objeto importado, tratar a continuação como frente de conteúdo da KB/`XPZ`, não como ajuste adicional presumido do wrapper
-- Quando um teste controlado com `Source` global preenchido e outro teste controlado com ajuste isolado de `Pattern Settings` nao mudarem o padrao principal do log, registrar explicitamente que essas diferencas deixaram de ser suspeitas fortes e estreitar a hipotese para conteudo da KB/`XPZ`
+- Quando um teste controlado com `Source` global preenchido e outro teste controlado com ajuste isolado de `Pattern Settings` não mudarem o padrão principal do log, registrar explicitamente que essas diferenças deixaram de ser suspeitas fortes e estreitar a hipótese para conteúdo da KB/`XPZ`
 - Exigir confirmação explícita antes de importação real
 - Recomendar reabertura da KB na IDE oficial após testes relevantes para observar warning, marca de versão ou outro efeito colateral
 
@@ -124,10 +124,10 @@ Do NOT use esta skill para:
 - Em operações de import, declare o sub-estado explicitamente pelo nome (`importação real efetiva provada`, `sucesso operacional sem prova de import efetivo`, `importação real efetiva provada, efeito não confirmado na IDE`, `importação real efetiva provada, geração de runtime pendente`, `importação real falhou por source`, etc.) — não deixe o leitor inferir o nível de prova a partir do relato narrativo
 - Quando o usuário quiser evidência complementar além de `importedItems`, apresentar as duas opções em paralelo: acionar `xpz-msbuild-build` (headless) ou abrir a KB na IDE e executar o build por lá — ambas são opcionais e o resultado do build não reescreve nem substitui o sub-estado de import já declarado
 - Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado e o usuário reportar que o comportamento ainda não mudou, oferecer explicitamente a `checagem de frescor de runtime` como próximo passo nomeado antes de sugerir nova edição; declarar nominalmente o que será verificado: `nav_objs.xml` (`ObjStatus=genreq` indica geração pendente; `ObjStatus=nogenreq` indica gerado) e timestamps dos artefatos gerados (`.cs`, `.aspx` ou equivalente); NVG excluído por não ser acessível sem abrir a IDE; se a checagem indicar artefatos de versão anterior, classificar como `importação real efetiva provada, geração de runtime pendente` e propor reabertura + rebuild antes de qualquer nova edição
-- Quando a rodada for `ensaio metodologico/experimental`, declarar isso nominalmente no resumo e separar:
-  - objetivo metodologico da rodada
+- Quando a rodada for `ensaio metodológico/experimental`, declarar isso nominalmente no resumo e separar:
+  - objetivo metodológico da rodada
   - resultado operacional observado
-  - confirmacao funcional ainda nao coberta
+  - confirmação funcional ainda não coberta
 - Quando a rodada envolver iteração sobre objeto único, consolidar o resultado no seguinte template antes de recomendar próximo passo:
 
   ```
@@ -316,7 +316,7 @@ Parâmetros específicos de importação:
    - `preview reconheceu o objeto` — objeto esperado apareceu no retorno do preview
    - `preview apenas` — preview concluído sem evidência de reconhecimento do objeto esperado
    - `operação concluída, porém pendente de confirmação funcional`
-   - quando aplicavel, acumular tambem o marcador narrativo `ensaio metodologico/experimental`, sem substituir a classificacao operacional principal
+   - quando aplicável, acumular também o marcador narrativo `ensaio metodológico/experimental`, sem substituir a classificação operacional principal
 13. Recomendar o próximo passo seguro; quando o sub-estado for `importação real efetiva provada` e o usuário quiser evidência complementar, apresentar as duas opções em paralelo:
    - acionar `xpz-msbuild-build` (headless) — `compilou limpo` ou `specify e generate concluídos` reforçam o handoff sem alterar o sub-estado de import declarado
    - abrir a KB na IDE e executar o build por lá
