@@ -326,14 +326,10 @@ function Get-OperationExitCode {
     return 20
 }
 
-function Get-TextSummary {
+function Split-NonEmptyLines {
     param([string]$Text)
-
-    if ([string]::IsNullOrWhiteSpace($Text)) {
-        return @()
-    }
-
-    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 20)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
+    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 }
 
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
@@ -418,6 +414,8 @@ try {
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
+    $stdErrNoise    = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
     $openOutput = Get-MarkerValue -Text $stdOutText -Marker '__OPEN_OUTPUT__='
     $activeVersionOutput = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
@@ -467,8 +465,8 @@ try {
             StdErrPath = $stdErrPath
             ExecutionLogPath = $resolvedLogPath
         }
-        stdoutSummary = Get-TextSummary -Text $stdOutText
-        stderrSummary = Get-TextSummary -Text $stdErrText
+        stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
+        stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
         blockingReasons = @($script:BlockingReasons)
         warnings = @($script:Warnings)
         strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -511,8 +509,8 @@ catch {
             StdErrPath = $null
             ExecutionLogPath = $resolvedLogPath
         }
-        stdoutSummary = @()
-        stderrSummary = @()
+        stderrContent        = @()
+        stderrFilteredNoise  = @()
         blockingReasons = @($_.Exception.Message)
         warnings = @()
         strategyTrace = @($script:StrategyTrace)
