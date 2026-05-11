@@ -1086,6 +1086,14 @@ try {
         -TimedOut           $timedOut `
         -AllowReorgConfirmed $allowReorgConfirmed
 
+    if ($buildStatus.Status -eq 'compilou limpo' -and -not [string]::IsNullOrWhiteSpace($stdErrText)) {
+        $buildStatus = [ordered]@{
+            Status   = 'operacao concluida, pendente de confirmacao funcional'
+            Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stderr nao esta vazio. Verifique stderrSummary no diagnostico.'
+            ExitCode = 0
+        }
+    }
+
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execucao MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
     }
@@ -1094,8 +1102,13 @@ try {
         Add-WarningMessage -Message 'Recomenda-se abrir a KB na IDE para inspecionar a reorganizacao gerada antes de decidir executa-la.'
     }
 
-    if ($buildStatus.Status -in @('compilou limpo', 'operacao concluida, pendente de confirmacao funcional')) {
+    if ($buildStatus.Status -eq 'compilou limpo') {
         Add-WarningMessage -Message 'Recomenda-se reabrir a KB na IDE para observar warnings ou efeitos colaterais de host.'
+    }
+
+    if ($buildStatus.Status -eq 'operacao concluida, pendente de confirmacao funcional' -and -not [string]::IsNullOrWhiteSpace($stdErrText)) {
+        $stderrPreview = (($stdErrText -split "`n") | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
+        Add-WarningMessage -Message "Stderr nao vazio detectado apos build: $stderrPreview"
     }
 
     $diagnostic = [ordered]@{
