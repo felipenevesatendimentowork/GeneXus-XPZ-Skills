@@ -253,7 +253,7 @@ não executa por padrão) reorg necessária.
 
 **Categorias de resultado:**
 
-- `compilou limpo` — `BuildAll` concluiu com exitCode 0, sem reorg detectada e sem padrões de erro em stdout/stderr
+- `compilou limpo` — `BuildAll` concluiu com exitCode 0, sem reorg detectada, stderr vazio após filtro de ruído estrutural conhecido (ver padrão abaixo) e sem padrões de erro em stdout
 - `compilou com erros` — `BuildAll` falhou por erro de compilação
 - `reorg necessária detectada` — `FailIfReorg=true` bloqueou o build; reorg gerada mas
   não executada; usuário deve decidir o próximo passo
@@ -275,12 +275,23 @@ não executa por padrão) reorg necessária.
 > terminar e popula `timing.phases` com os timestamps de cada fase interna.
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
-  detectada, mas validação funcional real depende de inspeção na IDE
+  detectada, mas stderr não vazio após filtro de ruído estrutural, ou marcador de
+  conclusão não detectado; validação funcional depende de inspeção na IDE
 
 > **Padrão conhecido:** `dotnet publish` dentro de `GAM\Platforms\*` pode registrar
 > `Access denied` em stdout com exitCode 0. Esse padrão não é erro de compilação GeneXus,
 > mas impede classificar como `compilou limpo` — usar `operação concluída, pendente de
 > confirmação funcional` e listar o padrão encontrado no diagnóstico.
+
+> **Padrão conhecido — ruído estrutural do GeneXus 18 em stderr:**
+> O GeneXus 18 escreve exatamente 3 linhas `context [anonymous] 1:12 attribute component
+> isn't defined` no stderr durante o `SpecifyAll` — task executada internamente pelo
+> `BuildAll`. O próprio GeneXus não conta isso como erro: stdout reporta "0 avisos,
+> 0 erros". A mensagem é estrutural da task: verificado empiricamente em FabricaBrasil18
+> e wsEducacaoSpTeste em 2026-05-10, sempre 3 ocorrências, mesma posição `1:12`,
+> independente do conteúdo da KB. `Invoke-GeneXusKbBuildAll.ps1` filtra esse padrão
+> antes de classificar o status — um `BuildAll` bem-sucedido cujo stderr contenha apenas
+> esse ruído é classificado como `compilou limpo`.
 
 ### Invoke-GeneXusDbImpact.ps1
 

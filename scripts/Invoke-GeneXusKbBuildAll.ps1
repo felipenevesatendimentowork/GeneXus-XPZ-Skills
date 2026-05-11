@@ -1086,7 +1086,14 @@ try {
         -TimedOut           $timedOut `
         -AllowReorgConfirmed $allowReorgConfirmed
 
-    if ($buildStatus.Status -eq 'compilou limpo' -and -not [string]::IsNullOrWhiteSpace($stdErrText)) {
+    # GeneXus 18 grava exatamente 3 linhas "context [anonymous] N:N attribute component
+    # isn't defined" no stderr durante SpecifyAll (executado internamente pelo BuildAll).
+    # O GeneXus nao conta isso como erro: stdout reporta "0 avisos, 0 erros".
+    # Evidencia empirica: FabricaBrasil18 e wsEducacaoSpTeste em 2026-05-10, sempre 3x,
+    # mesma posicao, independente do conteudo da KB. Filtrar antes de classificar.
+    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
+
+    if ($buildStatus.Status -eq 'compilou limpo' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
         $buildStatus = [ordered]@{
             Status   = 'operacao concluida, pendente de confirmacao funcional'
             Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stderr nao esta vazio. Verifique stderrSummary no diagnostico.'
@@ -1106,8 +1113,8 @@ try {
         Add-WarningMessage -Message 'Recomenda-se reabrir a KB na IDE para observar warnings ou efeitos colaterais de host.'
     }
 
-    if ($buildStatus.Status -eq 'operacao concluida, pendente de confirmacao funcional' -and -not [string]::IsNullOrWhiteSpace($stdErrText)) {
-        $stderrPreview = (($stdErrText -split "`n") | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
+    if ($buildStatus.Status -eq 'operacao concluida, pendente de confirmacao funcional' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
+        $stderrPreview = (($stdErrFiltered -split "`n") | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
         Add-WarningMessage -Message "Stderr nao vazio detectado apos build: $stderrPreview"
     }
 
