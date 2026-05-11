@@ -480,14 +480,10 @@ function Get-RegexValue {
     return $match.Groups[1].Value.Trim()
 }
 
-function Get-TextSummary {
+function Split-NonEmptyLines {
     param([string]$Text)
-
-    if ([string]::IsNullOrWhiteSpace($Text)) {
-        return @()
-    }
-
-    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 30)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
+    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 }
 
 function Get-NowIso {
@@ -1094,29 +1090,34 @@ try {
     $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
+    $stdOutBlockingPatternRegex = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
+    $blockingPatternMatch       = [regex]::Match($stdOutText, $stdOutBlockingPatternRegex)
+    $detectedBlockingPattern    = if ($blockingPatternMatch.Success) { $blockingPatternMatch.Value } else { $null }
+
+    $postBuildEventLines = @([regex]::Matches($stdOutText, '(?im)^\s*(start\s+c:|start\s+cmd)[^\r\n]*') |
+                             ForEach-Object { $_.Value.Trim() })
+
+    $buildWarningLines   = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
+                             ForEach-Object { $_.Value.Trim() })
+
     if ($buildStatus.Status -eq 'compilou limpo' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
         $buildStatus = [ordered]@{
             Status   = 'operacao concluida, pendente de confirmacao funcional'
-            Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stderr nao esta vazio. Verifique stderrSummary no diagnostico.'
+            Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stderr nao esta vazio. Verifique stderrContent no diagnostico.'
             ExitCode = 0
         }
     }
 
-    if ($buildStatus.Status -eq 'compilou limpo') {
-        $stdOutBlockingPattern = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
-        if ($stdOutText -match $stdOutBlockingPattern) {
-            $matchedPattern = ([regex]::Match($stdOutText, $stdOutBlockingPattern)).Value
-            $buildStatus = [ordered]@{
-                Status   = 'operacao concluida, pendente de confirmacao funcional'
-                Summary  = "BuildAll concluiu sem erro de MSBuild, mas stdout contem padrao de alerta: '$matchedPattern'. Verifique stdoutSummary no diagnostico."
-                ExitCode = 0
-            }
+    if ($buildStatus.Status -eq 'compilou limpo' -and $detectedBlockingPattern) {
+        $buildStatus = [ordered]@{
+            Status   = 'operacao concluida, pendente de confirmacao funcional'
+            Summary  = "BuildAll concluiu sem erro de MSBuild, mas stdout contem padrao de alerta: '$detectedBlockingPattern'. Verifique stdoutSignals no diagnostico."
+            ExitCode = 0
         }
     }
 
-    if ($stdOutText -match '(?im)^\s*(start\s+c:|start\s+cmd)') {
-        $postBuildMatch = ([regex]::Match($stdOutText, '(?im)^\s*(start\s+c:|start\s+cmd)[^\r\n]*')).Value.Trim()
-        Add-WarningMessage -Message "Evento pos-build detectado em stdout — processo externo pode ter sido disparado: '$postBuildMatch'"
+    if ($postBuildEventLines.Count -gt 0) {
+        Add-WarningMessage -Message "Evento pos-build detectado em stdout — processo externo pode ter sido disparado: '$($postBuildEventLines[0])'"
     }
 
     if ($buildStatus.ExitCode -ne 0) {
@@ -1128,7 +1129,7 @@ try {
     }
 
     if ($buildStatus.Status -eq 'operacao concluida, pendente de confirmacao funcional' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
-        $stderrPreview = (($stdErrFiltered -split "`n") | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
+        $stderrPreview = ((Split-NonEmptyLines -Text $stdErrFiltered) | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
         Add-WarningMessage -Message "Stderr nao vazio detectado apos build: $stderrPreview"
     }
 
@@ -1177,9 +1178,13 @@ try {
             ExecutionLogPath = $resolvedLogPath
         }
         watcherContext   = $script:WatcherContext
-        stdoutSummary        = Get-TextSummary -Text $stdOutText
-        stderrSummary        = Get-TextSummary -Text $stdErrFiltered
-        stderrFilteredNoise  = Get-TextSummary -Text $stdErrFilteredNoise
+        stdoutSignals        = [ordered]@{
+            blockingPattern = $detectedBlockingPattern
+            postBuildEvents = $postBuildEventLines
+            buildWarnings   = $buildWarningLines
+        }
+        stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
+        stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrFilteredNoise
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
