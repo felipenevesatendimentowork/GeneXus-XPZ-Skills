@@ -59,6 +59,34 @@ if (-not $ObjectXmlPaths -or $ObjectXmlPaths.Count -eq 0) {
     throw "ObjectXmlPaths vazio: nenhum XML de objeto informado."
 }
 
+# 1a - gate de colisao de pacote (antes de qualquer escrita)
+# Garante reserva determinista do _nn: se houver colisao, o script aborta sem
+# materializar nada. Bypass intencional via -Force, alinhado a semantica ja
+# existente de sobrescrita explicita.
+if (-not $Force) {
+    $collisionScript = Join-Path $PSScriptRoot "Test-XpzPackageCollision.ps1"
+    if (-not (Test-Path -LiteralPath $collisionScript)) {
+        throw "Gate de colisao nao encontrado em '$collisionScript'."
+    }
+    $absOutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+    $leafName = Split-Path -Leaf $absOutputPath
+    $nameMatch = [regex]::Match(
+        $leafName,
+        '^(?<front>.+)_(?<nn>\d+)\.import_file\.xml$',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+    if (-not $nameMatch.Success) {
+        throw "BLOCK: nome de OutputPath fora do padrao '<FrontPrefix>_<nn>.import_file.xml': $leafName"
+    }
+    $collisionFront = $nameMatch.Groups['front'].Value
+    $collisionNN    = $nameMatch.Groups['nn'].Value
+    $collisionDir   = Split-Path -Parent $absOutputPath
+    if (-not (Test-Path -LiteralPath $collisionDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $collisionDir -Force | Out-Null
+    }
+    & $collisionScript -FrontPrefix $collisionFront -NN $collisionNN -OutputDir $collisionDir | Out-Null
+}
+
 if (Test-Path -LiteralPath $OutputPath) {
     if (-not $Force) {
         throw "OutputPath ja existe: '$OutputPath'. Use -Force para sobrescrever."

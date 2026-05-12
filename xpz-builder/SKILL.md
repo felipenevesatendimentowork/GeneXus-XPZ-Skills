@@ -120,7 +120,8 @@ If the main need is to prepare or validate the initial folder structure around t
 - Name locally generated packages for IDE import using the preferred pattern `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`
 - In that package name, the front is identified only by the prefix `NomeCurto_GUID_YYYYMMDD`; `nn` is only the short package round for that front
 - Before writing `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, run a deterministic collision gate in `.ps1`; do NOT leave this decision to ad hoc reasoning
-- Prefer a local wrapper such as `Test-*KbPackageCollision.ps1`, delegating to the shared engine `scripts\Test-XpzPackageCollision.ps1`
+- When the recommended helper `Build-GeneXusImportFileEnvelope.ps1` is used, the collision gate is embedded and runs before any byte is written; the file is materialized only when the gate passes
+- In the manual fallback path (textual envelope assembly without the helper), prefer a local wrapper such as `Test-*KbPackageCollision.ps1`, delegating to the shared engine `scripts\Test-XpzPackageCollision.ps1`
 - If the collision gate returns `BLOCK: ...`, abort the write; do NOT silently overwrite that round
 - When there is an `nn` collision, the suggested next free `nn` must come from the collision gate output itself; do NOT auto-increment or write automatically with the suggested value
 - Keep `PacotesGeradosParaImportacaoNaKbNoGenexus` flat, without subfolders by front
@@ -249,6 +250,8 @@ Reference files and when to load them:
      - Object in workspace but absent from round spec → classify as potential contaminant; do NOT silently absorb into the batch
    - If workspace and round spec diverge, require explicit reconciliation before continuing to step 6
 6. Before any package write, execute the deterministic collision gate for the intended `FrontPrefix + nn` in `PacotesGeradosParaImportacaoNaKbNoGenexus`:
+   - When the package is assembled via `Build-GeneXusImportFileEnvelope.ps1` (recommended path), the collision gate is embedded: the helper runs `Test-XpzPackageCollision.ps1` as its first action and aborts with zero bytes materialized when `_nn` is taken; in that flow, no explicit pre-call to the wrapper is required
+   - When the package is assembled via the manual fallback (textual envelope assembly without the helper), the collision gate must be executed explicitly before any `Set-Content`, rename, move, or overwrite of the package artifact
    - Prefer the local wrapper `Test-*KbPackageCollision.ps1` when the KB/repository publishes it
    - The wrapper should delegate to the shared engine `scripts\Test-XpzPackageCollision.ps1`
    - Expected outputs:
@@ -465,7 +468,7 @@ Reference files and when to load them:
    - Produce or validate a manifest in the conversation containing at minimum: batch front or short description, batch origin, total XML count, `Objects` count, `Attributes` count, included files list or summary, `lastUpdate` applied or preserved, generated package, superseded package when present, and risk/pending notes
    - Save that manifest as a file only when there is an incident involving `ObjetosDaKbEmXml`, package supersession that needs local traceability, explicit user request, or real need for future handoff outside the immediate conversation
    - Validate the final envelope materialized inside `import_file.xml`, not only the source XML files
-   - Prefer `scripts\Build-GeneXusImportFileEnvelope.ps1` as the primary path to assemble `import_file.xml` from object XML inputs and a validated template package; that helper clones `KMW`/`Source`/`Dependencies`/`ObjectsIdentityMapping` from the template, embeds each object via `ImportNode` (which guarantees no inner `<?xml ...?>` is carried over), and runs the envelope gate automatically before delivery
+   - Prefer `scripts\Build-GeneXusImportFileEnvelope.ps1` as the primary path to assemble `import_file.xml` from object XML inputs and a validated template package; that helper clones `KMW`/`Source`/`Dependencies`/`ObjectsIdentityMapping` from the template, embeds each object via `ImportNode` (which guarantees no inner `<?xml ...?>` is carried over), runs the deterministic collision gate (`Test-XpzPackageCollision.ps1`) before any write so a colliding `_nn` aborts the script with zero bytes materialized, and runs the envelope gate automatically before delivery
    - Treat manual text-level assembly of `import_file.xml` (string concatenation of object XMLs into the envelope) as a discouraged fallback, allowed only when no clonable template exists
    - When the helper rejects the package, the candidate file is preserved as `<OutputPath>.rejected.<A..Z>` for forensic inspection; do NOT rename it back to the canonical `*.import_file.xml` to retry — fix the input and rerun
    - Run `scripts\Test-GeneXusImportFileEnvelope.ps1 -InputPath <package> -AsJson` after writing the final `import_file.xml`; treat `não apto para prosseguir` as a hard stop before delivery (the helper above already calls this gate; running it again is only required when the manual fallback was used or when the package was edited after assembly)
