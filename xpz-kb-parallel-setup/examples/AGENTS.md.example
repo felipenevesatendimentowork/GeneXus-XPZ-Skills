@@ -124,6 +124,16 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
 - Em tarefas GeneXus, usar a skill `nexa`.
 - Em tarefas XPZ, `import_file.xml`, XML exportado da KB, pacote de importacao
   ou `ObjectsIdentityMapping`, usar a skill `xpz-*` aplicavel.
+- Em importacao headless via MSBuild (`Invoke-GeneXusXpzImport.ps1` do motor
+  compartilhado) e em qualquer diagnostico de sub-estado de import — incluindo
+  classificacao apos exception interna do wrapper, leitura de
+  `__IMPORTED_ITEM__` no log bruto (`msbuild.stdout.log`) e identificacao de
+  `postProcessingFailed=true` no `import.json` —, usar `xpz-msbuild-import-export`;
+  nao reinterpretar sub-estados de import localmente. Em particular: falha de
+  pos-processamento do wrapper com evidencia de import no log bruto NAO e falha
+  de import — e o sub-estado nomeado
+  `importacao real efetiva provada por evidencia de stdout (falha no
+  pos-processamento do wrapper)`.
 - `ObjetosDaKbEmXml` e o snapshot oficial materializado; `KbIntelligence` e
   apenas camada derivada e regeneravel.
 - antes de gerar `import_file.xml` localmente a partir de
