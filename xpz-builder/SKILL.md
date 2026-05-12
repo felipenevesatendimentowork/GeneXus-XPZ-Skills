@@ -465,7 +465,10 @@ Reference files and when to load them:
    - Produce or validate a manifest in the conversation containing at minimum: batch front or short description, batch origin, total XML count, `Objects` count, `Attributes` count, included files list or summary, `lastUpdate` applied or preserved, generated package, superseded package when present, and risk/pending notes
    - Save that manifest as a file only when there is an incident involving `ObjetosDaKbEmXml`, package supersession that needs local traceability, explicit user request, or real need for future handoff outside the immediate conversation
    - Validate the final envelope materialized inside `import_file.xml`, not only the source XML files
-   - Run `scripts\Test-GeneXusImportFileEnvelope.ps1 -InputPath <package> -AsJson` after writing the final `import_file.xml`; treat `não apto para prosseguir` as a hard stop before delivery
+   - Prefer `scripts\Build-GeneXusImportFileEnvelope.ps1` as the primary path to assemble `import_file.xml` from object XML inputs and a validated template package; that helper clones `KMW`/`Source`/`Dependencies`/`ObjectsIdentityMapping` from the template, embeds each object via `ImportNode` (which guarantees no inner `<?xml ...?>` is carried over), and runs the envelope gate automatically before delivery
+   - Treat manual text-level assembly of `import_file.xml` (string concatenation of object XMLs into the envelope) as a discouraged fallback, allowed only when no clonable template exists
+   - When the helper rejects the package, the candidate file is preserved as `<OutputPath>.rejected.<A..Z>` for forensic inspection; do NOT rename it back to the canonical `*.import_file.xml` to retry — fix the input and rerun
+   - Run `scripts\Test-GeneXusImportFileEnvelope.ps1 -InputPath <package> -AsJson` after writing the final `import_file.xml`; treat `não apto para prosseguir` as a hard stop before delivery (the helper above already calls this gate; running it again is only required when the manual fallback was used or when the package was edited after assembly)
    - If an object is embedded under `<Objects>`, it must appear as XML element content only; embedded XML declaration such as `<?xml version="1.0" ...?>` inside `<Objects>` is a blocking envelope error
    - Verify that `<Objects>` contains no text nodes or placeholder literals (strings such as `YOUR-GUID-HERE`, `PLACEHOLDER`, `TODO`) — these indicate the object XML was not properly embedded
    - If the current flow is manual IDE import and `import_file.xml` is still missing, do NOT treat the packaging task as complete
@@ -668,7 +671,8 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] Simple initial/final period filters were expressed as two independent `where` clauses when applicable
 - [ ] When useful for readability, edited `Source` considered the local form already present in the object without turning that into a hard methodological requirement
 - [ ] Final package-envelope serialization was validated explicitly, not inferred only from source XML well-formedness
-- [ ] `Test-GeneXusImportFileEnvelope.ps1` was run on the final `import_file.xml` and returned `apto para prosseguir` or `apto com ressalvas` with explicit justification; `não apto para prosseguir` was never suppressed
+- [ ] `Build-GeneXusImportFileEnvelope.ps1` was used to assemble `import_file.xml` from object XMLs and a validated template, or — if the manual fallback was used — the divergence was justified explicitly
+- [ ] `Test-GeneXusImportFileEnvelope.ps1` was run on the final `import_file.xml` (directly or through the helper) and returned `apto para prosseguir` or `apto com ressalvas` with explicit justification; `não apto para prosseguir` was never suppressed
 - [ ] No embedded XML declaration remained inside object payload under `<Objects>`
 - [ ] No text nodes or placeholder literals were present inside `<Objects>` (confirmed by envelope gate or explicit visual inspection)
 - [ ] When import logs were used, messages were classified by stage and category before diagnosis

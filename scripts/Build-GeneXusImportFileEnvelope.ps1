@@ -1,0 +1,212 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string[]]$ObjectXmlPaths,
+
+    [Parameter(Mandatory = $true)]
+    [string]$TemplatePackagePath,
+
+    [Parameter(Mandatory = $true)]
+    [string]$OutputPath,
+
+    [string[]]$TopLevelAttributesXmlPaths,
+
+    [switch]$SkipGate,
+
+    [switch]$Force,
+
+    [switch]$AsJson
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Resolve-NextRejectedPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$BasePath
+    )
+    $letters = [char[]](65..90)
+    foreach ($letter in $letters) {
+        $candidate = "$BasePath.rejected.$letter"
+        if (-not (Test-Path -LiteralPath $candidate)) {
+            return $candidate
+        }
+    }
+    throw "Limite de rejeicoes atingido: '$BasePath.rejected.A'..'.Z' ja existem. Limpar rejeicoes anteriores antes de tentar novamente."
+}
+
+function Assert-XmlWellFormed {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Role
+    )
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "$Role nao encontrado: $Path"
+    }
+    $doc = New-Object System.Xml.XmlDocument
+    $doc.PreserveWhitespace = $true
+    try {
+        $raw = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+        $doc.LoadXml($raw)
+    } catch {
+        throw "$Role nao e XML bem-formado ('$Path'): $($_.Exception.Message)"
+    }
+    return $doc
+}
+
+# 1 - validacao de entradas
+if (-not $ObjectXmlPaths -or $ObjectXmlPaths.Count -eq 0) {
+    throw "ObjectXmlPaths vazio: nenhum XML de objeto informado."
+}
+
+if (Test-Path -LiteralPath $OutputPath) {
+    if (-not $Force) {
+        throw "OutputPath ja existe: '$OutputPath'. Use -Force para sobrescrever."
+    }
+    Remove-Item -LiteralPath $OutputPath -Force
+}
+
+$templateDoc = Assert-XmlWellFormed -Path $TemplatePackagePath -Role "TemplatePackage"
+if ($templateDoc.DocumentElement.LocalName -ne "ExportFile") {
+    throw "TemplatePackage nao tem raiz 'ExportFile': raiz encontrada '$($templateDoc.DocumentElement.LocalName)'."
+}
+
+$templateRoot = $templateDoc.DocumentElement
+$templateBlocks = @{}
+foreach ($name in @("KMW", "Source", "Dependencies", "ObjectsIdentityMapping")) {
+    $node = $templateRoot.SelectSingleNode("./$name")
+    if ($null -ne $node) {
+        $templateBlocks[$name] = $node
+    }
+}
+foreach ($required in @("KMW", "Source")) {
+    if (-not $templateBlocks.ContainsKey($required)) {
+        throw "TemplatePackage nao contem bloco obrigatorio '<$required>'."
+    }
+}
+
+# 2 - validacao previa dos XMLs de objeto (cada um deve carregar isoladamente)
+$objectDocs = @()
+foreach ($path in $ObjectXmlPaths) {
+    $objectDocs += (Assert-XmlWellFormed -Path $path -Role "ObjectXml")
+}
+
+$attributeDocs = @()
+if ($TopLevelAttributesXmlPaths -and $TopLevelAttributesXmlPaths.Count -gt 0) {
+    foreach ($path in $TopLevelAttributesXmlPaths) {
+        $attributeDocs += (Assert-XmlWellFormed -Path $path -Role "TopLevelAttributeXml")
+    }
+}
+
+# 3 - montagem do novo documento
+$outDoc = New-Object System.Xml.XmlDocument
+$outDoc.PreserveWhitespace = $false
+
+$xmlDecl = $outDoc.CreateXmlDeclaration("1.0", "UTF-8", $null)
+[void]$outDoc.AppendChild($xmlDecl)
+
+$newRoot = $outDoc.CreateElement("ExportFile")
+foreach ($attr in $templateRoot.Attributes) {
+    $copiedAttr = $outDoc.CreateAttribute($attr.Name)
+    $copiedAttr.Value = $attr.Value
+    [void]$newRoot.Attributes.Append($copiedAttr)
+}
+[void]$outDoc.AppendChild($newRoot)
+
+# 3a - KMW e Source clonados do template
+foreach ($name in @("KMW", "Source")) {
+    $imported = $outDoc.ImportNode($templateBlocks[$name], $true)
+    [void]$newRoot.AppendChild($imported)
+}
+
+# 3b - <Objects> com cada objeto via ImportNode(DocumentElement) — sem prologo interno
+$objectsElement = $outDoc.CreateElement("Objects")
+[void]$newRoot.AppendChild($objectsElement)
+foreach ($doc in $objectDocs) {
+    $imported = $outDoc.ImportNode($doc.DocumentElement, $true)
+    [void]$objectsElement.AppendChild($imported)
+}
+
+# 3c - <Attributes> top-level opcional (pacote de Transaction nova)
+if ($attributeDocs.Count -gt 0) {
+    $attributesElement = $outDoc.CreateElement("Attributes")
+    [void]$newRoot.AppendChild($attributesElement)
+    foreach ($doc in $attributeDocs) {
+        $imported = $outDoc.ImportNode($doc.DocumentElement, $true)
+        [void]$attributesElement.AppendChild($imported)
+    }
+}
+
+# 3d - Dependencies clonado (ou vazio se template nao tiver)
+if ($templateBlocks.ContainsKey("Dependencies")) {
+    $imported = $outDoc.ImportNode($templateBlocks["Dependencies"], $true)
+    [void]$newRoot.AppendChild($imported)
+} else {
+    $depElement = $outDoc.CreateElement("Dependencies")
+    [void]$newRoot.AppendChild($depElement)
+}
+
+# 3e - ObjectsIdentityMapping clonado (warn-only quando template nao tem)
+if ($templateBlocks.ContainsKey("ObjectsIdentityMapping")) {
+    $imported = $outDoc.ImportNode($templateBlocks["ObjectsIdentityMapping"], $true)
+    [void]$newRoot.AppendChild($imported)
+}
+
+# 4 - serializacao para arquivo
+$outputDir = Split-Path -Parent $OutputPath
+if (-not [string]::IsNullOrEmpty($outputDir) -and -not (Test-Path -LiteralPath $outputDir)) {
+    New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+}
+
+$writerSettings = New-Object System.Xml.XmlWriterSettings
+$writerSettings.Encoding = New-Object System.Text.UTF8Encoding($false)
+$writerSettings.Indent = $true
+$writerSettings.IndentChars = "  "
+$writerSettings.OmitXmlDeclaration = $false
+$writerSettings.NewLineHandling = [System.Xml.NewLineHandling]::Replace
+
+$writer = [System.Xml.XmlWriter]::Create($OutputPath, $writerSettings)
+try {
+    $outDoc.Save($writer)
+} finally {
+    $writer.Close()
+}
+
+$buildResult = [ordered]@{
+    outputPath        = (Resolve-Path -LiteralPath $OutputPath).Path
+    templatePackage   = (Resolve-Path -LiteralPath $TemplatePackagePath).Path
+    objectCount       = $objectDocs.Count
+    topLevelAttrCount = $attributeDocs.Count
+    gateStatus        = $null
+    gateInvoked       = (-not $SkipGate.IsPresent)
+    blockingReasons   = @()
+    warnings          = @()
+    rejectedPath      = $null
+    status            = "apto para prosseguir"
+}
+
+# 5 - gate final (default)
+if (-not $SkipGate) {
+    $gateScript = Join-Path $PSScriptRoot "Test-GeneXusImportFileEnvelope.ps1"
+    if (-not (Test-Path -LiteralPath $gateScript)) {
+        throw "Gate nao encontrado em '$gateScript'. Use -SkipGate apenas se souber o que esta fazendo."
+    }
+    $gateResult = & $gateScript -InputPath $OutputPath
+    $buildResult.gateStatus      = $gateResult.status
+    $buildResult.blockingReasons = @($gateResult.blockingReasons)
+    $buildResult.warnings        = @($gateResult.warnings)
+    $buildResult.status          = $gateResult.status
+
+    if ($gateResult.status -eq "não apto para prosseguir") {
+        $rejected = Resolve-NextRejectedPath -BasePath $OutputPath
+        Move-Item -LiteralPath $OutputPath -Destination $rejected -Force
+        $buildResult.rejectedPath = $rejected
+        $buildResult.outputPath   = $null
+    }
+}
+
+if ($AsJson) {
+    $buildResult | ConvertTo-Json -Depth 6
+} else {
+    [pscustomobject]$buildResult
+}

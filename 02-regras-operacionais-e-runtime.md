@@ -1109,6 +1109,8 @@ Regras de uso:
 - `Regra operacional`: em clonagem conservadora de `WebPanel` que deveria preservar a superficie de bindings, comparar antes do empacotamento os bindings serializados relevantes entre original e clone; no minimo, `fieldSpecifier` deve bater em contagem e nomes, e divergencia sem classificacao explicita bloqueia o pacote.
 - `Evidência direta`: declarar `controlName` explicito em `<data>` pode reduzir ambiguidade estrutural no XML, mas isso nao garante que o nome fique disponivel como identificador manipulavel no source do objeto.
 - `Regra operacional`: em pacote delta GeneXus, quando ja existir pacote equivalente validado na IDE, reaproveitar o envelope completo desse pacote como molde; nao simplificar cabecalho, `Dependencies` ou `ObjectsIdentityMapping` por inferencia.
+- `Regra operacional`: a montagem do `import_file.xml` a partir de XMLs de objeto e de um template clonavel deve ser feita por `scripts\Build-GeneXusImportFileEnvelope.ps1`, que clona `KMW`/`Source`/`Dependencies`/`ObjectsIdentityMapping` do template, embute cada objeto via `ImportNode` (impossibilitando declaracao XML interna em `<Objects>`) e executa o gate de envelope automaticamente; concatenacao textual manual e fallback desaconselhado.
+- `Regra operacional`: quando o gate rejeita a montagem, o helper preserva o candidato como `<OutputPath>.rejected.<A..Z>` para inspecao forense, sem ocupar o nome canonico do pacote; renomear arquivo `.rejected` de volta para `*.import_file.xml` e gravacao silenciosa indevida.
 
 ### Revisao por blocos em `WorkWithForWeb`
 
