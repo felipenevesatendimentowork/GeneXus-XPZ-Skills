@@ -488,8 +488,19 @@ function Get-RegexValue {
 
 function Split-NonEmptyLines {
     param([string]$Text)
-    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
-    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    # Preserva tipagem [string[]] mesmo quando o resultado tem 0 ou 1 elemento.
+    # Sem isso, o PowerShell faz unwrapping em propriedade de hashtable:
+    #   0 elementos -> $null (JSON: null)
+    #   1 elemento  -> string solta (JSON: string em vez de array)
+    # Duas quirks distintas a tratar:
+    #   - 1+ elementos: `, $result` impede o unwrapping no retorno
+    #   - 0 elementos: `[string[]]$x = @()` vira `$null`; usar [string[]]::new(0) explicito
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return ,([string[]]::new(0))
+    }
+    [string[]]$result = @($Text -split "(`r`n|`n|`r)" |
+                          Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    return ,$result
 }
 
 function Get-ExportExitCode {
