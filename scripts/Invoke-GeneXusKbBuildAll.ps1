@@ -1156,6 +1156,24 @@ try {
         Add-WarningMessage -Message "Evento pos-build detectado em stdout — processo externo pode ter sido disparado: '$($postBuildEventLines[0])'"
     }
 
+    # Promover warnings pmm00xx (versao de modulo GeneXus) a alertas top-level.
+    # pmm00xx aparecem em buildWarnings mas o usuario nao costuma inspecionar essa
+    # lista interna. Surfacing-los em warnings garante visibilidade no resumo do
+    # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versao)
+    # merece texto mais explicito porque sinaliza estado nao trivial (modulo
+    # satelite exige versao MAIS NOVA do modulo principal do que a instalada).
+    foreach ($wLine in $buildWarningLines) {
+        if ($wLine -match 'warning\s*:\s*(pmm\d{4}):\s*([^\r\n]+)') {
+            $pmmCode = $matches[1]
+            $pmmMsg  = $matches[2].Trim()
+            if ($pmmCode -eq 'pmm0045') {
+                Add-WarningMessage -Message "Alerta de inversao de versao de modulo ($pmmCode): $pmmMsg Modulo satelite exige versao MAIS NOVA do modulo principal — pode exigir update do GeneXus instalado ou downgrade de modulos da KB. Inspecionar via 'Update Modules' na IDE."
+            } else {
+                Add-WarningMessage -Message "Alerta de versao de modulo ($pmmCode): $pmmMsg Resolver via 'Update Modules' na IDE."
+            }
+        }
+    }
+
     if ($buildStatus.ExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execucao MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
     }

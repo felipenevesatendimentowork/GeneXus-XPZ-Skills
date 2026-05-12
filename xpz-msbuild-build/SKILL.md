@@ -557,10 +557,18 @@ Campos relevantes:
 - `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
 - `timing.phases` — lista de fases com `name`, `start`, `end`, `durationSeconds`
 - `observedContext.ReorgDetected` — se reorg foi detectada
-- `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado APÓS filtro de ruído estrutural, ou `null`), `postBuildEvents` (linhas `start c:` / `start cmd`), `buildWarnings` (linhas de warning com posição)
+- `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado APÓS filtro de ruído estrutural, ou `null`), `postBuildEvents` (linhas `start c:` / `start cmd`, com prefixo `(commented) ` quando o GeneXus encenou o comando como comentado), `buildWarnings` (linhas de warning com posição; warnings `pmm00xx` de versão de módulo são adicionalmente promovidos a `warnings` top-level — ver nota abaixo)
 - `stdoutFilteredNoise` — ruído estrutural removido de stdout antes de classificar (ex: linhas `error MSB3491` do `dotnet publish` em `GAM\Platforms\NetCore*` quando rodando sem elevação); quando o único conteúdo bloqueante em stdout for ruído filtrado, o build é classificado como limpo
 - `stderrContent` — linhas reais de stderr após remoção do ruído estrutural do GeneXus 18
 - `stderrFilteredNoise` — ruído estrutural removido de stderr; quando `stderrContent` está vazio e `stderrFilteredNoise` tem conteúdo, o build é limpo e nenhuma recomendação de IDE deve ser emitida
+
+> **Promoção de warnings `pmm00xx` (versão de módulo) a `warnings` top-level:**
+> Warnings GeneXus de família `pmm00xx` (ex.: `pmm0003` "módulo deve ser atualizado para versão N", `pmm0045` "version conflict") sinalizam estado da KB que precisa de atenção do usuário — tipicamente resolvido via `Update Modules` na IDE. Como `buildWarnings` é lista interna que o usuário raramente inspeciona, esses warnings são adicionalmente surfacados em `warnings` (top-level) do diagnóstico, com texto orientativo:
+>
+> - Caso geral: `Alerta de versao de modulo (pmm00xx): <mensagem original>. Resolver via 'Update Modules' na IDE.`
+> - Caso `pmm0045` (inversão de versão — módulo satélite exige versão MAIS NOVA do módulo principal do que a instalada): texto adicional explicando que pode exigir update do GeneXus instalado ou downgrade de módulos da KB; inspecionar via `Update Modules` na IDE.
+>
+> A promoção é **somente para visibilidade** — não muda classificação de status (warnings continuam sendo warnings, não viram erros). O build pode ser `compilou limpo` ou `specify e generate concluídos` mesmo com `pmm00xx` presentes.
 
 ### Observações críticas
 
