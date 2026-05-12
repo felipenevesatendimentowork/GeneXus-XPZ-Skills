@@ -325,8 +325,19 @@ function Get-RegexValue {
 
 function Split-NonEmptyLines {
     param([string]$Text)
-    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
-    return @($Text -split "(`r`n|`n|`r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    # Preserva tipagem [string[]] mesmo quando o resultado tem 0 ou 1 elemento.
+    # Sem isso, o PowerShell faz unwrapping em propriedade de hashtable:
+    #   0 elementos -> $null (JSON: null)
+    #   1 elemento  -> string solta (JSON: string em vez de array)
+    # Duas quirks distintas a tratar:
+    #   - 1+ elementos: `, $result` impede o unwrapping no retorno
+    #   - 0 elementos: `[string[]]$x = @()` vira `$null`; usar [string[]]::new(0) explicito
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return ,([string[]]::new(0))
+    }
+    [string[]]$result = @($Text -split "(`r`n|`n|`r)" |
+                          Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    return ,$result
 }
 
 function Resolve-BuildStatus {
@@ -351,13 +362,17 @@ function Resolve-BuildStatus {
         }
     }
 
-    # Eventos pós-build detectados (start c:, start cmd): KB configurada com ações
-    # pós-build que disparam processos externos. Registrar como warning mesmo quando
-    # a classificação principal for bem-sucedida.
-    $postBuildLines = @($StdOutText -split "`r?`n" | Where-Object { $_ -match '^\s+start (c:|cmd)' })
+    # Eventos pós-build detectados (start c:, start cmd, e variantes prefixadas com REM
+    # quando o GeneXus encena comandos que tentou rodar mas falharam, ex.: .Bat ausente).
+    # KB configurada com ações pós-build que disparam (ou tentam disparar) processos externos.
+    # Registrar como warning mesmo quando a classificação principal for bem-sucedida.
+    $postBuildLines = @($StdOutText -split "`r?`n" |
+                        Where-Object { $_ -match '^\s*(REM\s+)?start\s+(c:|cmd)' })
     if ($postBuildLines.Count -gt 0) {
         foreach ($evtLine in $postBuildLines) {
-            Add-WarningMessage -Message ('Evento pós-build detectado em stdout: "{0}". A KB disparou processos externos durante o SpecifyAll.' -f $evtLine.Trim())
+            $trimmed = $evtLine.Trim()
+            $shown = if ($trimmed -match '^(?i)REM\s+') { "(commented) $trimmed" } else { $trimmed }
+            Add-WarningMessage -Message ('Evento pós-build detectado em stdout: "{0}". A KB disparou (ou tentou disparar) processos externos durante o SpecifyAll.' -f $shown)
         }
     }
 
@@ -504,6 +519,28 @@ try {
     $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
+    # Ruido estrutural do dotnet publish em Program Files\GAM\Platforms\NetCore* — assinatura
+    # de tres criterios simultaneos: error MSB3491 + is denied/acesso negado + caminho da
+    # instalacao do GeneXus contendo \Library\GAM\Platforms\. Linhas que casam todos os
+    # criterios sao removidas de stdout antes de classificar e listadas em stdoutFilteredNoise.
+    # Linhas que casem apenas alguns criterios permanecem como diagnostico legitimo.
+    # Cobertura empirica: o padrao foi verificado via BuildAll em 2026-05-12 (matriz 2x2
+    # KB/Environment); para SpecifyAll puro, ainda nao ha evidencia empirica de presenca
+    # ou ausencia deste ruido. O filtro e idempotente: se o ruido nao aparece, nada e
+    # removido; se aparecer, e removido com a mesma assinatura precisa.
+    $stdOutLines             = if ([string]::IsNullOrEmpty($stdOutText)) { @() } else { $stdOutText -split "`r?`n" }
+    $stdOutNoiseLines        = @()
+    $stdOutNonNoiseLines     = @()
+    foreach ($line in $stdOutLines) {
+        $isGamNoise = ($line -match 'error MSB3491') -and
+                      (($line -match 'is denied') -or ($line -match 'acesso negado')) -and
+                      ($line -match '\\GeneXus\\') -and
+                      ($line -match '\\Library\\GAM\\Platforms\\')
+        if ($isGamNoise) { $stdOutNoiseLines += $line } else { $stdOutNonNoiseLines += $line }
+    }
+    $stdOutFilteredNoise = ($stdOutNoiseLines -join "`n")
+    $stdOutFiltered      = ($stdOutNonNoiseLines -join "`n")
+
     $specifyDoneMarker  = Get-MarkerValue -Text $stdOutText -Marker '__SPECIFY_DONE__='
     $generateDoneMarker = Get-MarkerValue -Text $stdOutText -Marker '__GENERATE_DONE__='
     $specifyDone  = ($specifyDoneMarker -eq 'true')
@@ -519,16 +556,22 @@ try {
         Add-WarningMessage -Message 'Environment solicitado, mas o retorno de GetActiveEnvironment veio vazio.'
     }
 
-    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone -StdOutText $stdOutText -StdErrText $stdErrFiltered
+    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone -StdOutText $stdOutFiltered -StdErrText $stdErrFiltered
 
     $stdOutBlockingPatternRegex = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
-    $blockingPatternMatch       = [regex]::Match($stdOutText, $stdOutBlockingPatternRegex)
+    $blockingPatternMatch       = [regex]::Match($stdOutFiltered, $stdOutBlockingPatternRegex)
     $detectedBlockingPattern    = if ($blockingPatternMatch.Success) { $blockingPatternMatch.Value } else { $null }
 
-    $postBuildEventLines = @([regex]::Matches($stdOutText, '(?im)^\s*(start\s+c:|start\s+cmd)[^\r\n]*') |
-                             ForEach-Object { $_.Value.Trim() })
+    # Inclui linhas prefixadas com REM: o GeneXus encena assim quando o comando pos-build
+    # foi tentado mas falhou (ex.: .Bat ausente). Marca essas com sufixo "(commented) "
+    # para o consumidor distinguir entre executou vs apenas tentou.
+    $postBuildEventLines = @([regex]::Matches($stdOutFiltered, '(?im)^\s*(REM\s+)?(start\s+c:|start\s+cmd)[^\r\n]*') |
+                             ForEach-Object {
+                                 $value = $_.Value.Trim()
+                                 if ($value -match '^(?i)REM\s+') { "(commented) $value" } else { $value }
+                             })
 
-    $buildWarningLines   = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
+    $buildWarningLines   = @([regex]::Matches($stdOutFiltered, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
                              ForEach-Object { $_.Value.Trim() })
 
     if ($buildStatus.ExitCode -ne 0) {
@@ -573,6 +616,7 @@ try {
             postBuildEvents = $postBuildEventLines
             buildWarnings   = $buildWarningLines
         }
+        stdoutFilteredNoise  = Split-NonEmptyLines -Text $stdOutFilteredNoise
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
         stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrFilteredNoise
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
@@ -625,6 +669,7 @@ catch {
             postBuildEvents = @()
             buildWarnings   = @()
         }
+        stdoutFilteredNoise  = @()
         stderrContent        = @()
         stderrFilteredNoise  = @()
         blockingReasons  = @($_.Exception.Message)
