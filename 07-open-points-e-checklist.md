@@ -229,6 +229,43 @@ Orientar futuras coletas de templates comparáveis.
 
 ---
 
+## Plano operacional: `lastUpdate`, aviso de KB no futuro e diagnostico de import MSBuild
+
+**Contexto:** em importacao real (MSBuild ou IDE), o utilizador pode ver aviso do tipo abertura da KB com ultima modificacao **no futuro** em relacao ao relogio do sistema, **sem** que o relogio do SO tenha sido alterado manualmente. Em caso verificavel, a causa pode ser metadado `Object/@lastUpdate` em UTC (`...Z`) **a frente** do instante local de abertura — por exemplo pacote construido noutro instante, patch de XML com timestamp herdado ou gravacao com instante errado.
+
+### Regras de gate em `lastUpdate` (acordo de trilha)
+
+- **Objeto modificado nesta rodada** (texto alterado e `lastUpdate` deve refletir a ultima gravacao no ambiente que produz o XML): apos parse do valor em UTC, **nao** pode exceder `[DateTime]::UtcNow` no host autor além de uma **margem pequena** (segundos — valor a calibrar na implementacao). Acima disso → **bloquear** empacotamento ou corrigir com timestamp medido no host autoral; **nunca** placeholder nem "hora desejada".
+- **Objeto preservado** (reenviado so por fecho de dependencias, `lastUpdate` **igual** ao XML oficial do acervo): **aceitar** `lastUpdate` futuro em relacao ao relogio atual; e caso improvavel (corpus ou maquina de origem ja desalinhados). **Nao** aplicar o bloqueio duro de futuro a este papel.
+
+Estas regras **complementam** (nao substituem) as regras canonicas de `lastUpdate` em `02-regras-operacionais-e-runtime.md` e o fluxo de auditoria em `xpz-builder` (classificacao modificado vs dependencia preservada, releitura do ficheiro gravado).
+
+### Playbook: primeiro passo quando surgir sintoma de "KB no futuro"
+
+1. Extrair `Object/@lastUpdate` e `Object/@fullyQualifiedName` (ou `name` + contexto) dos `<Object>` do pacote em causa (`import_file.xml` ou XML interior do `.xpz`).
+2. Comparar cada valor parseavel em UTC com `UtcNow` e com a hora local percebida pelo operador (conversao de fuso explicita na comunicacao).
+3. So **depois** expandir para inventario completo de `<Object>` (extras, modulos de plataforma, cascata de export) — **nao** misturar no mesmo raciocinio **pacote inchado** e **metadado temporal** sem evidencia no XML.
+
+### Narrativas separadas
+
+- **Pacote inchado / cascata de export:** contagem de objetos, extras face ao delta declarado, `Module:GeneXus`, dependencias arrastadas — trilha ja orientada em `xpz-msbuild-import-export` (inventario antes do import real).
+- **Metadado temporal:** `lastUpdate` futuro face ao relogio de quem abre — tratar como hipotese **primeira** quando o XML mostra esse padrao, sem concluir corrupcao de envelope ou "modulo fantasma" no zip sem listagem dos nos.
+
+### Import JSON vs log bruto (wrapper MSBuild)
+
+- `exitCode` alto no **script** (ex.: `90` contratual para falha interna antes de diagnostico completo) ou `importedItems` vazio por excecao no pos-processamento (ex.: `Join` com null) **nao** substituem a leitura de `msbuild.stdout.log` / stdout quando a questao e "importou ou nao".
+- Quando o log bruto contiver marca de item importado esperado mas o JSON estiver degradado, aplicar o **sub-estado** ja nomeado na skill `xpz-msbuild-import-export`: importacao real provada por evidencia de stdout com falha no pos-processamento do wrapper.
+
+### Comunicacao ao utilizador (quando bater com `lastUpdate` futuro)
+
+Declarar explicitamente: `fullyQualifiedName` (ou identificador estavel), valor UTC literal, conversao para o fuso do operador, e que isso **nao implica** por si so modulo fantasma nem pacote corrompido — implica desalinhamento temporal verificavel no metadado do objeto.
+
+### Automacao
+
+A implementacao no script `scripts/Test-GeneXusImportFileEnvelope.ps1` (parametros para distinguir modificado vs preservado, comparacao opcional com snapshot oficial) fica como **melhoria pendente** — ver entrada dedicada em `999-ideias-pendentes.md`.
+
+---
+
 ## Erros recorrentes
 
 ### `For each` com Base Table incoerente

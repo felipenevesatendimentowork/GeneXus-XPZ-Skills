@@ -1,5 +1,33 @@
 # Ideias Pendentes
 
+## Gate `lastUpdate` futuro em `Test-GeneXusImportFileEnvelope.ps1`
+
+**Importância:** média  
+**Maturidade:** ideia  
+
+**Origem:** conversa operacional 2026-05-13; plano normativo consolidado em `07-open-points-e-checklist.md` (secao *Plano operacional: lastUpdate, aviso de KB no futuro e diagnostico de import MSBuild*).
+
+### Objetivo
+
+Estender o gate estatico `scripts/Test-GeneXusImportFileEnvelope.ps1` (hoje: envelope, GUIDs, placeholders, etc.) para validar **metadado temporal** nos `<Object>` embutidos, alinhado ao acordo:
+
+- objetos **modificados** na rodada: `lastUpdate` (UTC) nao pode ultrapassar `UtcNow` do host além de margem pequena em segundos;
+- objetos **preservados** (mesmo `lastUpdate` que o XML oficial no acervo): nao aplicar bloqueio duro por futuro.
+
+### Design em aberto
+
+O script, so com o ficheiro do pacote, **nao infere** modificado vs preservado. Entradas possiveis (uma ou combinadas):
+
+- caminho opcional para raiz de snapshot oficial (`ObjetosDaKbEmXml` ou equivalente): para cada `Object/@guid`, se existir ficheiro oficial e o atributo `lastUpdate` coincidir com o do pacote → tratar como preservado;
+- lista opcional de GUIDs (ou pares tipo:nome) declarados como modificados nesta rodada pelo empacotador;
+- saida JSON: novos `checks` / `warnings` / `blockingReasons` com codigos estaveis (ex.: `last-update-future-modified-object`).
+
+### Nota de fluxo
+
+Import direto de `.xpz` pode nao passar por este script; o mesmo criterio pode exigir extracao do XML interior para temp + chamada ao gate, ou wrapper dedicado no caminho MSBuild.
+
+---
+
 Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 - **Importância** — quanto dói se a ideia nunca for implementada. Valores: `baixa` (útil mas dispensável), `média` (gap real com workaround manual), `alta` (risco de dano efetivo, como contaminação de KB, perda de trabalho ou falso negativo crítico).
