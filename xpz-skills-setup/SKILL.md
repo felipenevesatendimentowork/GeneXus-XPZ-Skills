@@ -25,7 +25,7 @@ de um novo usuário.
 - Detectar quais ferramentas estão instaladas na máquina — não assumir que todas
   estão presentes (ver `## DETECÇÃO DE INSTALAÇÃO`)
 - Considerar a compatibilidade cruzada antes de classificar uma skill como ausente
-  em Cursor ou OpenCode — ver `## ESTRATÉGIA DE REGISTRO`
+  em Cursor — ver `## ESTRATÉGIA DE REGISTRO`
 - Antes de classificar uma skill como **ausente** no Codex, verificar ausência em
   **ambos** os diretórios USER que o Codex indexa (`~/.codex/skills/` e
   `~/.agents/skills/`); presença em qualquer um dos dois conta como disponível
@@ -62,14 +62,15 @@ de um novo usuário.
 Os caminhos abaixo são os esperados no Windows. Verificar a existência de cada
 caminho antes de usar — não assumir que estão criados. A coluna "também lê de"
 indica caminhos onde a ferramenta detecta skills por compatibilidade cruzada
-oficial, mesmo sem registro nativo no caminho dela.
+oficial, mesmo sem registro nativo no caminho dela. Para OpenCode, exigir registro
+nativo nesta skill para evitar depender de compatibilidade opcional com Claude Code.
 
 | Ferramenta | Caminho nativo (USER) | Também lê de (compatibilidade) |
 |---|---|---|
-| Codex | `~/.codex/skills/` (`$CODEX_HOME/skills/` por defeito — destino do `$skill-installer` embutido; inclui `.system/` empacotadas com o produto) | `~/.agents/skills/` — segundo âmbito USER que o Codex também indexa (doc oficial OpenAI); não substitui `.codex/skills/` como “lar” do instalador |
+| Codex | `~/.codex/skills/` (`$CODEX_HOME/skills/` por padrão — destino do `$skill-installer` embutido; inclui `.system/` empacotadas com o produto) | `~/.agents/skills/` — segundo âmbito USER que o Codex também indexa (doc oficial OpenAI); não substitui `.codex/skills/` como “lar” do instalador |
 | Claude Code | `~/.claude/skills/` | — |
 | Cursor | `~/.cursor/skills/` ou `~/.agents/skills/` | `~/.claude/skills/`, `~/.codex/skills/` |
-| OpenCode | `~/.config/opencode/skills/` ou `~/.agents/skills/` | `~/.claude/skills/` |
+| OpenCode | `~/.config/opencode/skills/` ou `~/.agents/skills/` | — |
 
 `~` no Windows resolve para `%USERPROFILE%`. Não confundir `~/.config/opencode/`
 (caminho oficial de configuração do OpenCode, inclusive no Windows) com
@@ -85,16 +86,17 @@ A skill apresenta duas estratégias e adota a **compacta** como padrão. Aceita 
 
 ### Compacta (padrão)
 
-Dois caminhos cobrem as quatro ferramentas sem usar `~/.agents/skills/` como pilar:
+Três caminhos cobrem as quatro ferramentas sem usar `~/.agents/skills/` como pilar:
 
-- `~/.claude/skills/` → Claude Code (nativo), Cursor (compat), OpenCode (compat)
+- `~/.claude/skills/` → Claude Code (nativo), Cursor (compat)
 - `~/.codex/skills/` → Codex (nativo via `$CODEX_HOME/skills/` / instalador), Cursor (compat)
+- `~/.config/opencode/skills/` → OpenCode (nativo)
 
 **Opcional:** `~/.agents/skills/` — alguns setups já mantêm junctions aqui porque
 Cursor e OpenCode também tratam esse diretório como USER nativo e porque o Codex
 indexa esse segundo âmbito USER; **não entra na compacta recomendada** porque
-`.claude` + `.codex` já cobrem as quatro ferramentas pelas regras de compatibilidade
-acima.
+`.claude` + `.codex` + `.config/opencode` já cobrem as quatro ferramentas sem depender
+de compatibilidade opcional do OpenCode com Claude Code.
 
 **Dois junctions para o mesmo alvo:** registrar `nome-da-skill` como junction tanto
 em `~/.codex/skills/` quanto em `~/.agents/skills/` apontando para a mesma pasta do
@@ -110,7 +112,7 @@ afetar as demais exige promover para a estratégia expansiva primeiro.
 
 Quatro caminhos próprios, um por ferramenta:
 
-- `~/.codex/skills/` (Codex — caminho por defeito do instalador `$skill-installer`,
+- `~/.codex/skills/` (Codex — caminho por padrão do instalador `$skill-installer`,
   `$CODEX_HOME/skills/`; coexistência opcional com `~/.agents/skills/` quando se
   quer dois âmbitos USER indexados pelo Codex)
 - `~/.claude/skills/` (Claude Code)
@@ -122,12 +124,17 @@ em até quatro vínculos; cada vínculo é um ponto adicional de manutenção.
 
 ### Classificação ao auditar
 
-Antes de classificar uma skill como **ausente** em Cursor ou OpenCode, verificar
-se já existe registro em algum diretório que aquela ferramenta lê por
-compatibilidade (ver `## CAMINHOS DE SKILLS POR FERRAMENTA`). Se existir,
+Antes de classificar uma skill como **ausente** em Cursor, verificar se já existe
+registro em algum diretório que essa ferramenta lê por compatibilidade (ver
+`## CAMINHOS DE SKILLS POR FERRAMENTA`). Se existir,
 classificar como **coberta por compatibilidade** em vez de **ausente** — o
 relatório informa ao usuário que a skill já é detectável e oferece, sem cobrar,
 promoção para registro nativo.
+
+Para **OpenCode**, exigir vínculo em `~/.config/opencode/skills/` ou
+`~/.agents/skills/`. Não classificar como **coberta por compatibilidade** apenas
+porque existe vínculo em `~/.claude/skills/`, pois a compatibilidade com Claude Code
+pode estar desativada por configuração do ambiente.
 
 Para **Codex**, não usar essa etiqueta entre `.codex/skills/` e `.agents/skills/`:
 ambos são âmbitos USER que o Codex indexa em paralelo. Se a skill existir em um
@@ -198,17 +205,21 @@ instruções persistentes do usuário:
 | OpenCode | `~/.config/opencode/AGENTS.md` (aceita também `~/.claude/CLAUDE.md` como fallback) |
 | Cursor | `~/.cursor/rules/<arquivo>.mdc` (pasta de regras globais; o formato `.mdc` exige front-matter `description`/`globs`/`alwaysApply`). `~/.cursor/AGENTS.md` pode ser aceito como alternativa simples em versões recentes; preferir a pasta `rules/` para ambientes com versão estável documentada |
 
-As ferramentas não precisam duplicar o mesmo texto em cada ficheiro global: é válido
-**centralizar** as práticas recomendadas num único ficheiro e referenciar esse ficheiro
+As ferramentas não precisam duplicar o mesmo texto em cada arquivo global: é válido
+**centralizar** as práticas recomendadas em um único arquivo e referenciar esse arquivo
 a partir de outro (por exemplo `~/.claude/CLAUDE.md` que remete ou inclui o conteúdo
 efetivo de `~/.codex/AGENTS.md`). Ao auditar, verificar **onde o texto efetivo vive**
 e se cada ferramenta instalada **carrega** esse caminho na prática — não exigir cópia
 literal redundante só porque a tabela acima lista caminhos distintos por produto.
+Quando o ambiente já adotar centralização em uma fonte global consolidada, tratar
+referência curta para essa fonte como proposta preferencial antes de sugerir duplicação
+literal. Neste contexto, "equivalente" significa carregar a mesma fonte efetiva, não
+necessariamente repetir o mesmo texto em todos os arquivos.
 
-Em fluxo com agente capaz de editar ficheiros, lacunas nestes instrucionais devem
+Em fluxo com agente capaz de editar arquivos, lacunas nestes instrucionais devem
 conduzir a **oferta de correção assistida** após confirmação explícita (passo 9 do
 `WORKFLOW`). Não tratar copiar-colar manual como **único** caminho salvo quando o
-utilizador recusar escrita pelo agente ou o ambiente bloquear (ex.: sandbox sem
+usuário recusar escrita pelo agente ou o ambiente bloquear (ex.: sandbox sem
 acesso a `%USERPROFILE%`).
 
 Ao configurar um novo ambiente, verificar se o local global de cada ferramenta
@@ -220,8 +231,10 @@ instalada contém ao menos estas regras:
 - Nunca usar `cd "path" && <comando>` — o harness bloqueia esse padrão
   incondicionalmente ("Compound command contains cd with path operation").
   Nenhuma entrada na allowlist contorna esse bloqueio.
-- Para listar ou buscar arquivos: usar as ferramentas nativas `Glob` e `Grep`
-  com path absoluto.
+- Para listar ou buscar arquivos: usar a capacidade nativa de busca/listagem da
+  ferramenta quando disponível; no Claude Code, por exemplo, preferir `Glob` e
+  `Grep` com path absoluto. No Codex em Windows, preferir `rg`, `Get-ChildItem`
+  e `Select-String` quando for necessário usar shell.
 - Quando inevitável usar o shell, passar o path direto ao comando:
   - `Get-ChildItem -Path "C:\..."` em vez de `cd "C:\..." && Get-ChildItem`
   - `git -C "C:\..." <cmd>` em vez de `cd "C:\..." && git <cmd>`
@@ -261,7 +274,8 @@ instalada contém ao menos estas regras:
    - **Ausente** → criar symlink (ou junction se symlink falhar por permissão)
      no caminho da estratégia ativa
    - **Coberta por compatibilidade** → apenas informar; oferecer promoção para
-     registro nativo se o usuário pedir, sem cobrar
+     registro nativo se o usuário pedir, sem cobrar (aplica-se a Cursor nesta
+     estratégia)
    - **Órfã** → remover vínculo do diretório
    - **Quebrada** → recriar vínculo
 6. Aguardar confirmação explícita do usuário
@@ -272,36 +286,45 @@ instalada contém ao menos estas regras:
    delegar a uma "próxima mensagem"):
    - Para cada ferramenta **instalada**, determinar **onde está o texto efetivo**
      (ver tabela em `## AGENTS.MD RECOMENDADO` e o parágrafo sobre centralização);
-     usar `Read` nos ficheiros que existirem e seguir referências explícitas quando
+     ler com a ferramenta de leitura disponível no agente, ou comando seguro
+     equivalente; no Codex, por exemplo, usar `Get-Content` ou `rg` com caminho
+     explícito. Seguir referências explícitas quando
      o conteúdo estiver centralizado (ex.: `CLAUDE.md` que remete a `AGENTS.md`)
-   - Comparar com o bloco recomendado nesta skill (secção `## AGENTS.MD RECOMENDADO`):
-     pelo menos as duas rubricas — ferramentas de busca/shell e cherry-pick em
-     worktrees — devem estar cobertas **no texto efetivo** ou declarar gap explícito
-   - Incluir no relatório uma secção **Instrucionais globais**: por ferramenta,
-     caminho auditado, **OK** ou lista do que falta; se o ficheiro nominal não
+   - Comparar com o bloco recomendado nesta skill (seção `## AGENTS.MD RECOMENDADO`):
+     pelo menos os dois tópicos — ferramentas de busca/shell e cherry-pick em
+     worktrees — devem estar cobertos **no texto efetivo** ou declarar gap explícito
+   - Incluir no relatório uma seção **Instrucionais globais**: por ferramenta,
+     caminho auditado, **OK** ou lista do que falta; se o arquivo nominal não
      existir mas houver centralização válida documentada, declarar qual caminho
      foi usado como fonte efetiva
    - Se houver lacunas: apresentar o bloco sugerido desta skill e **ofertar aplicar**
      a correção nos caminhos globais corretos por ferramenta — **sem gravar nada até
      confirmação explícita** do usuário (mesmo espírito dos passos 6–7 para vínculos).
-     Priorizar ferramentas onde o utilizador tipicamente não tem ficheiro próprio mas
-     depende de compatibilidade (**Cursor**, **OpenCode**); tratar **Codex** e
-     **Claude Code** igualmente quando o texto efetivo não cumprir as rubricas mínimas.
+     Priorizar ferramentas onde o usuário tipicamente não tem arquivo próprio
+     (**Cursor**, **OpenCode**); tratar **Codex** e **Claude Code** igualmente quando
+     o texto efetivo não cumprir os tópicos mínimos.
      Orientação prática por destino:
      - **Cursor:** criar ou atualizar `~/.cursor/rules/<nome>.mdc` com front-matter
        válido (`description`, `globs` ou `alwaysApply` conforme o produto aceitar na
-       versão em uso) e o corpo com as rubricas; se o utilizador preferir a alternativa
-       simples aceite na sua versão, `~/.cursor/AGENTS.md` conforme a tabela desta skill
-     - **OpenCode:** criar ou atualizar `~/.config/opencode/AGENTS.md` com o texto
-       efetivo necessário (preferível a assumir que uma referência tipo `@` noutro
-       ficheiro é sempre expandida pelo produto — quando em dúvida, duplicar o bloco
-       recomendado aqui para garantir carga pelo caminho oficial)
+       versão em uso) e, quando houver fonte global consolidada, oferecer primeiro uma
+       referência para essa fonte (ex.: `@~/.codex/AGENTS.md`); se a ferramenta não
+       carregar referências ou o usuário preferir arquivo autocontido, gravar o corpo
+       com os tópicos. Se o usuário preferir a alternativa simples aceita na sua versão,
+       `~/.cursor/AGENTS.md` conforme a tabela desta skill.
+     - **OpenCode:** criar ou atualizar `~/.config/opencode/AGENTS.md`; quando o
+       ambiente já centralizar instruções em outro arquivo global (ex.:
+       `~/.codex/AGENTS.md`, referenciado por `~/.claude/CLAUDE.md`), oferecer primeiro
+       o mesmo padrão de referência curta. Só duplicar o bloco recomendado quando o
+       OpenCode não carregar essa referência, quando a validação não for possível e o
+       usuário preferir garantia por arquivo autocontido, ou quando o usuário pedir
+       explicitamente duplicação literal.
      - **Codex / Claude Code:** alinhar `~/.codex/AGENTS.md` e/ou `~/.claude/CLAUDE.md`
        ao bloco recomendado ou à centralização já descrita nesta skill, sempre com
        confirmação antes de gravar
-   - Depois da confirmação: executar só o que foi aprovado, gravar os ficheiros
-     acordados e **revalidar com `Read`**; se o ambiente bloquear escrita (ex.:
-     sandbox), declarar o bloqueio e repetir a oferta quando o utilizador reexecutar
+   - Depois da confirmação: executar só o que foi aprovado, gravar os arquivos
+     acordados e **revalidar por nova leitura**; no Codex, por exemplo, reler com
+     `Get-Content` ou conferir com `rg`. Se o ambiente bloquear escrita (ex.:
+     sandbox), declarar o bloqueio e repetir a oferta quando o usuário reexecutar
      com permissões adequadas — copiar-colar manual permanece **fallback**, não o
      fluxo principal quando o agente pode editar após autorização
 
