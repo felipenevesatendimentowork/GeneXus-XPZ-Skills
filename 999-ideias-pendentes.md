@@ -1110,6 +1110,46 @@ Camada de julgamento (regra textual em `xpz-builder`): consolidar os resultados 
 
 Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 dependências ou 1.3 drift de tipagem) implementado e em uso real, gerando saída estruturada que sirva de conteúdo para uma das seções do manifesto; e (b) decisão editorial fechada sobre formato, posição, nomenclatura e política de versionamento Git.
 
+## Script de inventário de objetos em pacote importável (`import_file.xml` / `.xpz`)
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** incidente operacional documentado em 2026-05-13 (export MSBuild com `-ObjectList` gerou `.xpz` com dependências e módulo de plataforma; import headless sem inventário completo do conteúdo real do pacote). A camada comportamental já foi incorporada em `xpz-msbuild-import-export`, `xpz-builder`, `10-base-operacional-msbuild-headless.md` e `08-guia-para-agente-gpt.md`; esta entrada cobre apenas **automação determinística** opcional.
+
+**Filiação editorial:** complementa o **Manifesto semântico de pacote** (intenção e narrativa na fase de empacotamento em `xpz-builder`). O inventário por script foca no **conteúdo efetivo** do artefato logo antes do import MSBuild — especialmente quando o pacote veio de export, reempacotamento manual ou patch, onde o manifesto da frente de empacotamento pode não existir ou não bater com o zip.
+
+### Problema concreto que motiva a ideia
+
+O gate `Test-GeneXusImportFileEnvelope.ps1` valida envelope (`ExportFile`, `KMW`, `Source`, GUIDs, etc.), mas **não** substitui a lista explícita de **todos** os objetos que seriam aplicados à KB. Hoje essa lista é obrigação **manual** do agente (ler `<Objects>`, expandir `.xpz` se necessário, confrontar com o delta declarado). Agentes que saltam o passo ou assumem “lista nominal do export = conteúdo do pacote” reintroduzem risco de importar extras (módulos de sistema, SDTs não alterados, dependências não pedidas) e de custo operacional alto (ex.: rebuild amplo), mesmo sem corrupção estrutural da KB.
+
+### Direção técnica proposta
+
+Script no motor compartilhado `scripts/` (nome provisório `Get-GeneXusImportPackageObjectInventory.ps1` ou extensão opcional de `Test-GeneXusImportFileEnvelope.ps1` com modo `-ListObjectsOnly` / `-AsJson`):
+
+- **Entrada:** caminho para `import_file.xml` **ou** `.xpz` (tratar como ZIP, localizar `ExportFile`/XML interno com o mesmo esquema).
+- **Saída estruturada (JSON):** lista de objetos com `type`, `name`, `guid` quando disponível; contagem total; flags heurísticas opcionais (ex.: candidato a módulo de plataforma pelo par `Module` + nome conhecido como `GeneXus`).
+- **Modo opcional de confronto:** parâmetro com caminho para ficheiro de “delta declarado” (lista `Tipo:Nome` ou JSON) — emitir `MATCH` / `EXTRA_OBJECTS` / `MISSING_FROM_PACKAGE` com código de saída não zero nos casos bloqueantes acordados com o utilizador.
+- **Ordem na trilha:** após `Test-GeneXusImportFileEnvelope.ps1` com sucesso, **antes** de `Invoke-GeneXusXpzImport.ps1` (ou equivalente local).
+
+Integração futura em wrappers locais da pasta paralela: um único comando que encadeia envelope + inventário + import, com falha cedo quando houver extras não justificados.
+
+### Decisões em aberto
+
+- Fundir com o gate de envelope num único script (duas fases internas) ou manter scripts separados para responsabilidade única e reutilização?
+- Contrato exato do ficheiro “delta declarado” (texto linha a linha vs JSON) e se o confronto é sempre obrigatório ou só com `-StrictDeltaPath`.
+- Lista de nomes/GUIDs de módulos de plataforma: configurável por `.json` na pasta paralela vs hardcoded mínimo + expansão documental.
+- `.xpz` com estrutura interna não padronizada na amostra — validar contra exports reais GeneXus 18 já usados na trilha.
+
+### Limiar para implementar
+
+Implementar quando houver: (a) segunda ocorrência documentada de import headless com escopo “cirúrgico” que tenha levado extras não intencionais **apesar** da documentação nova; ou (b) pasta paralela que queira enforced chain no `.ps1` (sem depender só de disciplina do agente); ou (c) frente que precise de evidência em CI/revisão humana listando objetos do pacote automaticamente.
+
+### Relação com outras entradas em 999
+
+- **Manifesto semântico de pacote:** o manifesto captura intenção na **saída** de `xpz-builder`; o inventário por script valida **fato** no artefato imediatamente antes do import quando a origem do pacote não é só essa saída.
+- **Gate de dependências GeneXus no empacotamento de delta:** aquele gate age **antes** de gravar o pacote; este inventário age **depois**, como última linha de defesa contra pacotes vindos de export IDE/MSBuild ou edição manual.
+
 ## Expansão do índice SQLite para fingerprint de call site
 
 **Importância:** média
