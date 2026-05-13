@@ -559,6 +559,8 @@ Conclusão operacional desta frente:
 - o caminho headless validado para exportação parcial é fornecer explicitamente a lista de objetos em `Objects`/`ObjectList`
 - quando o usuário precisar selecionar objetos por data e não houver lista prévia, a seleção por data permanece dependente da IDE ou de outra fonte externa autorizada que produza a lista de objetos
 
+**Advertência sobre exportação parcial com lista explícita:** mesmo quando `Objects`/`ObjectList` nomeia objetos concretos, o GeneXus pode incluir no `.xpz` **objetos adicionais** (dependências, referências, módulos organizacionais) conforme parâmetros da task (`DependencyType`, `ReferenceType`) e comportamento padrão. **Não** concluir que o pacote coincide com a lista nominal **sem** abrir o artefato e inventariar todo o conteúdo antes de importar. A skill `xpz-msbuild-import-export` documenta checklist de inventário e o anti-padrão “export como casca + patch + import”.
+
 ## Checklist Inicial De Requisitos Da Skill
 
 - usar `MSBuild` como host principal da execução operacional

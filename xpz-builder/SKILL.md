@@ -121,6 +121,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - In that package name, the front is identified only by the prefix `NomeCurto_GUID_YYYYMMDD`; `nn` is only the short package round for that front
 - Before writing `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, run a deterministic collision gate in `.ps1`; do NOT leave this decision to ad hoc reasoning
 - When the recommended helper `Build-GeneXusImportFileEnvelope.ps1` is used, the collision gate is embedded and runs before any byte is written; the file is materialized only when the gate passes
+- When the target flow is **headless MSBuild import** (`xpz-msbuild-import-export`) and the object XML already exists in the parallel KB tree (`ObjetosDaKbEmXml` as read-only reference or `ObjetosGeradosParaImportacaoNaKbNoGenexus` as working copy), prefer assembling **`import_file.xml`** with `Build-GeneXusImportFileEnvelope.ps1` using a validated template (`KMW`, `Source`, `ObjectsIdentityMapping` from local precedent or metadata such as `kb-source-metadata.md` per `xpz-kb-parallel-setup`), then import that package — do **not** run a KB **export** only to obtain a `.xpz` "shell" to patch in parallel XML unless the user explicitly requests that path or confirms that envelope metadata cannot be obtained otherwise (if an exported `.xpz` is used anyway, `xpz-msbuild-import-export` requires a full pre-import object inventory)
 - In the manual fallback path (textual envelope assembly without the helper), prefer a local wrapper such as `Test-*KbPackageCollision.ps1`, delegating to the shared engine `scripts\Test-XpzPackageCollision.ps1`
 - If the collision gate returns `BLOCK: ...`, abort the write; do NOT silently overwrite that round
 - When there is an `nn` collision, the suggested next free `nn` must come from the collision gate output itself; do NOT auto-increment or write automatically with the suggested value
@@ -227,6 +228,7 @@ Reference files and when to load them:
    - each front subfolder is the active unit of that work front
    - `PacotesGeradosParaImportacaoNaKbNoGenexus` = output area for locally generated packages, kept flat without subfolders by front
    - if the object has not yet returned from the KB by official export, the work must stay in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+3b. When the user goal is **headless import via MSBuild** and the delta XML already lives in the parallel folder, plan delivery as **`import_file.xml`** through `Build-GeneXusImportFileEnvelope.ps1` (and skill `xpz-msbuild-import-export` for execution + package inventory); do **not** default to KB export to manufacture a `.xpz` shell unless the user explicitly chooses that path or confirms envelope assembly is blocked
 4. Before generating or packaging a front, resolve the front identifier explicitly:
    - determine whether the case is `same front` or `new front`
    - do NOT infer `same front` only because the object is the same
@@ -675,6 +677,7 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] When useful for readability, edited `Source` considered the local form already present in the object without turning that into a hard methodological requirement
 - [ ] Final package-envelope serialization was validated explicitly, not inferred only from source XML well-formedness
 - [ ] `Build-GeneXusImportFileEnvelope.ps1` was used to assemble `import_file.xml` from object XMLs and a validated template, or — if the manual fallback was used — the divergence was justified explicitly
+- [ ] When the flow was headless MSBuild import and the delta XML already existed in the parallel folder, KB export was not proposed or executed as the default way to obtain a `.xpz` shell without explicit user request or documented confirmation that envelope assembly was blocked
 - [ ] `Test-GeneXusImportFileEnvelope.ps1` was run on the final `import_file.xml` (directly or through the helper) and returned `apto para prosseguir` or `apto com ressalvas` with explicit justification; `não apto para prosseguir` was never suppressed
 - [ ] No embedded XML declaration remained inside object payload under `<Objects>`
 - [ ] No text nodes or placeholder literals were present inside `<Objects>` (confirmed by envelope gate or explicit visual inspection)
@@ -723,6 +726,7 @@ Ao clonar tela customizada WorkWithPlus:
 - NEVER embed XML declaration text such as `<?xml version="1.0" ...?>` inside `<Objects>` payload of `import_file.xml`
 - NEVER postpone generation of `import_file.xml` after the user has already signaled manual IDE import/testing and the delta is materially ready
 - NEVER generate `.xpz` by default when manual IDE import is the target flow and `import_file.xml` is sufficient
+- NEVER initiate MSBuild export from the KB solely to obtain an XPZ envelope for importing XML that already exists in the parallel folder, unless the user explicitly requests it or confirms that valid `KMW`/`Source`/envelope context cannot be assembled otherwise (see `xpz-msbuild-import-export` for inventory rules on any imported `.xpz`)
 - NEVER create subfolders by front under `PacotesGeradosParaImportacaoNaKbNoGenexus`; that package area must remain flat
 - NEVER ignore `Cannot convert Domain to Attribute`, `Attribute 'X' in 'Transaction Y' does not exist`, or `DescriptionAttribute ... could not be found in level attributes`; these are blocking package-construction errors for this trail
 - NEVER treat `OBSOLETO_` as the default naming convention for normal package generation
