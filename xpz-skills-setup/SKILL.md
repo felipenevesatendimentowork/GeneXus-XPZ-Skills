@@ -46,6 +46,11 @@ de um novo usuário.
 - Não tocar em configurações das ferramentas além do diretório de skills
 - Verificar existência de diretórios com `Test-Path` individual por ferramenta — nunca
   agrupar em hashtable ou bloco de verificação coletiva
+- Quando o usuário pedir auditoria ou setup **completo** (ex.: após `git pull`,
+  primeiro uso do repo de skills), **executar na mesma sessão** o passo 9 do
+  `WORKFLOW` como **auditoria somente leitura** dos instrucionais globais —
+  não substituir esse passo por oferta genérica do tipo "na próxima mensagem
+  posso auditar", que confunde quem espera um relatório fechado nesta execução
 
 ## CAMINHOS DE SKILLS POR FERRAMENTA
 
@@ -251,8 +256,23 @@ instalada contém ao menos estas regras:
 6. Aguardar confirmação explícita do usuário
 7. Executar as correções aprovadas
 8. Confirmar resultado por ferramenta
-9. Verificar se o local global de instruções de cada ferramenta instalada
-   contém as práticas recomendadas (seção `## AGENTS.MD RECOMENDADO`); se não
-   contiver, apresentar o bloco sugerido e oferecer orientação — nunca editar
-   AGENTS.md, CLAUDE.md, regras `.mdc` ou equivalentes do usuário
-   automaticamente
+9. **Auditoria somente leitura dos instrucionais globais** (obrigatória quando os
+   passos anteriores foram executados nesta mesma sessão como auditoria/setup
+   completo — não adiar nem delegar a uma "próxima mensagem"):
+   - Para cada ferramenta **instalada**, determinar **onde está o texto efetivo**
+     (ver tabela em `## AGENTS.MD RECOMENDADO` e o parágrafo sobre centralização);
+     usar `Read` nos ficheiros que existirem e seguir referências explícitas quando
+     o conteúdo estiver centralizado (ex.: `CLAUDE.md` que remete a `AGENTS.md`)
+   - Comparar com o bloco recomendado nesta skill (secção `## AGENTS.MD RECOMENDADO`):
+     pelo menos as duas rubricas — ferramentas de busca/shell e cherry-pick em
+     worktrees — devem estar cobertas **no texto efetivo** ou declarar gap explícito
+   - Incluir no relatório uma secção **Instrucionais globais**: por ferramenta,
+     caminho auditado, **OK** ou lista do que falta; se o ficheiro nominal não
+     existir mas houver centralização válida documentada, declarar qual caminho
+     foi usado como fonte efetiva
+   - Se houver lacunas: apresentar o bloco sugerido da skill e orientação para o
+     usuário aplicar manualmente — **nunca** editar `AGENTS.md`, `CLAUDE.md`,
+     regras `.mdc` ou equivalentes automaticamente
+
+Exceção: se o usuário limitar explicitamente o pedido (ex.: "só inventário de
+skills, sem AGENTS"), omitir o passo 9 e declarar esse recorte no relatório.
