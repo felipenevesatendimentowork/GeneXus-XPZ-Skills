@@ -643,7 +643,8 @@ try {
     $resolvedKbPath      = [string]$probeStage.Diagnostic.resolvedPaths.KbPath
 
     # Confirmação explícita de regeneração ampla (ForceRebuild=true + -AllowWideRebuild)
-    if ($AllowWideRebuild.IsPresent) {
+    # -AllowWideRebuild so autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
+    if ($ForceRebuild -eq 'true' -and $AllowWideRebuild.IsPresent) {
         if ($ConfirmWideRebuild.IsPresent) {
             $allowWideRebuildConfirmed = $true
             $confirmWideRebuildMode    = 'parameter'
@@ -717,6 +718,9 @@ try {
             $allowWideRebuildConfirmed = $true
             Add-StrategyTrace -Message 'AllowWideRebuild confirmado pelo usuario interativamente via frase exata. ForceRebuild=true autorizado.'
         }
+    } elseif ($AllowWideRebuild.IsPresent) {
+        Add-WarningMessage -Message '-AllowWideRebuild foi informado, mas ForceRebuild=false; o autorizador e redundante neste cenario (nenhuma regeneracao ampla foi solicitada). Para regenerar a KB inteira, passar tambem -ForceRebuild true.'
+        Add-StrategyTrace -Message '-AllowWideRebuild redundante: ForceRebuild=false, nenhuma regeneracao ampla a confirmar.'
     }
 
     $msBuildFilePath = Join-Path $artifactDirectory 'specifygenerate.msbuild'

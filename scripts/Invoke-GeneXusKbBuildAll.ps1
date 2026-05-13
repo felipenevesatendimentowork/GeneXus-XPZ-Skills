@@ -1097,7 +1097,8 @@ try {
 
     # Confirmação explícita de regeneração ampla (ForceRebuild=true + -AllowWideRebuild)
     # Esta confirmação é independente da reorg: a regeneração ampla pode ocorrer sem reorg.
-    if ($AllowWideRebuild.IsPresent) {
+    # -AllowWideRebuild so autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
+    if ($ForceRebuild -eq 'true' -and $AllowWideRebuild.IsPresent) {
         if ($ConfirmWideRebuild.IsPresent) {
             $allowWideRebuildConfirmed = $true
             $confirmWideRebuildMode    = 'parameter'
@@ -1185,6 +1186,9 @@ try {
             $allowWideRebuildConfirmed = $true
             Add-StrategyTrace -Message 'AllowWideRebuild confirmado pelo usuario interativamente via frase exata. ForceRebuild=true autorizado.'
         }
+    } elseif ($AllowWideRebuild.IsPresent) {
+        Add-WarningMessage -Message '-AllowWideRebuild foi informado, mas ForceRebuild=false; o autorizador e redundante neste cenario (nenhuma regeneracao ampla foi solicitada). Para regenerar a KB inteira, passar tambem -ForceRebuild true.'
+        Add-StrategyTrace -Message '-AllowWideRebuild redundante: ForceRebuild=false, nenhuma regeneracao ampla a confirmar.'
     }
 
     if ($AllowReorg.IsPresent) {

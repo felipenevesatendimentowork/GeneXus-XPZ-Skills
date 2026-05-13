@@ -190,7 +190,9 @@ WORKFLOW e nota de comportamento crítico abaixo.
 - `-AllowWideRebuild` (switch — único caminho autorizado para habilitar
   `-ForceRebuild true`; em modo interativo exige que o usuário digite a frase exata
   `entendo que isto pode regerar a KB inteira e aceito o custo`; em modo não-interativo
-  requer `-ConfirmWideRebuild`)
+  requer `-ConfirmWideRebuild`; com `ForceRebuild=false`, o switch é redundante: o
+  wrapper registra warning em `warnings`, não pede a frase exata e mantém
+  `AllowWideRebuildConfirmed=false`)
 - `-ConfirmWideRebuild` (switch — usado em conjunto com `-AllowWideRebuild` para
   dispensar o `Read-Host` interativo da frase de confirmação; destina-se a processos
   desanexados onde não há terminal disponível; proibido sem `-AllowWideRebuild`; o
@@ -273,7 +275,8 @@ e confirmação explícita** por frase exata.
   a frase exata `entendo que isto pode regerar a KB inteira e aceito o custo`; em
   modo não-interativo requer `-ConfirmWideRebuild`; gate independente do gate de
   reorg — `-AllowReorg` não autoriza regeneração ampla, e `-AllowWideRebuild` não
-  autoriza reorg)
+  autoriza reorg; com `ForceRebuild=false`, o switch é redundante: o wrapper registra
+  warning em `warnings`, não pede a frase exata e mantém `AllowWideRebuildConfirmed=false`)
 - `-ConfirmWideRebuild` (switch — usado em conjunto com `-AllowWideRebuild` para
   dispensar o `Read-Host` interativo da frase de confirmação; destina-se a processos
   desanexados onde não há terminal disponível; proibido sem `-AllowWideRebuild`; o
