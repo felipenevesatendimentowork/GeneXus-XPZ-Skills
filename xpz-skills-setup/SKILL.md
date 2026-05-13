@@ -37,20 +37,25 @@ de um novo usuário.
 - Apresentar relatório consolidado por ferramenta antes de qualquer ação
 - Oferecer resolver cada gap identificado — nunca agir silenciosamente
 - Aguardar confirmação explícita do usuário antes de criar ou remover qualquer vínculo
+  de skill **e** antes de gravar ou alterar instrucionais globais (passo 9)
 - No Windows, tentar **symlink** como mecanismo preferencial; se falhar por permissão,
   cair automaticamente para **junction** e informar ao usuário o que foi usado e por quê
 - Nunca copiar arquivos como alternativa a symlink/junction — cópia gera
   desatualização silenciosa após `git pull`
 - Não instalar as ferramentas — apenas gerenciar o registro das skills dentro delas
 - Não registrar skills de outros repositórios (ex: `nexa`)
-- Não tocar em configurações das ferramentas além do diretório de skills
+- Não alterar configurações gerais das ferramentas fora do âmbito desta skill;
+  **exceção explícita:** instrucionais globais cobertos pelo passo 9 do `WORKFLOW`,
+  apenas **após confirmação explícita** do usuário e **sem edição silenciosa**
 - Verificar existência de diretórios com `Test-Path` individual por ferramenta — nunca
   agrupar em hashtable ou bloco de verificação coletiva
 - Quando o usuário pedir auditoria ou setup **completo** (ex.: após `git pull`,
   primeiro uso do repo de skills), **executar na mesma sessão** o passo 9 do
-  `WORKFLOW` como **auditoria somente leitura** dos instrucionais globais —
-  não substituir esse passo por oferta genérica do tipo "na próxima mensagem
-  posso auditar", que confunde quem espera um relatório fechado nesta execução
+  `WORKFLOW` sobre instrucionais globais — primeiro **ler e comparar**, depois
+  **ofertar correção assistida** onde houver lacuna (espelha o espírito dos
+  passos 6–7: nada gravado sem confirmação explícita) — não substituir esse passo
+  por oferta genérica do tipo "na próxima mensagem posso auditar", que confunde
+  quem espera um relatório fechado nesta execução
 
 ## CAMINHOS DE SKILLS POR FERRAMENTA
 
@@ -200,6 +205,12 @@ efetivo de `~/.codex/AGENTS.md`). Ao auditar, verificar **onde o texto efetivo v
 e se cada ferramenta instalada **carrega** esse caminho na prática — não exigir cópia
 literal redundante só porque a tabela acima lista caminhos distintos por produto.
 
+Em fluxo com agente capaz de editar ficheiros, lacunas nestes instrucionais devem
+conduzir a **oferta de correção assistida** após confirmação explícita (passo 9 do
+`WORKFLOW`). Não tratar copiar-colar manual como **único** caminho salvo quando o
+utilizador recusar escrita pelo agente ou o ambiente bloquear (ex.: sandbox sem
+acesso a `%USERPROFILE%`).
+
 Ao configurar um novo ambiente, verificar se o local global de cada ferramenta
 instalada contém ao menos estas regras:
 
@@ -256,9 +267,9 @@ instalada contém ao menos estas regras:
 6. Aguardar confirmação explícita do usuário
 7. Executar as correções aprovadas
 8. Confirmar resultado por ferramenta
-9. **Auditoria somente leitura dos instrucionais globais** (obrigatória quando os
-   passos anteriores foram executados nesta mesma sessão como auditoria/setup
-   completo — não adiar nem delegar a uma "próxima mensagem"):
+9. **Auditoria dos instrucionais globais** (obrigatória quando os passos anteriores
+   foram executados nesta mesma sessão como auditoria/setup completo — não adiar nem
+   delegar a uma "próxima mensagem"):
    - Para cada ferramenta **instalada**, determinar **onde está o texto efetivo**
      (ver tabela em `## AGENTS.MD RECOMENDADO` e o parágrafo sobre centralização);
      usar `Read` nos ficheiros que existirem e seguir referências explícitas quando
@@ -270,9 +281,29 @@ instalada contém ao menos estas regras:
      caminho auditado, **OK** ou lista do que falta; se o ficheiro nominal não
      existir mas houver centralização válida documentada, declarar qual caminho
      foi usado como fonte efetiva
-   - Se houver lacunas: apresentar o bloco sugerido da skill e orientação para o
-     usuário aplicar manualmente — **nunca** editar `AGENTS.md`, `CLAUDE.md`,
-     regras `.mdc` ou equivalentes automaticamente
+   - Se houver lacunas: apresentar o bloco sugerido desta skill e **ofertar aplicar**
+     a correção nos caminhos globais corretos por ferramenta — **sem gravar nada até
+     confirmação explícita** do usuário (mesmo espírito dos passos 6–7 para vínculos).
+     Priorizar ferramentas onde o utilizador tipicamente não tem ficheiro próprio mas
+     depende de compatibilidade (**Cursor**, **OpenCode**); tratar **Codex** e
+     **Claude Code** igualmente quando o texto efetivo não cumprir as rubricas mínimas.
+     Orientação prática por destino:
+     - **Cursor:** criar ou atualizar `~/.cursor/rules/<nome>.mdc` com front-matter
+       válido (`description`, `globs` ou `alwaysApply` conforme o produto aceitar na
+       versão em uso) e o corpo com as rubricas; se o utilizador preferir a alternativa
+       simples aceite na sua versão, `~/.cursor/AGENTS.md` conforme a tabela desta skill
+     - **OpenCode:** criar ou atualizar `~/.config/opencode/AGENTS.md` com o texto
+       efetivo necessário (preferível a assumir que uma referência tipo `@` noutro
+       ficheiro é sempre expandida pelo produto — quando em dúvida, duplicar o bloco
+       recomendado aqui para garantir carga pelo caminho oficial)
+     - **Codex / Claude Code:** alinhar `~/.codex/AGENTS.md` e/ou `~/.claude/CLAUDE.md`
+       ao bloco recomendado ou à centralização já descrita nesta skill, sempre com
+       confirmação antes de gravar
+   - Depois da confirmação: executar só o que foi aprovado, gravar os ficheiros
+     acordados e **revalidar com `Read`**; se o ambiente bloquear escrita (ex.:
+     sandbox), declarar o bloqueio e repetir a oferta quando o utilizador reexecutar
+     com permissões adequadas — copiar-colar manual permanece **fallback**, não o
+     fluxo principal quando o agente pode editar após autorização
 
 Exceção: se o usuário limitar explicitamente o pedido (ex.: "só inventário de
 skills, sem AGENTS"), omitir o passo 9 e declarar esse recorte no relatório.
