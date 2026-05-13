@@ -123,6 +123,14 @@ Se você quer entender a base rapidamente:
 - `AGENTS.md`, `README.md` e documentação equivalente da KB funcionam como camada obrigatória de especialização local; suas regras valem para aquele repositório e não devem ser promovidas automaticamente à metodologia compartilhada de XPZ
 - frente tecnicamente validada nao implica publicacao Git; a publicacao so ocorre com autorizacao explicita do usuario, e ate la o estado preferido e `aguardando_decisao_de_fechamento`
 
+### Importacao headless e conteudo do pacote
+
+- o gate `Test-GeneXusImportFileEnvelope.ps1` valida o **envelope** do pacote (`ExportFile`, `KMW`, `Source`, etc.); **nao substitui** a verificacao do **conjunto de objetos** que o import aplicaria na KB
+- exportacao parcial pela IDE ou por `MSBuild`, mesmo com lista explicita de objetos, pode colocar no `.xpz` **objetos adicionais** (dependencias, referencias, modulos organizacionais); **nao** assumir que o conteudo do pacote coincide com a lista nominal sem inventariar o artefato
+- antes de **importacao real** headless, o agente deve **listar todos os objetos** do pacote e confrontar com o delta declarado; extras nao pedidos num pacote cirurgico exigem **ABORT** ou confirmacao explicita do usuario (pormenor nas skills `xpz-msbuild-import-export` e `xpz-builder`, e em `10-base-operacional-msbuild-headless.md`)
+- **evitar** o anti-padrao export da KB como “casca” de `.xpz`, substituicao manual de nos e reempacotamento **sem** esse inventario; quando o XML ja esta na pasta paralela, preferir `import_file.xml` montado com `Build-GeneXusImportFileEnvelope.ps1` e molde `KMW`/`Source` valido
+- **nao** iniciar exportacao headless da KB quando o pedido foi **apenas** importar alteracoes ja existentes na pasta paralela, salvo pedido ou confirmacao explicita de que o export e indispensavel
+
 ### Carga inicial
 
 - quando o usuário não informar nomes alternativos, a KB deve assumir estas subpastas padrão:
@@ -298,6 +306,14 @@ Si quieres entender la base rápidamente:
 - `AGENTS.md`, `README.md` y documentación equivalente de la KB funcionan como capa obligatoria de especialización local; sus reglas valen para ese repositorio y no deben promoverse automáticamente a la metodología compartida de XPZ
 - una frente técnicamente validada no implica publicación Git; la publicación solo ocurre con autorización explícita del usuario, y hasta entonces el estado preferido es `aguardando_decisao_de_fechamento`
 
+### Importación headless y contenido del paquete
+
+- el gate `Test-GeneXusImportFileEnvelope.ps1` valida el **envoltorio** del paquete (`ExportFile`, `KMW`, `Source`, etc.); **no sustituye** la verificación del **conjunto de objetos** que el import aplicaría a la KB
+- la exportación parcial por IDE o por `MSBuild`, aun con lista explícita de objetos, puede incluir en el `.xpz` **objetos adicionales** (dependencias, referencias, módulos organizacionales); **no** asumir que el contenido coincide con la lista nominal sin inventariar el artefacto
+- antes de una **importación real** headless, el agente debe **listar todos los objetos** del paquete y confrontarlos con el delta declarado; extras no pedidos en un paquete quirúrgico implican **ABORT** o confirmación explícita del usuario (detalle en las skills `xpz-msbuild-import-export` y `xpz-builder`, y en `10-base-operacional-msbuild-headless.md`)
+- **evitar** el anti-patrón export de la KB como “cáscara” de `.xpz`, sustitución manual de nodos y reempaquetado **sin** ese inventario; cuando el XML ya está en la carpeta paralela, preferir `import_file.xml` montado con `Build-GeneXusImportFileEnvelope.ps1` y molde `KMW`/`Source` válido
+- **no** iniciar exportación headless de la KB cuando lo pedido fue **solo** importar cambios ya existentes en la carpeta paralela, salvo pedido o confirmación explícita de que el export es indispensable
+
 ### Carga inicial
 
 - cuando el usuario no informe nombres alternativos, la KB debe asumir estas subcarpetas estándar:
@@ -472,6 +488,14 @@ If you want to understand the repository quickly:
 - detected or intended editing in `ObjetosDaKbEmXml` for a delta that has not yet been officially re-exported by the KB must be treated as an explicit process error, not as an operational detail
 - `AGENTS.md`, `README.md`, and equivalent KB documentation act as the mandatory local specialization layer; their rules apply to that repository and must not be automatically promoted to the shared XPZ methodology
 - a technically validated front does not imply Git publication; publication only occurs with explicit user authorization, and until then the preferred state is `aguardando_decisao_de_fechamento`
+
+### Headless import and package contents
+
+- the `Test-GeneXusImportFileEnvelope.ps1` gate validates the package **envelope** (`ExportFile`, `KMW`, `Source`, etc.); it **does not replace** verifying the full **set of objects** that the import would apply to the KB
+- partial export from the IDE or `MSBuild`, even with an explicit object list, may place **additional objects** in the `.xpz` (dependencies, references, organizational modules); **do not** assume package contents match the nominal list without inspecting the artifact
+- before **real** headless import, the agent must **list every object** in the package and reconcile with the declared delta; unrequested extras in a surgical package require **ABORT** or explicit user confirmation (see skills `xpz-msbuild-import-export` and `xpz-builder`, and `10-base-operacional-msbuild-headless.md`)
+- **avoid** the anti-pattern of KB export as a `.xpz` "shell", manual node replacement, and repackaging **without** that inventory; when the XML already lives in the parallel folder, prefer `import_file.xml` built with `Build-GeneXusImportFileEnvelope.ps1` and a valid `KMW`/`Source` template
+- **do not** start headless KB export when the user asked **only** to import changes already present in the parallel folder, unless the user explicitly requests export or confirms it is indispensable
 
 ### Initial load
 
