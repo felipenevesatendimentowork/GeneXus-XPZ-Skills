@@ -26,6 +26,10 @@ de um novo usuário.
   estão presentes (ver `## DETECÇÃO DE INSTALAÇÃO`)
 - Considerar a compatibilidade cruzada antes de classificar uma skill como ausente
   em Cursor ou OpenCode — ver `## ESTRATÉGIA DE REGISTRO`
+- Antes de classificar uma skill como **ausente** no Codex, verificar ausência em
+  **ambos** os diretórios USER que o Codex indexa (`~/.codex/skills/` e
+  `~/.agents/skills/`); presença em qualquer um dos dois conta como disponível
+  para o Codex — ver `## CAMINHOS DE SKILLS POR FERRAMENTA`
 - Classificar cada skill por ferramenta: **OK**, **coberta por compatibilidade**
   (registrada em diretório que a ferramenta lê por compatibilidade, sem registro
   nativo nela), **ausente**, **órfã** (registrada mas não existe mais no repo) ou
@@ -52,7 +56,7 @@ oficial, mesmo sem registro nativo no caminho dela.
 
 | Ferramenta | Caminho nativo (USER) | Também lê de (compatibilidade) |
 |---|---|---|
-| Codex | `~/.agents/skills/` | `~/.codex/skills/` aparece como localização de skills empacotadas com o produto (`.system/`) e como caminho histórico de instalações antigas; manter monitorado |
+| Codex | `~/.codex/skills/` (`$CODEX_HOME/skills/` por defeito — destino do `$skill-installer` embutido; inclui `.system/` empacotadas com o produto) | `~/.agents/skills/` — segundo âmbito USER que o Codex também indexa (doc oficial OpenAI); não substitui `.codex/skills/` como “lar” do instalador |
 | Claude Code | `~/.claude/skills/` | — |
 | Cursor | `~/.cursor/skills/` ou `~/.agents/skills/` | `~/.claude/skills/`, `~/.codex/skills/` |
 | OpenCode | `~/.config/opencode/skills/` ou `~/.agents/skills/` | `~/.claude/skills/` |
@@ -71,10 +75,22 @@ A skill apresenta duas estratégias e adota a **compacta** como padrão. Aceita 
 
 ### Compacta (padrão)
 
-Dois caminhos cobrem as quatro ferramentas:
+Dois caminhos cobrem as quatro ferramentas sem usar `~/.agents/skills/` como pilar:
 
 - `~/.claude/skills/` → Claude Code (nativo), Cursor (compat), OpenCode (compat)
-- `~/.agents/skills/` → Codex (nativo USER), Cursor (nativo), OpenCode (compat)
+- `~/.codex/skills/` → Codex (nativo via `$CODEX_HOME/skills/` / instalador), Cursor (compat)
+
+**Opcional:** `~/.agents/skills/` — alguns setups já mantêm junctions aqui porque
+Cursor e OpenCode também tratam esse diretório como USER nativo e porque o Codex
+indexa esse segundo âmbito USER; **não entra na compacta recomendada** porque
+`.claude` + `.codex` já cobrem as quatro ferramentas pelas regras de compatibilidade
+acima.
+
+**Dois junctions para o mesmo alvo:** registrar `nome-da-skill` como junction tanto
+em `~/.codex/skills/` quanto em `~/.agents/skills/` apontando para a mesma pasta do
+repositório não duplica conteúdo em disco — são dois pontos de entrada redundantes.
+Útil apenas quando se quer exposição explícita nos dois âmbitos USER do ecossistema;
+caso contrário, um único vínculo por skill na compacta basta.
 
 Vantagem: menos symlinks/junctions para manter, menos pontos de falha após
 `git pull`. Desvantagem: desinstalar uma skill de uma única ferramenta sem
@@ -84,9 +100,9 @@ afetar as demais exige promover para a estratégia expansiva primeiro.
 
 Quatro caminhos próprios, um por ferramenta:
 
-- `~/.codex/skills/` (Codex — caminho histórico, ainda lido pelas instalações
-  atuais; o caminho USER oficial mais recente do Codex é `~/.agents/skills/`,
-  então em ambiente novo prefira a compacta)
+- `~/.codex/skills/` (Codex — caminho por defeito do instalador `$skill-installer`,
+  `$CODEX_HOME/skills/`; coexistência opcional com `~/.agents/skills/` quando se
+  quer dois âmbitos USER indexados pelo Codex)
 - `~/.claude/skills/` (Claude Code)
 - `~/.cursor/skills/` (Cursor)
 - `~/.config/opencode/skills/` (OpenCode)
@@ -102,6 +118,11 @@ compatibilidade (ver `## CAMINHOS DE SKILLS POR FERRAMENTA`). Se existir,
 classificar como **coberta por compatibilidade** em vez de **ausente** — o
 relatório informa ao usuário que a skill já é detectável e oferece, sem cobrar,
 promoção para registro nativo.
+
+Para **Codex**, não usar essa etiqueta entre `.codex/skills/` e `.agents/skills/`:
+ambos são âmbitos USER que o Codex indexa em paralelo. Se a skill existir em um
+deles, declarar **OK** para Codex; só **ausente** quando faltar nos dois (e não
+houver outro vínculo válido sob `$CODEX_HOME` alterado via ambiente).
 
 ## DETECÇÃO DE INSTALAÇÃO
 
@@ -205,6 +226,9 @@ instalada contém ao menos estas regras:
      `## CAMINHOS DE SKILLS POR FERRAMENTA`)
    - Listar os vínculos presentes no diretório nativo e também nos diretórios
      que aquela ferramenta lê por compatibilidade
+   - Codex: incluir sempre **dois** diretórios USER ao inventariar vínculos —
+     `~/.codex/skills/` e `~/.agents/skills/` — porque o Codex indexa ambos em
+     paralelo (ver `## CAMINHOS DE SKILLS POR FERRAMENTA` e `### Classificação ao auditar`)
    - Classificar cada skill do inventário: **OK**, **coberta por
      compatibilidade**, **ausente**, **órfã** ou **quebrada**
 4. Apresentar relatório consolidado por ferramenta, declarando explicitamente
