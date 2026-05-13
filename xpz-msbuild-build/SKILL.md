@@ -32,7 +32,12 @@ classificação rastreável de resultado e bloqueio de reorg por padrão. Use
 `Invoke-GeneXusKbSpecifyGenerate.ps1` para verificação pós-import — menos invasiva que
 `BuildAll` quando não há alterações estruturais pendentes no banco, mas **capaz de
 disparar reorg real** quando o modelo as contém. Use `Invoke-GeneXusKbBuildAll.ps1`
-para validação completa. Nunca execute reorg sem autorização explícita do usuário.
+para BuildAll incremental (equivalente à opção `Build All` do menu Build da IDE
+GeneXus — compila apenas objetos alterados desde o último build, fluxo costumeiro
+pós-edição/pós-import). `-ForceRebuild=true` é uma operação distinta: equivale a
+`Rebuild All` da IDE — regenera **TODOS** os objetos da KB, podendo durar horas em KB
+grande; só pode ser habilitado via `-AllowWideRebuild` com confirmação explícita do
+usuário por frase exata. Nunca execute reorg sem autorização explícita do usuário.
 Quando houver evidência de alteração estrutural de atributo no import recente, exigir
 confirmação explícita do usuário antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`.
 `BuildAll` sem watcher visível não é fluxo válido. Use `-StartWatcher` ao chamar
@@ -93,6 +98,12 @@ Do NOT use esta skill para:
 - Usar `FailIfReorg=true` como default de `BuildAll` — nunca alterar sem instrução explícita
 - Nunca emitir `DoNotExecuteReorg=false` implicitamente: reorg só executa quando o
   usuário pedir explicitamente com plena ciência do efeito
+- Tratar `-ForceRebuild=true` como operação ampla análoga a reorg autorizada: bloqueada
+  por default e habilitada apenas via `-AllowWideRebuild` com confirmação explícita do
+  usuário por frase exata (modo interativo) ou `-AllowWideRebuild -ConfirmWideRebuild`
+  apos confirmar com o usuário humano (modo não-interativo). Nunca emitir `ForceRebuild=true`
+  implicitamente em fluxo pós-import nem em validação cotidiana — `BuildAll` incremental
+  é o suficiente
 - Distinguir claramente:
   - sucesso operacional da chamada MSBuild
   - efeito funcional observado depois no GeneXus
@@ -170,8 +181,21 @@ WORKFLOW e nota de comportamento crítico abaixo.
 
 **Parâmetros específicos:**
 
-- `-ForceRebuild` (Boolean, default `false`)
+- `-ForceRebuild` (Boolean, default `false` — quando `true`, equivale a `Rebuild All`
+  da IDE: muda `SpecifyAll`/`GenerateOnly` de incremental para regeneração total de
+  TODOS os objetos da KB; em KB grande pode levar horas; **só pode ser habilitado via
+  `-AllowWideRebuild`** — tentativa sem essa autorização é bloqueada por política
+  com exit 46)
 - `-DetailedNavigation` (Boolean, default `false`)
+- `-AllowWideRebuild` (switch — único caminho autorizado para habilitar
+  `-ForceRebuild true`; em modo interativo exige que o usuário digite a frase exata
+  `entendo que isto pode regerar a KB inteira e aceito o custo`; em modo não-interativo
+  requer `-ConfirmWideRebuild`)
+- `-ConfirmWideRebuild` (switch — usado em conjunto com `-AllowWideRebuild` para
+  dispensar o `Read-Host` interativo da frase de confirmação; destina-se a processos
+  desanexados onde não há terminal disponível; proibido sem `-AllowWideRebuild`; o
+  chamador é responsável por confirmar com o usuário humano antes de passar este
+  parâmetro)
 
 **Categorias de resultado:**
 
@@ -215,14 +239,23 @@ WORKFLOW e nota de comportamento crítico abaixo.
 
 ### Invoke-GeneXusKbBuildAll.ps1
 
-Build completo: executa `BuildAll`, que faz specify + generate + compile e detecta (mas
-não executa por padrão) reorg necessária.
+Equivalente à opção `Build All` do menu Build da IDE GeneXus: executa `BuildAll`, que
+faz specify + generate + compile dos objetos alterados desde o último build (build
+incremental). Detecta — mas não executa por padrão — reorg necessária. Esta é a etapa
+cotidiana após import/edição. Para `Rebuild All` (regeneração total de TODOS os
+objetos), ver `-ForceRebuild` abaixo, que **só pode ser usado com `-AllowWideRebuild`
+e confirmação explícita** por frase exata.
 
 **Parâmetros transversais:** mesmos do `Invoke-GeneXusKbSpecifyGenerate.ps1`.
 
 **Parâmetros específicos:**
 
-- `-ForceRebuild` (Boolean, default `false`)
+- `-ForceRebuild` (Boolean, default `false` — quando `true`, equivale a `Rebuild All`
+  da IDE: muda a semântica de `BuildAll` incremental para regeneração total de TODOS
+  os objetos da KB, independentemente de mudança; em KB grande pode levar horas e
+  regenerar centenas/milhares de objetos, incluindo subtype groups; **só pode ser
+  habilitado via `-AllowWideRebuild`** — tentativa sem essa autorização é bloqueada
+  por política com exit 46)
 - `-CompileMains` (Boolean, default `false` — compila apenas Developer Menu)
 - `-DetailedNavigation` (Boolean, default `false`)
 - `-FailIfReorg` (Boolean, default `true` — bloqueia build se houver reorg pendente)
@@ -235,6 +268,17 @@ não executa por padrão) reorg necessária.
   disponível, como quando `Watch-GeneXusMsBuildLog.ps1` roda em paralelo; proibido
   sem `-AllowReorg`; o chamador é responsável por confirmar com o usuário humano
   antes de passar este parâmetro)
+- `-AllowWideRebuild` (switch — único caminho autorizado para habilitar
+  `-ForceRebuild true`; em modo interativo exige que o usuário digite no terminal
+  a frase exata `entendo que isto pode regerar a KB inteira e aceito o custo`; em
+  modo não-interativo requer `-ConfirmWideRebuild`; gate independente do gate de
+  reorg — `-AllowReorg` não autoriza regeneração ampla, e `-AllowWideRebuild` não
+  autoriza reorg)
+- `-ConfirmWideRebuild` (switch — usado em conjunto com `-AllowWideRebuild` para
+  dispensar o `Read-Host` interativo da frase de confirmação; destina-se a processos
+  desanexados onde não há terminal disponível; proibido sem `-AllowWideRebuild`; o
+  chamador é responsável por confirmar com o usuário humano com a frase exata antes
+  de passar este parâmetro)
 - `-Configuration` (String, opcional — valores válidos: `Release`, `Debug`,
   `Performance Test`; quando informado, emite `SetConfiguration` imediatamente antes
   do `BuildAll`; quando omitido, a configuração ativa da KB é mantida sem alteração)
@@ -616,6 +660,16 @@ Campos relevantes:
    - apresentar ao usuário o que reorg significa neste contexto
    - exigir confirmação explícita antes de prosseguir
    - só então emitir `FailIfReorg=false` e `DoNotExecuteReorg=false`
+7a. Se o objetivo envolver `-ForceRebuild=true` (em `BuildAll` ou `SpecifyGenerate`):
+    - apresentar ao usuário o que isso significa neste contexto: equivale a
+      `Rebuild All` da IDE, regenera TODOS os objetos da KB independentemente de
+      mudança, pode levar horas e regenerar centenas/milhares de objetos em KB grande
+    - exigir a frase exata `entendo que isto pode regerar a KB inteira e aceito o custo`
+      — não aceitar paráfrases ou confirmações genéricas
+    - só então passar `-AllowWideRebuild` (e `-ConfirmWideRebuild` se em processo
+      desanexado, após obter a frase do usuário humano)
+    - gate independente do gate de reorg: `-AllowReorg` não autoriza `-ForceRebuild=true`,
+      e `-AllowWideRebuild` não autoriza reorg
 8. Executar o script escolhido seguindo a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**
    (para `BuildAll`: processo desanexado + Watch em janela visível + `run_in_background`) e capturar:
    - `exitCode`
@@ -659,6 +713,10 @@ Campos relevantes:
 - [ ] Quando havia sinal de alteração estrutural, a confirmação com a frase exata foi exigida e obtida antes de executar
 - [ ] `FailIfReorg=true` foi mantido como default em `BuildAll`, salvo instrução explícita
 - [ ] Reorg só foi autorizada após confirmação explícita do usuário
+- [ ] `-ForceRebuild=true` (equivalente a `Rebuild All`) só foi usado mediante pedido
+      explícito do usuário, com aviso do custo apresentado e frase exata
+      `entendo que isto pode regerar a KB inteira e aceito o custo` obtida antes de
+      passar `-AllowWideRebuild`
 - [ ] Quando `reorg necessária detectada`, as três opções foram apresentadas ao usuário
 - [ ] Quando `reorg detectada ou executada` (pós-SpecifyAll), o resultado foi apresentado ao usuário sem ser classificado como sucesso
 - [ ] `Invoke-GeneXusDbImpact.ps1` foi executado antes de `Invoke-GeneXusDbReorg.ps1` quando o objetivo era inspecionar o impacto
@@ -680,6 +738,19 @@ Campos relevantes:
 - NEVER passar `-ConfirmReorg` sem `-AllowReorg` — combinação bloqueada por política (exit 46)
 - NEVER usar `-ConfirmReorg` sem ter obtido confirmação explícita do usuário humano antes
   de lançar o processo — o parâmetro muda o canal de confirmação, não dispensa a confirmação
+- NEVER passar `-ForceRebuild true` sem `-AllowWideRebuild` — combinação bloqueada por
+  política (exit 46) tanto em `Invoke-GeneXusKbBuildAll.ps1` quanto em
+  `Invoke-GeneXusKbSpecifyGenerate.ps1`
+- NEVER passar `-ConfirmWideRebuild` sem `-AllowWideRebuild` — combinação bloqueada por
+  política (exit 46)
+- NEVER passar `-ForceRebuild true` em fluxo pós-import cotidiano nem como "validação
+  completa automática" — `BuildAll` incremental (sem `-ForceRebuild`) é o passo correto
+- NEVER usar `-ConfirmWideRebuild` sem ter obtido a frase exata
+  `entendo que isto pode regerar a KB inteira e aceito o custo` do usuário humano antes
+  de lançar o processo — o parâmetro muda o canal de confirmação, não dispensa a
+  confirmação
+- NEVER aceitar paráfrases ou confirmações genéricas no lugar da frase exata de
+  confirmação de regeneração ampla
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER tratar `exitCode = 0` isolado como confirmação funcional
 - NEVER classificar como `compilou limpo` quando stdout ou stderr contiver padrões de erro (`Access denied`, `error MSB`, `: error `, `FAILED`, stack traces) fora do ruído estrutural GAM/NetCore documentado, mesmo que exitCode = 0

@@ -1270,3 +1270,75 @@ Substituir a regex enumerativa por uma detecção baseada em janela delimitada p
 - O fechamento da janela é confiável pelo próximo `==========` ou existe formato alternativo (ex.: silêncio de N linhas)?
 - A heurística de exclusão de linhas de erro/diagnóstico do MSBuild dentro da janela deve seguir os mesmos padrões já usados pelo classificador principal, ou requer lista própria?
 - Vale fazer a transição em uma frente única, ou faz mais sentido manter regex literal como fallback enquanto a detecção por janela é validada empiricamente em paralelo?
+
+## Avaliar gate similar a `-AllowWideRebuild` para `CompileMains=true` e `DetailedNavigation=true`
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** levantado em 2026-05-13 durante a frente que introduziu o gate de
+`-ForceRebuild=true` (= `Rebuild All` da IDE) em `Invoke-GeneXusKbBuildAll.ps1` e
+`Invoke-GeneXusKbSpecifyGenerate.ps1`. O outro agente que motivou a frente listou
+`CompileMains=true` e `DetailedNavigation=true` como candidatos a gate análogo, com
+o argumento de que também são "operações amplas em KB grande". Decisão de design
+naquela frente: postergar até haver evidência empírica do custo real dessas flags.
+
+### Problema concreto que motiva a ideia
+
+`CompileMains=true` faz o `BuildAll` compilar todos os objetos Main da KB além do
+Developer Menu. `DetailedNavigation=true` faz o GeneXus executar análise de navegação
+detalhada durante a especificação. Conceitualmente ambas podem amplificar o custo de
+um `BuildAll` cotidiano. Mas o impacto prático em KB grande não foi medido empiricamente
+nesta base — e o caso operacional que motivou a frente original (`FabricaBrasil18` com
+horas de regeneração) foi causado por `ForceRebuild=true`, não por `CompileMains` nem
+por `DetailedNavigation`.
+
+Sem evidência empírica, não dá para calibrar:
+
+- se as duas merecem o mesmo tratamento (gate por frase exata),
+- se merecem tratamento mais leve (warning + confirmação `sim/não`),
+- ou se o ganho de proteção não compensa o atrito adicional no fluxo de quem usa
+  `CompileMains=true` deliberadamente.
+
+### Direção técnica proposta
+
+Antes de gravar gates, fazer experimento controlado:
+
+1. Em KB grande conhecida (ex.: a mesma KB do caso do `Rebuild All` original, ou
+   `KB_Teste_Grande_A` já documentada em `10-base-operacional-msbuild-headless.md`),
+   medir o tempo e o tamanho de objetos tocados em quatro execuções de `BuildAll`
+   incremental (sem `ForceRebuild`), variando:
+   - baseline: nenhuma flag adicional
+   - `CompileMains=true`
+   - `DetailedNavigation=true`
+   - ambas
+2. Comparar `timing.msbuildDurationSeconds`, número de fases internas em
+   `timing.phases`, presença de `Rebuild All` no stdout e tamanho dos artefatos
+   gerados.
+3. Se uma das flags multiplicar o custo de forma comparável a `ForceRebuild=true`
+   (ordem de horas em KB grande), instituir gate idêntico (`-AllowWideRebuild`
+   reutilizado, ou switch dedicado).
+4. Se o custo for moderado e previsível, registrar como evidência em
+   `10-base-operacional-msbuild-headless.md` e manter o uso livre — provavelmente
+   com aviso explícito do agente quando essas flags forem passadas para KB grande.
+
+### Por que não foi feito junto da frente de `-AllowWideRebuild`
+
+- Sem evidência empírica do custo, instituir gate seria por analogia, não por
+  observação. Risco: criar atrito sem proteção real.
+- A frente original foi disparada pelo caso concreto de `ForceRebuild=true`. Manter
+  o escopo apertado evitou ampliar a frente sem necessidade.
+- O gate de `-ForceRebuild=true` já cobre o caso de maior dano observado. Cobrir
+  flags adjacentes pode ser feito incrementalmente conforme evidência empírica
+  for chegando.
+
+### Perguntas a responder antes de decidir
+
+- Em KB grande, `CompileMains=true` aumenta o tempo de `BuildAll` em ordem de
+  minutos, horas, ou só percentualmente?
+- `DetailedNavigation=true` afeta principalmente specify ou também a fase de
+  compile? Há condições onde fica caro mesmo em KB pequena?
+- O gate deve ser por flag (cada flag tem seu `-Allow*`) ou unificado
+  (`-AllowWideRebuild` cobre todas as flags amplas)?
+- Existe combinação dessas flags com `ForceRebuild=true` que faça sentido proteger
+  diferentemente?

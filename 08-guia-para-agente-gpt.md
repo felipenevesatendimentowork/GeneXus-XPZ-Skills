@@ -763,6 +763,7 @@ Regras da escada:
 - quando `IncludeItems` ou `ExcludeItems` vierem com multiplos recortes, normalizar a entrada como lista e serializar em formato de lista aceito pela task carregada; nao presumir que uma string unica separada por virgulas sera aceita como um unico item
 - se o wrapper devolver diagnostico estruturado, manter `importedItems` sempre como lista, inclusive com item unico
 - em resposta ao usuario, separar explicitamente `sucesso operacional da chamada MSBuild`, `preview sem alteracao real da KB` e `confirmacao funcional pendente na IDE oficial`
+- em fluxo cotidiano pos-import ou pos-edicao, `Invoke-GeneXusKbBuildAll.ps1` sem `-ForceRebuild` e o passo correto (equivale a `Build All` da IDE, build incremental dos objetos alterados desde o ultimo build); `-ForceRebuild=true` equivale a `Rebuild All` da IDE (regenera TODOS os objetos da KB) e e bloqueado por padrao (exit 46), exigindo `-AllowWideRebuild` com confirmacao explicita do usuario pela frase exata `entendo que isto pode regerar a KB inteira e aceito o custo` — nunca passar implicitamente como `validacao completa automatica`; o mesmo gate vale para `Invoke-GeneXusKbSpecifyGenerate.ps1`
 
 ## Regra de leitura para logs de importacao
 
