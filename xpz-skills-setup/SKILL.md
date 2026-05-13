@@ -188,6 +188,13 @@ instruções persistentes do usuário:
 | OpenCode | `~/.config/opencode/AGENTS.md` (aceita também `~/.claude/CLAUDE.md` como fallback) |
 | Cursor | `~/.cursor/rules/<arquivo>.mdc` (pasta de regras globais; o formato `.mdc` exige front-matter `description`/`globs`/`alwaysApply`). `~/.cursor/AGENTS.md` pode ser aceito como alternativa simples em versões recentes; preferir a pasta `rules/` para ambientes com versão estável documentada |
 
+As ferramentas não precisam duplicar o mesmo texto em cada ficheiro global: é válido
+**centralizar** as práticas recomendadas num único ficheiro e referenciar esse ficheiro
+a partir de outro (por exemplo `~/.claude/CLAUDE.md` que remete ou inclui o conteúdo
+efetivo de `~/.codex/AGENTS.md`). Ao auditar, verificar **onde o texto efetivo vive**
+e se cada ferramenta instalada **carrega** esse caminho na prática — não exigir cópia
+literal redundante só porque a tabela acima lista caminhos distintos por produto.
+
 Ao configurar um novo ambiente, verificar se o local global de cada ferramenta
 instalada contém ao menos estas regras:
 
