@@ -163,7 +163,7 @@ Arquivos de referência e quando carregar:
 
 ## EXPECTED INTERFACE
 
-Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Test-GeneXusKbConsistency.ps1`, `Test-GeneXusImportFileEnvelope.ps1`, `Watch-GeneXusMsBuildLog.ps1` e `Test-GeneXusRuntimeFreshness.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita.
+Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Test-GeneXusKbConsistency.ps1`, `Test-GeneXusImportFileEnvelope.ps1`, `Watch-GeneXusMsBuildLog.ps1` e `Test-GeneXusRuntimeFreshness.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita. Os motores de montagem de `import_file.xml` referenciados no fluxo preferido (`Build-GeneXusImportFileEnvelope.ps1` para montagem direta a partir de XMLs de objeto e template clonável, `New-XpzImportPackage.ps1` como wrapper PowerShell do motor Python `New-XpzImportPackage.py` para montagem por frente da pasta paralela) também estão materializados em `scripts/` e são cobertos pela skill `xpz-builder` e pelas regras operacionais em `02-regras-operacionais-e-runtime.md`; quando esta skill aponta para eles (anti-padrão de export-casca, inventário pré-import), trata-se de uso operacional vigente, não de promessa aspiracional.
 
 Estado atual da materialização:
 
