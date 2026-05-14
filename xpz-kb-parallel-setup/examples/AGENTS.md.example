@@ -79,6 +79,11 @@ Wrappers esperados:
   frente antes do empacotamento; delega ao script compartilhado de sanidade do
   `Source` e devolve `xmlWellFormed`, `sourceSanityStatus` e
   `probablyImportable`.
+- `New-<NomeKb>KbImportPackage.ps1`: wrapper recomendado quando o empacotamento
+  local for recorrente; delega ao motor compartilhado `New-XpzImportPackage.ps1`
+  para criar `import_file.xml` a partir da subpasta ativa da frente em
+  `ObjetosGeradosParaImportacaoNaKbNoGenexus`, com `NN` explícito e
+  `TemplatePackagePath` opcional para pacote real comparável.
 - `Get-<NomeKb>KbMetadata.ps1`: le campos-chave de `kb-source-metadata.md` sem
   regex inline nos chamadores; expoe ao menos `last_xpz_materialization_run_at`,
   `kb_name` e `source_guid`.

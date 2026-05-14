@@ -433,10 +433,11 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
     - Arquivos de configuracao a verificar (somente se existirem):
       - Claude Code: `Join-Path $env:USERPROFILE '.claude\CLAUDE.md'`
       - Codex: `Join-Path $env:USERPROFILE '.codex\AGENTS.md'`
-      - OpenCode: `Join-Path $env:USERPROFILE '.config\opencode\opencode.json'` → ler campo `instructions[]` e verificar cada arquivo listado
+      - Cursor: `Join-Path $env:USERPROFILE '.cursor\rules'` → verificar regras globais `.mdc`; se existir `Join-Path $env:USERPROFILE '.cursor\AGENTS.md'`, verificar também como alternativa simples
+      - OpenCode: `Join-Path $env:USERPROFILE '.config\opencode\AGENTS.md'`; se existir `Join-Path $env:USERPROFILE '.config\opencode\opencode.json'` ou `.jsonc`, ler campo `instructions[]` e verificar cada arquivo listado
     - Para cada arquivo encontrado, aplicar verificacao em dois niveis:
       - Nivel 1: o proprio arquivo contem `## Pasta paralela de KB GeneXus`? Se sim → coberto, nenhuma acao
-      - Nivel 2: o arquivo referencia outro arquivo de instrucoes (ex: linha `@~/.codex/AGENTS.md` no `CLAUDE.md`, ou campo `instructions` no `opencode.json`)? Se sim → seguir a referencia e verificar o arquivo apontado; se esse contiver a secao → coberto, nenhuma acao
+      - Nivel 2: o arquivo referencia outro arquivo de instrucoes (ex: linha `@~/.codex/AGENTS.md` no `CLAUDE.md`/arquivo `.mdc`, ou campo `instructions` no `opencode.json`)? Se sim → seguir a referencia e verificar o arquivo apontado; se esse contiver a secao → coberto, nenhuma acao
     - Propor adicao apenas quando nem o arquivo direto nem os arquivos referenciados contiverem a secao
     - A adicao deve ir no arquivo centralizado ja referenciado quando houver um; caso contrario, no proprio arquivo de configuracao da ferramenta
     - Apresentar ao usuario qual arquivo sera alterado e o bloco exato a adicionar; aguardar aprovacao explicita antes de gravar:

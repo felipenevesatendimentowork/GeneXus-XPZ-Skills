@@ -275,7 +275,7 @@ Parâmetros específicos de importação:
 ### Anti-padrão (nomeado): export MSBuild como “casca” + patch + import
 
 - **Evitar:** exportar da KB só para obter um `.xpz`, substituir manualmente o nó de um `<Object>` pelo XML da pasta paralela, reempacotar e importar **sem** inventário completo e **sem** alinhamento ao manifesto / delta.
-- Quando o XML autoritativo já está na pasta paralela (`ObjetosDaKbEmXml` ou área de geração local), o caminho preferido para import headless é montar **`import_file.xml`** com `Build-GeneXusImportFileEnvelope.ps1` e molde `KMW`/`Source` válido (skill `xpz-builder`, metadados em `kb-source-metadata.md` quando aplicável), em vez de fabricar `.xpz` por export só para servir de envelope.
+- Quando o XML autoritativo já está na pasta paralela (`ObjetosDaKbEmXml` ou área de geração local), o caminho preferido para import headless é montar **`import_file.xml`** com motor estruturado compartilhado: `Build-GeneXusImportFileEnvelope.ps1` para montagem direta a partir de XMLs de objeto e template válido, ou `New-XpzImportPackage.ps1`/`.py` para montagem por frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus` usando `kb-source-metadata.md` ou `-TemplatePackagePath` (skill `xpz-builder`, metadados em `kb-source-metadata.md` quando aplicável), em vez de fabricar `.xpz` por export só para servir de envelope.
 
 ### Exportação headless e alinhamento ao pedido
 
