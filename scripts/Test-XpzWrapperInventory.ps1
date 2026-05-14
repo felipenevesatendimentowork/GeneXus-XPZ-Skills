@@ -96,6 +96,9 @@ if ([string]::IsNullOrWhiteSpace($kbPrefix)) {
 # Mapear cada exemplo para o nome local esperado e verificar presenca
 $absent      = [System.Collections.Generic.List[string]]::new()
 $shortNaming = [System.Collections.Generic.List[string]]::new()
+$optionalBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+[void]$optionalBaseNames.Add('New-KbImportPackage')
+[void]$optionalBaseNames.Add('Notify-TaskComplete')
 
 foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter '*.example.ps1' -Name | Sort-Object) {
     $baseName = $exampleFile -replace '\.example\.ps1$', ''
@@ -115,6 +118,8 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
         # OK — nada a fazer
     } elseif ($shortExists) {
         $shortNaming.Add($standardLocalName)
+    } elseif ($optionalBaseNames.Contains($baseName)) {
+        # Wrapper recomendado, mas ainda nao obrigatorio no inventario canonico.
     } else {
         $absent.Add($standardLocalName)
     }

@@ -103,11 +103,20 @@ foreach ($script in @(
     Test-Component -Label "scripts\$script" -Path (Join-Path $scriptsDir $script) -Type Leaf
 }
 
+foreach ($script in @(
+    'New-KbImportPackage.ps1'
+)) {
+    $optionalPath = Join-Path $scriptsDir $script
+    if (Test-Path -LiteralPath $optionalPath -PathType Leaf) {
+        Test-Component -Label "scripts\$script" -Path $optionalPath -Type Leaf
+    }
+}
+
 Test-Component -Label 'KbIntelligence\kb-intelligence.sqlite' `
     -Path (Join-Path $KbRoot 'KbIntelligence\kb-intelligence.sqlite') -Type Leaf
 
 # Auditoria de parse dos scripts esperados
-foreach ($scriptName in @(
+$scriptsToParse = @(
     'Update-KbFromXpz.ps1',
     'Test-KbFullSnapshot.ps1',
     'Test-KbSetupFreshness.ps1',
@@ -118,7 +127,15 @@ foreach ($scriptName in @(
     'Test-KbMetadataWrapper.ps1',
     'Test-KbStructure.ps1',
     'Test-KbSetupAudit.ps1'
-)) {
+)
+
+foreach ($optionalScriptName in @('New-KbImportPackage.ps1')) {
+    if (Test-Path -LiteralPath (Join-Path $scriptsDir $optionalScriptName) -PathType Leaf) {
+        $scriptsToParse += $optionalScriptName
+    }
+}
+
+foreach ($scriptName in $scriptsToParse) {
     $scriptPath = Join-Path $scriptsDir $scriptName
     if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) { continue }
     $parseTokens = $null
