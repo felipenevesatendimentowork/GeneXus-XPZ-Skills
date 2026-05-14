@@ -173,7 +173,8 @@ if ($null -ne $objectsNode) {
         $result.checks.noEmbeddedXmlDeclaration = $true
     }
 
-    # 5d — GUIDs e placeholder nos elementos de objeto
+    # 5d — GUIDs e placeholders nos elementos de objeto.
+    # Nomes de objetos GeneXus podem conter "PlaceHolder" legitimamente; apenas GUID placeholder bloqueia.
     $result.objectCount = $childElements.Count
     $allGuidsValid  = $true
     $noPlaceholder  = $true
@@ -205,9 +206,8 @@ if ($null -ne $objectsNode) {
         }
 
         if (-not [string]::IsNullOrEmpty($objName) -and $objName -match $PlaceholderPattern) {
-            $allFindings.Add((New-Finding -Severity "fail" -Code "object-name-placeholder" `
+            $allFindings.Add((New-Finding -Severity "warn" -Code "object-name-placeholder" `
                 -Message "Elemento '<$nodeTag>': name='$objName' parece ser texto de placeholder.")) | Out-Null
-            $noPlaceholder = $false
         }
 
         if ([string]::IsNullOrEmpty($objName)) {

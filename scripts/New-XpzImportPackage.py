@@ -266,7 +266,7 @@ def validate_envelope(package_root: ET.Element) -> tuple[str, list[str], list[st
             elif not GUID_RE.match(guid):
                 blocking.append(f"object-guid-invalid: elemento <{tag_name}> (name='{name}') guid invalido: {guid}")
             if PLACEHOLDER_RE.search(name):
-                blocking.append(f"object-name-placeholder: elemento <{tag_name}> name parece placeholder")
+                warnings.append(f"object-name-placeholder: elemento <{tag_name}> name parece placeholder: {name}")
             if not name:
                 warnings.append(f"object-name-missing: elemento <{tag_name}> sem atributo name")
     status = "apto para prosseguir" if not blocking and not warnings else ("apto com ressalvas" if not blocking else "não apto para prosseguir")
