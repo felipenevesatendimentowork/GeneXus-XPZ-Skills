@@ -113,8 +113,9 @@ if ($null -ne $sourceNode) {
             -Message "'Source/@kb' ausente ou vazio.")) | Out-Null
         $sourceGuidsOk = $false
     } elseif ($kbGuid -notmatch $GuidPattern) {
-        $allFindings.Add((New-Finding -Severity "warn" -Code "source-kb-not-guid" `
+        $allFindings.Add((New-Finding -Severity "fail" -Code "source-kb-not-guid" `
             -Message "'Source/@kb' presente mas nao esta em formato GUID: '$kbGuid'.")) | Out-Null
+        $sourceGuidsOk = $false
     }
 
     if ($null -eq $versionNode) {
@@ -126,8 +127,9 @@ if ($null -ne $sourceNode) {
             -Message "'Source/Version/@guid' ausente ou vazio.")) | Out-Null
         $sourceGuidsOk = $false
     } elseif ($versionGuid -notmatch $GuidPattern) {
-        $allFindings.Add((New-Finding -Severity "warn" -Code "source-version-guid-not-guid" `
+        $allFindings.Add((New-Finding -Severity "fail" -Code "source-version-guid-not-guid" `
             -Message "'Source/Version/@guid' presente mas nao esta em formato GUID: '$versionGuid'.")) | Out-Null
+        $sourceGuidsOk = $false
     }
 
     if ($sourceGuidsOk) {

@@ -239,13 +239,13 @@ def validate_envelope(package_root: ET.Element) -> tuple[str, list[str], list[st
         if not kb_guid:
             blocking.append("source-kb-missing: Source/@kb ausente")
         elif not GUID_RE.match(kb_guid):
-            warnings.append(f"source-kb-not-guid: Source/@kb nao esta em formato GUID: {kb_guid}")
+            blocking.append(f"source-kb-not-guid: Source/@kb nao esta em formato GUID: {kb_guid}")
         if version is None:
             blocking.append("source-version-missing: Source/Version ausente")
         elif not version_guid:
             blocking.append("source-version-guid-missing: Source/Version/@guid ausente")
         elif not GUID_RE.match(version_guid):
-            warnings.append(f"source-version-guid-not-guid: Source/Version/@guid nao esta em formato GUID: {version_guid}")
+            blocking.append(f"source-version-guid-not-guid: Source/Version/@guid nao esta em formato GUID: {version_guid}")
     objects = children.get("Objects")
     if objects is not None:
         object_children = [child for child in list(objects) if isinstance(child.tag, str)]
