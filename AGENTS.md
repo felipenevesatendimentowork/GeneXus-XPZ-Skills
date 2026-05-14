@@ -46,6 +46,34 @@
 - Ao alterar nomenclatura, fluxo ou regra operacional, verificar impacto pelo menos em `README.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md` e nas skills afetadas.
 - Não deixar convenções conflitantes entre a base compartilhada e as skills quando a mudança fizer parte da mesma frente.
 
+## Revisão pré-push
+
+Antes de concluir rotina pré-push, não basta ler os diffs dos commits pendentes. O agente deve procurar erros e inconsistências entre o que mudou e o restante do repositório.
+
+Para cada frente alterada:
+
+1. Identificar termos, scripts, wrappers, parâmetros, estados, caminhos e regras operacionais introduzidos ou modificados.
+2. Buscar esses mesmos termos no repositório inteiro.
+3. Comparar a documentação afetada com:
+   - skills relacionadas
+   - `README.md`
+   - `02-regras-operacionais-e-runtime.md`
+   - `08-guia-para-agente-gpt.md`
+   - exemplos em `examples/`
+   - scripts compartilhados em `scripts/`
+4. Confirmar se há:
+   - documentação antiga que contradiz a nova
+   - exemplos canônicos desatualizados
+   - scripts cujo contrato não bate com a descrição
+   - checklist que promete validação que o script não executa
+   - nova ferramenta, caminho ou parâmetro documentado em uma skill, mas ausente nas skills correlatas
+5. Reportar separadamente:
+   - gaps confirmados
+   - flags descartados, com justificativa
+   - áreas não cobertas pela busca
+
+A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse e testes locais estejam limpos.
+
 ## Rastreabilidade privada de moldes sanitizados
 
 - Quando uma frente criar, fortalecer, recombinar ou ampliar cobertura de molde sanitizado publicável, o agente deve avaliar explicitamente se existe anotação correspondente a registrar no `GeneXus-XPZ-PrivateMap`.
