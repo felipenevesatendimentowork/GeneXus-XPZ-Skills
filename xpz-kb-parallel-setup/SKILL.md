@@ -266,9 +266,10 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - retorna `BLOCK: ...` quando a rodada `nn` ja existir para o mesmo prefixo de frente, com sugestao do proximo `nn` livre
   - deve ser o unico ponto local para decidir se o pacote pode ser gravado ou se a frente deve bloquear por colisao
 - Quando o empacotamento local com `import_file.xml` for recorrente, recomendar wrapper local fino para criacao do pacote, por exemplo `New-*KbImportPackage.ps1`:
-  - recebe `FrontName`, `NN` e opcionalmente `AsJson`
+  - recebe `FrontName`, `NN`, opcionalmente `TemplatePackagePath` e opcionalmente `AsJson`
   - delega para `scripts\New-XpzImportPackage.ps1` da base compartilhada
-  - o motor compartilhado le `kb-source-metadata.md`, resolve as pastas padrao da pasta paralela e monta o pacote via `Build-GeneXusImportFileEnvelope.ps1`
+  - o wrapper compartilhado chama o motor Python `scripts\New-XpzImportPackage.py`, le `kb-source-metadata.md`, resolve as pastas padrao da pasta paralela, classifica raizes `Object`/`Attribute`, executa gate de colisao e monta o pacote
+  - quando `TemplatePackagePath` for informado, o motor clona `KMW`, `Source`, `Dependencies` e `ObjectsIdentityMapping` de pacote real comparavel; quando omitido, usa envelope minimo derivado de `kb-source-metadata.md` e retorna warning para pacote misto/complexo
   - este wrapper reduz comando local e facilita allowlist, mas sua ausencia isolada nao bloqueia `wrappers_atualizados` enquanto a KB puder chamar o motor compartilhado diretamente com `-RepoRoot`
 - Quando o fluxo iterativo de import+build produzir o sub-estado `importação real efetiva provada, geração de runtime pendente` ou o usuário reportar que o comportamento ainda não mudou após import e build, a checagem de frescor de runtime pode ser executada diretamente pelo script da base compartilhada `scripts\Test-GeneXusRuntimeFreshness.ps1` — não requer wrapper local:
   - `-KbPath` (obrigatório): caminho da KB GeneXus nativa (onde reside `nav_objs.xml`)

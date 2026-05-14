@@ -4,7 +4,8 @@
 Wrapper local sanitizado para criar pacote import_file.xml de uma frente da KB.
 
 .DESCRIPTION
-Executa o motor compartilhado `New-XpzImportPackage.ps1`, que lê
+Executa o wrapper compartilhado `New-XpzImportPackage.ps1`, que chama o motor Python,
+le
 `kb-source-metadata.md`, coleta os XMLs de
 `ObjetosGeradosParaImportacaoNaKbNoGenexus\<FrontName>` e grava o pacote em
 `PacotesGeradosParaImportacaoNaKbNoGenexus`.
@@ -21,6 +22,11 @@ Rodada curta pretendida para o pacote. Default: 01.
 .PARAMETER AsJson
 Retorna saída JSON estruturada.
 
+.PARAMETER TemplatePackagePath
+Pacote import_file.xml real comparavel para clonar KMW, Source, Dependencies e
+ObjectsIdentityMapping. Quando omitido, o motor usa envelope minimo derivado de
+kb-source-metadata.md.
+
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
 
@@ -33,6 +39,8 @@ param(
     [string]$FrontName,
 
     [string]$NN = '01',
+
+    [string]$TemplatePackagePath,
 
     [switch]$AsJson,
 
@@ -57,6 +65,10 @@ $argsForEngine = @{
 
 if ($AsJson) {
     $argsForEngine.AsJson = $true
+}
+
+if (-not [string]::IsNullOrWhiteSpace($TemplatePackagePath)) {
+    $argsForEngine.TemplatePackagePath = $TemplatePackagePath
 }
 
 & $enginePath @argsForEngine
