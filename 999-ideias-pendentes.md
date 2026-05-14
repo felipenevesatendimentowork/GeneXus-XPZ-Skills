@@ -2,8 +2,8 @@
 
 ## Gate `lastUpdate` futuro em `Test-GeneXusImportFileEnvelope.ps1`
 
-**Importância:** média  
-**Maturidade:** ideia  
+**Importância:** média
+**Maturidade:** ideia
 
 **Origem:** conversa operacional 2026-05-13; plano normativo consolidado em `07-open-points-e-checklist.md` (secao *Plano operacional: lastUpdate, aviso de KB no futuro e diagnostico de import MSBuild*).
 

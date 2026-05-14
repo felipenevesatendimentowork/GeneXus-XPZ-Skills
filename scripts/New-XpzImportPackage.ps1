@@ -175,9 +175,36 @@ if (-not (Test-Path -LiteralPath $tempDir -PathType Container)) {
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 }
 
-$objectXmlPaths = @(Get-ChildItem -LiteralPath $frontDir -Filter '*.xml' -File | Sort-Object Name | ForEach-Object { $_.FullName })
-if ($objectXmlPaths.Count -eq 0) {
+$xmlPaths = @(Get-ChildItem -LiteralPath $frontDir -Filter '*.xml' -File | Sort-Object Name | ForEach-Object { $_.FullName })
+if ($xmlPaths.Count -eq 0) {
     throw "BLOCK: nenhum XML encontrado na pasta da frente: $frontDir"
+}
+
+$objectXmlPaths = @()
+$attributeXmlPaths = @()
+$unsupportedXmlRoots = @()
+foreach ($xmlPath in $xmlPaths) {
+    $doc = New-Object System.Xml.XmlDocument
+    $doc.PreserveWhitespace = $true
+    try {
+        $doc.Load($xmlPath)
+    } catch {
+        throw "BLOCK: XML malformado na frente '$xmlPath': $($_.Exception.Message)"
+    }
+
+    switch ($doc.DocumentElement.LocalName) {
+        'Object' { $objectXmlPaths += $xmlPath }
+        'Attribute' { $attributeXmlPaths += $xmlPath }
+        default { $unsupportedXmlRoots += ('{0}={1}' -f $xmlPath, $doc.DocumentElement.LocalName) }
+    }
+}
+
+if ($unsupportedXmlRoots.Count -gt 0) {
+    throw "BLOCK: raiz XML nao suportada para empacotamento local: $($unsupportedXmlRoots -join '; ')"
+}
+
+if ($objectXmlPaths.Count -eq 0) {
+    throw "BLOCK: nenhum XML com raiz <Object> encontrado na pasta da frente: $frontDir"
 }
 
 $metadataLines = [System.IO.File]::ReadAllLines($metadataPath)
@@ -200,7 +227,15 @@ if (-not (Test-Path -LiteralPath $builderPath -PathType Leaf)) {
 
 try {
     New-EnvelopeTemplate -Path $templatePath -Metadata $metadata
-    $buildResult = & $builderPath -ObjectXmlPaths $objectXmlPaths -TemplatePackagePath $templatePath -OutputPath $outputPath
+    $builderArgs = @{
+        ObjectXmlPaths = $objectXmlPaths
+        TemplatePackagePath = $templatePath
+        OutputPath = $outputPath
+    }
+    if ($attributeXmlPaths.Count -gt 0) {
+        $builderArgs.TopLevelAttributesXmlPaths = $attributeXmlPaths
+    }
+    $buildResult = & $builderPath @builderArgs
 
     $result = [ordered]@{
         status = $buildResult.status
@@ -212,6 +247,7 @@ try {
         sourceFolder = $frontDir
         metadataPath = $metadataPath
         objectCount = $buildResult.objectCount
+        topLevelAttrCount = $buildResult.topLevelAttrCount
         gateStatus = $buildResult.gateStatus
         blockingReasons = @($buildResult.blockingReasons)
         warnings = @($buildResult.warnings)

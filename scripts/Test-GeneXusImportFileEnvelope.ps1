@@ -183,6 +183,12 @@ if ($null -ne $objectsNode) {
         $objName = $objNode.GetAttribute("name")
         $nodeTag = $objNode.LocalName
 
+        if ($nodeTag -ne "Object") {
+            $allFindings.Add((New-Finding -Severity "fail" -Code "objects-invalid-child-element" `
+                -Message "'<Objects>' deve conter apenas elementos '<Object>'; encontrado '<$nodeTag>' (name='$objName').")) | Out-Null
+            $allGuidsValid = $false
+        }
+
         if ([string]::IsNullOrEmpty($objGuid)) {
             $allFindings.Add((New-Finding -Severity "fail" -Code "object-guid-missing" `
                 -Message "Elemento '<$nodeTag>' (name='$objName') sem atributo 'guid'.")) | Out-Null
