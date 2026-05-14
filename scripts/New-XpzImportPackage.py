@@ -10,6 +10,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import quoteattr
 
 
 GUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -113,20 +114,36 @@ def parse_xml(path: Path, role: str) -> ET.Element:
         block(f"{role} malformado em {path}: {exc}")
 
 
-def classify_front_xmls(front_dir: Path) -> tuple[list[tuple[Path, ET.Element]], list[tuple[Path, ET.Element]]]:
+def read_xml_text(path: Path) -> str:
+    raw_bytes = path.read_bytes()
+    for encoding in ("utf-8-sig", "utf-16"):
+        try:
+            return raw_bytes.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    block(f"nao foi possivel decodificar XML como utf-8/utf-16: {path}")
+    raise AssertionError("unreachable")
+
+
+def xml_fragment(raw_xml: str) -> str:
+    return re.sub(r"^\s*<\?xml\b[^?]*\?>\s*", "", raw_xml, count=1, flags=re.I).strip()
+
+
+def classify_front_xmls(front_dir: Path) -> tuple[list[tuple[Path, ET.Element, str]], list[tuple[Path, ET.Element, str]]]:
     xml_paths = sorted(front_dir.glob("*.xml"), key=lambda p: p.name.lower())
     if not xml_paths:
         block(f"nenhum XML encontrado na pasta da frente: {front_dir}")
-    objects: list[tuple[Path, ET.Element]] = []
-    attributes: list[tuple[Path, ET.Element]] = []
+    objects: list[tuple[Path, ET.Element, str]] = []
+    attributes: list[tuple[Path, ET.Element, str]] = []
     unsupported: list[str] = []
     for path in xml_paths:
+        raw_xml = read_xml_text(path)
         root = parse_xml(path, "XML da frente")
         root_name = local_name(root.tag)
         if root_name == "Object":
-            objects.append((path, root))
+            objects.append((path, root, xml_fragment(raw_xml)))
         elif root_name == "Attribute":
-            attributes.append((path, root))
+            attributes.append((path, root, xml_fragment(raw_xml)))
         else:
             unsupported.append(f"{path}={root_name}")
     if unsupported:
@@ -164,33 +181,43 @@ def check_collision(output_path: Path, front_name: str, round_text: str) -> None
         block(f"_{round_text} ja existe para o front {front_name}, proximo livre: _{next_free:0{len(round_text)}d}")
 
 
-def append_copy(parent: ET.Element, child: ET.Element) -> None:
-    parent.append(ET.fromstring(ET.tostring(child, encoding="utf-8")))
+def serialize_template_block(child: ET.Element) -> str:
+    return ET.tostring(child, encoding="unicode", short_empty_elements=True)
 
 
-def build_package(
+def start_tag(name: str, attrs: dict[str, str]) -> str:
+    if not attrs:
+        return f"<{name}>"
+    rendered_attrs = " ".join(f"{key}={quoteattr(value)}" for key, value in attrs.items())
+    return f"<{name} {rendered_attrs}>"
+
+
+def build_package_text(
     template_root: ET.Element,
-    object_roots: list[tuple[Path, ET.Element]],
-    attribute_roots: list[tuple[Path, ET.Element]],
-) -> ET.ElementTree:
-    out_root = ET.Element("ExportFile", dict(template_root.attrib))
+    object_roots: list[tuple[Path, ET.Element, str]],
+    attribute_roots: list[tuple[Path, ET.Element, str]],
+) -> str:
     template_blocks: dict[str, ET.Element] = {local_name(child.tag): child for child in list(template_root)}
-    append_copy(out_root, template_blocks["KMW"])
-    append_copy(out_root, template_blocks["Source"])
-    objects_el = ET.SubElement(out_root, "Objects")
-    for _, obj_root in object_roots:
-        append_copy(objects_el, obj_root)
+    lines = ['<?xml version="1.0" encoding="utf-8"?>', start_tag("ExportFile", dict(template_root.attrib))]
+    for block_name in ("KMW", "Source"):
+        lines.append("  " + serialize_template_block(template_blocks[block_name]).replace("\n", "\n  "))
+    lines.append("  <Objects>")
+    for _, _, raw_fragment in object_roots:
+        lines.append(raw_fragment)
+    lines.append("  </Objects>")
     if attribute_roots:
-        attrs_el = ET.SubElement(out_root, "Attributes")
-        for _, attr_root in attribute_roots:
-            append_copy(attrs_el, attr_root)
+        lines.append("  <Attributes>")
+        for _, _, raw_fragment in attribute_roots:
+            lines.append(raw_fragment)
+        lines.append("  </Attributes>")
     if "Dependencies" in template_blocks:
-        append_copy(out_root, template_blocks["Dependencies"])
+        lines.append("  " + serialize_template_block(template_blocks["Dependencies"]).replace("\n", "\n  "))
     else:
-        ET.SubElement(out_root, "Dependencies")
+        lines.append("  <Dependencies />")
     if "ObjectsIdentityMapping" in template_blocks:
-        append_copy(out_root, template_blocks["ObjectsIdentityMapping"])
-    return ET.ElementTree(out_root)
+        lines.append("  " + serialize_template_block(template_blocks["ObjectsIdentityMapping"]).replace("\n", "\n  "))
+    lines.append("</ExportFile>")
+    return "\n".join(lines) + "\n"
 
 
 def validate_envelope(package_root: ET.Element) -> tuple[str, list[str], list[str]]:
@@ -284,11 +311,11 @@ def main(argv: list[str]) -> int:
         template_path = Path(args.template_package_path).resolve() if args.template_package_path else None
         template_root, envelope_source, envelope_warnings = load_template(template_path, metadata_path)
         validate_template(template_root)
-        package_tree = build_package(template_root, object_roots, attribute_roots)
-        ET.indent(package_tree, space="  ")
+        package_text = build_package_text(template_root, object_roots, attribute_roots)
+        package_root = ET.fromstring(package_text)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        package_tree.write(output_path, encoding="utf-8", xml_declaration=True, short_empty_elements=True)
-        status, blocking, validation_warnings = validate_envelope(package_tree.getroot())
+        output_path.write_text(package_text, encoding="utf-8", newline="\n")
+        status, blocking, validation_warnings = validate_envelope(package_root)
         rejected = None
         if status == "não apto para prosseguir":
             rejected = rejected_path(output_path)
@@ -309,7 +336,7 @@ def main(argv: list[str]) -> int:
             "gateStatus": status,
             "blockingReasons": blocking,
             "warnings": envelope_warnings + validation_warnings,
-            "includedFiles": [str(path) for path, _ in object_roots + attribute_roots],
+            "includedFiles": [str(path) for path, _, _ in object_roots + attribute_roots],
         }
         print(json.dumps(result, ensure_ascii=False, indent=2 if args.as_json else None))
         return 0
