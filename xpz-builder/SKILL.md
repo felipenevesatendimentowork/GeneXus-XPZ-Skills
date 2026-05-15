@@ -311,23 +311,13 @@ Reference files and when to load them:
    - `fail` → **ABORT**: correct the structural issue (missing key in Level, DescriptionAttribute not found in Level) before packaging
    - `warn` → keep packaging blocked; each flagged finding must be reviewed and either corrected or explicitly justified before proceeding; accepted justifications must be recorded in the closing declaration
    - `pass` → proceed to next gate
-9-PSM. Procedure Sub-pattern Mirroring gate — run before any packaging when the batch contains a `Procedure` whose `Source` delta introduces at least one new `Sub/EndSub` block or materially expands an existing one:
-   - Read the pre-existing `Source` of the Procedure (official corpus XML or base XML before the delta) and enumerate all named `Sub/EndSub` blocks
-   - If there are fewer than two pre-existing named `Sub` blocks, skip this gate — no dominant pattern can be established
-   - Classify each pre-existing `Sub` heuristically:
-     - `iteration-sub`: contains `For each` or a loop construct AND calls at least one other named `Sub` per record or item
-     - `unit-sub`: processes a single record or item, contains no loop, is called from an iteration sub
-     - `mixed`: cannot be clearly classified as either
-   - If at least half the pre-existing `Sub` blocks fit a coherent `iteration-sub → unit-sub` delegation pair, record it as the dominant local pattern and name the representative pair (for example `VarreAlunos → ProcessaAluno`)
-   - If no dominant pattern can be identified → skip and proceed normally
-   - If a dominant local pattern was identified, evaluate the new or materially expanded `Sub` block:
-     - Classify it by the same heuristic
-     - If it is `mixed` — it combines iteration, synchronization, and persistence in a single body without delegating to a unit sub — emit the following architectural alert before packaging:
-       - "a procedure já usa fluxo do tipo `<SubDeVarredura> → <SubUnitária>`; a nova sub mistura varredura e persistência sem delegar para uma sub unitária; considere espelhar o padrão dominante"
-     - This alert is advisory; it does not block packaging automatically
-     - Show the alert and require the user to either confirm the divergence is intentional (justification required) or restructure the logic to mirror the dominant pattern
-     - Record the outcome in the closing declaration
-   - Treat this gate as an architectural coherence signal, not as a syntax or structural error
+9-PSM. Procedure Sub-pattern Mirroring gate (advisory) — run before any packaging when the batch contains a `Procedure`:
+   - Run `& ..\scripts\Test-GeneXusProcedureSubPattern.ps1 -FrontFolder <pasta-da-frente> -CorpusFolder <ObjetosDaKbEmXml> -AsJson`
+   - `not-applicable` (no Procedure in the batch) → proceed normally
+   - `pass` (only `info` findings: no pattern to mirror, Procedure new, or new Sub coherent with dominant pattern) → proceed normally
+   - `alert` (one or more `warn` findings with code `psm-new-sub-mixed-diverges`) → present each alert to the user using the message from the script; the dominant pattern (`iterationSub` → `unitSub`) is in the finding's `dominantPattern` field; require the user to either confirm the divergence is intentional (justification recorded in the closing declaration) or restructure the new Sub to mirror the pattern before packaging
+   - This gate is architectural coherence signal, not syntactic — it **never** returns `fail` and **never** ABORTs packaging by itself
+   - Known limitation: the gate detects newly introduced Subs only; materially expanded Subs (existing Sub whose body changed substantially) are not detected — agent review of Source diff remains required when expansion is the kind of change in question
 9-IDO. Import Dependency Ordering gate — run before any packaging when the batch contains 2 or more distinct objects:
    - Build the batch object list: all distinct GeneXus objects present in the candidate batch
    - For each object in the batch, detect structural dependencies to other objects in the same batch:
@@ -690,7 +680,7 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] For every `Procedure` in the batch with a `bc:<X>` variable: `Test-GeneXusBCDependency.ps1` was run and returned `pass`, or `alert` with explicit acknowledgment / staging, or `not-applicable`; no `fail` finding remained unresolved before packaging
 - [ ] For every `WorkWithForWeb` (`WorkWithWeb*`) in the batch: `Apply` property was verified in Part `babfa2b2-19a0-4ef1-b5f4-81b7c7be79dc`; if linked Transaction is also in the batch or in `ObjetosDaKbEmXml`, `Apply:78cecefe-be7d-4980-86ce-8d6e91fba04b = True` was confirmed in that Transaction's Properties
 - [ ] For every `Transaction` in the batch: `Test-GeneXusTransactionCoherence.ps1` was run; `fail` findings were corrected; `warn` findings were reviewed and either corrected or explicitly justified before packaging
-- [ ] For every `Procedure` in the batch with a new or materially expanded `Sub` block: the dominant local sub-delegation pattern was scanned (9-PSM); if a dominant `iteration-sub → unit-sub` pattern was identified and the new block diverged, the architectural alert was shown and the outcome was recorded in the closing declaration
+- [ ] For every `Procedure` in the batch: `Test-GeneXusProcedureSubPattern.ps1` was run and returned `pass`, `not-applicable`, or `alert` with each `warn` finding explicitly acknowledged (intent confirmed or new Sub restructured) and recorded in the closing declaration
 - [ ] If the package contains a WWP PatternInstance (`WorkWithPlus*`): rename collisions were checked (two old fields mapping to the same new name)
 - [ ] If the package contains a WWP PatternInstance: duplicate nodes in `<attribute>`, `<gridAttribute>`, and `<parameter>` were removed
 - [ ] If the package contains a WWP PatternInstance: `parentGuid` points to the correct target Transaction, not to the source entity
