@@ -284,15 +284,15 @@ Reference files and when to load them:
    - Signal any `extra unrequested change` explicitly before packaging; do NOT silently absorb it into the package
    - If an older package lost validity after a change of direction, either rename it with prefix `OBSOLETO_` or present a structured manifest in the conversation stating that package X was replaced by package Y; save that manifest as a local file only when local traceability is concretely needed
 9-BC. BC dependency preflight gate — run before any packaging when the batch contains a `Procedure`:
-   - Scan variables of every `Procedure` in the batch for `ATTCUSTOMTYPE` = `bc:<X>`
-   - For each dependency `X` found:
-     - If `X` is present in the batch: read the batch XML and check `idISBUSINESSCOMPONENT`
-       - Value is `False` or property is absent → **ABORT**: Transaction `X` is in the batch but is not marked as Business Component; correct the Transaction XML before packaging
-       - Value is `True` → alert: Transaction `X` and its dependent Procedure are in the same batch; ordering risk exists; suggest staging into two packages — package 1 with Transaction `X`, package 2 with the dependent Procedure(s); require explicit user confirmation before packaging together
-     - If `X` is present in `ObjetosDaKbEmXml` but not in the batch: read the corpus XML and check `idISBUSINESSCOMPONENT`
-       - Value is `False` or property is absent → **ABORT**: Transaction `X` exists in the official corpus but is not marked as Business Component; the Procedure's `bc:` dependency cannot be satisfied
-       - Value is `True` → proceed normally; Transaction already exists as BC in the KB and is not being re-imported
-     - If `X` is absent from both the batch and `ObjetosDaKbEmXml` → **ABORT**: Transaction `X` cannot be confirmed as existing or as Business Component in the target KB; do not package the dependent Procedure until the dependency is resolved
+   - Run `& ..\scripts\Test-GeneXusBCDependency.ps1 -FrontFolder <pasta-da-frente> -CorpusFolder <ObjetosDaKbEmXml> -AsJson`
+   - `not-applicable` (no Procedure in the batch) → proceed normally
+   - `pass` (all BC dependencies resolved as info; Transactions exist as BC in the corpus) → proceed normally
+   - `alert` (one or more `warn` findings) → present each `warn` finding to the user; require explicit confirmation to package the Procedure(s) and Transaction(s) together, or stage into two packages — package 1 with the Transaction(s), package 2 with the dependent Procedure(s)
+   - `fail` (any `fail` finding) → **ABORT** packaging; report each finding (procedureName, transactionName, code, location) and the corrective action implied by the code:
+     - `bc-isbc-false-batch` / `bc-isbc-property-absent-batch`: correct the Transaction XML in the batch to set `idISBUSINESSCOMPONENT=True` before packaging
+     - `bc-isbc-false-corpus` / `bc-isbc-property-absent-corpus`: the Transaction exists in the official corpus but is not a Business Component; the `bc:` dependency cannot be satisfied without correcting and reimporting the Transaction first
+     - `bc-missing-everywhere`: the Transaction is absent from both the batch and the official corpus; add it to the batch or confirm its existence in the target KB before packaging
+   - Do not package while any `fail` finding remains unresolved
 9-WW. WorkWithWeb Apply-mark preflight gate — run before any packaging when the batch contains a `WorkWithForWeb` object (type `78cecefe-be7d-4980-86ce-8d6e91fba04b`; `Object/@name` starts with `WorkWithWeb` in the KB):
    - For each `WorkWithForWeb` in the batch:
      - Locate Part type `babfa2b2-19a0-4ef1-b5f4-81b7c7be79dc` in the WorkWithForWeb XML and read `<Property><Name>Apply</Name>` inside `<Source><Properties>`
@@ -687,7 +687,7 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] Any corrective package after partial failure reports original package, successful objects, failed objects, and contains only the necessary delta
 - [ ] Final closing explicitly states that the saved XML was reread, the persisted `lastUpdate` was confirmed, and the applicable local rules were reread and satisfied
 - [ ] Limitations block included in output
-- [ ] For every `Procedure` in the batch with a `bc:<X>` variable: Transaction `X` was confirmed as `idISBUSINESSCOMPONENT=True` in the batch or in `ObjetosDaKbEmXml`; when `X` is also in the same batch, import ordering risk was explicitly acknowledged or the batch was staged
+- [ ] For every `Procedure` in the batch with a `bc:<X>` variable: `Test-GeneXusBCDependency.ps1` was run and returned `pass`, or `alert` with explicit acknowledgment / staging, or `not-applicable`; no `fail` finding remained unresolved before packaging
 - [ ] For every `WorkWithForWeb` (`WorkWithWeb*`) in the batch: `Apply` property was verified in Part `babfa2b2-19a0-4ef1-b5f4-81b7c7be79dc`; if linked Transaction is also in the batch or in `ObjetosDaKbEmXml`, `Apply:78cecefe-be7d-4980-86ce-8d6e91fba04b = True` was confirmed in that Transaction's Properties
 - [ ] For every `Transaction` in the batch: `Test-GeneXusTransactionCoherence.ps1` was run; `fail` findings were corrected; `warn` findings were reviewed and either corrected or explicitly justified before packaging
 - [ ] For every `Procedure` in the batch with a new or materially expanded `Sub` block: the dominant local sub-delegation pattern was scanned (9-PSM); if a dominant `iteration-sub → unit-sub` pattern was identified and the new block diverged, the architectural alert was shown and the outcome was recorded in the closing declaration
