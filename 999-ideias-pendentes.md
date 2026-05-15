@@ -982,6 +982,43 @@ A escolha por script (e não por regra textual em SKILL.md) segue a preferência
 
 ### Perguntas a responder antes de decidir
 
+## Gate 9-WW estruturalmente errado para WorkWithForWeb do acervo
+
+**Importância:** alta
+**Maturidade:** pesquisa feita
+
+**Origem:** descoberta empírica em 2026-05-15 durante refator da Fase 1 do `xpz-builder` (sub-fase 1.2 da extração de gates determinísticos para scripts). O gate 9-WW foi suspenso da Fase 1 e a sub-fase 1.3 (9-PSM) tomou seu lugar até que esta correção seja decidida.
+
+### Problema concreto que motiva a ideia
+
+O gate 9-WW em `xpz-builder/SKILL.md` instrui localizar o Part `babfa2b2-19a0-4ef1-b5f4-81b7c7be79dc` dentro de cada `WorkWithForWeb` no batch ativo e ler `<Property><Name>Apply</Name>` em `<Source><Properties>`. Validação empírica contra a KB de teste `Gx_wsEducacaoSpTeste`: nenhum dos 10 WorkWithForWeb materializados em `ObjetosDaKbEmXml/WorkWithForWeb/` contém esse Part.
+
+O Part `babfa2b2-...` é estrutura de **molde de empacotamento** documentada em `01e-moldes-sanitizados-core.md` (linha 1718), não de acervo materializado. WorkWithForWeb tem duas formas estruturais distintas conforme contexto:
+
+- **acervo materializado** (`ObjetosDaKbEmXml/WorkWithForWeb/*.xml`): Part `a51ced48-7bee-0001-ab12-04e9e32123d1` com Data Pattern em CDATA; link com Transaction via `<transaction transaction="<guid>-<name>" />` dentro do CDATA.
+- **pacote `import_file.xml`** ou XML gerado a partir de molde sanitizado: Part `babfa2b2-...` com `<Source><Properties><Property>Apply</Property>...`.
+
+Implicação: o gate como está hoje aborta com falso-positivo `ww-apply-property-absent` (equivalente, na prosa atual) em qualquer batch que contenha WorkWithForWeb copiado ou extraído do acervo oficial. Casos cobertos legitimamente pelo gate (XML em formato de empacotamento) ficam misturados com casos cobertos errado (XML em formato de acervo) sem distinção.
+
+### Direção técnica proposta
+
+Antes de extrair o gate para script (continuação da Fase 1 do refator), o gate deve ser fortalecido para entender ambos os formatos:
+
+- detectar a forma estrutural do WorkWithForWeb pelo Part presente:
+  - se Part `babfa2b2-...` existe: ler `Apply` e `Transaction` de `<Source><Properties>` desse Part (lógica atual da prosa).
+  - se Part `a51ced48-...` existe e contém `<Data Pattern="78cecefe-be7d-4980-86ce-8d6e91fba04b">`: ler o link Transaction de `<transaction transaction="<guid>-<name>" />` no CDATA; tratar `Apply` como implicitamente `True` (objeto materializado pelo pattern existe).
+- continuar a verificação de `Apply:78cecefe-be7d-4980-86ce-8d6e91fba04b = True` na Transaction linkada — esse Property vive em `<Object>/<Properties>` e tem o mesmo padrão nos dois formatos.
+
+### Decisões em aberto
+
+- O agente pode confiar em "objeto materializado no acervo => pattern já aplicado por construção"? Há cenário em que o WorkWithForWeb do acervo tem `updateTransaction="Apply WW Style"` (visto em `WorkWithWebCarga.xml`) com semântica diferente do `Apply=True/False` do formato empacotamento?
+- Quando o batch contém ambos os formatos para o mesmo objeto (raro mas possível em frente longa), qual prevalece para a verificação do gate?
+- A correção é só do bloco 9-WW em `xpz-builder/SKILL.md`, ou também das CONSTRAINTS e do QUALITY CHECKLIST que se referenciam ao Part `babfa2b2-...` (linhas 691, 765, 766) usando a mesma premissa errada?
+
+### Limiar para implementar
+
+Implementar antes da retomada da sub-fase 1.2 do refator estrutural do `xpz-builder` (extração do gate 9-WW para `scripts/Test-GeneXusWorkWithWebApply.ps1` ou similar). Sem essa correção, o script extraído replicaria o bug em código e o problema ficaria mais difícil de tratar depois.
+
 - Qual a lista exata de assinaturas de mojibake a detectar? Falso positivo aqui é caro — bloquear pacote legítimo é pior que deixar passar um caso raro.
 - O gate **bloqueia** o empacotamento ou apenas **alerta**? Depende de quanto o repositório-alvo admite texto legado com acentuação degradada.
 - O escopo cobre apenas `Source` e equivalentes textuais editáveis, ou inclui `Description`, `Documentation` e nomes de identificadores?
