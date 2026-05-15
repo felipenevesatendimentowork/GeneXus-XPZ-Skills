@@ -704,6 +704,12 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
    - Se `.claude\settings.json` ainda nao existir, criar com estrutura minima
    - Se `.claude\settings.json` ja existir, ler o conteudo atual, verificar quais padroes ja estao presentes e inserir apenas os ausentes; nao remover nem sobrescrever entradas ja existentes
    - Tratar essa etapa como parte do bootstrap ou da atualizacao, nao como pendencia manual posterior; o agente deve executar isso antes de declarar o estado de conclusao
+20a. Quando o agente decidir chamar o motor compartilhado diretamente — sem wrapper local equivalente, tipicamente passando `-RepoRoot` para resolver pastas da pasta paralela da KB — verificar antes que `.claude\settings.json` da pasta paralela contem entrada de allowlist cobrindo a pasta `scripts` da base compartilhada:
+    - Padrao esperado: `PowerShell(& "<caminho-absoluto-da-pasta-scripts-da-base-compartilhada>\*")` (ex: `PowerShell(& "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\*")`)
+    - O caminho deve ser absoluto e literal; nao usar placeholder como `<SharedSkillsRoot>` na entrada gravada
+    - Se a entrada estiver ausente, oferecer ao usuario a criacao antes da primeira invocacao direta do motor; aguardar aprovacao explicita antes de gravar
+    - Se `.claude\settings.json` ainda nao existir, criar com estrutura minima ja contendo essa entrada
+    - Tratar isso como parte do bootstrap quando o cenario for empacotamento local sem wrapper `New-*KbImportPackage.ps1`, ou como atualizacao quando a chamada direta ao motor for nova nesta pasta
 21. Se `KbIntelligence` estiver ausente, orientar sua criacao como pasta de artefatos derivados antes de instalar wrappers de indice
 22. Se `ObjetosDaKbEmXml` ainda nao contiver snapshot materializado, nao tentar gerar `kb-intelligence.sqlite`; preparar apenas a pasta e os wrappers locais
 23. Se a pasta adotar `KbIntelligence`, validar o gate de compatibilidade operacional antes de permitir pesquisa ampla, triagem substantiva ou geracao de objetos
