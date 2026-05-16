@@ -539,7 +539,8 @@ Consequências práticas imediatas:
 
 - o wrapper de preview não deve emitir `UpdateFile` por padrão nesta instalação
 - `ImportKBInformation` não deve ser emitido por padrão nesta instalação
-- quando o usuário pedir `UpdateFile` ou `ImportKBInformation`, a frente deve tratar isso como capacidade dependente da assinatura efetiva da task carregada, não apenas da documentação offline
+- `ImportKbInformation=false` solicitado pelo agente deve ser tratado como valor neutro: o wrapper deve omitir o atributo, não bloquear; apenas `ImportKbInformation=true` em instalação sem suporte dispara `preview bloqueado por assinatura da task` ou `import bloqueado por assinatura da task`
+- quando o usuário pedir `UpdateFile` ou `ImportKBInformation` em valor não neutro, a frente deve tratar isso como capacidade dependente da assinatura efetiva da task carregada, não apenas da documentação offline
 - o teste 4 do plano permanece metodologicamente válido, mas nesta instalação ficou bloqueado por incompatibilidade observada da task carregada
 - `IncludeItems` e `ExcludeItems` tiveram efeito operacional confirmado em `PreviewMode` nesta instalação
 - o contrato do diagnóstico do wrapper deve preservar `importedItems` sempre como lista, inclusive quando houver apenas um item retornado
@@ -649,14 +650,14 @@ Parâmetros específicos de exportação:
 
 Parâmetros específicos de importação:
 
-- `-XpzPath`
+- `-XpzPath` (aceita `.xpz`, `.xml` e `.import_file.xml` quando o envelope foi validado por `Test-GeneXusImportFileEnvelope.ps1`; nome do parâmetro é histórico e não restringe a extensão)
 - `-PreviewMode`
 - `-UpdateFilePath`
 - `-IncludeItems`
 - `-ExcludeItems`
 - `-AutomaticBackup`
 - `-ImportType`
-- `-ImportKbInformation`
+- `-ImportKbInformation` (tri-state: omitido ou `false` equivalem a não emitir o atributo; apenas `true` emite e exige suporte na task carregada)
 
 Saídas esperadas dos scripts:
 
