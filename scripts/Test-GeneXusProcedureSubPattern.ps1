@@ -202,15 +202,31 @@ if ($batchProcedures.Count -eq 0) {
 } else {
     # 2. Indexar Procedures no corpus por nome
     $corpusIndex = @{}
-    foreach ($xml in (Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File)) {
+    $corpusXmls = @(Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File)
+    $corpusTotal = $corpusXmls.Count
+    $corpusSeen = 0
+    foreach ($xml in $corpusXmls) {
+        $corpusSeen++
+        if (($corpusSeen % 250) -eq 0 -or $corpusSeen -eq $corpusTotal) {
+            Write-Progress -Activity 'Test-GeneXusProcedureSubPattern' `
+                -Status ('Indexando Procedures no corpus ({0}/{1})' -f $corpusSeen, $corpusTotal) `
+                -PercentComplete ([int](100 * $corpusSeen / [Math]::Max($corpusTotal,1)))
+        }
         $meta = Get-ObjectMetadata $xml.FullName
         if ($null -eq $meta) { continue }
         if ($meta.TypeGuid -ne $ProcedureTypeGuid) { continue }
         if ([string]::IsNullOrEmpty($meta.Name)) { continue }
         $corpusIndex[$meta.Name.ToLowerInvariant()] = $meta
     }
+    Write-Progress -Activity 'Test-GeneXusProcedureSubPattern' -Status 'Indexacao corpus concluida' -Completed
     # 3. Avaliar cada Procedure no batch
+    $procTotal = $batchProcedures.Count
+    $procSeen = 0
     foreach ($proc in $batchProcedures) {
+        $procSeen++
+        Write-Progress -Activity 'Test-GeneXusProcedureSubPattern' `
+            -Status ('Avaliando Procedure {0}/{1}: {2}' -f $procSeen, $procTotal, $proc.Name) `
+            -PercentComplete ([int](100 * $procSeen / [Math]::Max($procTotal,1)))
         $procRel = [System.IO.Path]::GetRelativePath($FrontFolder, $proc.Path)
         $corpusMatch = $corpusIndex[$proc.Name.ToLowerInvariant()]
         if ($null -eq $corpusMatch) {
@@ -273,6 +289,7 @@ if ($batchProcedures.Count -eq 0) {
                 -DominantPattern $domSummary
         }
     }
+    Write-Progress -Activity 'Test-GeneXusProcedureSubPattern' -Status 'Avaliacao concluida' -Completed
     # 4. Status agregado (gate advisory: nunca fail)
     $hasWarn = $findings | Where-Object { $_.severity -eq 'warn' } | Select-Object -First 1
     if ($hasWarn) { $status = 'alert' } else { $status = 'pass' }

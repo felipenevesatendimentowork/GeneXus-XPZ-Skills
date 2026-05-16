@@ -456,7 +456,7 @@ foreach ($la in $levelAttrs) {
 }
 
 $result = [pscustomobject]@{
-    status           = 'ok'
+    status           = 'pass'
     transactionName  = $txMeta.Name
     transactionPath  = $TransactionPath
     coverage         = 'complete-1.5.a-1.5.b-1.5.c'

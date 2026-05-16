@@ -201,7 +201,16 @@ if ($batchWWs.Count -eq 0) {
     # 3. Varrer corpus uma unica vez para resolver TXs pendentes
     $corpusTransactions = @{}
     if ($pendingCorpusTxLookup.Count -gt 0) {
-        foreach ($xml in (Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File)) {
+        $corpusXmls = @(Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File)
+        $corpusTotal = $corpusXmls.Count
+        $corpusSeen = 0
+        foreach ($xml in $corpusXmls) {
+            $corpusSeen++
+            if (($corpusSeen % 250) -eq 0 -or $corpusSeen -eq $corpusTotal) {
+                Write-Progress -Activity 'Test-GeneXusWorkWithWebApply' `
+                    -Status ('Resolvendo Transactions linkadas no corpus ({0}/{1})' -f $corpusSeen, $corpusTotal) `
+                    -PercentComplete ([int](100 * $corpusSeen / [Math]::Max($corpusTotal,1)))
+            }
             $meta = Get-ObjectMetadata $xml.FullName
             if ($null -eq $meta -or [string]::IsNullOrEmpty($meta.Name)) { continue }
             if ($meta.TypeGuid -ne $TransactionTypeGuid) { continue }
@@ -209,9 +218,16 @@ if ($batchWWs.Count -eq 0) {
                 $corpusTransactions[$meta.Name.ToLowerInvariant()] = $meta
             }
         }
+        Write-Progress -Activity 'Test-GeneXusWorkWithWebApply' -Status 'Resolucao corpus concluida' -Completed
     }
     # 4. Gerar findings por WorkWithForWeb
+    $wwTotal = $batchWWs.Count
+    $wwSeen = 0
     foreach ($ww in $batchWWs) {
+        $wwSeen++
+        Write-Progress -Activity 'Test-GeneXusWorkWithWebApply' `
+            -Status ('Avaliando WorkWithForWeb {0}/{1}: {2}' -f $wwSeen, $wwTotal, $ww.Name) `
+            -PercentComplete ([int](100 * $wwSeen / [Math]::Max($wwTotal,1)))
         $wwRel = [System.IO.Path]::GetRelativePath($FrontFolder, $ww.Path)
         $details = $wwDetailsMap[$ww.Path]
 
@@ -303,6 +319,7 @@ if ($batchWWs.Count -eq 0) {
         }
     }
 
+    Write-Progress -Activity 'Test-GeneXusWorkWithWebApply' -Status 'Avaliacao concluida' -Completed
     # 5. Status agregado
     $hasFail = $findings | Where-Object { $_.severity -eq 'fail' } | Select-Object -First 1
     $hasWarn = $findings | Where-Object { $_.severity -eq 'warn' } | Select-Object -First 1

@@ -256,6 +256,12 @@ Reference files and when to load them:
    - `fail` → **ABORT**: correct the structural issue (missing key in Level, DescriptionAttribute not found in Level) before packaging
    - `warn` → keep packaging blocked; each flagged finding must be reviewed and either corrected or explicitly justified before proceeding; accepted justifications must be recorded in the closing declaration
    - `pass` → proceed to next gate
+9-TXW. Transaction Writability gate — run before any packaging when the batch contains a `Transaction` whose delta involves `Rules` or `Events` with attribute assignments:
+   - Run `& ..\scripts\Test-GeneXusTransactionWritability.ps1 -TransactionPath <transaction.xml> -CorpusFolder <ObjetosDaKbEmXml> -AsJson` for each Transaction XML whose delta assigns attributes
+   - The script is descriptive: it returns `pass` after classifying every (level, attribute) pair into `levelAttributes` with `writable=true|false|null` and a `classification` (`key-attribute`, `extended-parent-fk`, `formula`, `extended-subtype-key`, `extended-subtype-descriptive`, `extended-fk-key`, `extended-fk-descriptive`, `own-physical`, `unclassified-attribute-not-found`, `unclassified-table-not-found`)
+   - Any attribute with `writable=false` must be excluded from assignments in the delta; assigning to a non-writable attribute requires an explicit **ABORT** of the assignment before packaging
+   - `writable=null` (any `unclassified-*` classification) means the corpus lookup did not resolve and the writability cannot be decided; resolve the corpus gap or document the limitation before assigning that attribute
+   - This gate never returns `fail` by itself — the ABORT comes from the assignment policy above
 9-PSM. Procedure Sub-pattern Mirroring gate (advisory) — run before any packaging when the batch contains a `Procedure`:
    - Run `& ..\scripts\Test-GeneXusProcedureSubPattern.ps1 -FrontFolder <pasta-da-frente> -CorpusFolder <ObjetosDaKbEmXml> -AsJson`
    - `not-applicable` (no Procedure in the batch) → proceed normally
