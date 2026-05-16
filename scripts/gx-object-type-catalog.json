@@ -217,6 +217,15 @@
       "containerType": false,
       "notes": "Procedure."
     },
+    "Query": {
+      "objectTypeGuid": "926a06b9-3417-4ab4-9f8c-09c2f626bb1c",
+      "rootKind": "Object",
+      "folderName": "Query",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "notes": "Query object GeneXus (QueryElement, filtros, parametros, chart/card settings)."
+    },
     "SDT": {
       "objectTypeGuid": "447527b5-9210-4523-898b-5dccb17be60a",
       "rootKind": "Object",
@@ -307,6 +316,15 @@
       "containerType": false,
       "notes": "WebPanel."
     },
+    "WorkPanel": {
+      "objectTypeGuid": "198e8ea4-1d49-4c9c-8a9a-417024baa9d1",
+      "rootKind": "Object",
+      "folderName": "WorkPanel",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "notes": "Work Panel legado GeneXus (deprecated desde GeneXus 15); Form Type=Windows."
+    },
     "WorkWithForWeb": {
       "objectTypeGuid": "78cecefe-be7d-4980-86ce-8d6e91fba04b",
       "rootKind": "Object",
@@ -315,6 +333,24 @@
       "queryableByKbIntelligence": true,
       "containerType": false,
       "notes": "Pattern web por transacao."
+    },
+    "WorkWithPlusInstance": {
+      "objectTypeGuid": "07135890-56fc-489b-b408-063722fa9f7d",
+      "rootKind": "Object",
+      "folderName": "WorkWithPlusInstance",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "notes": "Instancia do Pattern WorkWithPlus (third-party) aplicada a objeto GeneXus, tipicamente WebPanel."
+    },
+    "WorkWithPlusTemplate": {
+      "objectTypeGuid": "083f1b21-5715-45e1-8a8d-ceadef141e02",
+      "rootKind": "Object",
+      "folderName": "WorkWithPlusTemplate",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "notes": "Template do WorkWithPlus (propriedades WWPTemplate_Type, WWPTemplate_TemplateXml)."
     }
   }
 }
