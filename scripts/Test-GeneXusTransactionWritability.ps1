@@ -32,6 +32,10 @@ $FormulaPropertyRegex = [regex]::new(
     '<Property>\s*<Name>Formula</Name>\s*<Value>(?<v>.*?)</Value>\s*</Property>',
     [System.Text.RegularExpressions.RegexOptions]::Singleline -bor
     [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$SubtypeBlockRegex = [regex]::new(
+    '<Subtype\b[^>]*>\s*<Name>(?<sub>[^<]+)</Name>\s*<Supertype\b[^>]*>(?<sup>[^<]+)</Supertype>\s*</Subtype>',
+    [System.Text.RegularExpressions.RegexOptions]::Singleline -bor
+    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
 function New-AttributeResult {
     param(
@@ -91,6 +95,47 @@ function Test-AttributeHasFormula {
     return $FormulaPropertyRegex.IsMatch($text)
 }
 
+# Pre-indice: subtypeName -> supertypeName extraido de todos SubTypeGroup XMLs
+function Build-SubtypeIndex {
+    param([string]$CorpusFolder)
+    $idx = @{}
+    $stgFolder = Join-Path $CorpusFolder 'SubTypeGroup'
+    if (-not (Test-Path -LiteralPath $stgFolder -PathType Container)) { return $idx }
+    foreach ($xml in (Get-ChildItem -LiteralPath $stgFolder -Filter *.xml -File)) {
+        $text = Get-Content -LiteralPath $xml.FullName -Raw -Encoding UTF8
+        foreach ($m in $SubtypeBlockRegex.Matches($text)) {
+            $subName = $m.Groups['sub'].Value.Trim()
+            $supName = $m.Groups['sup'].Value.Trim()
+            if ([string]::IsNullOrEmpty($subName) -or [string]::IsNullOrEmpty($supName)) { continue }
+            $key = $subName.ToLowerInvariant()
+            if (-not $idx.ContainsKey($key)) { $idx[$key] = $supName }
+        }
+    }
+    return $idx
+}
+
+# Pre-indice: conjunto de nomes de atributos que aparecem como key="True" em alguma Transaction Level
+function Build-PrimaryKeyAttributeSet {
+    param([string]$CorpusFolder)
+    $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $txFolder = Join-Path $CorpusFolder 'Transaction'
+    if (-not (Test-Path -LiteralPath $txFolder -PathType Container)) { return ,$set }
+    foreach ($xml in (Get-ChildItem -LiteralPath $txFolder -Filter *.xml -File)) {
+        $text = Get-Content -LiteralPath $xml.FullName -Raw -Encoding UTF8
+        # Mesma regex do main para extrair Attribute name + key
+        foreach ($am in $AttributeRegex.Matches($text)) {
+            $attrsStr = $am.Groups['attrs'].Value
+            $name = $am.Groups['name'].Value.Trim()
+            if ([string]::IsNullOrEmpty($name)) { continue }
+            $keyMatch = $KeyAttrRegex.Match($attrsStr)
+            if ($keyMatch.Success -and $keyMatch.Groups['v'].Value -eq 'True') {
+                [void]$set.Add($name)
+            }
+        }
+    }
+    return ,$set
+}
+
 # Extrai Levels e seus atributos do Transaction XML
 function Get-LevelsAndAttributes {
     param([string]$TransactionXml)
@@ -145,6 +190,22 @@ if ($null -eq $txMeta) {
 $txText = Get-Content -LiteralPath $TransactionPath -Raw -Encoding UTF8
 $levelAttrs = Get-LevelsAndAttributes $txText
 
+# Pre-indices para 1.5.b (build sob demanda - so se houver atributo unclassified)
+$subtypeIndex = $null
+$pkAttrSet = $null
+$indicesBuilt = $false
+function Ensure-Indices {
+    if (-not $script:indicesBuilt) {
+        $script:subtypeIndex = Build-SubtypeIndex -CorpusFolder $script:CorpusFolder
+        $script:pkAttrSet    = Build-PrimaryKeyAttributeSet -CorpusFolder $script:CorpusFolder
+        $script:indicesBuilt = $true
+    }
+}
+$script:CorpusFolder = $CorpusFolder
+$script:subtypeIndex = $subtypeIndex
+$script:pkAttrSet    = $pkAttrSet
+$script:indicesBuilt = $indicesBuilt
+
 $levelAttributes = @()
 foreach ($la in $levelAttrs) {
     if ($la.Key) {
@@ -182,19 +243,39 @@ foreach ($la in $levelAttrs) {
             -Evidence "Property Formula presente em $attrPath"
         continue
     }
-    # Demais sinais (SubTypeGroup, FK recursivo) ficam para 1.5.b/c
+    # 1.5.b: SubTypeGroup membership
+    Ensure-Indices
+    $key = $la.AttributeName.ToLowerInvariant()
+    if ($script:subtypeIndex.ContainsKey($key)) {
+        $supertypeName = $script:subtypeIndex[$key]
+        if ($script:pkAttrSet.Contains($supertypeName)) {
+            $levelAttributes += New-AttributeResult `
+                -LevelName $la.LevelName -AttributeName $la.AttributeName `
+                -Key $false -IsRedundant $false `
+                -Classification 'extended-subtype-key' -Writable $true `
+                -Evidence "membro de SubTypeGroup com Supertype '$supertypeName' que e PK em alguma Transaction"
+        } else {
+            $levelAttributes += New-AttributeResult `
+                -LevelName $la.LevelName -AttributeName $la.AttributeName `
+                -Key $false -IsRedundant $false `
+                -Classification 'extended-subtype-descriptive' -Writable $false `
+                -Evidence "membro de SubTypeGroup com Supertype '$supertypeName' que nao e PK em nenhuma Transaction"
+        }
+        continue
+    }
+    # Demais sinais (naked-FK Duplicate-index, FK recursivo) ficam para 1.5.c
     $levelAttributes += New-AttributeResult `
         -LevelName $la.LevelName -AttributeName $la.AttributeName `
         -Key $false -IsRedundant $false `
         -Classification 'unclassified-pending-higher-signals' -Writable $null `
-        -Evidence "1.5.a nao cobre sinais SubTypeGroup, naked-FK ou FK recursivo; classificacao final requer revisao manual ou conclusao das sub-sub-fases 1.5.b e 1.5.c"
+        -Evidence "1.5.a/1.5.b nao cobrem naked-FK ou FK recursivo; classificacao final requer revisao manual ou conclusao da sub-sub-fase 1.5.c"
 }
 
 $result = [pscustomobject]@{
     status           = 'ok'
     transactionName  = $txMeta.Name
     transactionPath  = $TransactionPath
-    coverage         = 'partial-1.5.a'
+    coverage         = 'partial-1.5.a-1.5.b'
     levelAttributes  = @($levelAttributes)
 }
 
