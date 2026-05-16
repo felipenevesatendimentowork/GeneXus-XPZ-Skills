@@ -276,7 +276,7 @@ A implementacao no script `scripts/Test-GeneXusImportFileEnvelope.ps1` (parametr
 
 ---
 
-## Gates determinísticos de empacotamento WWP
+## Gates determinísticos da Fase 9 do xpz-builder
 
 A skill `xpz-builder` extraiu seus gates da Fase 9 (`9-BC`, `9-WW`, `9-PSM`, `9-IDO`, `Writability`) para scripts em `scripts/Test-GeneXus*.ps1`. Contrato de invocação, códigos de finding e regras de uso ficam em `xpz-builder/SKILL.md` e satélites `xpz-builder/responsibilities-by-type/*.md`; esta seção só registra a existência dos scripts para descoberta a partir da raiz.
 
