@@ -88,6 +88,7 @@ Use esta skill para:
 - Verificar se o naming dos diretorios de container em `ObjetosDaKbEmXml` corresponde ao GUID real de cada objeto — especialmente `Folder/`, `Module/` e `PackagedModule/` — e propor correcao quando houver inversao ou divergencia
 - Explicar a diferenca entre pasta da KB e pasta paralela da KB
 - Confirmar nomes padrao das subpastas quando o usuario nao informou alternativas
+- Verificar consultivamente a capacidade de importacao headless antes de tarefa que dependa de importacao real via MSBuild, quando a pasta paralela tiver sinais de uso desse fluxo (`PacotesGeradosParaImportacaoNaKbNoGenexus/` populado, wrapper local de import, ou tarefa mencionando `importar`, `preview`, `MSBuild import`, `import_file.xml` ou `pacote gerado`); ver secao `## CAPACIDADE DE IMPORTACAO HEADLESS`
 
 Do NOT use this skill for:
 - Sincronizar `XPZ` especifico no acervo oficial (use `xpz-sync`)
@@ -376,6 +377,38 @@ O objetivo do bloqueio e tornar visivel que uma pasta paralela ainda precisa rec
 
 ---
 
+## CAPACIDADE DE IMPORTACAO HEADLESS
+
+Verificacao consultiva anterior a execucao real de importacao via MSBuild. Esta secao nao substitui `xpz-msbuild-import-export`: a interpretacao de parametros, sub-estados de import e diagnostico JSON pertence a essa skill. Aqui o que se verifica e apenas presenca de motores compartilhados e coerencia documental do contrato esperado, antes que a pasta paralela chegue a fase de import real com a trilha defasada.
+
+Acionar esta verificacao quando houver sinais de uso ou intencao de uso do fluxo de importacao via MSBuild na pasta paralela:
+- `PacotesGeradosParaImportacaoNaKbNoGenexus/` populado, ou
+- `ObjetosGeradosParaImportacaoNaKbNoGenexus/` com frente ativa em curso, ou
+- wrapper local de import (ex: `Invoke-*KbXpzImport.ps1`) presente em `scripts/`, ou
+- tarefa corrente mencionando `importar`, `preview`, `MSBuild import`, `import_file.xml` ou `pacote gerado`.
+
+Verificacoes a executar quando acionada:
+
+1. Presenca em `RepoRoot\scripts\` dos motores compartilhados de import/export:
+   - `Test-GeneXusImportFileEnvelope.ps1` (gate de envelope)
+   - `Test-GeneXusXpzImportPreview.ps1` (preview headless)
+   - `Invoke-GeneXusXpzImport.ps1` (import real headless)
+2. Acessibilidade da skill `xpz-msbuild-import-export` na sessao atual, pelo caminho publicado pela propria sessao quando houver — sem inferir caminho por heuristica.
+3. Coerencia documental do `SKILL.md` de `xpz-msbuild-import-export`: o documento deve continuar declarando, em texto, ambas as regras abaixo, que sao o contrato que a verificacao da pasta paralela precisa pressupor:
+   - `-XpzPath` aceita `.xpz`, `.xml` e `.import_file.xml` com raiz `<ExportFile>` validada por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada
+   - `-ImportKbInformation` e tri-state: omitido ou `false` significam nao emitir o atributo na task `Import`; apenas `true` emite o atributo e exige que a task carregada exponha a propriedade
+
+A verificacao 3 e leitura documental, nao auditoria de comportamento do script — auditar comportamento de `Invoke-GeneXusXpzImport.ps1` continua proibido para esta skill (ver 8.g6.iii).
+
+Regra de comportamento conforme dependencia da tarefa corrente:
+
+- Tarefa corrente **depende** de importacao real (preview/import via MSBuild solicitado, gravacao de pacote para importacao imediata, etc.) **e** alguma verificacao acima falhou: classificar a dimensao `importacao_msbuild` como `IMPORTACAO_HEADLESS_PENDENTE`, **bloquear** a importacao real, declarar nominalmente no handoff o que esta ausente ou defasado (script faltando, regra documental nao localizada na skill de import/export) e encaminhar para `xpz-msbuild-import-export` antes de qualquer tentativa.
+- Tarefa corrente **nao depende** de importacao real: registrar a pendencia como observacao consultiva no handoff e prosseguir, desde que os demais gates obrigatorios estejam OK; nao usar essa pendencia consultiva como bloqueio adicional fora do escopo.
+
+Esta verificacao e declarativa e barata: presenca de arquivo e leitura curta do `SKILL.md` de `xpz-msbuild-import-export`. Nao deve substituir, sobrepor nem antecipar nenhum sub-estado dessa skill.
+
+---
+
 ## ESTADOS DE CONCLUSAO DO SETUP
 
 Ao fechar um setup ou handoff de pasta paralela da KB, usar um estado operacional explicito, sem promover o status por inferencia:
@@ -647,7 +680,9 @@ Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao an
     - nao tentar corrigir o script localmente nem reinterpretar sub-estados de import dentro deste fluxo de setup
     - nao confundir falha de pos-processamento do wrapper com falha de import: `__IMPORTED_ITEM__` no log bruto e evidencia de import real, mesmo quando o `import.json` estiver degradado — a classificacao final do sub-estado pertence a `xpz-msbuild-import-export`
 
-8.g6.iv No handoff final de `modo_atualizacao`, quando 8.g6 foi executado, listar separadamente a dimensao `importacao_msbuild` com um dos rotulos: `ADOTADO`, `NAO_ADOTADO` ou `PENDENTE_DIAGNOSTICO` (este ultimo quando houver evidencia de diagnostico degradado que o usuario deve resolver via `xpz-msbuild-import-export` antes de declarar a dimensao como `ADOTADO`); nao colapsar essa dimensao em `empacotamento local`, `sync/materializacao` ou outra dimensao adjacente — sao camadas distintas
+8.g6.iv No handoff final de `modo_atualizacao`, quando 8.g6 foi executado, listar separadamente a dimensao `importacao_msbuild` com um dos rotulos: `ADOTADO`, `NAO_ADOTADO`, `PENDENTE_DIAGNOSTICO` ou `IMPORTACAO_HEADLESS_PENDENTE`. `PENDENTE_DIAGNOSTICO` aplica-se quando houver evidencia de diagnostico degradado que o usuario deve resolver via `xpz-msbuild-import-export` antes de declarar a dimensao como `ADOTADO`. `IMPORTACAO_HEADLESS_PENDENTE` aplica-se quando a verificacao consultiva da secao `## CAPACIDADE DE IMPORTACAO HEADLESS` indicar capacidade defasada (motor compartilhado ausente, ou contrato documental da skill `xpz-msbuild-import-export` divergente das regras esperadas) — bloqueante quando a tarefa corrente depende de importacao real; consultivo no handoff quando a tarefa nao depende. Nao colapsar essa dimensao em `empacotamento local`, `sync/materializacao` ou outra dimensao adjacente — sao camadas distintas.
+
+8.g6.v Quando 8.g6.i identificar evidencia de adocao do fluxo, ou quando a tarefa corrente envolver importacao real via MSBuild ainda que a pasta nao tenha historico de import (pacote acabou de ser gerado, frente nova), executar a verificacao consultiva descrita na secao `## CAPACIDADE DE IMPORTACAO HEADLESS`. O resultado dessa verificacao alimenta o rotulo declarado em 8.g6.iv: `IMPORTACAO_HEADLESS_PENDENTE` quando alguma das verificacoes da secao falhar; nao altera os demais rotulos quando a verificacao passar.
 
 8.h Ao concluir o bloco de atualizacao, declarar o estado operacional compativel com a evidencia realmente fechada e apresentar a tabela de scripts com as colunas: Script | Classe (EQUIVALENTE / AUSENTE / CUSTOMIZADO) | Acao. A tabela deve incluir TODOS os scripts esperados — nao apenas os que requerem acao; scripts EQUIVALENTE tambem devem ter uma linha na tabela. Uma lista de "scripts a atualizar", "scripts a criar" ou "pontos de atencao" NAO substitui a tabela de classificacao — sao formatos diferentes; a tabela de classificacao e obrigatoria independentemente de qualquer resumo adicional. Scripts presentes em `INVENTORY_SHORT_NAMING` devem aparecer na tabela como CUSTOMIZADO com acao de renome — nao como EQUIVALENTE e nao omitidos. Parse ja esta coberto pelo gate: `GATE_OK` prova que todos os scripts passaram o parser do PowerShell sem erros — nao e necessario repetir o resultado de parse na tabela; a classificacao EQUIVALENTE / AUSENTE / CUSTOMIZADO de cada script e obrigatoria mesmo assim e nao e substituida pelo gate. Listar explicitamente: scripts adicionados, scripts mantidos (EQUIVALENTES), scripts substituidos com aprovacao e scripts pulados. Quando houver `PacotesGeradosParaImportacaoNaKbNoGenexus`, a tabela ou o resumo deve incluir explicitamente `Test-*KbSourceSanity.ps1` e `Test-*KbPackageCollision.ps1`, mesmo que a conclusao seja "mantido" ou "ausente". Quando 8.g3.vii se aplicar, a saida pode ser curta e objetiva, sem reinspecao exaustiva dos wrappers ja estabilizados; ainda assim, deve preservar a classificacao explicita dos wrappers de empacotamento local e o estado canonico final. Atualizar o campo de estado operacional no `AGENTS.md` local da pasta paralela para refletir o que realmente foi concluido (ex: `wrappers_atualizados`, `auditoria_de_empacotamento_pendente`, `bootstrap_incompleto`). Nao manter declaracao de estado anterior desatualizada — se o `AGENTS.md` dizia `materializado_e_indice_validado` mas o gate script nao existia e acabou de ser criado, o estado deve ser atualizado para `wrappers_atualizados`. Um `AGENTS.md` com estado desatualizado serve como argumento falso para agentes burlarem o gate. Verificar tambem se a secao `## Wrappers locais` do `AGENTS.md` local lista todos os scripts atualmente presentes em `scripts/` com nomes e funcoes corretos; se estiver desatualizada — por listar scripts com nomes antigos ou omitir scripts recem-adicionados — propor atualizacao ao usuario antes de declarar o setup como concluido. Por fim, comparar a estrutura geral do `AGENTS.md` local contra o modelo canonico em `examples/AGENTS.md.example` desta skill; se houver secoes canonicas ausentes alem das ja verificadas nos passos anteriores (`## Triagem Por Indice` em 8.g e `## Wrappers locais` acima), propor adicao ao usuario antes de declarar o setup como concluido.
     - Quando `README.md` local tambem declarar estado operacional humano, timestamps de materializacao/indice ou observacao de frescor, comparar esses campos com `AGENTS.md`, `kb-source-metadata.md` e `-Query index-metadata`
