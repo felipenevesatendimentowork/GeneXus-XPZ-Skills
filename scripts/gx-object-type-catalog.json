@@ -181,6 +181,15 @@
       "containerType": true,
       "notes": "Modulo empacotado."
     },
+    "RootModule": {
+      "objectTypeGuid": "afa47377-41d5-4ae8-9755-6f53150aa361",
+      "rootKind": "Virtual",
+      "folderName": null,
+      "inventoryEligible": false,
+      "queryableByKbIntelligence": false,
+      "containerType": true,
+      "notes": "Raiz virtual da KB; nao tem XML materializado em ObjetosDaKbEmXml. Objetos parented a essa raiz mostram 'Module/Folder: Root Module' na IDE."
+    },
     "Panel": {
       "objectTypeGuid": "d82625fd-5892-40b0-99c9-5c8559c197fc",
       "rootKind": "Object",

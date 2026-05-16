@@ -68,22 +68,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - Treat `ObjetosDaKbEmXml` as official snapshot and read-only for agents
 - Treat any detected or intended edit in `ObjetosDaKbEmXml` for a delta that has not yet returned by official KB re-export as an explicit process error, not as a mere operational detail
 - If the object has not yet returned from the KB by official export, perform the work only in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
-- When the user does not provide alternative names, assume these standard KB subfolders for initial load:
-  - `ObjetosDaKbEmXml`
-  - `XpzExportadosPelaIDE`
-  - `scripts`
-  - `Temp`
-  - `KbIntelligence`
-  - `ObjetosGeradosParaImportacaoNaKbNoGenexus`
-  - `PacotesGeradosParaImportacaoNaKbNoGenexus`
-- If some subfolders do not exist yet, prefer creating them in this order:
-  1. `scripts`
-  2. `Temp`
-  3. `XpzExportadosPelaIDE`
-  4. `ObjetosDaKbEmXml`
-  5. `KbIntelligence`
-  6. `ObjetosGeradosParaImportacaoNaKbNoGenexus`
-  7. `PacotesGeradosParaImportacaoNaKbNoGenexus`
+- The set of standard KB parallel-folder subfolders (`ObjetosDaKbEmXml`, `XpzExportadosPelaIDE`, `scripts`, `Temp`, `KbIntelligence`, `ObjetosGeradosParaImportacaoNaKbNoGenexus`, `PacotesGeradosParaImportacaoNaKbNoGenexus`) and their recommended creation order are normative in the `xpz-kb-parallel-setup` skill — see [xpz-kb-parallel-setup/SKILL.md](../xpz-kb-parallel-setup/SKILL.md). This builder assumes those names by default and falls back to `xpz-kb-parallel-setup` when alternative naming, structural ambiguity, or missing setup is detected.
 - If `XpzExportadosPelaIDE` does not exist yet, ask where the user wants to store exported `.xpz` files
 - If `ObjetosDaKbEmXml` does not exist yet, stop and treat the KB as not yet materialized
 - Use `ObjetosGeradosParaImportacaoNaKbNoGenexus` as the working area for locally generated or preserved XML
@@ -311,11 +296,7 @@ Reference files and when to load them:
    - For simple report `Procedure`, escalate to comparable real XML only when the request falls outside the documented simple family, when the initial attempt plus one short structural corrective attempt already failed, or when KB-local dialect/localism appears
    - For simple report `Procedure`, every output or handoff must label the basis used as exactly one of: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB`, or `hipótese`
    - If the object has already returned from the KB via official XPZ processing, prefer the current XML in the official corpus over any older delta/import working copy when selecting the base for a new change
-   - Before cloning identity fields, classify the container from comparable corpus XML using `Object/@parentType` — never from the directory name in `ObjetosDaKbEmXml`, which varies across KBs:
-     - `00000000-0000-0000-0000-000000000008` = Module/Folder (user-created container; GeneXus IDE shows "Module/Folder: X" in Properties)
-     - `c88fffcd-b6f8-0000-8fec-00b5497e2117` = PackagedModule (installed module, cube icon in IDE)
-     - `afa47377-41d5-4ae8-9755-6f53150aa361` = Root Module (virtual KB root; no XML file in acervo; objects here show "Module/Folder: Root Module" in Properties)
-     - `00000000-0000-0000-0000-000000000006` = Module (GeneXus system/organizational module: Main Programs, ToBeDefined, and installed package modules such as GAM); never appears as parentType of packagable user objects
+   - Before cloning identity fields, classify the container from comparable corpus XML using `Object/@parentType` — never from the directory name in `ObjetosDaKbEmXml`, which varies across KBs. The canonical mapping of container GUIDs lives in [scripts/gx-object-type-catalog.json](../scripts/gx-object-type-catalog.json) (entries `Folder` for user-created containers, `Module` for GeneXus system/organizational containers, `PackagedModule` for installed modules, and `RootModule` for the virtual KB root that has no XML file in the acervo). Read the GUID from the corpus XML and look it up in the catalog; do NOT hardcode parentType GUIDs inline.
 11. Apply conservative cloning:
    - Preserve `Object/@guid` (new GUID only for new objects, never reuse existing object's GUID)
    - Preserve `parent`, `parentGuid`, `parentType`, `moduleGuid`
