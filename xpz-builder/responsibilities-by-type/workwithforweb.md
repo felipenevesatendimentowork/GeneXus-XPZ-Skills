@@ -6,7 +6,7 @@ Satellite of `xpz-builder/SKILL.md` for the `WorkWithForWeb` object type (`type=
 
 ### Structural form detection (Form A vs Form B)
 
-WorkWithForWeb has two distinct XML structural forms depending on context. The 9-WW gate (in WORKFLOW) handles detection automatically, but the agent must be aware of both forms when reasoning about a WorkWithForWeb:
+WorkWithForWeb has two distinct XML structural forms depending on context. The 9-WW gate (`Test-GeneXusWorkWithWebApply.ps1`, invoked from WORKFLOW) handles detection automatically, but the agent must be aware of both forms when reasoning about a WorkWithForWeb:
 
 - **Form A (packaging form)**: Part `babfa2b2-19a0-4ef1-b5f4-81b7c7be79dc` with `<Source><Properties>` containing `<Property><Name>Apply</Name>` and `<Property><Name>Transaction</Name>`. Used in `import_file.xml` packages and in XMLs generated from sanitized templates.
 - **Form B (acervo form)**: Part `a51ced48-7bee-0001-ab12-04e9e32123d1` with `<Data Pattern="78cecefe-be7d-4980-86ce-8d6e91fba04b">` whose CDATA contains `<transaction transaction="<guid>-<TransactionName>" />`. Used in `ObjetosDaKbEmXml/WorkWithForWeb/*.xml` (materialized acervo).
@@ -27,7 +27,7 @@ When editing the CDATA payload of a WorkWithForWeb (typically Form B), load [01j
 
 ## Related rules in main SKILL.md WORKFLOW and CONSTRAINTS
 
-- **9-WW preflight gate (Apply-mark)**: form detection + Apply property reading + linked Transaction resolution + Transaction's `Apply:GUID = True` verification. Lives in the WORKFLOW of the main `SKILL.md` (sub-block 9-WW).
+- **9-WW preflight gate (Apply-mark)**: form detection + Apply property reading + linked Transaction resolution + Transaction's `Apply:GUID = True` verification. Invoked from WORKFLOW sub-block 9-WW in the main `SKILL.md`; implementation in `scripts/Test-GeneXusWorkWithWebApply.ps1`.
 - **CONSTRAINTS** in the main `SKILL.md` enforce NEVER/ABORT rules around WorkWithForWeb packaging in Form A without `Apply`, XML matching neither Form A nor Form B, and Transaction lacking `Apply:GUID = True`.
 
 ## Related references

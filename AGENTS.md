@@ -50,6 +50,8 @@
 
 Antes de concluir rotina pré-push, não basta ler os diffs dos commits pendentes. O agente deve procurar erros e inconsistências entre o que mudou e o restante do repositório.
 
+**Escopo:** a rotina pré-push é de **análise, busca de coerência e relatório** ao usuário. **Não** inclui, por defeito, alterar arquivos nem criar commits com base no relatório. Em face dos gaps, o agente **apresenta** o diagnóstico e, se fizer sentido, um diff ou lista de alterações sugeridas, e **só grava** no repositório após **aprovação explícita** do usuário ou **pedido explícito** na mesma interação para aplicar essas alterações. Exceção: quando a instrução inicial do usuário já tiver sido explicitamente «aplica as correções que encontrares» ou equivalente.
+
 Para cada frente alterada:
 
 1. Identificar termos, scripts, wrappers, parâmetros, estados, caminhos e regras operacionais introduzidos ou modificados.

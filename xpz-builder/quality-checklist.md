@@ -1,6 +1,6 @@
 # Quality Checklist — xpz-builder
 
-Satellite of xpz-builder/SKILL.md. **Load this checklist before declaring a packaging task complete.** Items are general (not type-specific); type-specific checklist items live in esponsibilities-by-type/<type>.md satellites and the WWP-specific items live in wwp-packaging.md.
+Satellite of xpz-builder/SKILL.md. **Load this checklist before declaring a packaging task complete.** Items are general (not type-specific); type-specific checklist items live in `responsibilities-by-type/<type>.md` satellites and the WWP-specific items live in `wwp-packaging.md`.
 
 The checklist below is the consolidated end-to-end verification for any packaging round.
 - [ ] Risk level assessed before proceeding
