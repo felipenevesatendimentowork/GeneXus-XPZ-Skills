@@ -49,7 +49,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - Identify the target object type and locate the most comparable structural template
 - Apply risk assessment from [03-risco-e-decisao-por-tipo](../03-risco-e-decisao-por-tipo.md) before proceeding
 - Abort if no comparable structural template exists and risk is high or very high
-- For each GeneXus object type present in the batch, load the corresponding satellite under `responsibilities-by-type/` end-to-end before generating, editing, or packaging the XML, in addition to this `SKILL.md`. Satellites consolidate type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Available satellites: `responsibilities-by-type/transaction.md` (Transaction), `responsibilities-by-type/webpanel.md` (WebPanel), `responsibilities-by-type/dataprovider.md` (DataProvider), `responsibilities-by-type/api.md` (API), `responsibilities-by-type/procedure.md` (Procedure, incluindo simple report Procedure).
+- For each GeneXus object type present in the batch, load the corresponding satellite under `responsibilities-by-type/` end-to-end before generating, editing, or packaging the XML, in addition to this `SKILL.md`. Satellites consolidate type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Available satellites: `responsibilities-by-type/transaction.md` (Transaction), `responsibilities-by-type/webpanel.md` (WebPanel), `responsibilities-by-type/dataprovider.md` (DataProvider), `responsibilities-by-type/api.md` (API), `responsibilities-by-type/procedure.md` (Procedure, incluindo simple report Procedure), `responsibilities-by-type/workwithforweb.md` (WorkWithForWeb).
 - Treat any extra block opened after the first one as an `adjacent block` and open it only when there is explicit functional dependency with the primary edit block
 - Name every justified block transition in the review or packaging rationale, instead of silently widening the edit scope
 - State the intended conclusion or effect scope at the smallest functional level supported by the delta, including execution context when that distinction matters
@@ -597,7 +597,6 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] No essential `Source` construct was accepted only because it looked plausible
 - [ ] For generated large XML, header, tail, expected root closing tag, complete `CDATA`, and absence of truncated final line were verified before packaging
 - [ ] Any heredoc/here-string writer stderr was checked, and no artifact ended by EOF before the expected delimiter
-- [ ] For `WorkWithForWeb` action changes, [01j-workwithweb-cdata-padroes](../01j-workwithweb-cdata-padroes.md) was loaded; the target scope was anchored by its unique structural identifier (`<selection>`, `<tab code="General">`, or `<tab code="X">`) and the new action appears exactly once in that scope
 - [ ] Procedure `Source` deltas that changed candidate/identity filters searched for paired cursor blocks and reconciled or justified `count/then-copy`, `exists/then-load`, `validate/then-apply`, or `select-candidate/then-materialize` criteria
 - [ ] If local repository documentation required direct-call review after `parm(...)` change, all applicable direct call sites were reviewed explicitly
 - [ ] If `parm(...)` changed, every new parm variable exists in the variables section of the `Procedure`
