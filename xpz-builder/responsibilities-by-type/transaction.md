@@ -2,7 +2,7 @@
 
 Satellite of `xpz-builder/SKILL.md` for the `Transaction` object type. **Load this file end-to-end before generating, editing, or packaging a `Transaction`**, in addition to the main `SKILL.md`.
 
-This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Type-agnostic rules (envelope serialization, package collision gate, manifest, etc.) remain in the main `SKILL.md`. Gate scripts (9-BC, 9-IDO, Transaction Coherence, Writability) are referenced here but live in `scripts/` and are invoked from the WORKFLOW in the main `SKILL.md`.
+This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Type-agnostic rules (envelope serialization, package collision gate, manifest, etc.) remain in the main `SKILL.md`. Gate scripts (9-BC, 9-IDO, 9-TXW Writability, Transaction Coherence) are referenced here but live in `scripts/` and are invoked from the WORKFLOW in the main `SKILL.md`.
 
 ## Responsibilities
 
