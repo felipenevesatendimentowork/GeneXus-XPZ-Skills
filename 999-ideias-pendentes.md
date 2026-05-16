@@ -1533,3 +1533,54 @@ Antes de gravar gates, fazer experimento controlado:
   (`-AllowWideRebuild` cobre todas as flags amplas)?
 - Existe combinação dessas flags com `ForceRebuild=true` que faça sentido proteger
   diferentemente?
+
+## Gate de parse AST para `scripts/*.ps1` e `.example.ps1` das skills
+
+**Importância:** baixa
+**Maturidade:** pesquisa feita
+
+**Origem:** revisão pré-push de 2026-05-16 sobre os gates da Fase 9 do `xpz-builder`; sugestão original do agente revisor ("smoke de parse AST em CI seria útil"); discussão e fechamento de design na mesma sessão.
+
+### Objetivo
+
+Pegar regressão sintática silenciosa em scripts PowerShell mantidos por esta raiz antes que ela apareça na próxima execução real do gate ou na próxima cópia de um `.example.ps1` para wrapper local de pasta paralela de KB.
+
+### Design fechado
+
+Combo de duas peças:
+
+1. **Script local** `scripts/Test-PsScriptsParse.ps1`:
+   - Varre `scripts/*.ps1` e `**/*.example.ps1` da raiz
+   - Para cada arquivo, chama `[System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$errs)`
+   - Reporta cada erro com path, linha e mensagem
+   - Sai com código `0` se tudo limpo, `1` se houver pelo menos um erro de parse
+   - Invocável manualmente e integrável na rotina de revisão pré-push descrita no `AGENTS.md`
+
+2. **Workflow GitHub Actions** `.github/workflows/parse-ps-scripts.yml`:
+   - Dispara em `push` e `pull_request` com filtro `paths: ['scripts/**/*.ps1', '**/*.example.ps1']`
+   - Roda em `windows-latest` (não `ubuntu-latest`) para fidelidade com Windows PowerShell 5.1
+   - Único step relevante: invocar `scripts/Test-PsScriptsParse.ps1`
+   - Não duplica lógica — o workflow é apenas o gatilho
+
+### Escopo
+
+- `scripts/*.ps1` — todos, não só `Test-GeneXus*.ps1`; cobre wrappers `Build-*`, `Invoke-*`, `Sync-*`, etc.
+- `**/*.example.ps1` em qualquer skill — esses arquivos viram molde de wrapper local em pasta paralela de KB (regra explícita no `README.md` raiz: "exemplos metodológicos importantes para bootstrap técnico e reconstrução assistida de wrappers locais"); se quebrarem parse, viram fonte de cópia ruim
+- Excluído: scripts dentro de `historico/`, se houver
+
+### Limitações conhecidas
+
+- Parse AST é puramente sintático. **Não pega** bugs sob `Set-StrictMode -Version Latest` em runtime (ex: `.Count` em null, `-split` retornando escalar quando não há separador, propriedade XML inexistente acessada por shorthand). Essa categoria continua coberta pela memória global do usuário (`feedback_*`) e por disciplina de teste pós-edição.
+- **Não pega** divergência de comportamento PS 5.1 vs pwsh 7+; o runner Windows reduz o risco mas não elimina (semântica de algumas APIs varia mesmo dentro de `windows-latest`).
+
+### Por que não está em "pronta para implementar"
+
+Não há gatilho concreto: nenhuma regressão sintática real escapou recentemente e queimou. O caso permanece teórico. Promover para `pronta para implementar` quando:
+
+- Aparecer primeira regressão sintática em script que escapou da revisão pré-push, **ou**
+- Houver mudança de processo (mais agentes externos editando `scripts/*.ps1` sem carregar `xpz-builder`), **ou**
+- A frente que implementa `Test-PsScriptsParse.ps1` aparecer como sub-tarefa natural de outra frente maior de manutenção de scripts.
+
+### Relacionado
+
+- Item de checklist já registrado em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*, commit `25d2bd6`): "Every gate script edited in the round was re-parsed (`[System.Management.Automation.Language.Parser]::ParseFile`) and produced zero parse errors under Windows PowerShell 5.1". Esse item cobre o caso "agente XPZ edita script via skill"; o gate descrito aqui cobre o caso "edição direta sem skill carregada".
