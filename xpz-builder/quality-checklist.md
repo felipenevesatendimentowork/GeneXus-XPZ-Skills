@@ -1,0 +1,85 @@
+# Quality Checklist — xpz-builder
+
+Satellite of xpz-builder/SKILL.md. **Load this checklist before declaring a packaging task complete.** Items are general (not type-specific); type-specific checklist items live in esponsibilities-by-type/<type>.md satellites and the WWP-specific items live in wwp-packaging.md.
+
+The checklist below is the consolidated end-to-end verification for any packaging round.
+- [ ] Risk level assessed before proceeding
+- [ ] Abort condition evaluated explicitly
+- [ ] Template selected from empirical corpus (not reconstructed from descriptions)
+- [ ] `Object/@guid` valid and appropriate (preserved or newly generated)
+- [ ] `parent*` and `moduleGuid` preserved from template or context
+- [ ] `fullyQualifiedName`, `name`, `parent`, `parentGuid`, `parentType`, and `moduleGuid` were checked together against comparable corpus XML
+- [ ] For cloned/new objects, expanded internal identity was checked: `Object/@name`, `fullyQualifiedName`, `guid`, `Name` property, `Description`, `Source`, `Rules/parm`, internal calls, dependencies, and `ObjectsIdentityMapping`
+- [ ] Residual template object names, descriptions, GUIDs, and calls were classified as intentional, necessary dependency, or clone error
+- [ ] All recurring Part types present (even if empty)
+- [ ] No invented Part type GUIDs
+- [ ] Envelope complete: `<ExportFile>`, `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`
+- [ ] Package format for delta was chosen from validated local precedent when such precedent exists
+- [ ] Embedded-object package under `<Objects>` versus package using `<FilePath>` was distinguished explicitly
+- [ ] Weak analogy was not used as the sole basis for envelope choice
+- [ ] `lastUpdate` is a real timestamp, not a placeholder
+- [ ] Active XMLs were classified as `modified in this round` or `reused unchanged for mandatory dependency closure`
+- [ ] Every modified object XML was reread after writing and its saved `lastUpdate` was confirmed
+- [ ] Every unchanged object reused only for dependency closure preserved the official `lastUpdate`
+- [ ] Embedded objects in `import_file.xml` were checked for correct `lastUpdate` handling before delivery
+- [ ] `ObjetosDaKbEmXml` was treated as read-only official snapshot
+- [ ] Current front folder `NomeCurto_GUID_YYYYMMDD` was created or reused explicitly
+- [ ] Active front folder format was validated before packaging; if local rules require `NomeCurto_GUID_YYYYMMDD`, nonconforming folders were reported and realigned before package generation
+- [ ] Round spec was declared (object names + types) before listing the workspace in step 4b — the declaration came from user intent, not from reading the workspace first
+- [ ] After listing the workspace, the round spec was verified against the workspace content, and any divergence (missing object or unexpected extra) was reconciled explicitly before proceeding to the collision gate
+- [ ] When the task was packaging, active XMLs were listed from the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- [ ] Candidate batch was isolated; no workspace contamination remained
+- [ ] When the front required a new unitary delta, the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus` was isolated explicitly before packaging
+- [ ] Current-front artifacts were distinguished explicitly from pre-existing parallel changes before packaging
+- [ ] Root type of every active XML was classified before package serialization
+- [ ] No top-level `Attribute` was placed under `<Objects>`
+- [ ] For each object type present in the batch, the corresponding satellite under `responsibilities-by-type/` was loaded and its Quality Checklist was satisfied end-to-end
+- [ ] UTF-8 BOM hygiene was checked on every active XML
+- [ ] Generated package name followed the preferred `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` pattern when applicable
+- [ ] Package write was blocked if the same front prefix already had the same `nn`
+- [ ] Any `nn` collision returned an explicit next-free-round suggestion without auto-incrementing or silent overwrite
+- [ ] Batch manifest was produced or validated before packaging, by default in the conversation
+- [ ] Any superseded package was either renamed with prefix `OBSOLETO_` or recorded in a structured manifest in the conversation before continuing
+- [ ] Manifest file was created only when there was a concrete operational reason
+- [ ] When the user had already signaled manual IDE import/testing, `import_file.xml` was generated as the primary deliverable
+- [ ] `.xpz` was not generated unless explicitly required by the user or by a documented local flow
+- [ ] Applicable local repository documentation was reread before packaging
+- [ ] Applicable local functional review chains, contracts, and operational rules were verified end-to-end in the saved XML before packaging
+- [ ] Local repository rules were treated as repository-specific specialization, not as universal XPZ methodology
+- [ ] `Source/@kb` and `Source/Version/@guid` are valid GUIDs
+- [ ] Every new operator, function, conversion, and string/numeric pattern introduced in `Source` is backed by layer-1 methodological evidence
+- [ ] Local corpus evidence, when used for `Source`, was treated only as confirmation or tie-breaker
+- [ ] No essential `Source` construct was accepted only because it looked plausible
+- [ ] For generated large XML, header, tail, expected root closing tag, complete `CDATA`, and absence of truncated final line were verified before packaging
+- [ ] Any heredoc/here-string writer stderr was checked, and no artifact ended by EOF before the expected delimiter
+- [ ] Procedure `Source` deltas that changed candidate/identity filters searched for paired cursor blocks and reconciled or justified `count/then-copy`, `exists/then-load`, `validate/then-apply`, or `select-candidate/then-materialize` criteria
+- [ ] If local repository documentation required direct-call review after `parm(...)` change, all applicable direct call sites were reviewed explicitly
+- [ ] If `parm(...)` changed, every new parm variable exists in the variables section of the `Procedure`
+- [ ] If `parm(...)` changed, variable name, base type, and presence remained coherent
+- [ ] Variables referenced by the edited `Source` exist in the `Procedure`
+- [ ] Every new helper variable introduced by the current `Source` delta exists in the variables section and remains coherent with its declared type
+- [ ] Every new method call introduced by the current `Source` delta on a variable is compatible with the declared type of that variable and is anchored by the methodological base loaded for the case
+- [ ] Cleanup or reinitialization introduced by the current `Source` delta for a collection, SDT, or `Messages, GeneXus.Common` uses a pattern anchored by the methodological base loaded for that declared type
+- [ ] For collection reinitialization introduced by the current `Source` delta and already covered by the methodological base, `= new()` was preferred and unsupported forms such as `SetEmpty()` were not accepted only by plausibility or analogy
+- [ ] Filters over `DateTime` prefer direct comparison on the column and do not use function on the column without explicit justification
+- [ ] Simple initial/final period filters were expressed as two independent `where` clauses when applicable
+- [ ] When useful for readability, edited `Source` considered the local form already present in the object without turning that into a hard methodological requirement
+- [ ] Final package-envelope serialization was validated explicitly, not inferred only from source XML well-formedness
+- [ ] `Build-GeneXusImportFileEnvelope.ps1` or `New-XpzImportPackage.ps1`/`.py` was used to assemble `import_file.xml` from object XMLs/front folder and a validated template or explicit metadata-derived minimal envelope; if the manual fallback was used, the divergence was justified explicitly
+- [ ] When the flow was headless MSBuild import and the delta XML already existed in the parallel folder, KB export was not proposed or executed as the default way to obtain a `.xpz` shell without explicit user request or documented confirmation that envelope assembly was blocked
+- [ ] `Test-GeneXusImportFileEnvelope.ps1` was run on the final `import_file.xml` (directly or through the helper) and returned `apto para prosseguir` or `apto com ressalvas` with explicit justification; `não apto para prosseguir` was never suppressed
+- [ ] No embedded XML declaration remained inside object payload under `<Objects>`
+- [ ] No text nodes or placeholder literals were present inside `<Objects>` (confirmed by envelope gate or explicit visual inspection)
+- [ ] When import logs were used, messages were classified by stage and category before diagnosis
+- [ ] The final conclusion was based on the terminal relevant stage, not on an isolated warning or side error
+- [ ] Partial success was reported explicitly when only some objects failed
+- [ ] Any corrective package after partial failure reports original package, successful objects, failed objects, and contains only the necessary delta
+- [ ] Final closing explicitly states that the saved XML was reread, the persisted `lastUpdate` was confirmed, and the applicable local rules were reread and satisfied
+- [ ] Limitations block included in output
+- [ ] For every `Procedure` in the batch with a `bc:<X>` variable: `Test-GeneXusBCDependency.ps1` was run and returned `pass`, or `alert` with explicit acknowledgment / staging, or `not-applicable`; no `fail` finding remained unresolved before packaging
+- [ ] For every `WorkWithForWeb` (`WorkWithWeb*`) in the batch: the structural form was detected (Part `babfa2b2-...` packaging form OR Part `a51ced48-...` acervo form with `<Data Pattern="...">`); for Form A, `Apply` property was verified; for Form B, `Apply` is implicitly `True`; the linked Transaction was resolved (from `<Property><Name>Transaction</Name>` in Form A or from `<transaction transaction="<guid>-<name>" />` in Form B); if linked Transaction is also in the batch or in `ObjetosDaKbEmXml`, `Apply:78cecefe-be7d-4980-86ce-8d6e91fba04b = True` was confirmed in that Transaction's Properties
+- [ ] For every `Transaction` in the batch: `Test-GeneXusTransactionCoherence.ps1` was run; `fail` findings were corrected; `warn` findings were reviewed and either corrected or explicitly justified before packaging
+- [ ] For every `Procedure` in the batch: `Test-GeneXusProcedureSubPattern.ps1` was run and returned `pass`, `not-applicable`, or `alert` with each `warn` finding explicitly acknowledged (intent confirmed or new Sub restructured) and recorded in the closing declaration
+- [ ] When the batch had 2 or more distinct objects: `Test-GeneXusBatchDependencyOrdering.ps1` was run and returned `not-applicable`, `pass`, `alert` with explicit confirmation/justification, or `fail` with the cycle presented and packaging aborted; the `ido-ww-detection-pending` info finding (if present) was acknowledged and any WorkWithForWeb → Transaction ordering was verified manually
+
+
