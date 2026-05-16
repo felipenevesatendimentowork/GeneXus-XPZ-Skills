@@ -99,11 +99,13 @@ Do NOT use esta skill para:
 - Sucesso de preview ou importação não autoriza atualização manual de `ObjetosDaKbEmXml`
 - Quando houver retorno oficial da KB em `XPZ`, a atualização de `ObjetosDaKbEmXml` deve ocorrer depois, pelo fluxo de `xpz-sync`
 - Tratar `ImportKBInformation`, `UpdateFile` e defaults internos de importação/exportação como sensíveis e dependentes da assinatura efetiva da task `Import`
+- Tratar `ImportKbInformation` como tri-state na chamada e no wrapper: omitido ou `false` significam não emitir o atributo na task (semanticamente equivalente ao default da task); apenas `true` emite e exige suporte na instalação atual. Quando o agente passar valor neutro (`false`) e a task não expuser a propriedade, o wrapper deve omitir o atributo, não bloquear; bloqueio por assinatura só vale para valor não neutro (`true`). O mesmo princípio se aplica a `UpdateFile`: omitido equivale a não emitir; valor não vazio em task sem suporte bloqueia.
+- Não tratar bloqueio por assinatura da task como ajuste silencioso: quando preview ou import bloquear porque a task carregada não expõe propriedade sensível passada pelo agente ou pelo wrapper, é proibido repetir a chamada sem o parâmetro sem antes declarar nominalmente (1) qual propriedade ausente, (2) que o pacote não foi testado ou importado naquela rodada, (3) que a incompatibilidade é divergência de contrato operacional entre chamada/wrapper e assinatura efetiva da instalação, e (4) qual correção será aplicada — omitir parâmetro neutro, corrigir wrapper para omitir automaticamente quando não suportado, ou abortar a frente. Só depois dessa declaração explícita é admissível repetir a chamada com o parâmetro omitido, e nesse caso classificar a rodada como `chamada corrigida por parâmetro sensível omitido`.
 - Normalizar recortes multiplos de `IncludeItems` e `ExcludeItems` como lista antes de serializar para a task carregada
 - Preservar `importedItems` como lista em qualquer diagnóstico JSON, mesmo quando houver apenas um item
 - Declarar `importação real efetiva provada` apenas quando `importedItems` contiver explicitamente o objeto esperado; `exitCode=0` com `importedItems` ausente ou vazio classifica como `sucesso operacional sem prova de import efetivo` — nunca como import concluído
 - Quando o `Invoke-GeneXusXpzImport.ps1` lançar exceção interna durante o pós-processamento (ex: `Exception calling Join`, falha de serialização do `import.json`, qualquer falha posterior à conclusão da task `Import` do MSBuild) mas o log bruto (`msbuild.stdout.log` ou stdout capturado) contiver `__IMPORTED_ITEM__` ou marca equivalente para o objeto esperado, classificar como `importação real efetiva provada por evidência de stdout (falha no pós-processamento do wrapper)` — nunca como `falha operacional` nem como `sucesso operacional sem prova de import efetivo`; a importação real aconteceu de fato, o que falhou foi a montagem do diagnóstico estruturado pelo wrapper; declarar explicitamente que `importedItems` veio do log bruto e que o `import.json` está degradado ou ausente; registrar a exceção do wrapper como degradação de diagnóstico separada, não como causa de falha de import
-- Quando a task carregada não expuser `UpdateFile` nem `ImportKBInformation`, o wrapper de preview deve bloquear esses parâmetros cedo
+- Quando a task carregada não expuser `UpdateFile` nem `ImportKBInformation` em valor não neutro solicitado pelo agente, o wrapper de preview deve bloquear esses parâmetros cedo, com `status` `preview bloqueado por assinatura da task`; valor neutro (omissão de `UpdateFile`, `ImportKbInformation=false`) deve ser tratado como não emissão e não disparar bloqueio
 - Tratar `Get*Property` como operação de leitura segura, sem efeito sobre a KB
 - Não usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName` em exportação ou importação; esse valor é o nome descritivo da versão (ex: `"Design"`), não o identificador aceito por `SetActiveVersion` (ex: `"wsEducacaoSpTeste"`); para obter o identificador compatível, usar `GetActiveVersion`
 - Não usar o valor retornado por `GetEnvironmentProperty -Name Name` como `-EnvironmentName` pelo mesmo motivo; usar `GetActiveEnvironment` para obter o identificador ativo compatível
@@ -251,14 +253,14 @@ Parâmetros específicos de exportação:
 
 Parâmetros específicos de importação:
 
-- `-XpzPath`
+- `-XpzPath` — aceita `.xpz` (formato compactado padrão GeneXus), `.xml` ou `.import_file.xml` (envelope GeneXus com raiz `<ExportFile>`) como insumo válido para preview e import real, desde que o envelope tenha sido validado por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada; o nome do parâmetro é histórico e não restringe a extensão aceita
 - `-PreviewMode`
 - `-UpdateFilePath`
 - `-IncludeItems`
 - `-ExcludeItems`
 - `-AutomaticBackup`
 - `-ImportType`
-- `-ImportKbInformation`
+- `-ImportKbInformation` — tri-state: omitido ou `false` significam não emitir o atributo na task Import (semanticamente equivalente ao default da task); apenas `true` emite o atributo e exige que a task carregada exponha a propriedade. Bloqueio por assinatura só ocorre quando o valor for `true` em instalação sem suporte; `false` é tratado como omissão tanto no preview quanto no import real
 
 ---
 
@@ -338,6 +340,9 @@ Parâmetros específicos de importação:
    - `importação real falhou por envelope` — erro na estrutura ou envelope do XPZ
    - `importação real falhou sem importedItems` — falha sem trilha de `importedItems` no log
    - `falha operacional` — falha na camada do wrapper ou do MSBuild antes de atingir a task de import
+   - `preview bloqueado por assinatura da task` — wrapper de preview abortou antes de chamar MSBuild porque a task carregada na instalação atual não expõe propriedade sensível solicitada em valor não neutro (`UpdateFile` informado, `ImportKbInformation=true`); o pacote não foi testado em preview nessa rodada e a divergência deve ser declarada como contrato operacional entre chamada/wrapper e assinatura efetiva
+   - `import bloqueado por assinatura da task` — análogo ao anterior na fase de importação real; o pacote não foi importado e a divergência deve ser declarada antes de qualquer correção
+   - `chamada corrigida por parâmetro sensível omitido` — após bloqueio por assinatura, a rodada foi repetida com o parâmetro sensível omitido (apenas para valores neutros), com declaração explícita prévia da divergência detectada e da correção aplicada; este sub-estado complementa o sub-estado principal de preview ou import resultante da nova rodada, não o substitui
    - `preview reconheceu o objeto` — objeto esperado apareceu no retorno do preview
    - `preview apenas` — preview concluído sem evidência de reconhecimento do objeto esperado
    - `operação concluída, porém pendente de confirmação funcional`
@@ -421,6 +426,8 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] `stdoutSignals`, `stderrContent`, `stderrFilteredNoise`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
 - [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
+- [ ] Quando preview ou import bloqueou por assinatura da task (propriedade sensível não exposta na instalação atual em valor não neutro), o sub-estado declarado foi `preview bloqueado por assinatura da task` ou `import bloqueado por assinatura da task`, e a divergência foi tratada como contrato operacional entre chamada/wrapper e assinatura efetiva — não como ajuste silencioso
+- [ ] Antes de repetir a chamada com parâmetro sensível omitido após bloqueio por assinatura, foram declaradas nominalmente (1) a propriedade ausente, (2) que o pacote não foi testado ou importado naquela rodada, (3) a divergência de contrato operacional, e (4) a correção aplicada; a nova rodada foi classificada com `chamada corrigida por parâmetro sensível omitido` em complemento ao sub-estado principal resultante
 - [ ] Quando o wrapper lançou exceção interna durante o pós-processamento mas o log bruto contém `__IMPORTED_ITEM__` para o objeto esperado, o sub-estado declarado foi `importação real efetiva provada por evidência de stdout (falha no pós-processamento do wrapper)` — nunca `falha operacional` nem `sucesso operacional sem prova de import efetivo`; a origem da evidência (log bruto) e a exceção do wrapper foram declaradas explicitamente como camadas separadas
 - [ ] O script `Invoke-GeneXusXpzImport.ps1` em uso tem o pós-processamento envolvido em `try/catch` e emite diagnóstico parcial com `exitCode` real, marcas brutas extraídas do log e `postProcessingFailed=true` em caso de exceção — não perde toda a evidência por falha de serialização
 - [ ] Quando o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito na IDE, o diagnóstico de IDE desatualizada foi tratado como camada separada — não como revisão do sub-estado de import
