@@ -49,9 +49,8 @@ If the main need is to prepare or validate the initial folder structure around t
 - Identify the target object type and locate the most comparable structural template
 - Apply risk assessment from [03-risco-e-decisao-por-tipo](../03-risco-e-decisao-por-tipo.md) before proceeding
 - Abort if no comparable structural template exists and risk is high or very high
-- For each GeneXus object type present in the batch, load the corresponding satellite under `responsibilities-by-type/` end-to-end before generating, editing, or packaging the XML, in addition to this `SKILL.md`. Satellites consolidate type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Available satellites: `responsibilities-by-type/transaction.md` (Transaction), `responsibilities-by-type/webpanel.md` (WebPanel).
+- For each GeneXus object type present in the batch, load the corresponding satellite under `responsibilities-by-type/` end-to-end before generating, editing, or packaging the XML, in addition to this `SKILL.md`. Satellites consolidate type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Available satellites: `responsibilities-by-type/transaction.md` (Transaction), `responsibilities-by-type/webpanel.md` (WebPanel), `responsibilities-by-type/dataprovider.md` (DataProvider).
 - For `Procedure`, classify the current delta by functional block before editing: `Source`, `Rules/parm`, `Variables`, `Calls and dependencies`, `Identity and container`, and `Report layout` when applicable
-- For `DataProvider`, classify the current delta by functional block before editing: `Output structure`, `Source`, `Navigation context`, `Calls and dependencies`, or `Identity and container`
 - For `API`, classify the current delta by functional block before editing: `Service contract`, `Events and orchestration`, `Calls and dependencies`, `Data contract`, or `Identity and container`
 - Treat any extra block opened after the first one as an `adjacent block` and open it only when there is explicit functional dependency with the primary edit block
 - Name every justified block transition in the review or packaging rationale, instead of silently widening the edit scope
@@ -610,7 +609,6 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] Root type of every active XML was classified before package serialization
 - [ ] No top-level `Attribute` was placed under `<Objects>`
 - [ ] For each object type present in the batch, the corresponding satellite under `responsibilities-by-type/` was loaded and its Quality Checklist was satisfied end-to-end
-- [ ] For `DataProvider`, the primary edit block was declared before editing and any block transition was justified explicitly
 - [ ] For `API`, the primary edit block was declared before editing and any block transition was justified explicitly
 - [ ] UTF-8 BOM hygiene was checked on every active XML
 - [ ] Generated package name followed the preferred `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` pattern when applicable
@@ -637,7 +635,6 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] If `parm(...)` changed, variable name, base type, and presence remained coherent
 - [ ] Variables referenced by the edited `Source` exist in the `Procedure`
 - [ ] Every new helper variable introduced by the current `Source` delta exists in the variables section and remains coherent with its declared type
-- [ ] For `DataProvider`, output-shape deltas were reviewed explicitly against the promised return structure before packaging
 - [ ] For `API`, contract deltas were reviewed explicitly against the published operation and the effective orchestration before packaging
 - [ ] For `Procedure`, the primary edit block was declared before editing and any block transition was justified explicitly
 - [ ] Every new method call introduced by the current `Source` delta on a variable is compatible with the declared type of that variable and is anchored by the methodological base loaded for the case
