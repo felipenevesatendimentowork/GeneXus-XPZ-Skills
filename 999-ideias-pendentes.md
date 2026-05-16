@@ -982,7 +982,9 @@ A escolha por script (e não por regra textual em SKILL.md) segue a preferência
 
 ### Perguntas a responder antes de decidir
 
-## Gate 9-WW estruturalmente errado para WorkWithForWeb do acervo
+## ENCERRADO — Gate 9-WW estruturalmente errado para WorkWithForWeb do acervo
+
+**Status:** RESOLVIDO em 2026-05-15 — a prosa do gate 9-WW em `xpz-builder/SKILL.md` foi corrigida para reconhecer ambos os formatos estruturais (Form A: Part `babfa2b2-...` no formato de empacotamento; Form B: Part `a51ced48-...` com `<Data Pattern="...">` no acervo materializado). CONSTRAINTS, QUALITY CHECKLIST e o caveat em 9-IDO também foram atualizados. A sub-fase 1.2 do refator estrutural (extração do gate 9-WW para script) permanece formalmente aberta, mas sem urgência: a Fase 2 do refator vai mover essa seção inteira do SKILL.md para um arquivo satélite, momento em que a decisão de extrair para script será revisitada.
 
 **Importância:** alta
 **Maturidade:** pesquisa feita
