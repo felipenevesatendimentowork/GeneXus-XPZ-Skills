@@ -1316,6 +1316,6 @@ A pasta `scripts/` é apoio operacional, não fonte normativa. Regra explícita 
 
 Um README agregado em `scripts/` duplicaria descrições já documentadas nas skills consumidoras, criando três caminhos para a mesma informação driftar: skill → README agregado → cabeçalho do próprio script. O custo de manutenção supera o ganho de descoberta para o público-alvo, que carrega skill primeiro e desce ao script depois.
 
-Para descoberta a partir da raiz, `07-open-points-e-checklist.md` lista os gates determinísticos de empacotamento WWP por nome de script, apontando o contrato de uso para a skill `xpz-builder`. Esse já é o ponto de entrada agregado mínimo, sem criar README terciário.
+Para descoberta a partir da raiz, `07-open-points-e-checklist.md` lista os gates determinísticos da Fase 9 do xpz-builder por nome de script, apontando o contrato de uso para a skill `xpz-builder`. Esse já é o ponto de entrada agregado mínimo, sem criar README terciário.
 
 **Não reavaliar** salvo aparição de scripts órfãos sem skill consumidora documentando-os, ou mudança de público (consumo externo direto da pasta `scripts/` por agente que não carrega skill XPZ).

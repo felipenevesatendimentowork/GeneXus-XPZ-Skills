@@ -82,4 +82,3 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] For every `Procedure` in the batch: `Test-GeneXusProcedureSubPattern.ps1` was run and returned `pass`, `not-applicable`, or `alert` with each `warn` finding explicitly acknowledged (intent confirmed or new Sub restructured) and recorded in the closing declaration
 - [ ] When the batch had 2 or more distinct objects: `Test-GeneXusBatchDependencyOrdering.ps1` was run and returned `not-applicable`, `pass`, `alert` with explicit confirmation/justification, or `fail` with the cycle presented and packaging aborted; the `ido-ww-detection-pending` info finding (if present) was acknowledged and any WorkWithForWeb → Transaction ordering was verified manually
 
-
