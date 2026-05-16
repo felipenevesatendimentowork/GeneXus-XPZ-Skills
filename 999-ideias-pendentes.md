@@ -984,7 +984,13 @@ A escolha por script (e não por regra textual em SKILL.md) segue a preferência
 
 ## ENCERRADO — Gate 9-WW estruturalmente errado para WorkWithForWeb do acervo
 
-**Status:** RESOLVIDO em 2026-05-15 — a prosa do gate 9-WW em `xpz-builder/SKILL.md` foi corrigida para reconhecer ambos os formatos estruturais (Form A: Part `babfa2b2-...` no formato de empacotamento; Form B: Part `a51ced48-...` com `<Data Pattern="...">` no acervo materializado). CONSTRAINTS, QUALITY CHECKLIST e o caveat em 9-IDO também foram atualizados. A sub-fase 1.2 do refator estrutural (extração do gate 9-WW para script) permanece formalmente aberta, mas sem urgência: a Fase 2 do refator vai mover essa seção inteira do SKILL.md para um arquivo satélite, momento em que a decisão de extrair para script será revisitada.
+**Status:** RESOLVIDO em 2026-05-15/16 em duas etapas.
+
+**Etapa 1 (2026-05-15)** — a prosa do gate 9-WW em `xpz-builder/SKILL.md` foi corrigida para reconhecer ambos os formatos estruturais (Form A: Part `babfa2b2-...` no formato de empacotamento; Form B: Part `a51ced48-...` com `<Data Pattern="...">` no acervo materializado). CONSTRAINTS, QUALITY CHECKLIST e o caveat em 9-IDO também foram atualizados.
+
+**Etapa 2 (2026-05-16)** — sub-fase 1.2 do refator estrutural concluída: o gate 9-WW foi extraído para `scripts/Test-GeneXusWorkWithWebApply.ps1` com 10 códigos de finding cobrindo detecção de forma, leitura de Apply (Form A) ou Apply implícito True (Form B), resolução de linked Transaction nos dois formatos, e verificação de `Apply:78cecefe-...=True` na Transaction em batch ou corpus. Validado contra `Gx_FabricaBrasil` (WorkWithWebCarga → Carga com Apply:GUID=True → pass).
+
+**Pendência residual menor:** a detecção WorkWithForWeb → linked Transaction em `Test-GeneXusBatchDependencyOrdering.ps1` (gate 9-IDO) continua não-wired ao script, mesmo que o algoritmo agora exista em `Test-GeneXusWorkWithWebApply.ps1`. O caveat em 9-IDO do SKILL.md ainda exige que o agente verifique essa dimensão de ordenação manualmente quando o batch contém WorkWithForWeb e a Transaction linkada juntos. Pode ser fechado em frente futura reusando `Get-WorkWithForWebDetails` em 9-IDO.
 
 **Importância:** alta
 **Maturidade:** pesquisa feita
