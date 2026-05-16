@@ -200,9 +200,13 @@ $findings = @()
 if ($batchProcedures.Count -eq 0) {
     $status = 'not-applicable'
 } else {
-    # 2. Indexar Procedures no corpus por nome
+    # 2. Indexar Procedures no corpus por nome (restringe a subpasta canonica Procedure/)
+    $corpusProcedureFolder = Join-Path $CorpusFolder 'Procedure'
+    if (-not (Test-Path -LiteralPath $corpusProcedureFolder -PathType Container)) {
+        throw "Layout do CorpusFolder inesperado: subpasta 'Procedure' nao encontrada em $CorpusFolder; gate exige layout canonico <Type>/<Name>.xml gerado por Sync-GeneXusXpzToXml.ps1"
+    }
     $corpusIndex = @{}
-    $corpusXmls = @(Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File)
+    $corpusXmls = @(Get-ChildItem -LiteralPath $corpusProcedureFolder -Recurse -Filter *.xml -File)
     $corpusTotal = $corpusXmls.Count
     $corpusSeen = 0
     foreach ($xml in $corpusXmls) {

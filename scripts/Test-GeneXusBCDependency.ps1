@@ -170,10 +170,14 @@ if ($batchProcedures.Count -eq 0) {
             }
         }
     }
-    # 4. Varrer corpus uma unica vez por TX pendentes
+    # 4. Varrer corpus uma unica vez por TX pendentes (restringe a subpasta canonica Transaction/)
     $corpusTransactions = @{}  # name (lower) -> ObjectMetadata
     if ($pendingCorpusLookup.Count -gt 0) {
-        $corpusXmls = Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File
+        $corpusTransactionFolder = Join-Path $CorpusFolder 'Transaction'
+        if (-not (Test-Path -LiteralPath $corpusTransactionFolder -PathType Container)) {
+            throw "Layout do CorpusFolder inesperado: subpasta 'Transaction' nao encontrada em $CorpusFolder; gate exige layout canonico <Type>/<Name>.xml gerado por Sync-GeneXusXpzToXml.ps1"
+        }
+        $corpusXmls = Get-ChildItem -LiteralPath $corpusTransactionFolder -Recurse -Filter *.xml -File
         foreach ($xml in $corpusXmls) {
             $meta = Get-ObjectMetadata $xml.FullName
             if ($null -eq $meta -or [string]::IsNullOrEmpty($meta.Name)) { continue }

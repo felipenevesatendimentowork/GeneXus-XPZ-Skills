@@ -188,9 +188,13 @@ if ($batchObjects.Count -lt 2) {
         elseif ($obj.TypeGuid -eq $TransactionTypeGuid) { [void]$batchTransactionNames.Add($obj.Name) }
         elseif ($obj.TypeGuid -eq $WorkWithForWebTypeGuid) { $batchWorkWithForWeb += $obj }
     }
-    # Procedures que existem no corpus (necessario para distinguir "Procedure nova")
+    # Procedures que existem no corpus (necessario para distinguir "Procedure nova") — restringe a subpasta canonica Procedure/
+    $corpusProcedureFolder = Join-Path $CorpusFolder 'Procedure'
+    if (-not (Test-Path -LiteralPath $corpusProcedureFolder -PathType Container)) {
+        throw "Layout do CorpusFolder inesperado: subpasta 'Procedure' nao encontrada em $CorpusFolder; gate exige layout canonico <Type>/<Name>.xml gerado por Sync-GeneXusXpzToXml.ps1"
+    }
     $corpusProcedureNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($xml in (Get-ChildItem -LiteralPath $CorpusFolder -Recurse -Filter *.xml -File)) {
+    foreach ($xml in (Get-ChildItem -LiteralPath $corpusProcedureFolder -Recurse -Filter *.xml -File)) {
         $meta = Get-ObjectMetadata $xml.FullName
         if ($null -eq $meta) { continue }
         if ($meta.TypeGuid -ne $ProcedureTypeGuid) { continue }
