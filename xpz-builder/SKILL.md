@@ -49,8 +49,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - Identify the target object type and locate the most comparable structural template
 - Apply risk assessment from [03-risco-e-decisao-por-tipo](../03-risco-e-decisao-por-tipo.md) before proceeding
 - Abort if no comparable structural template exists and risk is high or very high
-- For each GeneXus object type present in the batch, load the corresponding satellite under `responsibilities-by-type/` end-to-end before generating, editing, or packaging the XML, in addition to this `SKILL.md`. Satellites consolidate type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Available satellites: `responsibilities-by-type/transaction.md` (Transaction), `responsibilities-by-type/webpanel.md` (WebPanel), `responsibilities-by-type/dataprovider.md` (DataProvider), `responsibilities-by-type/api.md` (API).
-- For `Procedure`, classify the current delta by functional block before editing: `Source`, `Rules/parm`, `Variables`, `Calls and dependencies`, `Identity and container`, and `Report layout` when applicable
+- For each GeneXus object type present in the batch, load the corresponding satellite under `responsibilities-by-type/` end-to-end before generating, editing, or packaging the XML, in addition to this `SKILL.md`. Satellites consolidate type-specific RESPONSIBILITIES and QUALITY CHECKLIST entries. Available satellites: `responsibilities-by-type/transaction.md` (Transaction), `responsibilities-by-type/webpanel.md` (WebPanel), `responsibilities-by-type/dataprovider.md` (DataProvider), `responsibilities-by-type/api.md` (API), `responsibilities-by-type/procedure.md` (Procedure, incluindo simple report Procedure).
 - Treat any extra block opened after the first one as an `adjacent block` and open it only when there is explicit functional dependency with the primary edit block
 - Name every justified block transition in the review or packaging rationale, instead of silently widening the edit scope
 - State the intended conclusion or effect scope at the smallest functional level supported by the delta, including execution context when that distinction matters
@@ -63,7 +62,6 @@ If the main need is to prepare or validate the initial folder structure around t
 - Validate `Source` compatibility by methodology first: GeneXus semantic rules plus the XPZ trail and `nexa`; use KB corpus search only as fallback when the methodological base does not cover the case
 - Separate explicitly `well-formed XML` from `probably importable object` before packaging; never treat XML parse success alone as enough when the object depends materially on `Source`
 - When a local XML candidate already exists on disk and depends materially on `Source`, run `..\scripts\Test-GeneXusSourceSanity.ps1 -InputPath <arquivo>` before packaging; treat `sourceSanityStatus=fail` as a hard stop and `warn` as consultative conservative review
-- For simple report `Procedure`, prefer the documented sanitized canonical template first; use it as a materialization source only when the selected block in [05b-procedure-relatorio-familias-e-templates](../05b-procedure-relatorio-familias-e-templates.md) is marked as `molde pronto`; escalate to KB corpus only when the methodological base does not cover the case, when the initial attempt plus one short structural corrective attempt fail, or when KB-local dialect/localism appears
 - Classify each package candidate by content delta as `requested change`, `necessary auxiliary change`, or `extra unrequested change` before packaging
 - Require explicit signaling before packaging when a candidate item remains as `extra unrequested change`, including metadata, reserialization, or known noise that is not strictly required
 - Generate valid `lastUpdate` timestamp (real local time, not placeholder)
@@ -131,31 +129,6 @@ If the main need is to prepare or validate the initial folder structure around t
 - Declare confidence level and limitations explicitly at the end of every output
 - When generating an object for a small or new KB that has no comparable local XML: follow the resource ladder from [08-guia-para-agente-gpt.md](../08-guia-para-agente-gpt.md); if reaching level 2 (best-effort attempt without commitment), declare explicitly which source sustains the generation (`molde sanitizado`, `XML real da KB atual`, `XML real de KB externa inspecionada`, or `hipótese`), signal the confidence level, and require validation before import; if the probability of success is assessed as low, present the options to the user and wait for a decision before generating
 - Keep `WorkWithWeb` noise that is already proven in this trail as non-functional in the manifest, especially `Load Code` in `Selection` and the affected `View` tabs; do not generalize this to unrelated `WorkWithWeb` cases
-- When changing a `Procedure`, run a minimum semantic pre-packaging gate on the `Procedure` itself:
-  - declare the primary edit block before touching the XML
-  - use only the adjacent blocks required by explicit functional dependency
-  - name each justified block transition during review, for example `Rules/parm -> Variables` or `Source -> Calls and dependencies`
-  - if the current reasoning no longer needs a new block, stop expanding; do NOT reopen the whole object by reflex
-  - distinguish `well-formed XML` from `minimum Source sanity gate passed`
-  - if the object depends on `Source`, do not package while the `Source` gate is still unresolved
-  - review structural pair balance touched by the delta, such as `Sub/EndSub`, `For each/EndFor`, `Do Case/EndCase`, and `If/EndIf`
-  - treat `elseif`, `iif(...)`, newly dense conditions, and calls inside conditions that diverge from the object's dominant local style as conservative warnings to rewrite when the form is not methodologically anchored
-  - if `parm(...)` changed, every new parm variable must exist in the variables section of the object
-  - if `parm(...)` changed, variable name, base type, and presence must remain coherent
-  - if the current `Source` delta inserts a new `Case` inside a `Do Case` that depends materially on `parm(...)`, compare the new branch against adjacent sibling `Case` branches in the same block before accepting the delta
-  - in that `Do Case` review, verify that relevant input parms expected by the local pattern are actually used in the new branch; if a comparably expected parm is not used, require an explicit justification before concluding the delta
-  - if the new `Case` diverges from the local pattern of sibling branches without explicit justification, block the delta instead of accepting a hardcoded or weakly analogous branch
-  - if `parm(...)` changed or a direct call is reviewed, distinguish the callee signature line from each caller call-site line
-  - do NOT treat the callee `parm(...)` line as evidence that a caller invokes that `Procedure`
-  - for report `Procedure`, classify every edited fragment as `Source`, `Rules`, or layout before accepting the change
-  - for report `Procedure`, keep `Output_file`, `Header`, `Footer`, `For each`, and `print printBlock...` in `Source`
-  - for report `Procedure`, keep `parm(...)` in `Rules`
-  - for report `Procedure`, keep `Bands`, `PrintBlock`, `ReportLabel`, and `ReportAttribute` in layout `Part c414ed00-8cc4-4f44-8820-4baf93547173`
-  - for report `Procedure`, never invent GXML-like layout, unsupported controls, or unproved shape to "complete" the object
-  - after one initial structural attempt plus at most one short corrective attempt for report `Procedure`, stop iterating by analogy and escalate to comparable real XML
-  - if the current `Source` delta introduces a new helper variable, that variable must exist in the variables section and its declared type must remain coherent with the way it is used
-  - if the current `Source` delta introduces a method call on a variable, accept it only when that method is compatible with the declared variable type and is anchored by the methodological base loaded for the case
-  - if the current `Source` delta introduces cleanup or reinitialization of a collection, SDT, or `Messages, GeneXus.Common`, accept only patterns anchored by the methodological base for that declared type
 - When declaring a variable as an SDT collection in any object type (`WebPanel`, `Procedure`, `DataProvider`): use `AttCollection=True`; NEVER use `Collection=True` or `IsCollection=True` — both are invalid and will be rejected; this applies to the variable's `<Properties>` block in the XML
   - for collection reinitialization introduced by the current `Source` delta and already covered by the methodological base, prefer `= new()`; do NOT accept unsupported cleanup forms such as `SetEmpty()` only by plausibility or analogy
   - if a period filter is introduced over a `DateTime` field, prefer direct comparison on the `DateTime` column: `>=` start and `<` next day after end
@@ -163,8 +136,6 @@ If the main need is to prepare or validate the initial folder structure around t
   - if a function on the column is kept, justify it explicitly
   - when the user asks for an initial-date/final-date pair, prefer two independent `where` clauses instead of branching into unnecessary scenarios
   - when the object already has a clear local form in `Source`, prefer following that form as a weak readability heuristic, not as a hard methodological rule
-- When the candidate batch contains a `Procedure` that declares a variable with `ATTCUSTOMTYPE` = `bc:<X>`, run the BC dependency preflight gate before packaging: locate Transaction `X` in the batch or in `ObjetosDaKbEmXml` and verify `idISBUSINESSCOMPONENT=True`; treat absence of that confirmation as a hard blocker
-- When the candidate batch contains a `Procedure` whose `Source` delta introduces or materially expands a `Sub` block, run the Sub-pattern Mirroring gate (9-PSM): scan the procedure's pre-existing `Sub` delegation structure; if a dominant `iteration-sub → unit-sub` pattern exists and the new block is `mixed`, emit an architectural alert and require user acknowledgment or restructuring before proceeding; treat this as advisory, not as a hard packaging blocker
 - When the candidate batch contains 2 or more distinct objects, run the Import Dependency Ordering gate (9-IDO) after all other object-level gates: detect structural dependencies between batch objects, assign each object to a topological layer, alert when ordering risk exists across 2 or more layers, and ABORT when circular dependencies are found
 
 ---
@@ -633,7 +604,6 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] If `parm(...)` changed, variable name, base type, and presence remained coherent
 - [ ] Variables referenced by the edited `Source` exist in the `Procedure`
 - [ ] Every new helper variable introduced by the current `Source` delta exists in the variables section and remains coherent with its declared type
-- [ ] For `Procedure`, the primary edit block was declared before editing and any block transition was justified explicitly
 - [ ] Every new method call introduced by the current `Source` delta on a variable is compatible with the declared type of that variable and is anchored by the methodological base loaded for the case
 - [ ] Cleanup or reinitialization introduced by the current `Source` delta for a collection, SDT, or `Messages, GeneXus.Common` uses a pattern anchored by the methodological base loaded for that declared type
 - [ ] For collection reinitialization introduced by the current `Source` delta and already covered by the methodological base, `= new()` was preferred and unsupported forms such as `SetEmpty()` were not accepted only by plausibility or analogy
