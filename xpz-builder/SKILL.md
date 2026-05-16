@@ -503,47 +503,7 @@ Reference files and when to load them:
 
 ## WWP PACKAGING
 
-Aplica-se quando o pacote contém objetos WorkWithPlus. Se a KB não usa WWP, ignorar esta seção inteiramente.
-
-### Regra central
-
-`Apply:WWP` em uma Transaction não garante que todos os objetos WWP já estão presentes no pacote. Considerar WWP completo apenas quando houver evidência dos três elementos:
-
-1. `PatternInstance` da entidade/instância (`WorkWithPlus...`)
-2. Objetos derivados (`...WW`, `...WWDS`, `...LoadDVCombo`, `...WWGetFilterData`)
-3. Callers e componentes customizados referenciando os nomes reais gerados na KB destino
-
-Se algum desses estiver ausente do pacote: gerar na IDE via Apply Pattern e reexportar, **ou** incluir explicitamente os objetos faltantes no pacote seguinte.
-
-### Decision tree antes de empacotar
-
-1. **Erro de referência para `*WW` ou `wc*` após import?**
-   - Sim → confirmar se o pacote trouxe apenas `Apply:WWP` sem os objetos gerados.
-2. **`PatternInstance WorkWithPlus*` presente para cada Transaction alvo?**
-   - Não → gerar pacote de instâncias por Transaction.
-3. **Web component customizado clonado (`wcX`) com pattern próprio?**
-   - Sim → transportar trio completo: `wcX`, `WorkWithPluswcX`, `wcXLoadDVCombo`.
-4. **Chave ou nome estrutural da entidade mudou?**
-   - Sim → revisar duplicatas de atributos/parâmetros no XML da PatternInstance.
-
-### Estratégia de pacotes
-
-Usar fases pequenas e previsíveis:
-
-1. **Estrutura base (`SEM_WWP`)** — Transactions, Attributes, SubtypeGroups, regras/fórmulas sem pattern aplicado.
-2. **Estrutura + Apply (`COM_WWP`)** — mesmo conteúdo com `Apply:WWP` nas Transactions alvo.
-3. **Instâncias WWP** — `PatternInstance` por Transaction e instâncias customizadas (`wc*`, `wp*`).
-4. **Correção cirúrgica** — pacote mínimo para corrigir um ou poucos objetos quebrados.
-
-### Clonagem de instância customizada
-
-Ao clonar tela customizada WorkWithPlus:
-
-- Sempre transportar o trio completo: `wcAlvo`, `WorkWithPluswcAlvo`, `wcAlvoLoadDVCombo`
-- Atualizar chamadas para procedures novas (`prGrava*`, `prAltera*`, `prDados*`)
-- Remover campos/IDs extintos no modelo novo
-- Atualizar callers (`wp*`) para criar o `wc` correto
-- Revisar referências a grids `*WW` conforme nome real gerado pelo WWP na KB
+WWP packaging guidance lives in the satellite [wwp-packaging.md](wwp-packaging.md). **Load it when the package contains WorkWithPlus objects** (PatternInstance `WorkWithPlus*`, derived `*WW`/`*WWDS`/`*LoadDVCombo`/`*WWGetFilterData`, or custom screens `wc*`/`wp*`). The satellite consolidates: regra central (3 elementos), decision tree, estratégia de pacotes faseada, regras de clonagem de instância customizada, and WWP-specific Quality Checklist items. CONSTRAINTS about WWP remain in this `SKILL.md`.
 
 ---
 
@@ -626,10 +586,6 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] For every `WorkWithForWeb` (`WorkWithWeb*`) in the batch: the structural form was detected (Part `babfa2b2-...` packaging form OR Part `a51ced48-...` acervo form with `<Data Pattern="...">`); for Form A, `Apply` property was verified; for Form B, `Apply` is implicitly `True`; the linked Transaction was resolved (from `<Property><Name>Transaction</Name>` in Form A or from `<transaction transaction="<guid>-<name>" />` in Form B); if linked Transaction is also in the batch or in `ObjetosDaKbEmXml`, `Apply:78cecefe-be7d-4980-86ce-8d6e91fba04b = True` was confirmed in that Transaction's Properties
 - [ ] For every `Transaction` in the batch: `Test-GeneXusTransactionCoherence.ps1` was run; `fail` findings were corrected; `warn` findings were reviewed and either corrected or explicitly justified before packaging
 - [ ] For every `Procedure` in the batch: `Test-GeneXusProcedureSubPattern.ps1` was run and returned `pass`, `not-applicable`, or `alert` with each `warn` finding explicitly acknowledged (intent confirmed or new Sub restructured) and recorded in the closing declaration
-- [ ] If the package contains a WWP PatternInstance (`WorkWithPlus*`): rename collisions were checked (two old fields mapping to the same new name)
-- [ ] If the package contains a WWP PatternInstance: duplicate nodes in `<attribute>`, `<gridAttribute>`, and `<parameter>` were removed
-- [ ] If the package contains a WWP PatternInstance: `parentGuid` points to the correct target Transaction, not to the source entity
-- [ ] If the package contains a WWP PatternInstance: references to attributes apparently removed from the model were reviewed
 - [ ] When the batch had 2 or more distinct objects: `Test-GeneXusBatchDependencyOrdering.ps1` was run and returned `not-applicable`, `pass`, `alert` with explicit confirmation/justification, or `fail` with the cycle presented and packaging aborted; the `ido-ww-detection-pending` info finding (if present) was acknowledged and any WorkWithForWeb → Transaction ordering was verified manually
 
 ---
