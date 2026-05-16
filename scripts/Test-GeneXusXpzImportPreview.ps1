@@ -12,7 +12,10 @@ PreviewMode="true" e fecha a KB. O script não executa importação real.
 Caminho da KB a ser usada no preview.
 
 .PARAMETER XpzPath
-Caminho do arquivo XPZ a ser inspecionado em preview.
+Caminho do pacote de importação a ser inspecionado em preview. Aceita `.xpz`
+(formato compactado padrão GeneXus), `.xml` ou `.import_file.xml` (envelope
+GeneXus com raiz `<ExportFile>`) — qualquer um deles é insumo válido quando o
+envelope já foi validado externamente por `Test-GeneXusImportFileEnvelope.ps1`.
 
 .PARAMETER WorkingDirectory
 Diretório de trabalho para artefatos temporários desta execução.
@@ -51,7 +54,11 @@ Valor explícito para ImportType. Default: AllObjects.
 Valor explícito para LanguageTranslations. Default: Keep.
 
 .PARAMETER ImportKbInformation
-Valor explícito para ImportKBInformation. Default: false.
+Valor para ImportKBInformation, tri-state: omitido ou `false` significam não
+emitir o atributo na task Import (semanticamente equivalente ao default da
+task); apenas `true` emite o atributo e exige que a task carregada exponha a
+propriedade. Bloqueio por assinatura da task só ocorre quando o valor for
+`true` em instalação sem suporte; `false` é tratado como omissão.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
@@ -242,8 +249,17 @@ function Validate-XpzPath {
         }
     }
 
-    if (-not $resolved.ToLowerInvariant().EndsWith('.xpz')) {
-        Add-WarningMessage -Message 'XpzPath informado não termina com extensão .xpz.'
+    $lowerPath = $resolved.ToLowerInvariant()
+    $acceptedExtensions = @('.xpz', '.xml', '.import_file.xml')
+    $isAccepted = $false
+    foreach ($ext in $acceptedExtensions) {
+        if ($lowerPath.EndsWith($ext)) {
+            $isAccepted = $true
+            break
+        }
+    }
+    if (-not $isAccepted) {
+        Add-WarningMessage -Message 'XpzPath informado não termina com extensão reconhecida (.xpz, .xml, .import_file.xml).'
     }
 
     return [ordered]@{
@@ -373,7 +389,7 @@ function New-MsBuildProjectContent {
     if (-not [string]::IsNullOrWhiteSpace($updateEscaped)) {
         $optionalAttributes.Add("      UpdateFile=""`$(UpdateFilePath)""")
     }
-    if (-not [string]::IsNullOrWhiteSpace($importKbInfoEscaped)) {
+    if ($ImportKbInformation -eq 'true') {
         $optionalAttributes.Add("      ImportKBInformation=""`$(ImportKBInformation)""")
     }
     $optionalAttributesText = ''
@@ -611,7 +627,7 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($resolvedUpdateFilePath) -and -not (Test-ImportTaskSupportsProperty -PropertyNames $importTaskPropertyNames -PropertyName 'UpdateFile')) {
         Add-BlockingReason -Reason 'A instalação atual não expõe a propriedade pública UpdateFile na task Import.'
         $unsupported = [ordered]@{
-            status = 'não apto para prosseguir'
+            status = 'preview bloqueado por assinatura da task'
             summary = 'Preview bloqueado porque a instalação atual não suporta UpdateFile na task Import.'
             exitCode = 32
             stage = 'pre-validate'
@@ -644,11 +660,11 @@ try {
         exit 32
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($ImportKbInformation) -and -not (Test-ImportTaskSupportsProperty -PropertyNames $importTaskPropertyNames -PropertyName 'ImportKBInformation')) {
-        Add-BlockingReason -Reason 'A instalação atual não expõe a propriedade pública ImportKBInformation na task Import.'
+    if ($ImportKbInformation -eq 'true' -and -not (Test-ImportTaskSupportsProperty -PropertyNames $importTaskPropertyNames -PropertyName 'ImportKBInformation')) {
+        Add-BlockingReason -Reason 'A instalação atual não expõe a propriedade pública ImportKBInformation na task Import; valor solicitado foi true e não pode ser omitido sem mudar a intenção.'
         $unsupported = [ordered]@{
-            status = 'não apto para prosseguir'
-            summary = 'Preview bloqueado porque a instalação atual não suporta ImportKBInformation na task Import.'
+            status = 'preview bloqueado por assinatura da task'
+            summary = 'Preview bloqueado porque a instalação atual não suporta ImportKBInformation=true na task Import.'
             exitCode = 32
             stage = 'pre-validate'
             resolvedPaths = [ordered]@{

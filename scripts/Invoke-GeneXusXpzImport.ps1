@@ -12,7 +12,10 @@ PreviewMode e fecha a KB. O script não executa exportação.
 Caminho da KB a ser usada na importação.
 
 .PARAMETER XpzPath
-Caminho do arquivo XPZ de entrada.
+Caminho do pacote de importação de entrada. Aceita `.xpz` (formato compactado
+padrão GeneXus), `.xml` ou `.import_file.xml` (envelope GeneXus com raiz
+`<ExportFile>`) — qualquer um deles é insumo válido quando o envelope já foi
+validado externamente por `Test-GeneXusImportFileEnvelope.ps1`.
 
 .PARAMETER WorkingDirectory
 Diretório de trabalho para artefatos temporários desta execução.
@@ -54,7 +57,11 @@ Valor explícito para LanguageTranslations. Default: Keep.
 Valor explícito para RedefineExternalPrograms. Default: false.
 
 .PARAMETER ImportKbInformation
-Valor explícito para ImportKBInformation. Default: false.
+Valor para ImportKBInformation, tri-state: omitido ou `false` significam não
+emitir o atributo na task Import (semanticamente equivalente ao default da
+task); apenas `true` emite o atributo e exige que a task carregada exponha a
+propriedade. Bloqueio por assinatura da task só ocorre quando o valor for
+`true` em instalação sem suporte; `false` é tratado como omissão. Default: false.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
@@ -248,8 +255,17 @@ function Validate-XpzPath {
         }
     }
 
-    if (-not $resolved.ToLowerInvariant().EndsWith('.xpz')) {
-        Add-WarningMessage -Message 'XpzPath informado não termina com extensão .xpz.'
+    $lowerPath = $resolved.ToLowerInvariant()
+    $acceptedExtensions = @('.xpz', '.xml', '.import_file.xml')
+    $isAccepted = $false
+    foreach ($ext in $acceptedExtensions) {
+        if ($lowerPath.EndsWith($ext)) {
+            $isAccepted = $true
+            break
+        }
+    }
+    if (-not $isAccepted) {
+        Add-WarningMessage -Message 'XpzPath informado não termina com extensão reconhecida (.xpz, .xml, .import_file.xml).'
     }
 
     return [ordered]@{
@@ -659,7 +675,7 @@ try {
 
     if ($script:BlockingReasons.Count -gt 0) {
         $unsupported = [ordered]@{
-            status = 'não apto para prosseguir'
+            status = 'import bloqueado por assinatura da task'
             summary = 'Importação bloqueada porque a task Import não expõe um ou mais parâmetros solicitados.'
             exitCode = 32
             stage = 'task-support'
