@@ -273,3 +273,15 @@ A implementacao no script `scripts/Test-GeneXusImportFileEnvelope.ps1` (parametr
 - `Causa`: assumir a `Base Table` pelo nome do objeto ou por leitura parcial do bloco, sem confirmar a determinacao explicita ou implicita.
 - `Consequência`: aceitar atributos que nao pertencem a `Base Table`/`Extended Table` coerente, gerando analise errada ou ajuste de `Source` fora da navegacao real.
 - `Regra de checagem`: antes de validar atributos do bloco, identificar a `Base Table` determinada do `For each` e verificar cada referencia contra essa base e seu contexto coerente de navegacao.
+
+---
+
+## Gates determinísticos de empacotamento WWP
+
+A skill `xpz-builder` extraiu seus gates da Fase 9 (`9-BC`, `9-WW`, `9-PSM`, `9-IDO`, `Writability`) para scripts em `scripts/Test-GeneXus*.ps1`. Contrato de invocação, códigos de finding e regras de uso ficam em `xpz-builder/SKILL.md` e satélites `xpz-builder/responsibilities-by-type/*.md`; esta seção só registra a existência dos scripts para descoberta a partir da raiz.
+
+- `scripts/Test-GeneXusBCDependency.ps1` — gate `9-BC` (Procedures que escrevem em Transaction como Business Component)
+- `scripts/Test-GeneXusBatchDependencyOrdering.ps1` — gate `9-IDO` (ordem entre Procedure e Transaction no batch)
+- `scripts/Test-GeneXusProcedureSubPattern.ps1` — gate `9-PSM` (padrão dominante de Sub em Procedures)
+- `scripts/Test-GeneXusTransactionWritability.ps1` — gate `Writability` (Transactions efetivamente graváveis)
+- `scripts/Test-GeneXusWorkWithWebApply.ps1` — gate `9-WW` (Apply em WorkWithForWeb, formas A e B)
