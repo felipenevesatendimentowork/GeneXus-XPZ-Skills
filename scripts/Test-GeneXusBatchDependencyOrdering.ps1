@@ -347,7 +347,7 @@ if ($batchObjects.Count -lt 2) {
     if ($batchWorkWithForWeb.Count -gt 0) {
         $wwNames = @($batchWorkWithForWeb | ForEach-Object { $_.Name })
         $findings += New-Finding -Severity 'info' -Code 'ido-ww-detection-pending' `
-            -Message "Batch contem $($batchWorkWithForWeb.Count) WorkWithForWeb; a deteccao de dependencia WorkWithForWeb -> Transaction esta pendente da correcao do gate 9-WW (ver 999-ideias-pendentes.md). Dependencias dessa categoria nao foram avaliadas nesta execucao." `
+            -Message "Batch contem $($batchWorkWithForWeb.Count) WorkWithForWeb; a integracao da deteccao WorkWithForWeb -> Transaction neste script ainda nao foi feita. O gate 9-WW (Test-GeneXusWorkWithWebApply.ps1) ja cobre a verificacao Apply, mas a ordenacao topologica desta dependencia precisa ser adicionada aqui reusando Get-WorkWithForWebDetails. Dependencias dessa categoria nao foram avaliadas nesta execucao." `
             -InvolvedObjects $wwNames
     }
 }

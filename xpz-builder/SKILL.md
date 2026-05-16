@@ -271,16 +271,16 @@ Reference files and when to load them:
    - `fail` (`fail` finding `ido-cycle-detected`) → **ABORT** packaging: present the cycle (listed in the finding) to the user and require resolution before re-running
    - When the batch contains `WorkWithForWeb` objects, the script also emits an `info` finding with code `ido-ww-detection-pending` — the WorkWithForWeb → linked Transaction dependency detection is **not** yet wired into this script, even though the 9-WW gate itself now reads both structural forms. When this info finding is present and the batch mixes a WorkWithForWeb and its linked Transaction, the agent must verify ordering manually (read the linked Transaction from the WorkWithForWeb XML using the 9-WW form detection rules, then check whether that Transaction is in the batch) before packaging
    - Detection scope: (a) Procedure with `bc:<X>` → Transaction X when X is in the batch; (b) Procedure A → Procedure B when A calls B in its Source and B is new in this delta (not in `ObjetosDaKbEmXml`). Procedure → Procedure detection is best-effort scan of Source — false positives may be filtered by user review
-8. Check for improper local changes in `ObjetosDaKbEmXml`:
+12. Check for improper local changes in `ObjetosDaKbEmXml`:
    - If detected, treat this as an explicit process error
    - Preserve those XMLs in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, restore `ObjetosDaKbEmXml` to the official Git version, present a structured manifest of preserved items in the conversation, save it as a local file when incident traceability requires it, and **ABORT** packaging until the snapshot is sane
    - If the target object has not yet returned from the KB by official export, keep working only from `ObjetosGeradosParaImportacaoNaKbNoGenexus`
-9. Load [03-risco-e-decisao-por-tipo](../03-risco-e-decisao-por-tipo.md) → assign risk level
-10. Evaluate abort conditions:
+13. Load [03-risco-e-decisao-por-tipo](../03-risco-e-decisao-por-tipo.md) → assign risk level
+14. Evaluate abort conditions:
    - Risk is high/very high AND no comparable internal template exists → **ABORT**
    - Type is not in the empirical corpus → **ABORT**
    - User requests affirmation of import/build success → **REFUSE**, state limitation
-11. Locate template:
+15. Locate template:
    - Transaction → use family F1–F6 from [05-transaction-familias-e-templates](../05-transaction-familias-e-templates.md)
    - WebPanel → use closest family from [04-webpanel-familias-e-templates](../04-webpanel-familias-e-templates.md)
    - For `WebPanel`, declare the primary edit block before touching the XML and use only the adjacent blocks required by explicit functional dependency
@@ -292,7 +292,7 @@ Reference files and when to load them:
    - For simple report `Procedure`, every output or handoff must label the basis used as exactly one of: `molde sanitizado`, `XML real da KB atual`, `XML real de outra KB`, or `hipótese`
    - If the object has already returned from the KB via official XPZ processing, prefer the current XML in the official corpus over any older delta/import working copy when selecting the base for a new change
    - Before cloning identity fields, classify the container from comparable corpus XML using `Object/@parentType` — never from the directory name in `ObjetosDaKbEmXml`, which varies across KBs. The canonical mapping of container GUIDs lives in [scripts/gx-object-type-catalog.json](../scripts/gx-object-type-catalog.json) (entries `Folder` for user-created containers, `Module` for GeneXus system/organizational containers, `PackagedModule` for installed modules, and `RootModule` for the virtual KB root that has no XML file in the acervo). Read the GUID from the corpus XML and look it up in the catalog; do NOT hardcode parentType GUIDs inline.
-11. Apply conservative cloning:
+16. Apply conservative cloning:
    - Preserve `Object/@guid` (new GUID only for new objects, never reuse existing object's GUID)
    - Preserve `parent`, `parentGuid`, `parentType`, `moduleGuid`
    - Keep all recurring Part types present, even if content is empty
@@ -346,7 +346,7 @@ Reference files and when to load them:
    - For report `Procedure`, when cloning or adapting `PrintBlock` elements, verify that each `RPT_INTERNAL_NAME` value is unique across all sibling blocks in the layout Part; duplicate `RPT_INTERNAL_NAME` values across distinct blocks are a hard structural error — **ABORT** before packaging
    - For report `Procedure`, treat the total layout width as a structural constant inherited from the source template or reference XML; do NOT invent or assume a default value — read it from the canonical template or cloned source; when the value is ambiguous, document the observed value explicitly in the packaging rationale before proceeding
    - For report `Procedure`, if an import error points to invalid control, report block, or layout shape, inspect layout first before altering envelope
-12. Apply envelope rules from [02-regras-operacionais-e-runtime](../02-regras-operacionais-e-runtime.md):
+17. Apply envelope rules from [02-regras-operacionais-e-runtime](../02-regras-operacionais-e-runtime.md):
    - For delta of an existing object, prefer the package format with validated local precedent in the same KB trail before any generic preference
    - Distinguish explicitly between embedded-object package under `<Objects>` and package using `<FilePath>` to external XML
    - Consider local precedent strong only when object type, operation nature, and batch materialization style are compatible with the current case
@@ -356,18 +356,18 @@ Reference files and when to load them:
    - Wrap in `<ExportFile>` with `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`
    - Keep `Source/@kb` and `Source/Version/@guid` in valid GUID format
    - Do NOT include special KB block unless explicitly documented as required
-13. Set or preserve `lastUpdate` according to the batch-role classification:
+18. Set or preserve `lastUpdate` according to the batch-role classification:
    - Classify each active XML as `modified in this round` or `reused unchanged for mandatory dependency closure`
    - If any textual change was persisted in the final XML, classify the item as `modified in this round`
    - Modified object → set `lastUpdate` to the real local timestamp of the final write
    - Unchanged dependency object → preserve the official `lastUpdate` from the official corpus XML
    - If classification and materialized `lastUpdate` diverge → **ABORT**
-14. Audit `lastUpdate` after every local write:
+19. Audit `lastUpdate` after every local write:
    - After writing or rewriting an object XML, reopen the saved file and confirm the root `lastUpdate`
    - If the object was actually modified, `lastUpdate` must reflect the real instant of that last write
    - If the object was not modified and is included only for mandatory dependency closure, preserve the official `lastUpdate` from the corpus XML
    - Do NOT continue to packaging until the saved-file header has been checked
-15. Before packaging, classify active XML roots and validate packaging hygiene:
+20. Before packaging, classify active XML roots and validate packaging hygiene:
    - `Object` top-level → serialize under `<Objects>`
    - `Attribute` top-level → serialize under `<Attributes>`
    - Unsupported root type → **ABORT** or require explicit treatment
@@ -399,12 +399,12 @@ Reference files and when to load them:
    - If an object is embedded under `<Objects>`, it must appear as XML element content only; embedded XML declaration such as `<?xml version="1.0" ...?>` inside `<Objects>` is a blocking envelope error
    - Verify that `<Objects>` contains no text nodes or placeholder literals (strings such as `YOUR-GUID-HERE`, `PLACEHOLDER`, `TODO`) — these indicate the object XML was not properly embedded
    - If the current flow is manual IDE import and `import_file.xml` is still missing, do NOT treat the packaging task as complete
-16. Reread and apply local repository documentation before packaging:
+21. Reread and apply local repository documentation before packaging:
    - Reopen `AGENTS.md`, `README.md`, and any equivalent local KB/repository documentation that defines project-specific functional review chains, contracts, or operational flow
    - Treat those local conventions as mandatory only for that repository, not as universal XPZ methodology
    - If the local documentation requires a functional review chain for the current change type, verify that chain end-to-end in the local XML before packaging
    - Do NOT continue to packaging while any applicable local rule remains pending, ambiguous, or inconsistent in the saved XML
-17. Validate:
+22. Validate:
    - XML is well-formed
    - All recurring Part types present
    - No text placeholder GUIDs remaining
@@ -468,7 +468,7 @@ Reference files and when to load them:
    - When creating a corrective package after partial import failure, report the original package, successfully imported objects, failed objects, probable failure category, and corrective package path/name
    - Corrective packages must contain only the necessary delta for failed objects and strictly required dependencies; do NOT resend all original package objects by default
    - Confirm before packaging that all applicable local repository rules were reread and satisfied in the saved XML
-18. Deliver XML with limitations block:
+23. Deliver XML with limitations block:
    - Which template was used
    - Confidence level
    - That the saved XML was reread and the persisted `lastUpdate` was confirmed after the final local write

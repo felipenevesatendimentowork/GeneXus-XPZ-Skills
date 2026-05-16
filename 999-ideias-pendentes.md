@@ -982,6 +982,15 @@ A escolha por script (e não por regra textual em SKILL.md) segue a preferência
 
 ### Perguntas a responder antes de decidir
 
+- Qual a lista exata de assinaturas de mojibake a detectar? Falso positivo aqui é caro — bloquear pacote legítimo é pior que deixar passar um caso raro.
+- O gate **bloqueia** o empacotamento ou apenas **alerta**? Depende de quanto o repositório-alvo admite texto legado com acentuação degradada.
+- O escopo cobre apenas `Source` e equivalentes textuais editáveis, ou inclui `Description`, `Documentation` e nomes de identificadores?
+- Há caso real recente de mojibake em pacote dentro do portfólio que sirva para calibrar a heurística empiricamente?
+
+### Limiar para implementar
+
+Implementar quando houver: (a) caso real de mojibake detectado em pacote do portfólio para calibrar empiricamente as assinaturas e a política de bloqueio/alerta, e (b) decisão fechada sobre escopo de partes do XML cobertas.
+
 ## ENCERRADO — Gate 9-WW estruturalmente errado para WorkWithForWeb do acervo
 
 **Status:** RESOLVIDO em 2026-05-15/16 em duas etapas.
@@ -1026,15 +1035,6 @@ Antes de extrair o gate para script (continuação da Fase 1 do refator), o gate
 ### Limiar para implementar
 
 Implementar antes da retomada da sub-fase 1.2 do refator estrutural do `xpz-builder` (extração do gate 9-WW para `scripts/Test-GeneXusWorkWithWebApply.ps1` ou similar). Sem essa correção, o script extraído replicaria o bug em código e o problema ficaria mais difícil de tratar depois.
-
-- Qual a lista exata de assinaturas de mojibake a detectar? Falso positivo aqui é caro — bloquear pacote legítimo é pior que deixar passar um caso raro.
-- O gate **bloqueia** o empacotamento ou apenas **alerta**? Depende de quanto o repositório-alvo admite texto legado com acentuação degradada.
-- O escopo cobre apenas `Source` e equivalentes textuais editáveis, ou inclui `Description`, `Documentation` e nomes de identificadores?
-- Há caso real recente de mojibake em pacote dentro do portfólio que sirva para calibrar a heurística empiricamente?
-
-### Limiar para implementar
-
-Implementar quando houver: (a) caso real de mojibake detectado em pacote do portfólio para calibrar empiricamente as assinaturas e a política de bloqueio/alerta, e (b) decisão fechada sobre escopo de partes do XML cobertas.
 
 ## Gate de dependências GeneXus no empacotamento de delta
 
