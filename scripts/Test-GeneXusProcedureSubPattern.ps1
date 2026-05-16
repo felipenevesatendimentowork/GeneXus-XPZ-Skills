@@ -249,6 +249,7 @@ if ($batchProcedures.Count -eq 0) {
                 [void]$postCalledByOthers.Add($call.Groups['name'].Value)
             }
         }
+        $procFindingsBefore = $findings.Count
         foreach ($newSub in $postSubs) {
             if ($preNames.Contains($newSub.Name)) { continue }
             $newClass = Classify-Sub -Body $newSub.Body -Name $newSub.Name -NamesCalledByOthers $postCalledByOthers
@@ -264,6 +265,12 @@ if ($batchProcedures.Count -eq 0) {
                     -ProcedureName $proc.Name -ProcedureFile $procRel `
                     -DominantPattern $domSummary -NewSubName $newSub.Name -NewSubClass $newClass
             }
+        }
+        if ($findings.Count -eq $procFindingsBefore) {
+            $findings += New-Finding -Severity 'info' -Code 'psm-no-new-subs-detected' `
+                -Message "Procedure '$($proc.Name)' tem padrao dominante '$($dominant.IterationSub)' -> '$($dominant.UnitSub)' identificado no pre-delta e nenhuma Sub nova foi introduzida no batch" `
+                -ProcedureName $proc.Name -ProcedureFile $procRel `
+                -DominantPattern $domSummary
         }
     }
     # 4. Status agregado (gate advisory: nunca fail)
