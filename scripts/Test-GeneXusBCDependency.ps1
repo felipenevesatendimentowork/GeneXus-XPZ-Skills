@@ -30,6 +30,8 @@ $AttCustomTypeRegex = [regex]::new('<Property>\s*<Name>ATTCUSTOMTYPE</Name>\s*<V
                                    [System.Text.RegularExpressions.RegexOptions]::Singleline)
 $VariableNameRegex  = [regex]::new('Name="(?<name>[^"]*)"',
                                    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$LevelNameRegex     = [regex]::new('<Level\s[^>]*name="(?<n>[^"]+)"',
+                                   [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
 function Normalize-CustomType {
     param([string]$Value)
@@ -47,7 +49,8 @@ function New-Finding {
         [string]$ProcedureName,
         [string]$ProcedureFile,
         [string]$TransactionName,
-        [string]$Location
+        [string]$Location,
+        [string]$SublevelPath
     )
     return [pscustomobject]@{
         severity        = $Severity
@@ -57,6 +60,7 @@ function New-Finding {
         procedureFile   = $ProcedureFile
         transactionName = $TransactionName
         location        = $Location
+        sublevelPath    = $SublevelPath
     }
 }
 
@@ -87,6 +91,16 @@ function Get-ObjectMetadata {
         TypeGuid = $objType
         IsBC     = $isBC  # $true / $false / $null
     }
+}
+
+function Get-TransactionLevels {
+    param([string]$XmlPath)
+    $text = Get-Content -LiteralPath $XmlPath -Raw -Encoding UTF8
+    $names = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($m in $LevelNameRegex.Matches($text)) {
+        [void]$names.Add($m.Groups['n'].Value)
+    }
+    return ,$names
 }
 
 function Get-BCDependencies {
@@ -150,8 +164,9 @@ if ($batchProcedures.Count -eq 0) {
         $procDeps[$proc.Path] = $deps
         $bcDependenciesFound += $deps.Count
         foreach ($d in $deps) {
-            if (-not $batchTransactions.ContainsKey($d.TransactionName.ToLowerInvariant())) {
-                [void]$pendingCorpusLookup.Add($d.TransactionName)
+            $mainTxName = ($d.TransactionName -split '\.', 2)[0]
+            if (-not $batchTransactions.ContainsKey($mainTxName.ToLowerInvariant())) {
+                [void]$pendingCorpusLookup.Add($mainTxName)
             }
         }
     }
@@ -172,41 +187,76 @@ if ($batchProcedures.Count -eq 0) {
     foreach ($proc in $batchProcedures) {
         $procRel = [System.IO.Path]::GetRelativePath($FrontFolder, $proc.Path)
         foreach ($dep in $procDeps[$proc.Path]) {
-            $txKey = $dep.TransactionName.ToLowerInvariant()
-            if ($batchTransactions.ContainsKey($txKey)) {
-                $tx = $batchTransactions[$txKey]
-                if ($null -eq $tx.IsBC) {
-                    $findings += New-Finding -Severity 'fail' -Code 'bc-isbc-property-absent-batch' `
-                        -Message "Transaction '$($tx.Name)' no batch nao tem a propriedade idISBUSINESSCOMPONENT; corrigir antes de empacotar" `
-                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $tx.Name -Location 'batch'
-                } elseif ($tx.IsBC -eq $false) {
-                    $findings += New-Finding -Severity 'fail' -Code 'bc-isbc-false-batch' `
-                        -Message "Transaction '$($tx.Name)' no batch tem idISBUSINESSCOMPONENT=False; corrigir antes de empacotar" `
-                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $tx.Name -Location 'batch'
-                } else {
-                    $findings += New-Finding -Severity 'warn' -Code 'bc-isbc-true-same-batch-ordering-risk' `
-                        -Message "Transaction '$($tx.Name)' e o Procedure '$($proc.Name)' estao no mesmo batch; risco de ordenacao na importacao" `
-                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $tx.Name -Location 'batch'
-                }
-            } elseif ($corpusTransactions.ContainsKey($txKey)) {
-                $tx = $corpusTransactions[$txKey]
-                if ($null -eq $tx.IsBC) {
-                    $findings += New-Finding -Severity 'fail' -Code 'bc-isbc-property-absent-corpus' `
-                        -Message "Transaction '$($tx.Name)' no corpus nao tem a propriedade idISBUSINESSCOMPONENT; dependencia bc: nao pode ser satisfeita" `
-                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $tx.Name -Location 'corpus'
-                } elseif ($tx.IsBC -eq $false) {
-                    $findings += New-Finding -Severity 'fail' -Code 'bc-isbc-false-corpus' `
-                        -Message "Transaction '$($tx.Name)' no corpus tem idISBUSINESSCOMPONENT=False; dependencia bc: nao pode ser satisfeita" `
-                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $tx.Name -Location 'corpus'
-                } else {
-                    $findings += New-Finding -Severity 'info' -Code 'bc-isbc-true-corpus' `
-                        -Message "Transaction '$($tx.Name)' ja existe como BC no corpus" `
-                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $tx.Name -Location 'corpus'
-                }
+            $depFullName = $dep.TransactionName
+            $parts = @($depFullName -split '\.')
+            $mainTxName = $parts[0]
+            if ($parts.Count -gt 1) {
+                $sublevelParts = @($parts[1..($parts.Count - 1)])
             } else {
+                $sublevelParts = @()
+            }
+            $sublevelPath = $sublevelParts -join '.'
+            $mainKey = $mainTxName.ToLowerInvariant()
+            $tx = $null
+            $location = $null
+            if ($batchTransactions.ContainsKey($mainKey)) {
+                $tx = $batchTransactions[$mainKey]
+                $location = 'batch'
+            } elseif ($corpusTransactions.ContainsKey($mainKey)) {
+                $tx = $corpusTransactions[$mainKey]
+                $location = 'corpus'
+            }
+            if ($null -eq $tx) {
                 $findings += New-Finding -Severity 'fail' -Code 'bc-missing-everywhere' `
-                    -Message "Transaction '$($dep.TransactionName)' nao encontrada nem no batch nem no corpus" `
-                    -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $dep.TransactionName -Location 'absent'
+                    -Message "Transaction '$depFullName' nao encontrada nem no batch nem no corpus" `
+                    -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $depFullName -Location 'absent' -SublevelPath $sublevelPath
+                continue
+            }
+            # Verificar isBC da Transaction principal
+            if ($null -eq $tx.IsBC) {
+                $code = if ($location -eq 'batch') { 'bc-isbc-property-absent-batch' } else { 'bc-isbc-property-absent-corpus' }
+                $tail = if ($location -eq 'batch') { 'corrigir antes de empacotar' } else { 'dependencia bc: nao pode ser satisfeita' }
+                $findings += New-Finding -Severity 'fail' -Code $code `
+                    -Message "Transaction '$($tx.Name)' no $location nao tem a propriedade idISBUSINESSCOMPONENT; $tail" `
+                    -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $depFullName -Location $location -SublevelPath $sublevelPath
+                continue
+            }
+            if ($tx.IsBC -eq $false) {
+                $code = if ($location -eq 'batch') { 'bc-isbc-false-batch' } else { 'bc-isbc-false-corpus' }
+                $tail = if ($location -eq 'batch') { 'corrigir antes de empacotar' } else { 'dependencia bc: nao pode ser satisfeita' }
+                $findings += New-Finding -Severity 'fail' -Code $code `
+                    -Message "Transaction '$($tx.Name)' no $location tem idISBUSINESSCOMPONENT=False; $tail" `
+                    -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $depFullName -Location $location -SublevelPath $sublevelPath
+                continue
+            }
+            # Transaction principal e BC=True. Se ha sublevel, verificar.
+            if ($sublevelParts.Count -gt 0) {
+                $levels = Get-TransactionLevels $tx.Path
+                $missingSub = $null
+                foreach ($lvlName in $sublevelParts) {
+                    if (-not $levels.Contains($lvlName)) { $missingSub = $lvlName; break }
+                }
+                if ($null -ne $missingSub) {
+                    $code = if ($location -eq 'batch') { 'bc-sublevel-not-found-batch' } else { 'bc-sublevel-not-found-corpus' }
+                    $findings += New-Finding -Severity 'fail' -Code $code `
+                        -Message "Transaction '$($tx.Name)' no $location existe como BC, mas o sublevel '$missingSub' (referenciado em '$depFullName') nao existe na estrutura de Levels" `
+                        -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $depFullName -Location $location -SublevelPath $sublevelPath
+                    continue
+                }
+            }
+            # Caso de sucesso: Transaction principal BC=True, sublevels (se houver) validos
+            if ($location -eq 'batch') {
+                $msg = "Transaction '$($tx.Name)' e o Procedure '$($proc.Name)' estao no mesmo batch; risco de ordenacao na importacao"
+                if ($sublevelParts.Count -gt 0) { $msg += " (referenciada como sublevel '$sublevelPath')" }
+                $findings += New-Finding -Severity 'warn' -Code 'bc-isbc-true-same-batch-ordering-risk' `
+                    -Message $msg `
+                    -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $depFullName -Location 'batch' -SublevelPath $sublevelPath
+            } else {
+                $msg = "Transaction '$($tx.Name)' ja existe como BC no corpus"
+                if ($sublevelParts.Count -gt 0) { $msg += " (referenciada como sublevel '$sublevelPath')" }
+                $findings += New-Finding -Severity 'info' -Code 'bc-isbc-true-corpus' `
+                    -Message $msg `
+                    -ProcedureName $proc.Name -ProcedureFile $procRel -TransactionName $depFullName -Location 'corpus' -SublevelPath $sublevelPath
             }
         }
     }
