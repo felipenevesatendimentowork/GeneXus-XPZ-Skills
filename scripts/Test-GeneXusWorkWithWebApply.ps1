@@ -218,7 +218,7 @@ if ($batchWWs.Count -eq 0) {
         # 4a. Form detection
         if (-not $details.HasFormA -and -not $details.HasFormB) {
             $findings += New-Finding -Severity 'fail' -Code 'ww-no-form-detected' `
-                -Message "WorkWithForWeb '$($ww.Name)' nao casa com Form A (Part babfa2b2-...) nem Form B (Part a51ced48-... com <Data Pattern=...>); estrutura nao reconhecida" `
+                -Message ('WorkWithForWeb ''{0}'' nao casa com Form A (Part babfa2b2-...) nem Form B (Part a51ced48-... com <Data Pattern=...>); estrutura nao reconhecida' -f $ww.Name) `
                 -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                 -TransactionName $null -Location $null -Form 'none'
             continue
@@ -227,7 +227,7 @@ if ($batchWWs.Count -eq 0) {
         if ($details.HasFormA -and $details.HasFormB) {
             $form = 'A+B'
             $findings += New-Finding -Severity 'info' -Code 'ww-both-forms-detected' `
-                -Message "WorkWithForWeb '$($ww.Name)' tem ambos Form A (babfa2b2) e Form B (a51ced48 com Data Pattern); coexistencia rara — preferindo Form A para leitura do Apply" `
+                -Message ('WorkWithForWeb ''{0}'' tem ambos Form A (babfa2b2) e Form B (a51ced48 com Data Pattern); coexistencia rara — preferindo Form A para leitura do Apply' -f $ww.Name) `
                 -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                 -TransactionName $null -Location $null -Form 'A+B'
         } elseif ($details.HasFormA) {
@@ -240,14 +240,14 @@ if ($batchWWs.Count -eq 0) {
         if ($form -eq 'A' -or $form -eq 'A+B') {
             if ($null -eq $details.ApplyValue) {
                 $findings += New-Finding -Severity 'fail' -Code 'ww-form-a-apply-property-absent' `
-                    -Message "WorkWithForWeb '$($ww.Name)' em Form A nao tem a Property Apply no Part babfa2b2; a IDE nao re-aplicara o pattern. Adicionar <Name>Apply</Name><Value>True</Value> antes de empacotar" `
+                    -Message ('WorkWithForWeb ''{0}'' em Form A nao tem a Property Apply no Part babfa2b2; a IDE nao re-aplicara o pattern. Adicionar <Name>Apply</Name><Value>True</Value> antes de empacotar' -f $ww.Name) `
                     -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                     -TransactionName $null -Location $null -Form $form
                 continue
             }
             if ($details.ApplyValue -ne 'True') {
                 $findings += New-Finding -Severity 'warn' -Code 'ww-form-a-apply-false' `
-                    -Message "WorkWithForWeb '$($ww.Name)' em Form A tem Apply='$($details.ApplyValue)'; aplicacao do pattern desabilitada explicitamente. Confirmar se intencional antes de prosseguir" `
+                    -Message ('WorkWithForWeb ''{0}'' em Form A tem Apply=''{1}''; aplicacao do pattern desabilitada explicitamente. Confirmar se intencional antes de prosseguir' -f $ww.Name, $details.ApplyValue) `
                     -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                     -TransactionName $null -Location $null -Form $form
                 # Continua para verificar linked TX mesmo assim, mas sem ABORT
@@ -257,7 +257,7 @@ if ($batchWWs.Count -eq 0) {
         # 4c. Linked Transaction
         if ([string]::IsNullOrEmpty($details.LinkedTxName)) {
             $findings += New-Finding -Severity 'fail' -Code 'ww-linked-transaction-missing' `
-                -Message "WorkWithForWeb '$($ww.Name)' (Form $form) nao expoe nome da Transaction linkada de forma extraivel; nao foi possivel verificar Apply:GUID no destino" `
+                -Message ('WorkWithForWeb ''{0}'' (Form {1}) nao expoe nome da Transaction linkada de forma extraivel; nao foi possivel verificar Apply:GUID no destino' -f $ww.Name, $form) `
                 -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                 -TransactionName $null -Location $null -Form $form
             continue
@@ -271,12 +271,12 @@ if ($batchWWs.Count -eq 0) {
             if ($null -eq $applyGuidVal -or $applyGuidVal -ne 'True') {
                 $stateDesc = if ($null -eq $applyGuidVal) { 'ausente' } else { "='$applyGuidVal'" }
                 $findings += New-Finding -Severity 'fail' -Code 'ww-applyguid-false-batch' `
-                    -Message "Transaction '$($tx.Name)' (linkada por WorkWithForWeb '$($ww.Name)') esta no batch mas property '$ApplyGuidProperty' $stateDesc; IDE nao re-aplicara o pattern ao salvar. Adicionar com Value=True antes de empacotar" `
+                    -Message ('Transaction ''{0}'' (linkada por WorkWithForWeb ''{1}'') esta no batch mas property ''{2}'' {3}; IDE nao re-aplicara o pattern ao salvar. Adicionar com Value=True antes de empacotar' -f $tx.Name, $ww.Name, $ApplyGuidProperty, $stateDesc) `
                     -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                     -TransactionName $tx.Name -Location 'batch' -Form $form
             } else {
                 $findings += New-Finding -Severity 'info' -Code 'ww-applyguid-true-batch' `
-                    -Message "Transaction '$($tx.Name)' (linkada por WorkWithForWeb '$($ww.Name)') esta no batch com '$ApplyGuidProperty=True'" `
+                    -Message ('Transaction ''{0}'' (linkada por WorkWithForWeb ''{1}'') esta no batch com ''{2}=True''' -f $tx.Name, $ww.Name, $ApplyGuidProperty) `
                     -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                     -TransactionName $tx.Name -Location 'batch' -Form $form
             }
@@ -286,18 +286,18 @@ if ($batchWWs.Count -eq 0) {
             if ($null -eq $applyGuidVal -or $applyGuidVal -ne 'True') {
                 $stateDesc = if ($null -eq $applyGuidVal) { 'ausente' } else { "='$applyGuidVal'" }
                 $findings += New-Finding -Severity 'warn' -Code 'ww-applyguid-absent-corpus' `
-                    -Message "Transaction '$($tx.Name)' (linkada por WorkWithForWeb '$($ww.Name)') esta no corpus mas property '$ApplyGuidProperty' $stateDesc; verificar se a KB de destino preservara o comportamento do pattern apos import" `
+                    -Message ('Transaction ''{0}'' (linkada por WorkWithForWeb ''{1}'') esta no corpus mas property ''{2}'' {3}; verificar se a KB de destino preservara o comportamento do pattern apos import' -f $tx.Name, $ww.Name, $ApplyGuidProperty, $stateDesc) `
                     -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                     -TransactionName $tx.Name -Location 'corpus' -Form $form
             } else {
                 $findings += New-Finding -Severity 'info' -Code 'ww-applyguid-true-corpus' `
-                    -Message "Transaction '$($tx.Name)' (linkada por WorkWithForWeb '$($ww.Name)') ja esta no corpus com '$ApplyGuidProperty=True'" `
+                    -Message ('Transaction ''{0}'' (linkada por WorkWithForWeb ''{1}'') ja esta no corpus com ''{2}=True''' -f $tx.Name, $ww.Name, $ApplyGuidProperty) `
                     -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                     -TransactionName $tx.Name -Location 'corpus' -Form $form
             }
         } else {
             $findings += New-Finding -Severity 'warn' -Code 'ww-applyguid-tx-missing' `
-                -Message "Transaction '$($details.LinkedTxName)' (linkada por WorkWithForWeb '$($ww.Name)') nao encontrada nem no batch nem no corpus; nao foi possivel confirmar '$ApplyGuidProperty=True'. Documentar o gap antes de empacotar" `
+                -Message ('Transaction ''{0}'' (linkada por WorkWithForWeb ''{1}'') nao encontrada nem no batch nem no corpus; nao foi possivel confirmar ''{2}=True''. Documentar o gap antes de empacotar' -f $details.LinkedTxName, $ww.Name, $ApplyGuidProperty) `
                 -WorkWithForWebName $ww.Name -WorkWithForWebFile $wwRel `
                 -TransactionName $details.LinkedTxName -Location 'absent' -Form $form
         }
@@ -331,11 +331,11 @@ if ($AsJson) {
         Write-Output "findings: (none)"
     } else {
         Write-Output "findings:"
-        foreach ($f in $findings) {
-            Write-Output "  - [$($f.severity)] $($f.code): $($f.message)"
-            Write-Output "    workwithforweb: $($f.workWithForWebName) ($($f.workWithForWebFile)) [Form $($f.form)]"
-            if (-not [string]::IsNullOrEmpty($f.transactionName)) {
-                Write-Output "    transaction: $($f.transactionName) [$($f.location)]"
+        foreach ($finding in $findings) {
+            Write-Output ('  - [{0}] {1}: {2}' -f $finding.severity, $finding.code, $finding.message)
+            Write-Output ('    workwithforweb: {0} ({1}) [Form {2}]' -f $finding.workWithForWebName, $finding.workWithForWebFile, $finding.form)
+            if (-not [string]::IsNullOrEmpty($finding.transactionName)) {
+                Write-Output ('    transaction: {0} [{1}]' -f $finding.transactionName, $finding.location)
             }
         }
     }
