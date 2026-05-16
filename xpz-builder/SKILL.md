@@ -319,23 +319,13 @@ Reference files and when to load them:
    - This gate is architectural coherence signal, not syntactic — it **never** returns `fail` and **never** ABORTs packaging by itself
    - Known limitation: the gate detects newly introduced Subs only; materially expanded Subs (existing Sub whose body changed substantially) are not detected — agent review of Source diff remains required when expansion is the kind of change in question
 9-IDO. Import Dependency Ordering gate — run before any packaging when the batch contains 2 or more distinct objects:
-   - Build the batch object list: all distinct GeneXus objects present in the candidate batch
-   - For each object in the batch, detect structural dependencies to other objects in the same batch:
-     - WorkWithForWeb: read Part `babfa2b2-19a0-4ef1-b5f4-81b7c7be79dc` and extract the linked Transaction name from `<Property><Name>Transaction</Name><Value>...`; if that Transaction is also in the batch → record dependency edge: Transaction must precede WorkWithForWeb
-     - Procedure with `ATTCUSTOMTYPE = bc:<X>`: if Transaction X is also in the batch → record dependency edge: Transaction X must precede this Procedure (this dependency was already validated by 9-BC for existence and validity; here it informs ordering only)
-     - Procedure calling another Procedure in the batch: scan `Source` for direct call references to other Procedure names present in the batch; if found and the called Procedure is new in this delta → record dependency edge: called Procedure must precede calling Procedure; declare this detection as best-effort — when `Source` cannot be structurally scanned, declare the gap explicitly rather than assuming no dependency exists
-   - Build the directed dependency graph for the batch using the recorded edges
-   - If the graph has one or more cycles → **ABORT**: circular dependency between batch objects; a consistent single-pass import is not possible; present the cycle(s) to the user and require resolution before packaging
-   - If the graph is acyclic, assign each object to a topological layer:
-     - Layer 1: objects with no incoming in-batch dependency edges (base objects, no in-batch predecessor)
-     - Layer N: objects whose all dependencies are satisfied by objects in layers 1 through N−1
-   - If all objects fall in Layer 1 (no in-batch dependency edges were detected) → no ordering risk identified; proceed normally
-   - If 2 or more layers exist → emit ordering alert: the batch has objects with structural import ordering dependencies; single-package import may be fragile; suggested staging:
-     - Package 1: Layer 1 objects (Transactions, base objects with no in-batch predecessor)
-     - Package 2: Layer 2 objects (WorkWithForWeb, Procedure bc: consumers, pattern-dependent objects)
-     - Package N: Layer N objects (deeper dependency consumers, callers, downstream procedures)
-   - Require explicit user confirmation or justification before proceeding with single-bundle packaging when 2 or more layers were identified
-   - This gate is advisory for acyclic dependency chains; circular dependencies are a hard ABORT
+   - Run `& ..\scripts\Test-GeneXusBatchDependencyOrdering.ps1 -FrontFolder <pasta-da-frente> -CorpusFolder <ObjetosDaKbEmXml> -AsJson`
+   - `not-applicable` (fewer than 2 objects in the batch) → proceed normally
+   - `pass` (single layer — no in-batch dependency edges detected) → proceed normally
+   - `alert` (`warn` finding `ido-multiple-layers`) → present the suggested staging (layers in the finding) to the user; require explicit confirmation or justification before proceeding with single-bundle packaging
+   - `fail` (`fail` finding `ido-cycle-detected`) → **ABORT** packaging: present the cycle (listed in the finding) to the user and require resolution before re-running
+   - When the batch contains `WorkWithForWeb` objects, the script also emits an `info` finding with code `ido-ww-detection-pending` — that dimension of dependency (WorkWithForWeb → linked Transaction) is **not** evaluated by this script until the 9-WW gate correction is completed (see `999-ideias-pendentes.md`); when this info finding is present and the batch mixes WorkWithForWeb and the linked Transaction, the agent must verify ordering manually before packaging
+   - Detection scope: (a) Procedure with `bc:<X>` → Transaction X when X is in the batch; (b) Procedure A → Procedure B when A calls B in its Source and B is new in this delta (not in `ObjetosDaKbEmXml`). Procedure → Procedure detection is best-effort scan of Source — false positives may be filtered by user review
 8. Check for improper local changes in `ObjetosDaKbEmXml`:
    - If detected, treat this as an explicit process error
    - Preserve those XMLs in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, restore `ObjetosDaKbEmXml` to the official Git version, present a structured manifest of preserved items in the conversation, save it as a local file when incident traceability requires it, and **ABORT** packaging until the snapshot is sane
@@ -685,9 +675,7 @@ Ao clonar tela customizada WorkWithPlus:
 - [ ] If the package contains a WWP PatternInstance: duplicate nodes in `<attribute>`, `<gridAttribute>`, and `<parameter>` were removed
 - [ ] If the package contains a WWP PatternInstance: `parentGuid` points to the correct target Transaction, not to the source entity
 - [ ] If the package contains a WWP PatternInstance: references to attributes apparently removed from the model were reviewed
-- [ ] When the batch had 2 or more distinct objects: 9-IDO was run; dependency edges were identified for WorkWithForWeb→Transaction, Procedure bc:→Transaction, and best-effort Procedure→Procedure call chains
-- [ ] When 9-IDO identified 2 or more topological layers: ordering alert was emitted and explicit user confirmation or justification was obtained before proceeding with single-bundle packaging
-- [ ] 9-IDO found no circular dependencies in the batch dependency graph; if a cycle was found, packaging was aborted and the cycle was presented to the user
+- [ ] When the batch had 2 or more distinct objects: `Test-GeneXusBatchDependencyOrdering.ps1` was run and returned `not-applicable`, `pass`, `alert` with explicit confirmation/justification, or `fail` with the cycle presented and packaging aborted; the `ido-ww-detection-pending` info finding (if present) was acknowledged and any WorkWithForWeb → Transaction ordering was verified manually
 
 ---
 
