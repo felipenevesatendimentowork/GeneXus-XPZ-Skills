@@ -741,11 +741,14 @@ try {
     $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
-    # Ruido estrutural do dotnet publish em Program Files\GAM\Platforms\NetCore* — assinatura
-    # de tres criterios simultaneos: error MSB3491 + is denied/acesso negado + caminho da
-    # instalacao do GeneXus contendo \Library\GAM\Platforms\. Linhas que casam todos os
-    # criterios sao removidas de stdout antes de classificar e listadas em stdoutFilteredNoise.
-    # Linhas que casem apenas alguns criterios permanecem como diagnostico legitimo.
+    # Ruido estrutural do dotnet publish em Program Files\GAM\Platforms\NetCore*.
+    # Duas assinaturas independentes sao aceitas:
+    #   1. error MSB3491 + is denied/acesso negado + caminho da instalacao do GeneXus
+    #   2. NuGet.targets(...): error : + is denied/acesso negado + caminho da instalacao do GeneXus
+    # Em ambos os casos o caminho deve conter \Library\GAM\Platforms\. Linhas que casam
+    # uma assinatura completa sao removidas de stdout antes de classificar e listadas
+    # em stdoutFilteredNoise. Linhas que casem apenas alguns criterios permanecem como
+    # diagnostico legitimo.
     # Cobertura empirica: o padrao foi verificado via BuildAll em 2026-05-12 (matriz 2x2
     # KB/Environment); para SpecifyAll puro, ainda nao ha evidencia empirica de presenca
     # ou ausencia deste ruido. O filtro e idempotente: se o ruido nao aparece, nada e
@@ -754,10 +757,12 @@ try {
     $stdOutNoiseLines        = @()
     $stdOutNonNoiseLines     = @()
     foreach ($line in $stdOutLines) {
-        $isGamNoise = ($line -match 'error MSB3491') -and
-                      (($line -match 'is denied') -or ($line -match 'acesso negado')) -and
-                      ($line -match '\\GeneXus\\') -and
-                      ($line -match '\\Library\\GAM\\Platforms\\')
+        $isGamAccessDenied = (($line -match 'is denied') -or ($line -match 'acesso negado')) -and
+                             ($line -match '\\GeneXus\\') -and
+                             ($line -match '\\Library\\GAM\\Platforms\\')
+        $isGamMsb3491Noise = ($line -match 'error MSB3491') -and $isGamAccessDenied
+        $isGamNuGetNoise   = ($line -match 'NuGet\.targets\(\d+,\d+\):\s*error\s*:') -and $isGamAccessDenied
+        $isGamNoise        = $isGamMsb3491Noise -or $isGamNuGetNoise
         if ($isGamNoise) { $stdOutNoiseLines += $line } else { $stdOutNonNoiseLines += $line }
     }
     $stdOutFilteredNoise = ($stdOutNoiseLines -join "`n")

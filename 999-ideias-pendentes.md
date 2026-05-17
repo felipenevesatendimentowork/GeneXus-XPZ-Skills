@@ -1540,54 +1540,6 @@ Não há gatilho concreto: nenhuma regressão sintática real escapou recentemen
 
 - Item de checklist já registrado em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*, commit `25d2bd6`): "Every gate script edited in the round was re-parsed (`[System.Management.Automation.Language.Parser]::ParseFile`) and produced zero parse errors under Windows PowerShell 5.1". Esse item cobre o caso "agente XPZ edita script via skill"; o gate descrito aqui cobre o caso "edição direta sem skill carregada".
 
-## Segunda assinatura de ruído GAM/NetCore — variante NuGet.targets sem MSB3491
-
-**Importância:** média
-**Maturidade:** ideia
-
-**Origem:** relato de agente em pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste`, build NETPostgreSQL em 2026-05-17. O wrapper `Invoke-GeneXusKbBuildAll.ps1` classificou o build como `operacao concluida, pendente de confirmacao funcional` apesar de `exitCode=0`, `BuildAllDone=true`, `ReorgDetected=false`, `Build All Task: Sucesso`. A razão foi um `blockingPattern=": error "` casando linha de acesso negado vinda de `NuGet.targets`.
-
-### Problema concreto que motiva a ideia
-
-O filtro atual de ruído GAM em `scripts/Invoke-GeneXusKbBuildAll.ps1` (linhas ~1370-1384) exige **três sinais simultâneos** para classificar uma linha como ruído controlado:
-
-- `error MSB3491`
-- `is denied` ou `acesso negado`
-- caminho contendo `\GeneXus\` e `\Library\GAM\Platforms\`
-
-A variante relatada não traz `MSB3491` — vem de `NuGet.targets(196,5)` com o formato:
-
-```text
-C:\Program Files\dotnet\sdk\10.0.204\NuGet.targets(196,5): error : Access to the path 'C:\Program Files (x86)\GeneXus\GeneXus18\Library\GAM\Platforms\NetCorePostgreSQL\obj\...\tmp' is denied.
-```
-
-Como `MSB3491` não casa, a linha não é filtrada, e o regex genérico `: error ` em `$stdOutBlockingPatternRegex` (linha 1389) eleva o build a "pendente de confirmação funcional" sem motivo real.
-
-### Direção de implementação
-
-**Não relaxar** a assinatura existente — ela é deliberadamente conservadora (três sinais simultâneos). Em vez disso, **adicionar uma segunda assinatura independente** no mesmo trecho do classificador:
-
-- `: error :` (sem código MSB)
-- caminho contendo `NuGet.targets`
-- mensagem `is denied` ou `acesso negado`
-- caminho ancorado em `\GeneXus\` + `\Library\GAM\Platforms\`
-
-As duas assinaturas coexistem; a linha vira ruído controlado se casar **qualquer uma** delas. Manter o registro em `stdoutFilteredNoise` para preservar evidência.
-
-### Critério de aceite
-
-Um build com `exitCode=0`, `BuildAllDone=true`, `ReorgDetected=false` e `Build All Task: Sucesso` que só tenha como suposto blocker uma linha de `NuGet.targets` com acesso negado a `\Library\GAM\Platforms\` não pode ser rebaixado para `pendente de confirmação funcional`. Demais regressões ruidosas (sem ancoragem em GAM/Platforms) continuam disparando o rebaixamento como antes.
-
-### Decisões em aberto
-
-- Confirmar se a variante NuGet.targets aparece em outros generators além de NETPostgreSQL (NETCoreSQLServer, etc.) — pode exigir generalização do filtro de generator.
-- Avaliar se o `stderr` traz a mesma linha duplicada (relevante para o filtro de stderr, não só stdout).
-
-### Relacionado
-
-- Filtro atual em `scripts/Invoke-GeneXusKbBuildAll.ps1` linhas ~1370-1384.
-- Documentação de ruído GAM/NetCore em `xpz-msbuild-build/SKILL.md`.
-
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 
 **Importância:** média

@@ -220,8 +220,9 @@ WORKFLOW e nota de comportamento crítico abaixo.
 
 > **Padrão conhecido — ruído estrutural do `dotnet publish` em `GAM\Platforms\NetCore*` (stdout):**
 > Mesmo padrão e mesma lógica de filtro documentados em detalhe na seção
-> `Invoke-GeneXusKbBuildAll.ps1` (assinatura: `MSB3491` + mensagem de acesso negado +
-> caminho contendo `\GeneXus\...\Library\GAM\Platforms\`). `Invoke-GeneXusKbSpecifyGenerate.ps1`
+> `Invoke-GeneXusKbBuildAll.ps1` (assinaturas: `MSB3491` ou `NuGet.targets(...): error :`,
+> sempre com mensagem de acesso negado e caminho contendo `\GeneXus\...\Library\GAM\Platforms\`).
+> `Invoke-GeneXusKbSpecifyGenerate.ps1`
 > aplica o mesmo filtro e popula `stdoutFilteredNoise` no diagnóstico.
 >
 > **Cobertura empírica:** a evidência da matriz 2×2 foi coletada via `BuildAll`. Não foi
@@ -350,23 +351,28 @@ e confirmação explícita** por frase exata.
 >   -o "C:\Program Files (x86)\GeneXus\GeneXus18\Library\GAM\Platforms\<NetCore*>"
 > ```
 > Quando o processo não roda elevado (ver Restrição Operacional de Leitura em
-> `10-base-operacional-msbuild-headless.md`), o `dotnet publish` falha com `error MSB3491`
-> ao tentar gravar `PublishOutputs.<hash>.txt` em `\Library\GAM\Platforms\build\GxDeps\obj\net*\`,
-> que está sob `C:\Program Files (x86)\` — área tratada como estritamente somente leitura
-> pela skill por política explícita. Apesar do erro, a fase reporta `Sucesso`, o GAM
-> permanece registrado normalmente e o build prossegue sem efeito funcional na KB.
+> `10-base-operacional-msbuild-headless.md`), o `dotnet publish` pode falhar com
+> `error MSB3491` ao tentar gravar `PublishOutputs.<hash>.txt` em
+> `\Library\GAM\Platforms\build\GxDeps\obj\net*\`, ou com a variante
+> `NuGet.targets(...): error : Access to the path ... is denied` ao tentar gravar
+> temporários sob `\Library\GAM\Platforms\<NetCore*>\obj\`. Esses caminhos ficam sob
+> `C:\Program Files (x86)\` — área tratada como estritamente somente leitura pela skill
+> por política explícita. Apesar do erro, a fase reporta `Sucesso`, o GAM permanece
+> registrado normalmente e o build prossegue sem efeito funcional na KB.
 >
 > `Invoke-GeneXusKbBuildAll.ps1` filtra esse padrão antes de classificar o status. As
 > linhas removidas ficam em `stdoutFilteredNoise` do diagnóstico. Uma execução bem-sucedida
 > cujo único padrão bloqueante em stdout seja esse ruído é classificada como `compilou limpo`.
 >
-> **Assinatura do filtro (todos os critérios simultaneamente):**
-> - linha contém `error MSB3491`
-> - linha contém `is denied` (EN) **ou** `acesso negado` (PT-BR)
-> - linha referencia caminho contendo `\GeneXus\` **e** `\Library\GAM\Platforms\`
+> **Assinaturas do filtro:**
+> - assinatura 1: linha contém `error MSB3491`, `is denied` (EN) **ou** `acesso negado`
+>   (PT-BR), e caminho contendo `\GeneXus\` **e** `\Library\GAM\Platforms\`
+> - assinatura 2: linha contém `NuGet.targets(...): error :`, `is denied` (EN) **ou**
+>   `acesso negado` (PT-BR), e caminho contendo `\GeneXus\` **e** `\Library\GAM\Platforms\`
 >
-> Linhas que casem apenas alguns dos critérios (ex.: `MSB3491` em projeto da KB, ou
-> `Access denied` fora da árvore de instalação do GeneXus) **não são filtradas** — são
+> Linhas que casem apenas alguns dos critérios (ex.: `MSB3491` em projeto da KB,
+> `NuGet.targets` fora da árvore de instalação do GeneXus ou `Access denied` fora de
+> `\Library\GAM\Platforms\`) **não são filtradas** — são
 > diagnósticos legítimos.
 
 > **Evidência empírica acumulada (ruído GAM/NetCore):**
@@ -390,9 +396,9 @@ e confirmação explícita** por frase exata.
 >
 > Conclusão: o ruído é determinístico, originário da política de leitura-apenas da
 > skill aplicada sobre `C:\Program Files (x86)\GeneXus\GeneXus18\Library\GAM\Platforms\`,
-> e sem consequência funcional. O filtro é seguro porque é ancorado em todos os três
-> critérios simultâneos (código, mensagem e caminho de instalação), não no padrão
-> genérico `Access denied`.
+> e sem consequência funcional. O filtro é seguro porque cada assinatura é ancorada
+> simultaneamente no formato do erro, na mensagem de acesso negado e no caminho de
+> instalação do GeneXus, não no padrão genérico `Access denied`.
 
 > **Padrão conhecido — ruído estrutural do GeneXus 18 em stderr:**
 > O GeneXus 18 escreve exatamente 3 linhas `context [anonymous] 1:12 attribute component
@@ -605,7 +611,7 @@ Campos relevantes:
 - `timing.phases` — lista de fases com `name`, `start`, `end`, `durationSeconds`
 - `observedContext.ReorgDetected` — se reorg foi detectada
 - `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado APÓS filtro de ruído estrutural, ou `null`), `postBuildEvents` (linhas `start c:` / `start cmd`, com prefixo `(commented) ` quando o GeneXus encenou o comando como comentado), `buildWarnings` (linhas de warning com posição; warnings `pmm00xx` de versão de módulo são adicionalmente promovidos a `warnings` top-level — ver nota abaixo)
-- `stdoutFilteredNoise` — ruído estrutural removido de stdout antes de classificar (ex: linhas `error MSB3491` do `dotnet publish` em `GAM\Platforms\NetCore*` quando rodando sem elevação); quando o único conteúdo bloqueante em stdout for ruído filtrado, o build é classificado como limpo
+- `stdoutFilteredNoise` — ruído estrutural removido de stdout antes de classificar (ex: linhas `error MSB3491` ou `NuGet.targets(...): error :` do `dotnet publish` em `GAM\Platforms\NetCore*` quando rodando sem elevação); quando o único conteúdo bloqueante em stdout for ruído filtrado, o build é classificado como limpo
 - `stderrContent` — linhas reais de stderr após remoção do ruído estrutural do GeneXus 18
 - `stderrFilteredNoise` — ruído estrutural removido de stderr; quando `stderrContent` está vazio e `stderrFilteredNoise` tem conteúdo, o build é limpo e nenhuma recomendação de IDE deve ser emitida
 
@@ -685,7 +691,7 @@ Campos relevantes:
    - eventos pós-build: linhas `start c:` ou `start cmd` em stdout → registrar como warning de processos externos disparados
    - stderr não vazio: qualquer conteúdo → registrar como warning; impede `specify e generate concluídos`
    - demais padrões relevantes: `Access denied`, `error MSB`, `: error `, `FAILED`, stack traces de exceção
-   - **carve-out para ruído estrutural GAM/NetCore:** linhas que casam simultaneamente `error MSB3491` + `is denied`/`acesso negado` + caminho contendo `\GeneXus\` e `\Library\GAM\Platforms\` são removidas de stdout antes desta varredura e listadas em `stdoutFilteredNoise`; padrões legítimos de `Access denied` em qualquer outro contexto **permanecem** bloqueantes
+   - **carve-out para ruído estrutural GAM/NetCore:** linhas que casam uma das assinaturas conhecidas (`error MSB3491` ou `NuGet.targets(...): error :`) junto com `is denied`/`acesso negado` e caminho contendo `\GeneXus\` e `\Library\GAM\Platforms\` são removidas de stdout antes desta varredura e listadas em `stdoutFilteredNoise`; padrões legítimos de `Access denied` em qualquer outro contexto **permanecem** bloqueantes
    - se encontrados: registrar no diagnóstico e usar `operação concluída, pendente de confirmação funcional` em lugar de `compilou limpo`
    Classificar então o resultado em uma das categorias definidas em EXPECTED INTERFACE
 10. Quando o resultado for `reorg necessária detectada`:
