@@ -1851,3 +1851,364 @@ Arquivo da KB, contém connection string e o flag `IntegratedSecurity`. Não ins
 - Skill `xpz-kb-parallel-setup` — receptora principal das mudanças
 - `scripts/Sync-GeneXusXpzToXml.ps1` linha ~757 — escritor atual de `kb-source-metadata.md`
 - `scripts/Test-GeneXusImportFileEnvelope.ps1` linhas ~102-130 — gate que continua rígido
+
+## Dry-run com diff unificado padronizado em scripts de escrita XPZ
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora:
+
+- `00ecd7d feat(worker): standardized dryRun plan with unified diff and impact seam`
+- `5331ca1 feat(worker): genexus_edit returns post_state.diff by default`
+
+Anti-duplicata: buscado em 999/998 por `dry.?run|diff unificado|post.?state|WhatIf` em 2026-05-17, sem match. Limitação: código C# do FBgx18MCP não inspecionado nesta sessão — detalhes finos de formato/contrato devem ser confirmados nos commits-âncora antes da implementação.
+
+### Problema concreto que motiva a ideia
+
+Skills que escrevem em disco — `xpz-builder` (gera `import_file.xml`), `xpz-sync` (materializa XMLs a partir de XPZ exportado), `xpz-msbuild-import-export` (consome XPZ na IDE) — hoje executam mutação sem mostrar consistentemente um plano "antes/depois" para o agente. PowerShell tem `-WhatIf` nativo, mas adoção e formato não são padronizados entre wrappers.
+
+No FBgx18MCP, o padrão adotado é: toda escrita devolve `post_state.diff` por padrão, em formato diff unificado. O agente vê o que vai mudar antes de aplicar (ou imediatamente após, com chance de rollback declarado).
+
+### Design em aberto
+
+- **Formato do diff**: texto unificado linha-a-linha (universal, fácil de ler) vs XML diff por part (semântico, mais útil pra XPZ mas exige biblioteca). Escolha provavelmente varia por contexto.
+- **Adoção gradual ou universal**: começar por `xpz-builder` (alto risco, escrita de pacote final), depois `xpz-sync`?
+- **`post_state` ou `pre_state` + plano**: o MCP devolve `post_state.diff` após a operação real; em PowerShell faz mais sentido oferecer `-DryRun` que devolve o plano sem executar.
+
+### Decisões em aberto
+
+- Qual estrutura de saída adotar? JSON com campo `diff` (string), ou objeto estruturado com `added[]/removed[]/changed[]`?
+- Como sinalizar quando o diff é truncado por tamanho (ver ideia "Resposta mínima por padrão" abaixo)?
+
+### Relacionado
+
+- `xpz-builder/SKILL.md`, `xpz-sync/SKILL.md`, `xpz-msbuild-import-export/SKILL.md`
+- `02-regras-operacionais-e-runtime.md` (sede natural da regra geral)
+- Ideia "Idempotência declarativa" abaixo tem sobreposição: dry-run mostra; idempotência detecta repetição.
+
+## Idempotência declarativa em wrappers de escrita XPZ
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commit-âncora:
+
+- `6e266ee feat(gateway): IdempotencyCache + IdempotencyMiddleware on write tools`
+
+Anti-duplicata: buscado em 999/998 por `idempot|colis|hash do payload` em 2026-05-17. Matches encontrados foram restritos a perguntas sobre operações específicas (`RestoreModule`, `CompressKB`), não cobrem a ideia generalizada. Limitação: código C# do FBgx18MCP não inspecionado.
+
+### Problema concreto que motiva a ideia
+
+A regra `Test-XpzPackageCollision.ps1` (já citada em `README.md`) é exatamente um caso particular de idempotência: chave = `NomeCurto_GUID_YYYYMMDD_nn`; em colisão, aborta e sugere próximo `nn` livre. O conceito ainda **não foi promovido a princípio operacional** aplicável a outras escritas (geração de XMLs em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, snapshots de metadados, recriação de pasta paralela).
+
+No FBgx18MCP, `IdempotencyCache` é middleware: toda escrita declara chave por hash do payload; chamada repetida com mesma chave é no-op declarada (não silenciosa).
+
+### Design em aberto
+
+- **Chave canônica por contexto**: pacote = nome+nn; geração de XML = guid+lastUpdate; metadados = hash do conteúdo. Cada escrita declara sua chave.
+- **Onde mora o cache**: arquivo `.idempotency.json` na pasta da frente (`NomeCurto_GUID_YYYYMMDD/`)? Tabela no `KbIntelligence/`? Em memória apenas?
+- **No-op declarado vs silencioso**: usuário sabe que "rodada repetida foi detectada", não só vê sucesso silencioso.
+
+### Decisões em aberto
+
+- TTL/expiração do cache? Pacotes ficam por tempo indeterminado; chave de geração talvez expire por sessão.
+- Como integrar com `-DryRun` (ideia anterior): dry-run também consulta a chave e reporta "essa operação já foi feita"?
+
+### Relacionado
+
+- `Test-XpzPackageCollision.ps1` (caso particular já existente)
+- `02-regras-operacionais-e-runtime.md` (sede natural da regra)
+- Wrappers candidatos: `Sync-GeneXusXpzToXml.ps1`, `xpz-builder` (geração de pacote)
+
+## Resposta mínima por padrão + `empty_reason` + `suggested_next` em scripts de consulta
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora:
+
+- `915750b feat(worker): minimal-by-default list shape; verbose=true opt-in`
+- `2447965 feat(worker): _meta.suggested_next on list_objects`
+- `35d4afc feat(worker): _meta.suggested_next on query/structure/search`
+- `545ac74 feat(worker): _meta.aggregates and empty_reason on list responses`
+
+Anti-duplicata: buscado em 999/998 por `empty_reason|suggested_next|resposta m[ií]nima|verbose` em 2026-05-17, sem match. Limitação: código C# do FBgx18MCP não inspecionado.
+
+### Problema concreto que motiva a ideia
+
+Os scripts `-Query` da trilha `KbIntelligence` (em `scripts/`) e a saída de `xpz-index-triage` hoje retornam estruturas razoavelmente verbosas mesmo quando o agente só precisa de uma confirmação curta. Pior: quando o resultado é vazio, **não dizem por quê**, e o agente "chuta" o próximo passo. Isso queima tokens e turnos.
+
+No FBgx18MCP, o contrato adotado é:
+
+- Lista vem **mínima por padrão**; `verbose=true` traz detalhes.
+- Quando vazio, devolve `empty_reason` estruturado ("nenhum objeto com tipo X", "filtro Y excluiu N candidatos", etc.).
+- Devolve `suggested_next`: próximo passo recomendado em forma executável (ex: `tente Get-XpzObjects -Type WebPanel sem filtro de Family`).
+
+### Design em aberto
+
+- **Onde aplicar primeiro**: `xpz-index-triage` é o candidato natural (vocação de triagem curta). Scripts `-Query` do `KbIntelligence` em segundo.
+- **Forma do `suggested_next`**: string com comando literal? Objeto com `command`+`reason`? Lista de alternativas?
+- **`empty_reason` taxonômico**: vocabulário fechado (ex: `no-matches`, `filter-too-narrow`, `index-stale`, `kb-not-resolved`) vs string livre.
+
+### Decisões em aberto
+
+- Como conviver com o `-Verbose` nativo do PowerShell? Provável: `verbose=true` como parâmetro próprio do contrato JSON, distinto do `-Verbose` switch.
+- Output em PowerShell é "objeto" por natureza; aplicar literalmente "resposta mínima por padrão" exige `Select-Object` por padrão e `-Full` opt-in.
+
+### Relacionado
+
+- `xpz-index-triage/SKILL.md`
+- `scripts/README-kb-intelligence.md`
+- `02-regras-operacionais-e-runtime.md` (regra geral de contrato de saída)
+
+## Did-you-mean / sugestão por edit-distance em erros de parâmetro de scripts XPZ
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commit-âncora:
+
+- `8218122 feat(gateway): genexus_whoami MCP tool, edit schema validation with did-you-mean, GeneXus version check`
+
+Anti-duplicata: buscado em 999/998 por `did.?you.?mean|fuzzy|edit.?distance` em 2026-05-17, sem match. Limitação: código C# do FBgx18MCP não inspecionado.
+
+### Problema concreto que motiva a ideia
+
+Scripts PowerShell que recebem `-Type`, `-Family`, `-Name` ou outros enums frequentemente falham com erro genérico ("parâmetro X não é válido") quando o agente passa valor próximo do correto ("Transactioon" em vez de "Transaction"). O agente então gasta turno experimentando variações.
+
+No FBgx18MCP, o validador de schema de `genexus_edit` calcula edit-distance contra valores conhecidos e sugere o termo provável ("did you mean: ...").
+
+### Design em aberto
+
+- **Dicionário-fonte por parâmetro**: enum hardcoded? Lê do índice (`KbIntelligence/` para nomes de objeto)? Mix?
+- **Threshold de edit-distance**: 1, 2, ou proporcional ao tamanho?
+- **Onde aplicar primeiro**: parâmetros com domínio fechado e pequeno (`-Type`) trazem mais benefício; `-Name` contra catálogo de 15k objetos é caro e talvez fora de escopo.
+
+### Decisões em aberto
+
+- Implementação: helper compartilhado em `scripts/_lib/` ou cópia por script?
+- Comportamento: continua erro fatal com sugestão, ou erro recuperável "vou usar X?". Provavelmente erro fatal — não deduzir.
+
+### Relacionado
+
+- Wrappers candidatos: qualquer um que valide enums (build, sync, import-export, triage)
+
+## Documentos de governança na raiz: SECURITY, CONTRIBUTING, CODE_OF_CONDUCT, CHANGELOG
+
+**Importância:** baixa
+**Maturidade:** pesquisa feita
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commit-âncora:
+
+- `4cf26ef docs: add SECURITY, CONTRIBUTING, and CODE_OF_CONDUCT`
+
+Anti-duplicata: buscado em 999/998 por `SECURITY|CONTRIBUTING|CODE_OF_CONDUCT|CHANGELOG|governan[çc]a` em 2026-05-17, sem match. Limitação: nenhuma — verificado por `ls` da raiz que os quatro arquivos não existem em 2026-05-17.
+
+### Problema concreto que motiva a ideia
+
+O repositório é público (já há `09-inventario-e-rastreabilidade-publica.md`) e contém base metodológica com potencial de adoção externa. Falta os quatro arquivos canônicos de repositório público:
+
+- `SECURITY.md` — política de divulgação de vulnerabilidades (mesmo que mínima: "abrir issue privada / contato")
+- `CONTRIBUTING.md` — como contribuir, regras de PR, fluxo de revisão
+- `CODE_OF_CONDUCT.md` — Contributor Covenant é o padrão de facto
+- `CHANGELOG.md` — registro de mudanças. Reconstrução histórica retroativa é cara; viável começar do "agora em diante" referenciando `historico/` para o passado.
+
+### Design em aberto
+
+- **CHANGELOG**: começar de 2026-05-17 com referência a `historico/` para o passado, ou tentar reconstruir versões a partir de tags git? Provavelmente o primeiro — versionamento semântico do repo não está formalizado.
+- **SECURITY**: precisa de canal real de contato (email do mantenedor? issue privada GitHub?).
+- **Trilíngue**: `README.md` é trilíngue. Os quatro novos devem ser também? Possivelmente sim — o repo já assumiu compromisso público trilíngue.
+- **CONTRIBUTING**: precisa refletir as regras locais do `AGENTS.md` (edição segura de .md, anti-duplicata em 998/999, revisão pré-push) traduzidas para humano contribuidor.
+
+### Decisões em aberto
+
+- Canal de contato no SECURITY.md.
+- Linguagem do CHANGELOG (Keep a Changelog é o padrão).
+- Versionamento: tags semânticas no git?
+
+### Relacionado
+
+- `README.md` (trilíngue — referência de tom)
+- `AGENTS.md` (regras a traduzir para CONTRIBUTING humano)
+
+## Ciclo de friction-report datado como motor de evolução das skills XPZ
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora (mostram o ciclo):
+
+- `0a5214b perf+fix(v2.3.5): preventive perf audit + friction-report 2026-05-14 sweep`
+- `5296f75 fix(v2.3.5): second pass on friction-report 2026-05-14 (#2 #3 #4 #5 #11 #14 #15 #16 #17)`
+- `0a673b3 fix(worker,gateway): close 8 items from mcp-friction-report-2026-05-13`
+- `e10d382 fix(mcp): address 5 friction items from session report`
+
+Anti-duplicata: buscado em 999/998 por `friction|fric[çc][ãa]o|relat[óo]rio de uso` em 2026-05-17, sem match.
+
+### Problema concreto que motiva a ideia
+
+O repo já tem `999-ideias-pendentes.md` (backlog de ideias estruturadas) e `998-ideias-descartadas-e-porque.md` (memória de não-fazer). O que falta é o **artefato datado de fricção observada em uso real** — separado do backlog conceitual. Esse artefato faz a ponte uso real → backlog → fix.
+
+No FBgx18MCP, o padrão é: cada release significativa tem um `mcp-friction-report-YYYY-MM-DD.md` listando itens numerados. Commits posteriores referenciam explicitamente "closes #3 #4 #5 from friction-report-YYYY-MM-DD". Essa rastreabilidade dá ao mantenedor visão de "quanto da fricção observada virou fix".
+
+### Design em aberto
+
+- **Pasta sede**: `historico/friction-reports/`? Raiz com prefixo numérico (ex: `13-friction-reports/`)?
+- **Esquema**: itens numerados, severidade (baixa/média/alta/bloqueante), origem (sessão, skill, contexto), estado (aberto/fechado), commit que fechou.
+- **Quem captura**: o agente, ao final de sessão complexa, propõe entradas? O usuário, manualmente? Híbrido?
+- **Relação com 999**: itens de friction-report viram entradas em 999 quando exigem design, ou ficam só no report quando são fix mecânico?
+
+### Decisões em aberto
+
+- Política de captura: oportunista (quando lembra) vs sistemática (toda sessão fecha com pergunta "houve fricção?").
+- Histórico longo: quando arquivar reports antigos.
+
+### Relacionado
+
+- `998-ideias-descartadas-e-porque.md`
+- `999-ideias-pendentes.md`
+- `historico/` (sede candidata)
+
+## Comandos `doctor` e `whoami` para `xpz-skills-setup`
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora:
+
+- `c464165 feat(cli): onboarding UX — auto-discovery, whoami, uninstall, kb catalog + docs`
+- `8218122 feat(gateway): genexus_whoami MCP tool, edit schema validation with did-you-mean, GeneXus version check`
+
+Anti-duplicata: buscado em 999/998 por `doctor|whoami` em 2026-05-17, sem match. Limitação: código C# do FBgx18MCP não inspecionado.
+
+### Problema concreto que motiva a ideia
+
+A skill `xpz-skills-setup` já audita o registro de skills XPZ cross-tool (Claude/Codex/Cursor/OpenCode) e oferece resolução de gaps. Faltam dois comandos irmãos com utilidade alta:
+
+- **`doctor`**: verifica saúde do ambiente — frescor do índice (`last_index_build_run_at` vs `last_xpz_materialization_run_at`), drift documental local, `GATE_OK` semântico, existência de skills em todas as ferramentas registradas. Devolve relatório taxonômico (`ok/warn/err`).
+- **`whoami`**: lista quais skills XPZ estão ativas neste host, em qual ferramenta, apontando para a fonte (caminho do symlink/junction). Útil quando o usuário tem múltiplas instalações ou faz troubleshooting.
+
+### Design em aberto
+
+- **Forma**: scripts `.ps1` em `xpz-skills-setup/`, ou novos verbos da skill?
+- **Saída**: JSON estruturado por padrão (consumível por agente) com formatação humana opcional.
+- **`doctor` cobertura**: começa enxuto (registro de skills + frescor do índice) e cresce por demanda; tentar cobrir tudo de uma vez é armadilha.
+
+### Decisões em aberto
+
+- Onde ficam os checks individuais? Funções em `xpz-skills-setup/_lib/` agregadas pelo `doctor`?
+- Integração com regra do `AGENTS.md` global sobre "auditoria pós-git-pull" — `doctor` é o canal natural.
+
+### Relacionado
+
+- `xpz-skills-setup/SKILL.md` (sede principal)
+- Regra "Após git pull" no AGENTS.md global do usuário
+
+## Modo `-Async` + long-poll de status em `xpz-msbuild-build` e `xpz-msbuild-import-export`
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora:
+
+- `6501de2 feat(gateway): async lifecycle build with sync fast-path for short estimates`
+- `518169f feat(gateway): long-poll on lifecycle status when wait_seconds is set`
+- `51bc64c feat(gateway): BackgroundJobRegistry for async job tracking`
+- `ff9c38e feat(gateway): piggyback background_jobs on every response when active`
+
+Anti-duplicata: buscado em 999/998 por `long.?poll|ass[íi]ncron|background.?job` em 2026-05-17, sem match. Limitação: código C# do FBgx18MCP não inspecionado.
+
+### Problema concreto que motiva a ideia
+
+`xpz-msbuild-build` e `xpz-msbuild-import-export` rodam MSBuild que pode tomar minutos em KB grande. Hoje o wrapper é síncrono — o agente fica bloqueado, e timeouts de orquestração (ex: limite de execução de comando do harness) podem abortar prematuramente.
+
+No FBgx18MCP, build longo vira job em background; o canal MCP devolve `job_id` rápido; agente faz `Get-Status -JobId -WaitSeconds N` quando quiser, com fast-path síncrono para builds curtos estimados.
+
+### Design em aberto
+
+- **Heurística de fast-path**: como decidir "build curto"? Por tamanho da KB? Histórico de builds passados? Always-async com poll imediato é mais simples.
+- **Sede do registry**: arquivo JSON em `Temp/` com PID + status? Process job nativo do Windows?
+- **Política de cleanup**: jobs concluídos ficam por quanto tempo?
+- **Cancelamento**: agente pode pedir kill do job? Provavelmente sim, com gate.
+
+### Decisões em aberto
+
+- PowerShell tem `Start-Job` nativo, mas estado vive na sessão. Para sobreviver a fim de sessão, precisa de wrapper baseado em processo + arquivo de estado.
+- Como integrar com a regra "operação concluída, pendente de confirmação funcional" do classificador atual.
+
+### Relacionado
+
+- `xpz-msbuild-build/SKILL.md` (sede principal)
+- `xpz-msbuild-import-export/SKILL.md`
+- `scripts/Invoke-GeneXusKbBuildAll.ps1` e equivalente de import
+
+## `config.sample.json` versionado + `config.json` no `.gitignore` (se aplicável)
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commit-âncora:
+
+- `a41755e fix(ci): copy config.sample.json instead of gitignored config.json`
+
+Anti-duplicata: sem busca aplicável (termos genéricos demais). Limitação: não inspecionei `scripts/` a fundo nesta sessão para verificar se há `config.json` candidato hoje — pode ser que a ideia seja inaplicável; nesse caso, mover esta entrada para `998` como "não aplicável neste repositório".
+
+### Problema concreto que motiva a ideia
+
+Prática de segurança: separar configuração padrão (versionada como `*.sample.json`) de configuração local com possíveis segredos/paths sensíveis (`*.json` no `.gitignore`). Evita commit acidental de credenciais ou paths que vazam topologia.
+
+No FBgx18MCP, foi feita a substituição porque havia `config.json` versionado anteriormente.
+
+### Design em aberto
+
+- **Aplicabilidade**: verificar primeiro se há arquivos de config locais usados por scripts do repo. Se não houver, a ideia entra em 998 em vez de continuar em 999.
+- **Convenção de nome**: `.sample.json`, `.example.json`, `.template.json` — a primeira é a mais comum no ecossistema.
+
+### Decisões em aberto
+
+- Antes de implementar, mapear se existe alguma config local hoje em `scripts/` ou nas skills.
+
+### Relacionado
+
+- `scripts/` (a inspecionar)
+- `.gitignore` (sede do bloqueio)
+
+## Catálogo semântico de operações em `xpz-builder` (alternativa a edição XML livre)
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora:
+
+- `1efd0c1 feat: wire mode:ops end-to-end through gateway and worker`
+- `5659cab feat(worker): SemanticOpsService catalog with attribute, rule, and generic set_property ops`
+- `21a67ca feat: JSON-Patch (RFC 6902) edit mode over canonical JSON`
+
+Anti-duplicata: buscado em 999/998 por `cat[áa]logo sem[âa]ntico|semantic.?ops|set_property` em 2026-05-17, sem match. Limitação: código C# do FBgx18MCP não inspecionado.
+
+### Problema concreto que motiva a ideia
+
+`xpz-builder` hoje apoia a materialização de artefatos XPZ a partir de moldes sanitizados (`01e` a `01h`). A geração inclui edição de XML cru, que tem superfície de risco grande: agente pode inserir tag malformada, atributo fora do contrato, ordem errada de elementos.
+
+No FBgx18MCP, a evolução foi: além de edição livre, oferecer um **catálogo de operações estruturais nomeadas** (`set_property`, `add_attribute`, regras específicas por tipo de objeto). Cada operação é auditável, testável e tem schema próprio.
+
+Para `xpz-builder`, isso significaria expor um vocabulário de operações de alto nível (ex: `Add-XpzAttributeToTransaction`, `Set-XpzTransactionProperty`, `Add-XpzVariableToProcedure`) por cima do XML, validadas contra os padrões empíricos já documentados em `01a-catalogo-e-padroes-empiricos.md`.
+
+### Design em aberto
+
+- **Cobertura inicial**: começar pelos tipos mais arriscados de edição cega (`Transaction` em `05-...`, `WebPanel` em `04-...`) e operações mais frequentes.
+- **Forma**: cmdlets PowerShell `Verb-XpzNoun` com schema validado, ou um único `Invoke-XpzOp -Op <name> -Args @{}`.
+- **Relação com moldes**: operação semântica é "molde paramétrico" — ponte natural entre `xpz-builder/responsibilities-by-type/` e este catálogo.
+- **JSON-Patch RFC 6902**: o MCP também oferece edição via JSON-Patch sobre representação canônica. Para PowerShell, JSON-Patch sobre XML transformado tem custo de design alto e provavelmente fica fora do escopo inicial.
+
+### Decisões em aberto
+
+- Que tipos cobrir primeiro?
+- Como conviver com edição livre (não eliminar — deixar como fallback para casos que o catálogo não cobre).
+
+### Relacionado
+
+- `xpz-builder/SKILL.md` e `xpz-builder/responsibilities-by-type/`
+- `01a-catalogo-e-padroes-empiricos.md` (fonte de validação dos padrões)
+- `01e-moldes-sanitizados-core.md` a `01h-moldes-sanitizados-metadados-e-artefatos.md` (insumo)
