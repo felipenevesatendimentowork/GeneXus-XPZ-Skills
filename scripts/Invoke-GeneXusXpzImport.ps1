@@ -271,7 +271,7 @@ function Validate-XpzPath {
     return [ordered]@{
         Path = $resolved
         Result = 'ok'
-        Detail = 'Arquivo XPZ encontrado.'
+        Detail = 'Pacote de importação encontrado.'
         ExitCode = 0
     }
 }
