@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Executa preview de importação de XPZ via MSBuild sem alterar a KB.
+Executa preview de importação de pacote (.xpz, .xml ou .import_file.xml) via MSBuild sem alterar a KB.
 
 .DESCRIPTION
 Implementa a terceira etapa da trilha experimental: reaproveita o probe
@@ -55,10 +55,12 @@ Valor explícito para LanguageTranslations. Default: Keep.
 
 .PARAMETER ImportKbInformation
 Valor para ImportKBInformation, tri-state: omitido ou `false` significam não
-emitir o atributo na task Import (semanticamente equivalente ao default da
-task); apenas `true` emite o atributo e exige que a task carregada exponha a
-propriedade. Bloqueio por assinatura da task só ocorre quando o valor for
-`true` em instalação sem suporte; `false` é tratado como omissão.
+emitir o atributo na task Import (omissão do atributo faz a task aplicar seu
+próprio default, documentado como `true` em
+`10-base-operacional-msbuild-headless.md`); apenas `true` emite o atributo e
+exige que a task carregada exponha a propriedade. Bloqueio por assinatura da
+task só ocorre quando o valor for `true` em instalação sem suporte; `false` é
+tratado como omissão.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.

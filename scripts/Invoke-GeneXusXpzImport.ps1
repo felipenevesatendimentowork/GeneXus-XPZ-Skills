@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Executa importação real de XPZ via MSBuild com parâmetros explícitos.
+Executa importação real de pacote (.xpz, .xml ou .import_file.xml) via MSBuild com parâmetros explícitos.
 
 .DESCRIPTION
 Implementa a etapa de importação real da frente experimental: reaproveita
@@ -58,10 +58,12 @@ Valor explícito para RedefineExternalPrograms. Default: false.
 
 .PARAMETER ImportKbInformation
 Valor para ImportKBInformation, tri-state: omitido ou `false` significam não
-emitir o atributo na task Import (semanticamente equivalente ao default da
-task); apenas `true` emite o atributo e exige que a task carregada exponha a
-propriedade. Bloqueio por assinatura da task só ocorre quando o valor for
-`true` em instalação sem suporte; `false` é tratado como omissão. Default: false.
+emitir o atributo na task Import (omissão do atributo faz a task aplicar seu
+próprio default, documentado como `true` em
+`10-base-operacional-msbuild-headless.md`); apenas `true` emite o atributo e
+exige que a task carregada exponha a propriedade. Bloqueio por assinatura da
+task só ocorre quando o valor for `true` em instalação sem suporte; `false` é
+tratado como omissão. Default: false.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
