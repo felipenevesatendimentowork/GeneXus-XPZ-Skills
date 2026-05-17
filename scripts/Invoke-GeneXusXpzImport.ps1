@@ -741,17 +741,44 @@ try {
     Add-StrategyTrace -Message ('Arquivo .msbuild temporário gerado em: {0}' -f $msBuildFilePath)
 
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
-    $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
-    $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
-    $stdErrNoise    = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
-    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
-    $importedItems      = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
-    $importWarningLines = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') | ForEach-Object { $_.Value.Trim() })
+    # Pos-processamento resiliente: a partir daqui o MSBuild ja rodou.
+    # Falha local nao pode descartar evidencia real do MSBuild.
+    $postProcessingFailed = $false
+    $postProcessingError  = $null
+    $stdOutText         = ''
+    $stdErrText         = ''
+    $stdErrNoise        = ''
+    $stdErrFiltered     = ''
+    $importedItems      = @()
+    $importWarningLines = @()
+
+    try {
+        $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
+        $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
+        $stdErrMatches  = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value })
+        $stdErrNoise    = [string]::Join("`n", $stdErrMatches)
+        $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
+        $importedItems      = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
+        $importWarningLines = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') | ForEach-Object { $_.Value.Trim() })
+    }
+    catch {
+        $postProcessingFailed = $true
+        $postProcessingError  = $_.Exception.Message
+        Add-StrategyTrace -Message ('Pos-processamento falhou apos MSBuild: {0}' -f $postProcessingError)
+        if ($stdOutText) {
+            try { $importedItems = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=') } catch {}
+        }
+    }
 
     $importExitCode = Get-ImportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedUpdateFilePath $resolvedUpdateFilePath
     if ($importExitCode -eq 0) {
-        $status = 'sucesso operacional'
-        $summary = 'Importação real executada sem erro operacional.'
+        if ($postProcessingFailed) {
+            $status = 'sucesso operacional com falha no pos-processamento'
+            $summary = 'Importação real efetiva, mas o pós-processamento local falhou. Evidências do MSBuild preservadas.'
+        } else {
+            $status = 'sucesso operacional'
+            $summary = 'Importação real executada sem erro operacional.'
+        }
     } else {
         $status = 'falha operacional'
         $summary = 'Importação real falhou durante a execução.'
@@ -766,6 +793,9 @@ try {
         status = $status
         summary = $summary
         exitCode = $importExitCode
+        msBuildExitCode      = $msBuildExitCode
+        postProcessingFailed = $postProcessingFailed
+        postProcessingError  = $postProcessingError
         stage = 'import-real'
         requestedContext = [ordered]@{
             VersionName = $VersionName
@@ -821,6 +851,9 @@ catch {
         status = 'falha operacional'
         summary = 'Falha interna do script antes de concluir a importação real.'
         exitCode = 90
+        msBuildExitCode      = $null
+        postProcessingFailed = $false
+        postProcessingError  = $null
         stage = 'import-real'
         requestedContext = [ordered]@{
             VersionName = $VersionName
