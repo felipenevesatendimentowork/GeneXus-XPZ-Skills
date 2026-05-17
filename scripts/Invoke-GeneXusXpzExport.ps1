@@ -850,8 +850,43 @@ try {
         strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
     }
 
-    $json = ConvertTo-JsonText -InputObject $diagnostic
-    Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json
+    try {
+        $json = ConvertTo-JsonText -InputObject $diagnostic
+    }
+    catch {
+        $postProcessingFailed = $true
+        $postProcessingError  = ('Falha ao serializar diagnostico apos MSBuild: {0}' -f $_.Exception.Message)
+        Add-StrategyTrace -Message $postProcessingError
+        if ($exportExitCode -eq 0) {
+            $status = 'sucesso operacional com falha no pos-processamento'
+            $summary = 'Exportação headless concluída e XPZ gerado, mas a serialização do diagnóstico falhou. Evidências primárias preservadas no log bruto.'
+        }
+        $fallback = [ordered]@{
+            status                = $status
+            summary               = $summary
+            exitCode              = $exportExitCode
+            msBuildExitCode       = $msBuildExitCode
+            postProcessingFailed  = $true
+            postProcessingError   = $postProcessingError
+            stage                 = 'export'
+            artifacts             = [ordered]@{
+                MsBuildStdoutLogPath = $stdOutPath
+                MsBuildStderrLogPath = $stdErrPath
+                ExecutionLogPath     = $resolvedLogPath
+                XpzPath              = $resolvedXpzPath
+            }
+            exportedFileMarker    = $exportedFileMarker
+            note                  = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria.'
+        }
+        try {
+            $json = $fallback | ConvertTo-Json -Depth 3
+        }
+        catch {
+            $msbuildExitCodeText = if ($null -eq $msBuildExitCode) { 'null' } else { [string]$msBuildExitCode }
+            $json = '{"status":"' + $status + '","exitCode":' + $exportExitCode + ',"msBuildExitCode":' + $msbuildExitCodeText + ',"postProcessingFailed":true,"note":"Fallback minimo: serializacao do fallback tambem falhou. Consultar msbuild.stdout.log."}'
+        }
+    }
+    try { Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json } catch {}
     Write-Output $json
     exit $exportExitCode
 }
