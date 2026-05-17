@@ -720,16 +720,41 @@ try {
     Add-StrategyTrace -Message ('Arquivo .msbuild temporário gerado em: {0}' -f $msBuildFilePath)
 
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
-    $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
-    $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
-    $stdErrNoise    = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
-    $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
-    $gxWarningLines = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') | ForEach-Object { $_.Value.Trim() })
+    # Pos-processamento resiliente: a partir daqui o MSBuild ja rodou.
+    # Falha local nao pode descartar evidencia real do MSBuild (incluindo __EXPORTED_FILE__).
+    $postProcessingFailed    = $false
+    $postProcessingError     = $null
+    $stdOutText              = ''
+    $stdErrText              = ''
+    $stdErrNoise             = ''
+    $stdErrFiltered          = ''
+    $gxWarningLines          = @()
+    $openOutput              = $null
+    $activeVersionOutput     = $null
+    $activeEnvironmentOutput = $null
+    $exportedFileMarker      = $null
 
-    $openOutput = Get-MarkerValue -Text $stdOutText -Marker '__OPEN_OUTPUT__='
-    $activeVersionOutput = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
-    $activeEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'"
-    $exportedFileMarker = Get-MarkerValue -Text $stdOutText -Marker '__EXPORTED_FILE__='
+    try {
+        $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
+        $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
+        $stdErrMatches  = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value })
+        $stdErrNoise    = [string]::Join("`n", $stdErrMatches)
+        $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
+        $gxWarningLines = @([regex]::Matches($stdOutText, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') | ForEach-Object { $_.Value.Trim() })
+
+        $openOutput = Get-MarkerValue -Text $stdOutText -Marker '__OPEN_OUTPUT__='
+        $activeVersionOutput = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
+        $activeEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'"
+        $exportedFileMarker = Get-MarkerValue -Text $stdOutText -Marker '__EXPORTED_FILE__='
+    }
+    catch {
+        $postProcessingFailed = $true
+        $postProcessingError  = $_.Exception.Message
+        Add-StrategyTrace -Message ('Pos-processamento falhou apos MSBuild: {0}' -f $postProcessingError)
+        if ($stdOutText) {
+            try { $exportedFileMarker = Get-MarkerValue -Text $stdOutText -Marker '__EXPORTED_FILE__=' } catch {}
+        }
+    }
 
     if (-not [string]::IsNullOrWhiteSpace($VersionName) -and [string]::IsNullOrWhiteSpace($activeVersionOutput)) {
         Add-WarningMessage -Message 'Versão solicitada, mas o retorno de GetActiveVersion veio vazio.'
@@ -744,8 +769,18 @@ try {
     }
 
     $exportExitCode = Get-ExportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedXpzPath $resolvedXpzPath
-    $status = if ($exportExitCode -eq 0) { 'sucesso operacional' } else { 'falha operacional' }
-    $summary = if ($exportExitCode -eq 0) { 'Exportação headless concluída e XPZ gerado.' } else { 'Exportação headless falhou durante a execução do MSBuild.' }
+    if ($exportExitCode -eq 0) {
+        if ($postProcessingFailed) {
+            $status = 'sucesso operacional com falha no pos-processamento'
+            $summary = 'Exportação headless concluída e XPZ gerado, mas o pós-processamento local falhou. Evidências do MSBuild preservadas.'
+        } else {
+            $status = 'sucesso operacional'
+            $summary = 'Exportação headless concluída e XPZ gerado.'
+        }
+    } else {
+        $status = 'falha operacional'
+        $summary = 'Exportação headless falhou durante a execução do MSBuild.'
+    }
 
     if ($exportExitCode -ne 0) {
         Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}.' -f $msBuildExitCode)
@@ -768,6 +803,9 @@ try {
         status = $status
         summary = $summary
         exitCode = $exportExitCode
+        msBuildExitCode      = $msBuildExitCode
+        postProcessingFailed = $postProcessingFailed
+        postProcessingError  = $postProcessingError
         stage = 'export'
         requestedContext = [ordered]@{
             VersionName = $VersionName
@@ -822,6 +860,9 @@ catch {
         status = 'falha operacional'
         summary = 'Falha interna do script antes de concluir a exportação.'
         exitCode = 90
+        msBuildExitCode      = $null
+        postProcessingFailed = $false
+        postProcessingError  = $null
         stage = 'export'
         requestedContext = [ordered]@{
             VersionName = $VersionName

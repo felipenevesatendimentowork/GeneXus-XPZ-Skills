@@ -35,51 +35,6 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
-## Corrigir pos-processamento resiliente em `Invoke-GeneXusXpzImport.ps1`
-
-**Importância:** alta
-**Maturidade:** pronta para implementar
-
-**Origem:** import real em 2026-05-14 na KB FabricaBrasil18; evidência detalhada em `historico/base-geral/2026-05-14-import-wrapper-join-cssproperties.md`.
-
-### Problema concreto que motiva a ideia
-
-Durante import real bem-sucedido, o MSBuild registrou `Import Task Sucesso` e os 3
-marcadores `__IMPORTED_ITEM__=...`, mas o wrapper caiu depois disso com:
-
-```text
-Exception calling "Join" with "2" argument(s): "Value cannot be null. (Parameter 'values')"
-```
-
-A causa mecanica esta na linha 728 de `scripts/Invoke-GeneXusXpzImport.ps1`: quando
-`msbuild.stderr.log` vem vazio, o pipeline usado para montar `$stdErrNoise` produz
-`$null`, e `[string]::Join(...)` dispara `ArgumentNullException`.
-
-### Impacto
-
-O import ja tinha ocorrido, mas o `catch` global emitiu `exitCode=90`, classificou como
-`falha operacional`, perdeu `importedItems` e nao propagou os caminhos dos artefatos
-`msbuild.stdout.log`, `msbuild.stderr.log` e `import-real.msbuild`.
-
-Isso fere o contrato operacional da skill `xpz-msbuild-import-export`: falha interna
-no pos-processamento nao deve apagar a evidência ja coletada do MSBuild.
-
-### Direcao de implementacao
-
-- Hotfix minimo: forcar array em `$stdErrNoise`, usando `@(...)` antes de chamar
-  `[string]::Join(...)`.
-- Correcao robusta: envolver o bloco de pos-processamento pos-MSBuild em `try/catch`
-  interno e emitir diagnostico parcial com `postProcessingFailed=true`.
-- Preservar no diagnostico parcial: exit code real do MSBuild, caminhos de artefatos,
-  stdout/stderr bruto e `importedItems` extraidos do stdout quando existirem.
-
-### Criterio de aceite
-
-Uma importacao com `msbuild.stderr.log` vazio e stdout contendo `Import Task Sucesso`
-nao pode terminar como falha operacional opaca por erro de pos-processamento. Se o
-pos-processamento falhar, o JSON deve preservar as evidencias do MSBuild e indicar a
-falha secundaria de forma explicita.
-
 ## Documentar aviso GeneXus de acesso negado a `CssProperties.json` durante import
 
 **Importância:** baixa
@@ -1724,7 +1679,6 @@ Após import real bem-sucedido na KB nativa, o JSON do wrapper precisa expor de 
 
 ### Relacionado
 
-- Ideia "Corrigir pos-processamento resiliente em `Invoke-GeneXusXpzImport.ps1`" (mesma seção, marcada como `pronta para implementar`) — mexe no mesmo wrapper; vale executar em conjunto para evitar duas rondas de edição.
 - Skill `xpz-sync` — receptora natural da próxima ação sugerida.
 - `kb-source-metadata.md` — fonte canônica para localizar pasta paralela e índice.
 
@@ -1897,4 +1851,3 @@ Arquivo da KB, contém connection string e o flag `IntegratedSecurity`. Não ins
 - Skill `xpz-kb-parallel-setup` — receptora principal das mudanças
 - `scripts/Sync-GeneXusXpzToXml.ps1` linha ~757 — escritor atual de `kb-source-metadata.md`
 - `scripts/Test-GeneXusImportFileEnvelope.ps1` linhas ~102-130 — gate que continua rígido
-- Ideia "Corrigir pos-processamento resiliente em `Invoke-GeneXusXpzImport.ps1`" (mesma seção) — frente independente, mas ambas tocam o fluxo de import; coordenar se forem executadas próximas no tempo
