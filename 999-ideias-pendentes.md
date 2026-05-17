@@ -1584,3 +1584,317 @@ Não há gatilho concreto: nenhuma regressão sintática real escapou recentemen
 ### Relacionado
 
 - Item de checklist já registrado em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*, commit `25d2bd6`): "Every gate script edited in the round was re-parsed (`[System.Management.Automation.Language.Parser]::ParseFile`) and produced zero parse errors under Windows PowerShell 5.1". Esse item cobre o caso "agente XPZ edita script via skill"; o gate descrito aqui cobre o caso "edição direta sem skill carregada".
+
+## Segunda assinatura de ruído GAM/NetCore — variante NuGet.targets sem MSB3491
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** relato de agente em pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste`, build NETPostgreSQL em 2026-05-17. O wrapper `Invoke-GeneXusKbBuildAll.ps1` classificou o build como `operacao concluida, pendente de confirmacao funcional` apesar de `exitCode=0`, `BuildAllDone=true`, `ReorgDetected=false`, `Build All Task: Sucesso`. A razão foi um `blockingPattern=": error "` casando linha de acesso negado vinda de `NuGet.targets`.
+
+### Problema concreto que motiva a ideia
+
+O filtro atual de ruído GAM em `scripts/Invoke-GeneXusKbBuildAll.ps1` (linhas ~1370-1384) exige **três sinais simultâneos** para classificar uma linha como ruído controlado:
+
+- `error MSB3491`
+- `is denied` ou `acesso negado`
+- caminho contendo `\GeneXus\` e `\Library\GAM\Platforms\`
+
+A variante relatada não traz `MSB3491` — vem de `NuGet.targets(196,5)` com o formato:
+
+```text
+C:\Program Files\dotnet\sdk\10.0.204\NuGet.targets(196,5): error : Access to the path 'C:\Program Files (x86)\GeneXus\GeneXus18\Library\GAM\Platforms\NetCorePostgreSQL\obj\...\tmp' is denied.
+```
+
+Como `MSB3491` não casa, a linha não é filtrada, e o regex genérico `: error ` em `$stdOutBlockingPatternRegex` (linha 1389) eleva o build a "pendente de confirmação funcional" sem motivo real.
+
+### Direção de implementação
+
+**Não relaxar** a assinatura existente — ela é deliberadamente conservadora (três sinais simultâneos). Em vez disso, **adicionar uma segunda assinatura independente** no mesmo trecho do classificador:
+
+- `: error :` (sem código MSB)
+- caminho contendo `NuGet.targets`
+- mensagem `is denied` ou `acesso negado`
+- caminho ancorado em `\GeneXus\` + `\Library\GAM\Platforms\`
+
+As duas assinaturas coexistem; a linha vira ruído controlado se casar **qualquer uma** delas. Manter o registro em `stdoutFilteredNoise` para preservar evidência.
+
+### Critério de aceite
+
+Um build com `exitCode=0`, `BuildAllDone=true`, `ReorgDetected=false` e `Build All Task: Sucesso` que só tenha como suposto blocker uma linha de `NuGet.targets` com acesso negado a `\Library\GAM\Platforms\` não pode ser rebaixado para `pendente de confirmação funcional`. Demais regressões ruidosas (sem ancoragem em GAM/Platforms) continuam disparando o rebaixamento como antes.
+
+### Decisões em aberto
+
+- Confirmar se a variante NuGet.targets aparece em outros generators além de NETPostgreSQL (NETCoreSQLServer, etc.) — pode exigir generalização do filtro de generator.
+- Avaliar se o `stderr` traz a mesma linha duplicada (relevante para o filtro de stderr, não só stdout).
+
+### Relacionado
+
+- Filtro atual em `scripts/Invoke-GeneXusKbBuildAll.ps1` linhas ~1370-1384.
+- Documentação de ruído GAM/NetCore em `xpz-msbuild-build/SKILL.md`.
+
+## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** relato de agente em pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste` em 2026-05-17. Após build bem-sucedido, o agente precisou descobrir manualmente como abrir a aplicação gerada, com caminhos diferentes por generator.
+
+### Problema concreto que motiva a ideia
+
+Build bem-sucedido gera aplicação acessível, mas o caminho para abrir varia por generator/environment e não é exposto pela skill `xpz-msbuild-build`. Casos relatados:
+
+- **NETPostgreSQL / .NET Core**:
+  - web dir: `C:\KBs\wsEducacaoSpTeste\NETPostgreSQL155\web`
+  - hospedagem: `dotnet GxNetCoreStartup.dll` self-host
+  - URL: `http://127.0.0.1:50155`
+
+- **NETFrameworkSQLServer / .NET Framework**:
+  - web dir: `C:\KBs\wsEducacaoSpTeste\NETFrameworkSQLServer004\web`
+  - hospedagem: IIS
+  - virtual directory em `applicationHost.config`: `/wsEducacaoSpTesteNETFrameworkSQLServer`
+  - URL: `http://localhost/wsEducacaoSpTesteNETFrameworkSQLServer/wwescola.aspx`
+
+A informação existe no ambiente (estrutura de pastas da KB, `applicationHost.config` do IIS) mas o agente precisa reconstruí-la manualmente.
+
+### Direção de implementação
+
+Etapa complementar ao classificador principal de `xpz-msbuild-build`, **não parte dele**. Sugestão de wrapper novo: `scripts/Get-GeneXusRuntimeLaunchInfo.ps1`, retornando JSON com:
+
+- `activeEnvironment` — nome do environment ativo
+- `generatorType` — `dotnet-self-host` ou `iis` ou `unknown`
+- `webOutputDirectory` — caminho absoluto do diretório `web` gerado
+- `hostingStrategy` — string descritiva
+- `probableUrl` — URL provável (para self-host: porta do `appsettings.json`; para IIS: virtual directory + entrypoint padrão)
+- `entrypoints` — lista de entrypoints conhecidos no `web` (ex.: `developermenu.html`, `wplogin.aspx`, e qualquer objeto web identificado por triagem)
+
+### Escopo recomendado para primeira versão
+
+Cortar pelo caso mais simples primeiro: **só `dotnet self-host`**. IIS exige ler `applicationHost.config` (caminho pode variar, ACL pode bloquear leitura sem elevação) — superfície grande para uma primeira entrega. Adicionar IIS em segunda iteração, somente se houver caso concreto.
+
+### Decisões em aberto
+
+- Onde reside a porta canônica do self-host: `appsettings.json`, `web.config`, ou arquivo gerado pelo build?
+- O wrapper deve invocar o runtime para validar que a URL responde, ou só inferir? (Inferir é mais barato e não acopla a wrapper a estado do host.)
+- Integração com `Test-GeneXusRuntimeFreshness.ps1` (que verifica frescor do runtime, não descobre URL): coordenação ou independência?
+
+### Relacionado
+
+- `scripts/Test-GeneXusRuntimeFreshness.ps1` — verifica frescor, não cobre descoberta de URL.
+- Skill `xpz-msbuild-build` — classificador de build atual, foco no resultado da compilação, não no acesso à aplicação gerada.
+
+## Sinalização de snapshot paralelo defasado após import real
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** relato de agente em pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste` em 2026-05-17. Após importar `Domain DasNeves` via MSBuild na KB nativa `C:\KBs\wsEducacaoSpTeste`, a pasta paralela (`ObjetosDaKbEmXml/` e índice `KbIntelligence/`) permaneceu refletindo o último XPZ full materializado anterior à importação.
+
+### Problema concreto que motiva a ideia
+
+Import real bem-sucedido muda a KB nativa, mas:
+
+- `ObjetosDaKbEmXml/` na pasta paralela só reflete a mudança após novo export/sync/materialização
+- `KbIntelligence/` (índice SQLite) idem
+- Triagem por índice continua "cega" para o objeto recém-importado até nova materialização
+
+Isso não é erro do wrapper de import — é uma **lacuna de handoff** entre `xpz-msbuild-import-export` e `xpz-sync`/`xpz-doc-builder`. O risco é o usuário (ou outro agente em sessão seguinte) consultar o índice e concluir erroneamente que o objeto não existe.
+
+### Direção de implementação
+
+Ao concluir `Invoke-GeneXusXpzImport.ps1` com sucesso real (import efetivado), enriquecer o JSON de saída com campos de sinalização:
+
+- `kbNativeChanged: true`
+- `parallelSnapshotStale: true`
+- `importedItems: ["Domain:DasNeves", ...]` (já planejado pela ideia de pós-processamento resiliente)
+- `suggestedNextSyncScope: "importedItems"` (sugere escopo mínimo de re-sync, não sync total)
+- `parallelSnapshotPath` e `kbIntelligenceIndexPath` quando inferíveis do `kb-source-metadata.md`
+
+A skill **sinaliza**, não **automatiza**. O re-sync continua sendo responsabilidade explícita de `xpz-sync` invocado em frente separada. Acoplar import a sync aumentaria superfície e blast radius do wrapper de import.
+
+### Critério de aceite
+
+Após import real bem-sucedido na KB nativa, o JSON do wrapper precisa expor de forma máquina-legível que (a) houve mudança efetiva na KB nativa, (b) o snapshot paralelo desta pasta está defasado, (c) quais objetos foram importados. O agente seguinte deve conseguir tomar decisão de re-sync apenas lendo esse JSON, sem inspecionar manualmente a KB nativa.
+
+### Decisões em aberto
+
+- Onde fica a inferência de `parallelSnapshotPath`/`kbIntelligenceIndexPath`: dentro do wrapper de import (leitura de `kb-source-metadata.md`) ou em camada separada?
+- Comportamento quando o wrapper rodar **fora** de pasta paralela conhecida (caso de uso direto na KB nativa, sem snapshot paralelo): omitir os campos ou marcar `parallelSnapshotKnown: false`?
+- Coordenação com a ideia de pós-processamento resiliente (Problema 2): os dois mexem no contrato de saída do mesmo wrapper, melhor consolidar em uma frente.
+
+### Relacionado
+
+- Ideia "Corrigir pos-processamento resiliente em `Invoke-GeneXusXpzImport.ps1`" (mesma seção, marcada como `pronta para implementar`) — mexe no mesmo wrapper; vale executar em conjunto para evitar duas rondas de edição.
+- Skill `xpz-sync` — receptora natural da próxima ação sugerida.
+- `kb-source-metadata.md` — fonte canônica para localizar pasta paralela e índice.
+
+## Setup popula `kb-source-metadata.md` a partir da KB nativa, sem depender do XPZ
+
+**Importância:** alta
+**Maturidade:** pronta para implementar
+
+**Origem:** investigação realizada em 2026-05-17 a partir de relato do agente da pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste`. Frente discutida no chat e fechada metodologicamente; só falta executar.
+
+### Problema concreto que motiva a ideia
+
+Hoje `Sync-GeneXusXpzToXml.ps1` (linha ~757) escreve o `kb-source-metadata.md` lendo `KMW` e `Source` do XPZ. Quando o XPZ vem com `<Source />` vazio, o escritor preserva valores estáveis anteriores e emite warning `KbMetadataPath: ... refresh parcial`. **Não tem fallback** para extrair os GUIDs de fontes alternativas confiáveis.
+
+Consequência empírica confirmada em 2026-05-17: na KB `wsEducacaoSpTeste`, a própria IDE GeneXus exporta `.xpz` com `<Source />` vazio em pelo menos dois caminhos de export distintos (full e parcial). Como `kb-source-metadata.md` não tem como se preencher, o gate `scripts/Test-GeneXusImportFileEnvelope.ps1` (linhas ~102-130) bloqueia qualquer empacotamento com códigos `source-kb-missing` e `source-version-missing`. Workaround atual é desligar o gate com `SkipGate`, o que defeita uma validação real.
+
+### Evidência empírica acumulada
+
+Três `.xpz` inspecionados em `C:\Dev\Test\Gx_wsEducacaoSpTeste\XpzExportadosPelaIDE\`:
+
+| Arquivo | Origem | Source |
+|---|---|---|
+| `wsEducacaoSpTeste_full_20260516_152452.xpz` | IDE GeneXus | `<Source />` vazio |
+| `DasNeves_export_20260516_164023.xpz` | IDE GeneXus | `<Source />` vazio |
+| `wsEducacaoSpTeste_20261605.xpz` | Reconstruído pelo agente da pasta paralela | Source preenchido |
+
+Em FabricaBrasil (KB grande), exports IDE saem com Source preenchido. A causa do comportamento divergente na wsEducacaoSpTeste não foi identificada — pode ser estado da KB, build GeneXus, ou caminho de export. **Não é prioridade resolver a causa raiz no GeneXus**; o caminho prático é o ecossistema local compensar.
+
+### Decisão metodológica
+
+Não relaxar o gate `Test-GeneXusImportFileEnvelope.ps1`. Resolver upstream, na própria criação de `kb-source-metadata.md`, buscando os GUIDs em fontes confiáveis da KB nativa.
+
+### Fontes auditáveis confirmadas em 2026-05-17
+
+| Campo | Fonte | Como obter |
+|---|---|---|
+| **KB GUID** (`Source/@kb`) | banco SQL `GX_KB_<nome>`, tabela `Entity` | `SELECT EntityGuid FROM Entity WHERE EntityTypeId=9` — exatamente 1 linha (`EntityTypeId=9` = `Udm.Types.KnowledgeBase` na tabela `EntityType`) |
+| **Nome da KB** | `<KB>\model.ini` | chave `ExternalNamespace` na seção `[MODEL 001]` (ou `PWFProcessesNamespace`, geralmente idênticas) |
+| **Version GUID** (`Source/Version/@guid`) | `<KB>\model.ini` | primeiro `___GUID=` da seção `[MODEL 001]` |
+| **Version Name** | `<KB>\model.ini` | chave `Name=` na seção `[MODEL 001]` (vale `Design` no caso wsEducacaoSpTeste) |
+| **UNCPath** | derivado | `\\<HOSTNAME>\<DRIVE>$\<resto-do-caminho>` a partir de `$KbNativePath` |
+| **username** | ambiente | `$env:USERDOMAIN + '\' + $env:USERNAME` |
+
+**Caveat semântico do Version GUID:** o `___GUID=3936c02b-...` da seção `[MODEL 001]` da wsEducacaoSpTeste corresponde a `EntityTypeId=2` (`Udm.Types.Model` — o Model "Design"), **não** a `EntityTypeId=10` (`Udm.Types.KnowledgeBaseVersions`). Pragmaticamente o GeneXus aceitou esse valor no `<Source/Version/@guid>` durante import real, mas semanticamente pode estar deslocado. Sem export IDE com Source preenchido desta KB para comparação, não é possível confirmar qual GUID o IDE colocaria. **Aceitar essa aproximação por ora, documentando como decisão pragmática a revisar quando aparecer KB com Source IDE preenchido.**
+
+### Arquitetura proposta
+
+**Novo script:** `scripts/Resolve-GeneXusKbIdentity.ps1` (motor compartilhado, read-only, sem efeitos colaterais).
+
+**Parâmetros:**
+- `[Parameter(Mandatory)] [string] $KbNativePath` — caminho da KB GeneXus (ex.: `C:\KBs\wsEducacaoSpTeste`)
+- `[PSCredential] $SqlCredential` — credenciais SQL Server, obrigatórias **apenas** quando a KB tiver `IntegratedSecurity=False` em `knowledgebase.connection`
+
+**Lógica:**
+1. Validar que `$KbNativePath\model.ini` e `$KbNativePath\knowledgebase.connection` existem
+2. Ler `knowledgebase.connection` e extrair o nome do banco (campo `Database=` ou similar — confirmar o formato exato lendo o arquivo de uma KB real) e o flag `IntegratedSecurity`
+3. Montar connection string ADO.NET:
+   - `IntegratedSecurity=True` → `"Server=localhost;Database=$db;Integrated Security=True;Encrypt=False;TrustServerCertificate=True"`
+   - `IntegratedSecurity=False` + `$SqlCredential` fornecido → `"Server=localhost;Database=$db;User Id=$($SqlCredential.UserName);Password=...;Encrypt=False;TrustServerCertificate=True"` (usar `SqlConnectionStringBuilder` para evitar injeção)
+   - `IntegratedSecurity=False` sem `$SqlCredential` → falhar com mensagem clara orientando o usuário a passar `-SqlCredential (Get-Credential)`
+4. Consultar `SELECT EntityGuid FROM Entity WHERE EntityTypeId=9` — obter KB GUID
+5. Parsear `model.ini` para extrair `ExternalNamespace`, `Name`, e o `___GUID=` da seção `[MODEL 001]`
+6. Computar `UNCPath` e `username` do ambiente
+7. Emitir saída estruturada (JSON ou hashtable ordenada):
+
+```json
+{
+  "kbGuid": "39e12e41-...",
+  "kbName": "wsEducacaoSpTeste",
+  "versionGuid": "3936c02b-...",
+  "versionName": "Design",
+  "uncPath": "\\\\DESKTOPW11AJRS\\C$\\KBs\\wsEducacaoSpTeste",
+  "username": "DESKTOPW11AJRS\\ANTONIOJOSE",
+  "versionGuidSemanticCaveat": "Origem em [MODEL 001].___GUID (Udm.Types.Model), não em Udm.Types.KnowledgeBaseVersions. Aceito pragmaticamente."
+}
+```
+
+**Sob `Set-StrictMode -Version Latest`:** atentar para os 5 padrões registrados no `AGENTS.md` global do usuário (`$doc.<Elemento>` shorthand, `if-else` como expressão, `-split` retornando escalar, `HashSet[T]::new(coleção)`, `[regex]::new(pattern, '')` com string vazia). Validar parse após gravar.
+
+### Integração em `xpz-kb-parallel-setup`
+
+**Setup inicial** (KB ainda não tem `kb-source-metadata.md`):
+- Recebe `$KbNativePath` como input (parâmetro do wrapper / pergunta do agente)
+- Invoca `Resolve-GeneXusKbIdentity -KbNativePath $path [-SqlCredential $cred]`
+- Grava `kb-source-metadata.md` já populado, incluindo:
+  - tabela `## Source` com `kb (GUID)`, `username`, `UNCPath` preenchidos
+  - tabela `## Source/Version` com `guid` e `name` preenchidos
+  - campo `last_xpz_materialization_run_at` ainda como placeholder (ele só será preenchido quando ocorrer materialização)
+  - frontmatter ou metadado indicando origem dos GUIDs (`source: resolved-from-native-kb` vs `source: xpz`) para rastreabilidade
+
+**Setup re-run / auditoria** (`Test-XpzSetupAudit.ps1` ou equivalente):
+- Lê `kb-source-metadata.md` existente, obtém path da KB nativa
+- Re-executa `Resolve-GeneXusKbIdentity`
+- Compara campo a campo; divergência vira finding na auditoria (mostra valor gravado vs valor resolvido, sem corrigir automaticamente)
+
+### Integração no escritor `Sync-GeneXusXpzToXml.ps1`
+
+**Não muda comportamento.** Quando o XPZ vier com Source incompleto, continua preservando valores estáveis anteriores. A diferença é que esses valores estáveis **agora estão sempre preenchidos desde o setup**, então o warning `refresh parcial` continua sendo emitido mas não deixa mais campos vazios.
+
+Não há necessidade de o `Sync` chamar `Resolve` — o setup é a única boca que injeta esses dados.
+
+### Validador `Test-XpzKbMetadataWrapper.ps1`
+
+Adicionar verificação de **completude** dos campos críticos (não apenas legibilidade):
+- `kbGuid` presente, não vazio, formato GUID válido
+- `kbName` presente, não vazio
+- `versionGuid` presente, não vazio, formato GUID válido
+- `versionName` presente, não vazio
+
+Resultado `METADATA_WRAPPER_INCOMPLETE` para campos vazios (distinto de `METADATA_WRAPPER_OK` e `BLOCK`).
+
+### Arquivos afetados
+
+- `scripts/Resolve-GeneXusKbIdentity.ps1` — novo
+- `scripts/Test-XpzKbMetadataWrapper.ps1` — adicionar verificação de completude
+- `xpz-kb-parallel-setup/SKILL.md` — atualizar narrativa: setup popula automaticamente; nota antiga sobre "exports MSBuild podem não trazer GUID, exige re-export pela IDE" vira "setup resolve a partir da KB nativa; XPZ vazio não bloqueia mais"
+- `xpz-kb-parallel-setup/examples/Get-KbMetadata.example.ps1` — sem mudança (já lê os 3 campos certos)
+- `xpz-kb-parallel-setup/examples/Test-KbMetadataWrapper.example.ps1` — alinhar ao novo motor compartilhado se assinatura mudar
+- Eventualmente um novo `xpz-kb-parallel-setup/examples/Resolve-KbIdentity.example.ps1` se fizer sentido haver wrapper local
+
+### Critério de aceite
+
+1. KB com IDE exportando `<Source />` vazio (caso wsEducacaoSpTeste) passa pelo setup com `kb-source-metadata.md` totalmente populado, sem warning de "refresh parcial" e sem necessidade de SkipGate em empacotamentos subsequentes.
+2. Setup com `IntegratedSecurity=True` em `knowledgebase.connection` funciona sem credencial adicional.
+3. Setup com `IntegratedSecurity=False` sem `-SqlCredential` falha com mensagem clara orientando o usuário; com `-SqlCredential` funciona.
+4. Auditoria de re-setup detecta divergência entre `kb-source-metadata.md` gravado e estado atual da KB nativa.
+5. Gate `Test-GeneXusImportFileEnvelope.ps1` continua bloqueando Source vazio — comportamento intencional, não alterar.
+
+### Decisões fechadas
+
+- **Sempre SQL Server**: confirmado, KBs GeneXus locais sempre usam MS SQL Server.
+- **Auth dual**: detectar `IntegratedSecurity` em `knowledgebase.connection`; aceitar `-SqlCredential` (PSCredential) quando False; falhar limpo se necessário.
+- **Connection string não sai pro output**: detalhe interno do `Resolve`, não fica gravado nem em `kb-source-metadata.md` nem em JSON de diagnóstico.
+- **Não tocar gate de envelope**: o gate continua rígido sobre Source vazio.
+- **Não chamar `Resolve` fora do setup**: setup é a única boca de entrada; downstream lê de `kb-source-metadata.md`.
+
+### Pendência residual (não bloqueante)
+
+Investigar, quando aparecer caso concreto, qual GUID o IDE realmente coloca em `<Source/Version/@guid>` quando emite Source preenchido. Pode ser que seja `Udm.Types.KnowledgeBaseVersions` (EntityTypeId=10) e não o Model "Design" como assumido aqui. Se confirmar essa hipótese, ajustar `Resolve-GeneXusKbIdentity` para buscar de outra fonte — provavelmente alguma combinação de `EntityVersion` + estado da KB no momento do export.
+
+### Material de referência rápida para o agente que implementar
+
+**Query SQL para KB GUID (testada em 2026-05-17 contra GX_KB_wsEducacaoSpTeste):**
+
+```sql
+SELECT EntityGuid FROM Entity WHERE EntityTypeId = 9
+```
+
+`EntityTypeId=9` corresponde a `Udm.Types.KnowledgeBase` na tabela `EntityType`. Sempre exatamente 1 linha.
+
+**Pattern de leitura do `model.ini`:**
+
+Arquivo INI Windows-style. Seção `[MODEL 001]` contém:
+- `Name=Design`
+- `ExternalNamespace=<nome-da-kb>` (linha ~90 no caso testado)
+- `___GUID=<guid-do-model>` (linha ~185 no caso testado)
+
+Parsear como INI clássico (chave=valor, seção entre colchetes).
+
+**Pattern de leitura do `knowledgebase.connection`:**
+
+Arquivo da KB, contém connection string e o flag `IntegratedSecurity`. Não inspecionei estruturalmente em 2026-05-17 — confirmar formato exato lendo arquivo de KB real antes de implementar parser.
+
+**Memória global do usuário relevante:**
+
+`reference_sqlclient_ambiente.md` — `Invoke-Sqlcmd` indisponível neste ambiente; usar `System.Data.SqlClient.SqlConnection` diretamente.
+
+### Relacionado
+
+- Skill `xpz-kb-parallel-setup` — receptora principal das mudanças
+- `scripts/Sync-GeneXusXpzToXml.ps1` linha ~757 — escritor atual de `kb-source-metadata.md`
+- `scripts/Test-GeneXusImportFileEnvelope.ps1` linhas ~102-130 — gate que continua rígido
+- Ideia "Corrigir pos-processamento resiliente em `Invoke-GeneXusXpzImport.ps1`" (mesma seção) — frente independente, mas ambas tocam o fluxo de import; coordenar se forem executadas próximas no tempo
