@@ -139,6 +139,16 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
   de import — e o sub-estado nomeado
   `importacao real efetiva provada por evidencia de stdout (falha no
   pos-processamento do wrapper)`.
+- Em exportacao headless via MSBuild (`Invoke-GeneXusXpzExport.ps1` do motor
+  compartilhado) e em qualquer diagnostico de sub-estado de export — incluindo
+  classificacao apos exception interna do wrapper, leitura de
+  `__EXPORTED_FILE__` no log bruto (`msbuild.stdout.log`) e identificacao de
+  `postProcessingFailed=true` no `export.json` —, usar `xpz-msbuild-import-export`;
+  nao reinterpretar sub-estados de export localmente. Em particular: falha de
+  pos-processamento do wrapper com `Export Sucesso` + `__EXPORTED_FILE__` no log
+  bruto e arquivo XPZ existente NAO e falha de export — e o sub-estado nomeado
+  `exportacao headless concluida e XPZ gerado (falha no pos-processamento do
+  wrapper)`.
 - `ObjetosDaKbEmXml` e o snapshot oficial materializado; `KbIntelligence` e
   apenas camada derivada e regeneravel.
 - antes de gerar `import_file.xml` localmente a partir de
