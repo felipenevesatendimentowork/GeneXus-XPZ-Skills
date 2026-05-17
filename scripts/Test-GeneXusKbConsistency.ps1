@@ -420,7 +420,7 @@ if ($fixMode) {
                 StdErrPath      = $null
                 ExecutionLogPath = $resolvedLogPath
             }
-            msbuildExitCode = $null
+            msBuildExitCode = $null
             stderrContent        = @()
             stderrFilteredNoise  = @()
             blockingReasons = @('Confirmação de Fix="true" negada pelo usuário.')
@@ -494,7 +494,7 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
-            msbuildExitCode = $null
+            msBuildExitCode = $null
             stderrContent        = @()
             stderrFilteredNoise  = @()
             blockingReasons = @($probeDiag.blockingReasons + $script:BlockingReasons)
@@ -583,7 +583,7 @@ try {
             StdErrPath       = $stdErrPath
             ExecutionLogPath = $resolvedLogPath
         }
-        msbuildExitCode = $msBuildExitCode
+        msBuildExitCode = $msBuildExitCode
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
         stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
         blockingReasons = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
@@ -629,7 +629,7 @@ catch {
             StdErrPath       = $null
             ExecutionLogPath = $resolvedLogPath
         }
-        msbuildExitCode = $null
+        msBuildExitCode = $null
         stderrContent        = @()
         stderrFilteredNoise  = @()
         blockingReasons = @($_.Exception.Message)

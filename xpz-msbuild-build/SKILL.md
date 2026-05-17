@@ -605,7 +605,7 @@ Read tool → $buildLog (build-all.log)
 
 Campos relevantes:
 - `status` — categoria de resultado (ver EXPECTED INTERFACE)
-- `exitCode` — código de saída do MSBuild
+- `exitCode` — código de saída classificado pelo wrapper (0 quando `compilou limpo`/`specify e generate concluídos`, valor não nulo quando há impedimento ou falha); também é o exit code do processo. O valor bruto da task MSBuild aparece em `observedContext.MsBuildExitCode` (PascalCase, dentro do contexto observado). Esta skill **não** emite `msBuildExitCode` top-level — o par top-level `exitCode + msBuildExitCode` existe apenas em wrappers com contrato de resiliência de pós-processamento (skill `xpz-msbuild-import-export`).
 - `summary` — descrição legível do resultado
 - `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
 - `timing.phases` — lista de fases com `name`, `start`, `end`, `durationSeconds`
