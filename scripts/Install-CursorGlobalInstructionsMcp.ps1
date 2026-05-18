@@ -214,12 +214,21 @@ function Write-JsonFile {
     [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 }
 
+function Test-PythonCommandOrBlock {
+    param([Parameter(Mandatory = $true)][string]$Command)
+
+    if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) {
+        throw "BLOCK: comando Python nao encontrado: $Command. Instale Python, ajuste PATH ou passe -PythonCommand com um comando valido antes de gravar mcp.json."
+    }
+}
+
 $resolvedAgentsPath = Resolve-GlobalAgentsInstructionsPath -ExplicitAgentsPath $AgentsPath
 $repoRoot = Get-SkillsRepoRoot -RequestedRoot $SkillsRepoRoot
 $sourceServer = Join-Path $repoRoot 'scripts\cursor-global-instructions-mcp\server.py'
 if (-not (Test-Path -LiteralPath $sourceServer -PathType Leaf)) {
     throw "BLOCK: servidor MCP canonico ausente no repositorio: $sourceServer"
 }
+Test-PythonCommandOrBlock -Command $PythonCommand
 
 $cursorRoot = Join-Path (Get-ProfileRoot) '.cursor'
 $targetDir = Join-Path $cursorRoot $CursorMcpDirName

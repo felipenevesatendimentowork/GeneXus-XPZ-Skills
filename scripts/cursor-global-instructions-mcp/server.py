@@ -6,30 +6,52 @@ from pathlib import Path
 SERVER_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = SERVER_DIR / "config.json"
 SERVER_NAME = "xpz-global-instructions"
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.2.1"
 
 
 def load_agents_path() -> Path:
-    if CONFIG_PATH.is_file():
-        try:
-            data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-            configured = data.get("agentsPath")
-            if configured:
-                return Path(configured).expanduser()
-        except Exception:
-            pass
-    return Path.home() / ".codex" / "AGENTS.md"
+    if not CONFIG_PATH.is_file():
+        raise RuntimeError(
+            f"BLOCK: config.json ausente em {SERVER_DIR}. "
+            "Execute scripts/Install-CursorGlobalInstructionsMcp.ps1 ou recrie config.json com agentsPath."
+        )
+
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"BLOCK: config.json invalido em {CONFIG_PATH}: {exc}") from exc
+    except Exception as exc:
+        raise RuntimeError(f"BLOCK: falha ao ler config.json em {CONFIG_PATH}: {exc}") from exc
+
+    configured = data.get("agentsPath")
+    if not isinstance(configured, str) or not configured.strip():
+        raise RuntimeError(f"BLOCK: config.json sem agentsPath valido em {CONFIG_PATH}.")
+
+    return Path(configured).expanduser()
 
 
-AGENTS_PATH = load_agents_path()
+AGENTS_PATH_ERROR = None
+try:
+    AGENTS_PATH = load_agents_path()
+except Exception as exc:
+    AGENTS_PATH = None
+    AGENTS_PATH_ERROR = str(exc)
+
+
+def require_agents_path() -> Path:
+    if AGENTS_PATH is None:
+        raise RuntimeError(AGENTS_PATH_ERROR or "BLOCK: agentsPath nao resolvido.")
+    return AGENTS_PATH
 
 
 def agents_file_uri() -> str:
-    resolved = AGENTS_PATH.resolve()
+    resolved = require_agents_path().resolve()
     return resolved.as_uri()
 
 
 def read_agents_text() -> str:
+    if AGENTS_PATH is None:
+        return f"ERRO: {AGENTS_PATH_ERROR}"
     try:
         return AGENTS_PATH.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -39,9 +61,10 @@ def read_agents_text() -> str:
 
 
 def server_instructions() -> str:
+    source = AGENTS_PATH if AGENTS_PATH is not None else f"ERRO: {AGENTS_PATH_ERROR}"
     return (
         "Instrucoes globais do usuario para agentes nesta maquina.\n"
-        f"Fonte canonica: {AGENTS_PATH}\n\n"
+        f"Fonte canonica: {source}\n\n"
         "Leia e siga as instrucoes abaixo, salvo conflito com instrucoes de maior prioridade.\n\n"
         f"{read_agents_text()}"
     )
@@ -59,7 +82,7 @@ def response(message_id, result=None, error=None):
 def handle(message):
     method = message.get("method")
     message_id = message.get("id")
-    resource_uri = agents_file_uri()
+    resource_uri = agents_file_uri() if AGENTS_PATH is not None else None
 
     if method == "initialize":
         return response(
@@ -88,7 +111,7 @@ def handle(message):
                 "tools": [
                     {
                         "name": "read_global_agents_instructions",
-                        "description": f"Read the global user instructions from {AGENTS_PATH}.",
+                        "description": f"Read the global user instructions from {AGENTS_PATH or AGENTS_PATH_ERROR}.",
                         "inputSchema": {
                             "type": "object",
                             "properties": {},
@@ -119,6 +142,13 @@ def handle(message):
         )
 
     if method == "resources/list":
+        if resource_uri is None:
+            return response(
+                message_id,
+                {
+                    "resources": [],
+                },
+            )
         return response(
             message_id,
             {
@@ -135,7 +165,7 @@ def handle(message):
 
     if method == "resources/read":
         uri = message.get("params", {}).get("uri")
-        if uri == resource_uri:
+        if resource_uri is not None and uri == resource_uri:
             return response(
                 message_id,
                 {
