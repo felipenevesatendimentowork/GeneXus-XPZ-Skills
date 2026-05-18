@@ -75,6 +75,7 @@ function Get-MatchingLines {
     }
     return @(
         $Text -split "\r?\n" |
+            ForEach-Object { $_.Trim() } |
             Where-Object { $_.StartsWith($Prefix, [System.StringComparison]::Ordinal) } |
             ForEach-Object { $_.Substring($Prefix.Length).Trim() }
     )
@@ -152,6 +153,26 @@ function Get-LayoutWarnings {
     return @($result)
 }
 
+function Get-KnownStdOutNoise {
+    param([string]$Text)
+
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return @()
+    }
+
+    $result = [System.Collections.Generic.List[object]]::new()
+    foreach ($line in (Split-NonEmptyLines -Text $Text)) {
+        if ($line -match "O acesso ao caminho 'C:\\Program Files \(x86\)\\GeneXus\\GeneXus18\\CssProperties\.json' foi negado\.") {
+            [void]$result.Add([ordered]@{
+                code = 'cssproperties-access-denied'
+                classification = 'known-environment-noise'
+                line = $line
+            })
+        }
+    }
+    return @($result)
+}
+
 if (-not [string]::IsNullOrWhiteSpace($Path)) {
     $resolvedPath = [System.IO.Path]::GetFullPath($Path)
     if (Test-Path -LiteralPath $resolvedPath -PathType Container) {
@@ -188,6 +209,7 @@ $errors += @(Get-ErrorLines -Text $stdOutText)
 $errors += @(Get-ErrorLines -Text $stdErrText)
 $importedItems = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
 $layoutWarnings = @(Get-LayoutWarnings -Warnings $warnings)
+$knownStdOutNoise = @(Get-KnownStdOutNoise -Text $stdOutText)
 
 $signals = [ordered]@{
     status = 'signals-read'
@@ -195,6 +217,7 @@ $signals = [ordered]@{
     importedItems = $importedItems
     warnings = $warnings
     errors = $errors
+    knownStdOutNoise = $knownStdOutNoise
     activeVersion = (Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'")
     activeEnvironment = (Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'")
     importTaskSuccess = ($stdOutText -match 'Import Task (Sucesso|Success)')
@@ -203,6 +226,7 @@ $signals = [ordered]@{
         importedItems = $importedItems.Count
         warnings = $warnings.Count
         errors = $errors.Count
+        knownStdOutNoise = $knownStdOutNoise.Count
         layoutWarnings = $layoutWarnings.Count
     }
     artifacts = [ordered]@{

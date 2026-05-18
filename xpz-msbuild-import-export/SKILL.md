@@ -174,7 +174,7 @@ Estado atual da materialização:
 - `Test-GeneXusXpzImportPreview.ps1`: implementado para `PreviewMode` de importação e já validado nesta conversa com XPZ real
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Invoke-GeneXusXpzImport.ps1`: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
-- `Read-MsBuildImportSignals.ps1`: implementado para leitura compacta de `msbuild.stdout.log`/`msbuild.stderr.log`, com `importedItems`, warnings, erros, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
+- `Read-MsBuildImportSignals.ps1`: implementado para leitura compacta de `msbuild.stdout.log`/`msbuild.stderr.log`, com `importedItems`, warnings, erros, ruídos conhecidos de stdout, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
 - `Extract-XpzObject.ps1`: implementado para extrair um objeto específico de XML/XPZ ou retornar resumo JSON sem imprimir o pacote inteiro
 - `Get-GeneXusObjectSummary.ps1`: implementado para resumir objeto GeneXus e, para Panel, expor shape compacto de level/layout, controles, gridData, actions e eventos sem despejar CDATA
 - `Compare-GeneXusPanelShape.ps1`: implementado para comparar dois Panels por shape compacto, incluindo Object attrs, Pattern/Data version, level/layout e controles
@@ -204,7 +204,8 @@ Scripts nesta frente:
   - status atual: implementado
   - objetivo: ler logs brutos de preview/import sem despejar CDATA ou stdout inteiro na conversa
   - parâmetros: `-Path` (diretório de artefatos ou stdout), `-StdOutPath`, `-StdErrPath`, `-Stage`, `-OutputPath`, `-AsJson`
-  - saída esperada: `importedItems`, `warnings`, `errors`, `activeVersion`, `activeEnvironment`, `importTaskSuccess`, `layoutWarnings` agrupados por Panel e contadores compactos
+  - saída esperada: `importedItems`, `warnings`, `errors`, `knownStdOutNoise`, `activeVersion`, `activeEnvironment`, `importTaskSuccess`, `layoutWarnings` agrupados por Panel e contadores compactos
+  - `knownStdOutNoise` deve registrar mensagens conhecidas de ambiente no stdout sem promovê-las a erro; o caso `cssproperties-access-denied` cobre `O acesso ao caminho 'C:\Program Files (x86)\GeneXus\GeneXus18\CssProperties.json' foi negado.`, quando a rodada também preserva evidência de sucesso (`Bem sucedido`, `Import Task Sucesso` ou marcador equivalente)
 - `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`
   - status atual: implementados
   - objetivo: evitar despejo de XML/XPZ ou CDATA gigante durante triagem de pacote, diagnóstico de Panel e comparação de shape

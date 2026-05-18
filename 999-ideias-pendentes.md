@@ -35,39 +35,6 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
-## Documentar aviso GeneXus de acesso negado a `CssProperties.json` durante import
-
-**Importância:** baixa
-**Maturidade:** pesquisa feita
-
-**Origem:** import real em 2026-05-14 na KB FabricaBrasil18; evidência detalhada em `historico/base-geral/2026-05-14-import-wrapper-join-cssproperties.md`.
-
-### Problema concreto que motiva a ideia
-
-Durante a importacao de `procCrudMsprod`, o stdout registrou:
-
-```text
-O acesso ao caminho 'C:\Program Files (x86)\GeneXus\GeneXus18\CssProperties.json' foi negado.
-```
-
-A mensagem apareceu entre `Importando Procedure 'procCrudMsprod' ...` e `Bem sucedido`.
-O `stderr` estava vazio e a task terminou com `Import Task Sucesso`.
-
-### Leitura operacional atual
-
-O arquivo `CssProperties.json` existe e nao tem atributo read-only, mas fica dentro de
-`C:\Program Files (x86)`, protegido por ACL/UAC para processos sem elevacao. A evidencia
-aponta para ruido informativo de ambiente GeneXus, nao para falha do pacote ou do import.
-
-### Direcao futura
-
-Registrar na documentacao operacional da skill `xpz-msbuild-import-export` que essa
-mensagem, quando vier apenas em stdout e cercada por `Bem sucedido`, nao deve ser
-classificada como falha de importacao.
-
-Nao elevar GeneXus/MSBuild automaticamente por causa dessa linha. Reclassificar apenas
-se houver caso em que a mensagem venha acompanhada de falha real de import ou build.
-
 ## LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual
 
 **Importância:** FALTA AVALIAR
