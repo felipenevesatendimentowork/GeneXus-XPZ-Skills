@@ -40,6 +40,7 @@
 - Em `.md` longos ou estruturados, preferir edições pequenas, locais e ancoradas por seção.
 - Após cada gravação, reler o início do arquivo, a seção alterada e a transição para a seção seguinte.
 - Se uma edição automática produzir resultado inesperado, parar e voltar para uma estratégia mais localizada.
+- Quando precisar inspecionar encoding, EOL, BOM ou whitespace visível antes de uma edição cirúrgica, usar `scripts/Show-FileWhitespace.ps1` (modos `whitespace`, `encoding`, `mixed`; opção `-AsJson`).
 
 ## Alinhamento entre documentos
 

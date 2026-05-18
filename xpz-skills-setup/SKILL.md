@@ -277,8 +277,6 @@ como `user-xpz-global-instructions` na sessão (pasta `mcps/` do projeto com
 - `scripts/cursor-global-instructions-mcp/server.py` — servidor MCP
 - `scripts/Install-CursorGlobalInstructionsMcp.ps1` — instala/atualiza perfil do usuário,
   faz merge em `mcp.json` preservando outros servidores e grava `agentsPath` resolvido
-- `scripts/Show-FileWhitespace.ps1` — helper de higiene editorial para inspecionar
-  encoding, EOL e whitespace visivel em arquivos de texto antes de edicoes cirurgicas
 
 **Resolução de `agentsPath` (ordem resumida; detalhe no script):**
 
