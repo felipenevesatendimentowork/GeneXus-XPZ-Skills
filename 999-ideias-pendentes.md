@@ -2132,16 +2132,18 @@ Para `xpz-builder`, isso significaria expor um vocabulário de operações de al
 - `01a-catalogo-e-padroes-empiricos.md` (fonte de validação dos padrões)
 - `01e-moldes-sanitizados-core.md` a `01h-moldes-sanitizados-metadados-e-artefatos.md` (insumo)
 
-## Atributo `[ordered]` inválido em declaração de parâmetro em `Test-GeneXusKbConsistency.ps1`
+## ENCERRADO — Atributo `[ordered]` inválido em declaração de parâmetro em `Test-GeneXusKbConsistency.ps1`
 
 **Importância:** baixa
-**Maturidade:** pronta para implementar
+**Maturidade:** implementada
 
 **Origem:** detectado em revisão pré-push de 2026-05-17 ao validar `Parser.ParseFile` no script após rename de campo JSON.
 
+**Encerramento:** corrigido em 2026-05-18; as três declarações agora usam `[System.Collections.Specialized.OrderedDictionary]`.
+
 ### Problema concreto
 
-Três funções de `scripts/Test-GeneXusKbConsistency.ps1` declaram parâmetro com tipo `[ordered]`:
+Antes da correção, três funções de `scripts/Test-GeneXusKbConsistency.ps1` declaravam parâmetro com tipo `[ordered]`:
 
 - linha 327: `Resolve-ScriptExitCode` — `param([int]$MsBuildExitCode, [ordered]$ConsistencyResult)`
 - linha 338: `Resolve-StatusLabel` — `param([int]$ScriptExitCode, [ordered]$ConsistencyResult)`
@@ -2151,15 +2153,15 @@ Três funções de `scripts/Test-GeneXusKbConsistency.ps1` declaram parâmetro c
 
 > The ordered attribute can be specified only on a hash literal node.
 
-O runtime atual é permissivo o suficiente para que o script execute corretamente, mas o parser estático sinaliza erro.
+O teste de 2026-05-18 mostrou que o Windows PowerShell não era permissivo nesse caso: o script não carregava, mesmo com `-ExecutionPolicy Bypass`, porque o erro era de parse.
 
-### Direção de implementação
+### Correção aplicada
 
-Trocar `[ordered]$ConsistencyResult` por `[System.Collections.Specialized.OrderedDictionary]$ConsistencyResult` (tipo real) nas três funções. Alternativa: remover a anotação de tipo. A primeira é preferível por explicitar o contrato.
+Foi trocado `[ordered]$ConsistencyResult` por `[System.Collections.Specialized.OrderedDictionary]$ConsistencyResult` (tipo real) nas três funções.
 
 ### Critério de aceite
 
-`ParseFile` retorna zero erros no script após o fix. Saída do script (JSON e exit codes) permanece idêntica em rodada de fumaça de `KB consistente` e `inconsistências detectadas`.
+`ParseFile` retorna zero erros no script após o fix. Saída do script (JSON e exit codes) deve permanecer idêntica em rodada de fumaça de `KB consistente` e `inconsistências detectadas`.
 
 ### Relacionado
 

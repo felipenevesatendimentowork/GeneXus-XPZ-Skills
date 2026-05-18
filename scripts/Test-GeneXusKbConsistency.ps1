@@ -324,7 +324,7 @@ function Build-ConsistencyResult {
 }
 
 function Resolve-ScriptExitCode {
-    param([int]$MsBuildExitCode, [ordered]$ConsistencyResult)
+    param([int]$MsBuildExitCode, [System.Collections.Specialized.OrderedDictionary]$ConsistencyResult)
 
     if ($MsBuildExitCode -ne 0) {
         if ($ConsistencyResult.kbOpenFailed) { return 21 }
@@ -335,7 +335,7 @@ function Resolve-ScriptExitCode {
 }
 
 function Resolve-StatusLabel {
-    param([int]$ScriptExitCode, [ordered]$ConsistencyResult)
+    param([int]$ScriptExitCode, [System.Collections.Specialized.OrderedDictionary]$ConsistencyResult)
 
     switch ($ScriptExitCode) {
         0  { return 'sucesso operacional' }
@@ -347,7 +347,7 @@ function Resolve-StatusLabel {
 }
 
 function Resolve-SummaryText {
-    param([int]$ScriptExitCode, [ordered]$ConsistencyResult, [bool]$FixMode)
+    param([int]$ScriptExitCode, [System.Collections.Specialized.OrderedDictionary]$ConsistencyResult, [bool]$FixMode)
 
     $fixSuffix = if ($FixMode) { ' (Fix=true)' } else { '' }
     switch ($ScriptExitCode) {
