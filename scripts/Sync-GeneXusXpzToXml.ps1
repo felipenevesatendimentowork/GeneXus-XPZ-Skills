@@ -210,7 +210,7 @@ function Convert-ExpectedItemsToComparison {
         return $null
     }
 
-    $expectedKeys = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+    $expectedKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $expectedEntries = New-Object System.Collections.Generic.List[object]
     foreach ($rawItem in $rawExpectedItems) {
         $separatorIndex = $rawItem.IndexOf(':')
@@ -234,7 +234,7 @@ function Convert-ExpectedItemsToComparison {
         }
     }
 
-    $actualKeys = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+    $actualKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $actualMap = @{}
     foreach ($item in $ActualItems) {
         $key = "$($item.FolderType)|$($item.LogicalName)"
@@ -271,17 +271,20 @@ function Convert-ExpectedItemsToComparison {
         }
     }
 
+    $expectedItemsForReport = New-Object System.Collections.Generic.List[object]
+    foreach ($expectedEntry in $expectedEntries) {
+        $expectedItemsForReport.Add([pscustomobject]@{
+            FolderType = $expectedEntry.FolderType
+            LogicalName = $expectedEntry.LogicalName
+        }) | Out-Null
+    }
+
     return [pscustomobject]@{
         ExpectedItemsProvided = $true
-        ExpectedItems = @($expectedEntries | ForEach-Object {
-            [pscustomobject]@{
-                FolderType = $_.FolderType
-                LogicalName = $_.LogicalName
-            }
-        })
-        ExpectedReturned = @($expectedReturned)
-        ExpectedMissing = @($expectedMissing)
-        AdditionalOfficial = @($additionalOfficial)
+        ExpectedItems = @($expectedItemsForReport.ToArray())
+        ExpectedReturned = @($expectedReturned.ToArray())
+        ExpectedMissing = @($expectedMissing.ToArray())
+        AdditionalOfficial = @($additionalOfficial.ToArray())
     }
 }
 
@@ -665,12 +668,12 @@ function Get-FullSnapshotComparison {
         [string]$Root
     )
 
-    $packageKeys = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+    $packageKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($item in $Items) {
         [void]$packageKeys.Add("$($item.FolderType)|$($item.LogicalName)")
     }
 
-    $localKeys = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+    $localKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $xmlFiles = Get-ChildItem -LiteralPath $Root -Recurse -Filter *.xml -File
     foreach ($file in $xmlFiles) {
         $folderType = $file.Directory.Name
@@ -829,6 +832,7 @@ function Write-Report {
 }
 
 $package = $null
+$metadataResult = $null
 $warnings = New-Object System.Collections.Generic.List[string]
 try {
     $package = Resolve-PackageXmlPath -RawInputPath $InputPath

@@ -42,7 +42,9 @@ Suprime resumo local de alterações Git em `ObjetosDaKbEmXml`.
 
 .PARAMETER ExpectedItems
 Lista opcional de itens esperados no formato `Tipo:Nome`, repassada ao motor
-compartilhado para comparar foco esperado versus retorno oficial da KB.
+compartilhado para comparar foco esperado versus retorno oficial da KB. Ao
+invocar via `pwsh -File` a partir de Bash/CMD, prefira string única separada
+por vírgula para evitar ambiguidade de parser entre shells.
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parâmetro quando
@@ -53,6 +55,9 @@ o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
 .EXAMPLE
 .\Update-KbFromXpz.ps1 -InputPath C:\Exports\MeuPacote.xpz -ExpectedItems 'Transaction:Cliente', 'Procedure:GeraBoleto'
+
+.EXAMPLE
+pwsh -NoProfile -File .\Update-KbFromXpz.ps1 -InputPath C:\Exports\MeuPacote.xpz -ExpectedItems 'Transaction:Cliente,Procedure:GeraBoleto'
 #>
 
 param(

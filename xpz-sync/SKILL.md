@@ -159,6 +159,10 @@ Os wrappers seguem esta convenção de parâmetros:
 - quando houver primeira materialização seguida de reprocessamento confirmatório ou conferência full, não sobrescrever silenciosamente o relatório principal da primeira materialização com o relatório da segunda passagem
 - nesses casos, usar caminhos separados para cada relatório ou deixar explícito no handoff qual arquivo corresponde a `materializacao` e qual corresponde a `confirmacao`/`conferencia`
 - `-ExpectedItems` *(opcional)* — lista de itens esperados da frente atual no formato `Tipo:Nome`, usada apenas para classificação comparativa entre foco esperado e retorno oficial da KB
+- o motor compartilhado aceita `-ExpectedItems` como lista normal de PowerShell
+  ou como string única separada por vírgula, ponto e vírgula ou quebra de linha;
+  ao invocar via `pwsh -File` a partir de Bash/CMD, preferir a string única
+  separada por vírgula para evitar ambiguidade de parser entre shells
 - a disponibilidade desse parâmetro no motor compartilhado não autoriza presumir
   que wrappers locais da pasta paralela da KB já o exponham; se o wrapper local
   ainda não o aceitar, tratar isso como oportunidade de atualização local,
