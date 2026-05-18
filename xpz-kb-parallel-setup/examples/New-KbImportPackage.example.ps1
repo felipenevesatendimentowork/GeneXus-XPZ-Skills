@@ -23,8 +23,10 @@ Rodada curta pretendida para o pacote. Default: 01.
 Retorna saída JSON estruturada.
 
 .PARAMETER TemplatePackagePath
-Pacote import_file.xml real comparavel para clonar KMW, Source, Dependencies e
-ObjectsIdentityMapping. Quando omitido, o motor usa envelope minimo derivado de
+Pacote import_file.xml ou XPZ real comparavel para clonar KMW, Source,
+Dependencies e ObjectsIdentityMapping. Quando o template trouxer Attributes de
+topo e a frente nao trouxer atributos explicitos, o motor preserva esses
+Attributes. Quando omitido, o motor usa envelope minimo derivado de
 kb-source-metadata.md.
 
 .PARAMETER SharedSkillsRoot

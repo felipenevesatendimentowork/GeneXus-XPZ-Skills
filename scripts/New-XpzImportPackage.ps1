@@ -17,9 +17,12 @@
     Rodada curta do pacote. Default: 01.
 
 .PARAMETER TemplatePackagePath
-    Pacote import_file.xml real comparavel para clonar KMW, Source, Dependencies e
-    ObjectsIdentityMapping. Quando omitido, o motor usa envelope minimo derivado de
-    kb-source-metadata.md.
+    Pacote import_file.xml ou XPZ real comparavel para clonar KMW, Source,
+    Dependencies e ObjectsIdentityMapping. Quando o template trouxer Attributes
+    de topo e a frente nao trouxer atributos explicitos, o motor preserva esses
+    Attributes. Quando omitido, o motor usa envelope minimo derivado de
+    kb-source-metadata.md. Para Panel, especialmente Panel SD, preferir template
+    real exportado pela IDE da mesma KB.
 
 .PARAMETER AsJson
     Retorna saída JSON estruturada.

@@ -85,6 +85,8 @@ Preservar explicitamente o caráter heurístico dessas leituras.
 - Evidência direta: Part type com indicio de opcionalidade: nenhum.
 - Evidência direta: Part type com indicio de vazio/estrutural: babf62c5-0111-49e9-a1c3-cc004d90900a.
 - Inferência forte: blocos em todos os objetos do tipo merecem preservacao prioritaria na clonagem.
+- Evidência operacional adicional: em Panel SD, warning `Layout com identificador incorreto` pode persistir quando apenas o `layout id` e trocado, e desaparecer quando o par `level id` + `layout id` vem de Panel SD exportado pela IDE.
+- Regra conservadora: nao gerar `level id` e `layout id` de Panel SD como GUIDs independentes; preservar par coerente do template real ou usar par vindo de Panel SD exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada.
 - Hipótese: blocos quase sempre vazios podem continuar sendo necessarios mesmo sem carregar conteudo util.
 
 ## Procedure
@@ -356,5 +358,3 @@ Servir como primeira triagem operacional antes de qualquer tentativa de clonagem
 
 - `Inferência forte`: sem substituir o risco estrutural acima, o risco runtime relativo tende a ser `baixo a medio` em cascas simples e isoladas, `medio` em objetos com codigo mas baixa dependencia contextual, e `alto` quando se acumulam `grid`, `events`, multiplos `Level`, `parent` forte ou `pattern`.
 - `Hipótese`: essa leitura runtime relativa serve apenas como desempate operacional e deve ser confirmada no `02-regras-operacionais-e-runtime.md` antes de orientar clonagem ou resposta do agente.
-
-

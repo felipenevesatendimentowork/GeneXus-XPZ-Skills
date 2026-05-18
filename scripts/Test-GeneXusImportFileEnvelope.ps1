@@ -11,6 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $GuidPattern        = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
 $PlaceholderPattern = '(?i)(YOUR[-_]GUID|GUID[-_]HERE|PLACEHOLDER|TODO[-_]GUID|INSERT[-_]HERE|OBJECT[-_]HERE)'
+$PanelObjectTypeGuid = 'd82625fd-5892-40b0-99c9-5c8559c197fc'
 
 function New-Finding {
     param(
@@ -180,11 +181,13 @@ if ($null -ne $objectsNode) {
     $result.objectCount = $childElements.Count
     $allGuidsValid  = $true
     $noPlaceholder  = $true
+    $panelNames      = [System.Collections.Generic.List[string]]::new()
 
     foreach ($objNode in $childElements) {
         $objGuid = $objNode.GetAttribute("guid")
         $objName = $objNode.GetAttribute("name")
         $nodeTag = $objNode.LocalName
+        $objType = $objNode.GetAttribute("type")
 
         if ($nodeTag -ne "Object") {
             $allFindings.Add((New-Finding -Severity "fail" -Code "objects-invalid-child-element" `
@@ -216,6 +219,15 @@ if ($null -ne $objectsNode) {
             $allFindings.Add((New-Finding -Severity "warn" -Code "object-name-missing" `
                 -Message "Elemento '<$nodeTag>' sem atributo 'name'.")) | Out-Null
         }
+
+        if ($objType.ToLowerInvariant() -eq $PanelObjectTypeGuid) {
+            [void]$panelNames.Add($objName)
+        }
+    }
+
+    if ($panelNames.Count -gt 0) {
+        $allFindings.Add((New-Finding -Severity "warn" -Code "panel-level-layout-coupling" `
+            -Message ("Panel detectado no pacote ({0}); para Panel SD, nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada." -f (($panelNames | Sort-Object -Unique) -join ", ")))) | Out-Null
     }
 
     if ($allGuidsValid) {

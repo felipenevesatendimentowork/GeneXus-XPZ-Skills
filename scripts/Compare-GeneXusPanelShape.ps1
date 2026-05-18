@@ -1,0 +1,177 @@
+#requires -version 5.1
+<#
+.SYNOPSIS
+Compara dois Panels GeneXus por shape compacto.
+
+.DESCRIPTION
+Usa Get-GeneXusObjectSummary.ps1 para comparar Object attrs, Pattern/Data
+version, level/layout, controles e flags estruturais sem imprimir CDATA.
+
+.PARAMETER LeftPath
+XML/XPZ do primeiro Panel.
+
+.PARAMETER RightPath
+XML/XPZ do segundo Panel.
+
+.PARAMETER LeftObjectName
+Nome do objeto no primeiro insumo, quando necessario.
+
+.PARAMETER RightObjectName
+Nome do objeto no segundo insumo, quando necessario.
+
+.PARAMETER AsJson
+Retorna JSON estruturado.
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$LeftPath,
+
+    [Parameter(Mandatory = $true)]
+    [string]$RightPath,
+
+    [string]$LeftObjectName,
+
+    [string]$RightObjectName,
+
+    [switch]$AsJson
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Read-Summary {
+    param(
+        [string]$Path,
+        [string]$Name
+    )
+
+    $scriptPath = Join-Path $PSScriptRoot 'Get-GeneXusObjectSummary.ps1'
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "Get-GeneXusObjectSummary.ps1 nao encontrado: $scriptPath"
+    }
+    $scriptParams = @{
+        InputPath = $Path
+        ObjectType = 'Panel'
+        AsJson = $true
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Name)) {
+        $scriptParams['ObjectName'] = $Name
+    }
+    $json = & $scriptPath @scriptParams
+    return (($json | Out-String) | ConvertFrom-Json)
+}
+
+function Normalize-Array {
+    param([object]$Value)
+
+    if ($null -eq $Value) { return @() }
+    if ($Value -is [array]) { return @($Value) }
+    return @($Value)
+}
+
+function Compare-Scalar {
+    param(
+        [string]$Name,
+        [object]$Left,
+        [object]$Right
+    )
+
+    return [ordered]@{
+        name = $Name
+        left = $Left
+        right = $Right
+        equal = ([string]$Left -eq [string]$Right)
+    }
+}
+
+function Compare-List {
+    param(
+        [string]$Name,
+        [object]$Left,
+        [object]$Right
+    )
+
+    $leftValues = @(Normalize-Array -Value $Left | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+    $rightValues = @(Normalize-Array -Value $Right | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+    $leftSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($value in $leftValues) { [void]$leftSet.Add($value) }
+    $rightSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($value in $rightValues) { [void]$rightSet.Add($value) }
+    $onlyLeft = @($leftValues | Where-Object { -not $rightSet.Contains($_) })
+    $onlyRight = @($rightValues | Where-Object { -not $leftSet.Contains($_) })
+    return [ordered]@{
+        name = $Name
+        equal = ($onlyLeft.Count -eq 0 -and $onlyRight.Count -eq 0)
+        leftCount = $leftValues.Count
+        rightCount = $rightValues.Count
+        onlyLeft = $onlyLeft
+        onlyRight = $onlyRight
+    }
+}
+
+function Convert-MapToPairs {
+    param([object]$Map)
+
+    if ($null -eq $Map) { return @() }
+    $pairs = [System.Collections.Generic.List[string]]::new()
+    foreach ($prop in $Map.PSObject.Properties) {
+        [void]$pairs.Add(('{0}={1}' -f $prop.Name, $prop.Value))
+    }
+    return @($pairs)
+}
+
+$left = Read-Summary -Path $LeftPath -Name $LeftObjectName
+$right = Read-Summary -Path $RightPath -Name $RightObjectName
+if ($null -eq $left.panel -or $null -eq $right.panel) {
+    throw 'Ambos os objetos precisam ser Panel.'
+}
+
+$scalarComparisons = @(
+    (Compare-Scalar -Name 'typeGuid' -Left $left.typeGuid -Right $right.typeGuid),
+    (Compare-Scalar -Name 'parentGuid' -Left $left.parentGuid -Right $right.parentGuid),
+    (Compare-Scalar -Name 'parentType' -Left $left.parentType -Right $right.parentType),
+    (Compare-Scalar -Name 'moduleGuid' -Left $left.moduleGuid -Right $right.moduleGuid),
+    (Compare-Scalar -Name 'hasResponsiveSizes' -Left $left.panel.hasResponsiveSizes -Right $right.panel.hasResponsiveSizes),
+    (Compare-Scalar -Name 'hasGridData' -Left $left.panel.hasGridData -Right $right.panel.hasGridData),
+    (Compare-Scalar -Name 'hasActions' -Left $left.panel.hasActions -Right $right.panel.hasActions),
+    (Compare-Scalar -Name 'hasOnClickEvent' -Left $left.panel.hasOnClickEvent -Right $right.panel.hasOnClickEvent)
+)
+
+$listComparisons = @(
+    (Compare-List -Name 'partTypes' -Left @($left.partTypes | ForEach-Object { $_.type }) -Right @($right.partTypes | ForEach-Object { $_.type })),
+    (Compare-List -Name 'patternGuids' -Left $left.panel.patternGuids -Right $right.panel.patternGuids),
+    (Compare-List -Name 'dataVersions' -Left $left.panel.dataVersions -Right $right.panel.dataVersions),
+    (Compare-List -Name 'levelIds' -Left $left.panel.levelIds -Right $right.panel.levelIds),
+    (Compare-List -Name 'layoutIds' -Left $left.panel.layoutIds -Right $right.panel.layoutIds),
+    (Compare-List -Name 'layoutAttrs' -Left (Convert-MapToPairs -Map $left.panel.layoutAttrs) -Right (Convert-MapToPairs -Map $right.panel.layoutAttrs)),
+    (Compare-List -Name 'firstTableAttrs' -Left (Convert-MapToPairs -Map $left.panel.firstTableAttrs) -Right (Convert-MapToPairs -Map $right.panel.firstTableAttrs)),
+    (Compare-List -Name 'controlNames' -Left $left.panel.controls.names -Right $right.panel.controls.names),
+    (Compare-List -Name 'controlTypes' -Left $left.panel.controls.types -Right $right.panel.controls.types),
+    (Compare-List -Name 'gridDataNames' -Left $left.panel.gridDataNames -Right $right.panel.gridDataNames),
+    (Compare-List -Name 'actionControls' -Left $left.panel.actionControls -Right $right.panel.actionControls),
+    (Compare-List -Name 'onClickEvents' -Left $left.panel.onClickEvents -Right $right.panel.onClickEvents),
+    (Compare-List -Name 'eventNames' -Left $left.panel.eventNames -Right $right.panel.eventNames)
+)
+
+$all = @($scalarComparisons + $listComparisons)
+$differences = @($all | Where-Object { -not $_.equal })
+$result = [ordered]@{
+    status = if ($differences.Count -eq 0) { 'same-shape' } else { 'different-shape' }
+    left = [ordered]@{ path = (Resolve-Path -LiteralPath $LeftPath).Path; objectName = $left.name }
+    right = [ordered]@{ path = (Resolve-Path -LiteralPath $RightPath).Path; objectName = $right.name }
+    summary = [ordered]@{
+        comparisonCount = $all.Count
+        differenceCount = $differences.Count
+    }
+    scalarComparisons = $scalarComparisons
+    listComparisons = $listComparisons
+    differences = $differences
+}
+
+if ($AsJson) {
+    $result | ConvertTo-Json -Depth 10
+} else {
+    [pscustomobject]$result
+}

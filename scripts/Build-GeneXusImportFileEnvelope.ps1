@@ -20,6 +20,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$PanelObjectTypeGuid = "d82625fd-5892-40b0-99c9-5c8559c197fc"
 
 function Resolve-NextRejectedPath {
     param(
@@ -52,6 +53,46 @@ function Assert-XmlWellFormed {
         throw "$Role nao e XML bem-formado ('$Path'): $($_.Exception.Message)"
     }
     return $doc
+}
+
+function Read-TemplatePackage {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "TemplatePackage nao encontrado: $Path"
+    }
+
+    $extension = [System.IO.Path]::GetExtension($Path).ToLowerInvariant()
+    if ($extension -ne ".xpz" -and $extension -ne ".zip") {
+        return (Assert-XmlWellFormed -Path $Path -Role "TemplatePackage")
+    }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $Path).Path)
+    try {
+        foreach ($entry in @($zip.Entries | Where-Object { $_.FullName -match '\.xml$' } | Sort-Object FullName)) {
+            $reader = [System.IO.StreamReader]::new($entry.Open(), [System.Text.Encoding]::UTF8, $true)
+            try {
+                $text = $reader.ReadToEnd()
+            } finally {
+                $reader.Dispose()
+            }
+            $doc = New-Object System.Xml.XmlDocument
+            $doc.PreserveWhitespace = $true
+            try {
+                $doc.LoadXml($text)
+            } catch {
+                continue
+            }
+            if ($doc.DocumentElement.LocalName -eq "ExportFile") {
+                return $doc
+            }
+        }
+    } finally {
+        $zip.Dispose()
+    }
+
+    throw "TemplatePackage XPZ nao contem XML com raiz 'ExportFile': $Path"
 }
 
 # 1 - validacao de entradas
@@ -94,14 +135,14 @@ if (Test-Path -LiteralPath $OutputPath) {
     Remove-Item -LiteralPath $OutputPath -Force
 }
 
-$templateDoc = Assert-XmlWellFormed -Path $TemplatePackagePath -Role "TemplatePackage"
+$templateDoc = Read-TemplatePackage -Path $TemplatePackagePath
 if ($templateDoc.DocumentElement.LocalName -ne "ExportFile") {
     throw "TemplatePackage nao tem raiz 'ExportFile': raiz encontrada '$($templateDoc.DocumentElement.LocalName)'."
 }
 
 $templateRoot = $templateDoc.DocumentElement
 $templateBlocks = @{}
-foreach ($name in @("KMW", "Source", "Dependencies", "ObjectsIdentityMapping")) {
+foreach ($name in @("KMW", "Source", "Attributes", "Dependencies", "ObjectsIdentityMapping")) {
     $node = $templateRoot.SelectSingleNode("./$name")
     if ($null -ne $node) {
         $templateBlocks[$name] = $node
@@ -118,6 +159,12 @@ $objectDocs = @()
 foreach ($path in $ObjectXmlPaths) {
     $objectDocs += (Assert-XmlWellFormed -Path $path -Role "ObjectXml")
 }
+
+$panelObjectNames = @(
+    $objectDocs |
+        Where-Object { $_.DocumentElement.GetAttribute("type").ToLowerInvariant() -eq $PanelObjectTypeGuid } |
+        ForEach-Object { $_.DocumentElement.GetAttribute("name") }
+)
 
 $attributeDocs = @()
 if ($TopLevelAttributesXmlPaths -and $TopLevelAttributesXmlPaths.Count -gt 0) {
@@ -155,7 +202,8 @@ foreach ($doc in $objectDocs) {
     [void]$objectsElement.AppendChild($imported)
 }
 
-# 3c - <Attributes> top-level opcional (pacote de Transaction nova)
+# 3c - <Attributes> top-level: explicito vence; senao, clonar do template quando existir
+$topLevelAttrSource = "none"
 if ($attributeDocs.Count -gt 0) {
     $attributesElement = $outDoc.CreateElement("Attributes")
     [void]$newRoot.AppendChild($attributesElement)
@@ -163,6 +211,11 @@ if ($attributeDocs.Count -gt 0) {
         $imported = $outDoc.ImportNode($doc.DocumentElement, $true)
         [void]$attributesElement.AppendChild($imported)
     }
+    $topLevelAttrSource = "explicit"
+} elseif ($templateBlocks.ContainsKey("Attributes")) {
+    $imported = $outDoc.ImportNode($templateBlocks["Attributes"], $true)
+    [void]$newRoot.AppendChild($imported)
+    $topLevelAttrSource = "template"
 }
 
 # 3d - Dependencies clonado (ou vazio se template nao tiver)
@@ -205,10 +258,15 @@ $buildResult = [ordered]@{
     templatePackage   = (Resolve-Path -LiteralPath $TemplatePackagePath).Path
     objectCount       = $objectDocs.Count
     topLevelAttrCount = $attributeDocs.Count
+    topLevelAttrSource = $topLevelAttrSource
     gateStatus        = $null
     gateInvoked       = (-not $SkipGate.IsPresent)
     blockingReasons   = @()
-    warnings          = @()
+    warnings          = @(
+        if ($panelObjectNames.Count -gt 0) {
+            "panel-level-layout-coupling: Panel detectado no pacote ($((@($panelObjectNames) | Sort-Object -Unique) -join ', ')); para Panel SD, nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada."
+        }
+    )
     rejectedPath      = $null
     status            = "apto para prosseguir"
 }
@@ -222,7 +280,7 @@ if (-not $SkipGate) {
     $gateResult = & $gateScript -InputPath $OutputPath
     $buildResult.gateStatus      = $gateResult.status
     $buildResult.blockingReasons = @($gateResult.blockingReasons)
-    $buildResult.warnings        = @($gateResult.warnings)
+    $buildResult.warnings        = @($buildResult.warnings + $gateResult.warnings | Sort-Object -Unique)
     $buildResult.status          = $gateResult.status
 
     if ($gateResult.status -eq "não apto para prosseguir") {

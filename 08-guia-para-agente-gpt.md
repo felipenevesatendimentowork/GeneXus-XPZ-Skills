@@ -617,6 +617,8 @@ Regras da escada:
 - nomear a transicao de bloco no raciocinio e no handoff, por exemplo: `Panel structure and layout -> Pattern and parent coupling` para separar a tela aparente do contexto estrutural que a sustenta
 - parar a expansao quando a hipotese ja estiver sustentada; nao reabrir o `Panel` inteiro por reflexo
 - usar `Panel structure and layout` como bloco inicial para composicao visual, controles, shape da tela e estrutura funcional aparente
+- quando o sintoma for warning `Layout com identificador incorreto`, tratar `level id` e `layout id` como par acoplado; nao testar nem recomendar GUID avulso de layout como correcao suficiente
+- para Panel SD gerado ou clonado, preferir par `level id` + `layout id` vindo de Panel SD exportado pela IDE da mesma KB; se a regra exata de derivacao nao estiver provada, declarar risco e nao inventar GUIDs independentes
 - usar `Serialized behavior and configuration` como bloco inicial para comportamento serializado, configuracao persistida e metadado funcional nao redutivel a decoracao visual
 - usar `Pattern and parent coupling` como bloco inicial para `parent`, `parentGuid`, `parentType`, `moduleGuid`, pattern de origem e acoplamento estrutural do painel
 - usar `External dependencies` como bloco inicial para objeto externo chamado, vinculo necessario e dependencia funcional fora do proprio painel
@@ -1025,6 +1027,7 @@ Regras da escada:
 - se o objeto nao mudou e entrou apenas para dependencia, preservar o `lastUpdate` oficial
 - nao concluir XML ou pacote enquanto o `lastUpdate` do arquivo final nao tiver sido relido e confirmado
 - nao concluir XML GeneXus grande apenas porque a escrita terminou; reler cabecalho, cauda e trecho funcional afetado, validar XML bem-formado, fechamento da raiz e `CDATA` antes de empacotar
+- para ler XML/XPZ grande sem despejar `CDATA` inteiro na conversa, preferir `scripts\Extract-XpzObject.ps1`, `scripts\Get-GeneXusObjectSummary.ps1` e, para `Panel`, `scripts\Compare-GeneXusPanelShape.ps1`
 - se heredoc, here-string ou mecanismo equivalente terminar por EOF antes do delimitador esperado, tratar o arquivo como truncado/corrompido e regenerar por metodo controlado
 - em PowerShell, se houver interpolacao com chamada de metodo dentro de here-string, usar subexpressao `$()` ou evitar here-string para essa composicao; `$variavel.Metodo()` pode sair literal
 - em clonagem conservadora de `WebPanel` que deveria preservar bindings, comparar antes do pacote os bindings serializados relevantes do original e do clone; no minimo, `fieldSpecifier` deve bater em contagem e nomes

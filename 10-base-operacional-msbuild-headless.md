@@ -16,6 +16,10 @@ Também já existe uma implementação inicial de `scripts/Invoke-GeneXusXpzExpo
 
 Também já existe uma implementação inicial de `scripts/Invoke-GeneXusXpzImport.ps1`, restrita à importação real de `XPZ` com parâmetros explícitos, diagnóstico em `JSON` e validação da task carregada.
 
+Também já existe uma implementação inicial de `scripts/Read-MsBuildImportSignals.ps1`, restrita à leitura compacta de `msbuild.stdout.log`/`msbuild.stderr.log`, sem abrir KB e sem depender de GeneXus instalado.
+
+Também já existem utilitários compactos de leitura de pacote/objeto (`scripts/Extract-XpzObject.ps1`, `scripts/Get-GeneXusObjectSummary.ps1`, `scripts/Compare-GeneXusPanelShape.ps1`), restritos a extração e comparação sem despejar XML/CDATA inteiro.
+
 Esta base não substitui o fluxo oficial atual da trilha paralela da KB, não altera o comportamento das demais skills `xpz-*` e não trata sucesso operacional como evidência suficiente de sucesso funcional.
 
 Este documento é par de `02-regras-operacionais-e-runtime.md`, não downstream dele. Achados empíricos de scripts MSBuild — incompatibilidades de tasks, comportamento verificado de API, evidências de execução em KB real — pertencem aqui. Regras transversais sobre estrutura XPZ/XML e runtime GeneXus pertencem a `02-regras`.
@@ -613,6 +617,10 @@ Scripts propostos:
   - objetivo: exportar `XPZ` com parâmetros explícitos
 - `Invoke-GeneXusXpzImport.ps1`
   - objetivo: executar importação real apenas em fase já autorizada de teste controlado
+- `Read-MsBuildImportSignals.ps1`
+  - objetivo: produzir JSON compacto de logs brutos de preview/import, com itens importados, warnings, erros, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
+- `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`
+  - objetivo: extrair, resumir e comparar objetos GeneXus em XML/XPZ sem imprimir pacote completo nem CDATA extenso
 - `Watch-GeneXusMsBuildLog.ps1`
   - objetivo: monitorar incrementalmente o log de uma execução headless em andamento, sem depender do chat para polling; encerra sozinho quando o processo termina
   - parâmetros obrigatórios: `-Pid`, `-LogPath`
@@ -625,6 +633,8 @@ Scripts propostos:
 Estado atual da materialização adicional:
 
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de `XPZ` com parâmetros explícitos e diagnóstico em `JSON`
+- `Read-MsBuildImportSignals.ps1`: implementado para reduzir consumo de tokens na leitura de logs MSBuild; os wrappers de preview/import gravam `msbuild.import.signals.json` ao lado dos logs brutos quando a leitura compacta consegue executar
+- `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`: implementados para reduzir consumo de tokens em analise de XML/XPZ e diagnostico de Panel; devem ser preferidos a buscas que imprimam linhas grandes de `CDATA`
 - `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; destaca fases do GeneXus (Open, Specify, Generate, Compile, BuildAll, Reorg, Validating subtype group, Close), detecta silêncio prolongado e encerra sozinho quando o processo termina; exibe contador de silêncio in-place (sem gerar nova linha a cada poll); quando `-MonitorLog` é passado com o mesmo caminho de `-MonitorLogPath` em `Invoke-GeneXusKbBuildAll.ps1`, o JSON de resultado inclui `timing.phases` com duração de cada fase interna; iniciar com `-NoExit` para a janela permanecer aberta após o build
 - `Test-GeneXusRuntimeFreshness.ps1`: implementado como diagnóstico somente leitura de frescor de runtime; verifica `nav_objs.xml` e timestamps dos artefatos gerados; saída JSON com `runtime-fresh`, `runtime-stale` ou `runtime-unknown`
 

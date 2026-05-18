@@ -745,12 +745,16 @@ try {
     # Falha local nao pode descartar evidencia real do MSBuild.
     $postProcessingFailed = $false
     $postProcessingError  = $null
+    $diagnosticDegraded   = $false
+    $diagnosticDegradedReason = $null
     $stdOutText         = ''
     $stdErrText         = ''
     $stdErrNoise        = ''
     $stdErrFiltered     = ''
     $importedItems      = @()
     $importWarningLines = @()
+    $signalsPath        = Join-Path $artifactDirectory 'msbuild.import.signals.json'
+    $importSignals      = $null
 
     try {
         $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
@@ -763,11 +767,36 @@ try {
     }
     catch {
         $postProcessingFailed = $true
+        $diagnosticDegraded = $true
         $postProcessingError  = $_.Exception.Message
+        $diagnosticDegradedReason = ('Pos-processamento local falhou apos MSBuild: {0}' -f $postProcessingError)
         Add-StrategyTrace -Message ('Pos-processamento falhou apos MSBuild: {0}' -f $postProcessingError)
         if ($stdOutText) {
             try { $importedItems = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=') } catch {}
         }
+    }
+
+    $signalsScript = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
+    try {
+        if (Test-Path -LiteralPath $signalsScript -PathType Leaf) {
+            $signalsJson = & $signalsScript -StdOutPath $stdOutPath -StdErrPath $stdErrPath -Stage 'import-real' -OutputPath $signalsPath -AsJson
+            $signalsJsonText = $signalsJson | Out-String
+            if (-not [string]::IsNullOrWhiteSpace($signalsJsonText)) {
+                $importSignals = $signalsJsonText | ConvertFrom-Json
+                if (($importedItems.Count -eq 0) -and ($null -ne $importSignals.importedItems)) {
+                    $importedItems = @($importSignals.importedItems)
+                }
+            }
+        } else {
+            $diagnosticDegraded = $true
+            $diagnosticDegradedReason = 'Read-MsBuildImportSignals.ps1 nao encontrado; sinais compactos nao foram gerados.'
+            Add-StrategyTrace -Message $diagnosticDegradedReason
+        }
+    }
+    catch {
+        $diagnosticDegraded = $true
+        $diagnosticDegradedReason = ('Falha ao gerar signals.json: {0}' -f $_.Exception.Message)
+        Add-StrategyTrace -Message $diagnosticDegradedReason
     }
 
     $importExitCode = Get-ImportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedUpdateFilePath $resolvedUpdateFilePath
@@ -796,6 +825,8 @@ try {
         msBuildExitCode      = $msBuildExitCode
         postProcessingFailed = $postProcessingFailed
         postProcessingError  = $postProcessingError
+        diagnosticDegraded   = $diagnosticDegraded
+        diagnosticDegradedReason = $diagnosticDegradedReason
         stage = 'import-real'
         requestedContext = [ordered]@{
             VersionName = $VersionName
@@ -828,11 +859,13 @@ try {
             MsBuildFilePath = $msBuildFilePath
             StdOutPath = $stdOutPath
             StdErrPath = $stdErrPath
+            SignalsPath = $signalsPath
             ExecutionLogPath = $resolvedLogPath
         }
         importedItems = $importedItems
         stdoutSignals = [ordered]@{
             importWarnings = $importWarningLines
+            compactSignals = $importSignals
         }
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
         stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
@@ -846,7 +879,9 @@ try {
     }
     catch {
         $postProcessingFailed = $true
+        $diagnosticDegraded = $true
         $postProcessingError  = ('Falha ao serializar diagnostico apos MSBuild: {0}' -f $_.Exception.Message)
+        $diagnosticDegradedReason = $postProcessingError
         Add-StrategyTrace -Message $postProcessingError
         if ($importExitCode -eq 0) {
             $status = 'sucesso operacional com falha no pos-processamento'
@@ -861,10 +896,13 @@ try {
             msBuildExitCode      = $msBuildExitCode
             postProcessingFailed = $true
             postProcessingError  = $postProcessingError
+            diagnosticDegraded   = $true
+            diagnosticDegradedReason = $diagnosticDegradedReason
             stage                = 'import-real'
             artifacts            = [ordered]@{
                 MsBuildStdoutLogPath = $stdOutPath
                 MsBuildStderrLogPath = $stdErrPath
+                SignalsPath          = $signalsPath
                 ExecutionLogPath     = $resolvedLogPath
                 UpdateFilePath       = $resolvedUpdateFilePath
             }
@@ -891,6 +929,8 @@ catch {
         msBuildExitCode      = $null
         postProcessingFailed = $false
         postProcessingError  = $null
+        diagnosticDegraded   = $true
+        diagnosticDegradedReason = $_.Exception.Message
         stage = 'import-real'
         requestedContext = [ordered]@{
             VersionName = $VersionName
@@ -920,11 +960,13 @@ catch {
             MsBuildFilePath = $null
             StdOutPath = $null
             StdErrPath = $null
+            SignalsPath = $null
             ExecutionLogPath = $resolvedLogPath
         }
         importedItems = @()
         stdoutSignals = [ordered]@{
             importWarnings = @()
+            compactSignals = $null
         }
         stderrContent        = @()
         stderrFilteredNoise  = @()

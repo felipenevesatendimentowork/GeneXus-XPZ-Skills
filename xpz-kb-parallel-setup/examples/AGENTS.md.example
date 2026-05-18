@@ -83,7 +83,9 @@ Wrappers esperados:
   local for recorrente; delega ao motor compartilhado `New-XpzImportPackage.ps1`
   para criar `import_file.xml` a partir da subpasta ativa da frente em
   `ObjetosGeradosParaImportacaoNaKbNoGenexus`, com `NN` explícito e
-  `TemplatePackagePath` opcional para pacote real comparável.
+  `TemplatePackagePath` opcional para `import_file.xml` ou `.xpz` real
+  comparável; quando o template trouxer `Attributes` de topo e a frente nao
+  trouxer atributos explicitos, o motor preserva esses `Attributes`.
 - `Get-<NomeKb>KbMetadata.ps1`: le campos-chave de `kb-source-metadata.md` sem
   regex inline nos chamadores; expoe ao menos `last_xpz_materialization_run_at`,
   `kb_name` e `source_guid`.

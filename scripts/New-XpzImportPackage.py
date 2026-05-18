@@ -8,6 +8,7 @@ import json
 import re
 import sys
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import quoteattr
@@ -15,6 +16,7 @@ from xml.sax.saxutils import quoteattr
 
 GUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 PLACEHOLDER_RE = re.compile(r"(YOUR[-_]GUID|GUID[-_]HERE|PLACEHOLDER|TODO[-_]GUID|INSERT[-_]HERE|OBJECT[-_]HERE)", re.I)
+PANEL_OBJECT_TYPE_GUID = "d82625fd-5892-40b0-99c9-5c8559c197fc"
 
 
 def block(message: str) -> None:
@@ -91,6 +93,22 @@ def load_template(template_path: Path | None, metadata_path: Path) -> tuple[ET.E
         return make_minimal_template(load_metadata(metadata_path)), "metadata", warnings
     if not template_path.is_file():
         block(f"TemplatePackagePath nao encontrado: {template_path}")
+    if template_path.suffix.lower() in {".xpz", ".zip"}:
+        try:
+            with zipfile.ZipFile(template_path) as zf:
+                for name in sorted(zf.namelist(), key=str.lower):
+                    if not name.lower().endswith(".xml"):
+                        continue
+                    try:
+                        root = ET.fromstring(zf.read(name))
+                    except ET.ParseError:
+                        continue
+                    if local_name(root.tag) == "ExportFile":
+                        warnings.append(f"template-xpz: envelope ExportFile extraido de {template_path.name}!{name}")
+                        return root, "template-xpz", warnings
+        except zipfile.BadZipFile as exc:
+            block(f"TemplatePackagePath XPZ invalido: {template_path}: {exc}")
+        block(f"TemplatePackagePath XPZ nao contem XML com raiz ExportFile: {template_path}")
     try:
         root = ET.parse(template_path).getroot()
     except ET.ParseError as exc:
@@ -153,6 +171,34 @@ def classify_front_xmls(front_dir: Path) -> tuple[list[tuple[Path, ET.Element, s
     return objects, attributes
 
 
+def is_panel_object(root: ET.Element) -> bool:
+    object_type = root.attrib.get("type", "")
+    return object_type.lower() == PANEL_OBJECT_TYPE_GUID
+
+
+def panel_package_warnings(
+    object_roots: list[tuple[Path, ET.Element, str]],
+    envelope_source: str,
+) -> list[str]:
+    panel_names = [
+        root.attrib.get("name", path.stem)
+        for path, root, _ in object_roots
+        if is_panel_object(root)
+    ]
+    if not panel_names:
+        return []
+
+    warnings = [
+        "panel-level-layout-coupling: Panel detectado; nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada."
+    ]
+    if envelope_source == "metadata":
+        warnings.append(
+            "panel-envelope-minimo: Panel empacotado com envelope-minimo derivado de kb-source-metadata.md; preferir --template-package-path com XPZ/import_file real comparavel exportado pela IDE para clonar envelope completo."
+        )
+    warnings.append("panel-objects: " + ", ".join(panel_names))
+    return warnings
+
+
 def format_round(nn: str) -> str:
     if not re.match(r"^\d+$", nn):
         block("NN invalido; use apenas digitos")
@@ -210,6 +256,8 @@ def build_package_text(
         for _, _, raw_fragment in attribute_roots:
             lines.append(raw_fragment)
         lines.append("  </Attributes>")
+    elif "Attributes" in template_blocks:
+        lines.append("  " + serialize_template_block(template_blocks["Attributes"]).replace("\n", "\n  "))
     if "Dependencies" in template_blocks:
         lines.append("  " + serialize_template_block(template_blocks["Dependencies"]).replace("\n", "\n  "))
     else:
@@ -316,10 +364,20 @@ def main(argv: list[str]) -> int:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(package_text, encoding="utf-8", newline="\n")
         status, blocking, validation_warnings = validate_envelope(package_root)
+        panel_warnings = panel_package_warnings(object_roots, envelope_source)
+        all_warnings = envelope_warnings + validation_warnings + panel_warnings
+        if not blocking and all_warnings:
+            status = "apto com ressalvas"
         rejected = None
         if status == "não apto para prosseguir":
             rejected = rejected_path(output_path)
             output_path.replace(rejected)
+        template_blocks = {local_name(child.tag): child for child in list(template_root)}
+        top_level_attr_source = (
+            "front"
+            if attribute_roots
+            else ("template" if "Attributes" in template_blocks else "none")
+        )
         result: dict[str, Any] = {
             "status": status,
             "outputPath": None if rejected else str(output_path),
@@ -333,9 +391,10 @@ def main(argv: list[str]) -> int:
             "envelopeSource": envelope_source,
             "objectCount": len(object_roots),
             "topLevelAttrCount": len(attribute_roots),
+            "topLevelAttrSource": top_level_attr_source,
             "gateStatus": status,
             "blockingReasons": blocking,
-            "warnings": envelope_warnings + validation_warnings,
+            "warnings": all_warnings,
             "includedFiles": [str(path) for path, _, _ in object_roots + attribute_roots],
         }
         print(json.dumps(result, ensure_ascii=False, indent=2 if args.as_json else None))
