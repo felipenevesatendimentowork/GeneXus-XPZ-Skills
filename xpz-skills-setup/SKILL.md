@@ -45,8 +45,10 @@ de um novo usuário.
 - Não instalar as ferramentas — apenas gerenciar o registro das skills dentro delas
 - Não registrar skills de outros repositórios (ex: `nexa`)
 - Não alterar configurações gerais das ferramentas fora do âmbito desta skill;
-  **exceção explícita:** instrucionais globais cobertos pelo passo 9 do `WORKFLOW`,
-  apenas **após confirmação explícita** do usuário e **sem edição silenciosa**
+  **exceção explícita:** instrucionais globais cobertos pelo passo 9 do `WORKFLOW`
+  (incluindo instalação do MCP Cursor via
+  `scripts/Install-CursorGlobalInstructionsMcp.ps1`), apenas **após confirmação
+  explícita** do usuário e **sem edição silenciosa**
 - Verificar existência de diretórios com `Test-Path` individual por ferramenta — nunca
   agrupar em hashtable ou bloco de verificação coletiva
 - Quando o usuário pedir auditoria ou setup **completo** (ex.: após `git pull`,
@@ -203,7 +205,7 @@ instruções persistentes do usuário:
 | Codex | `~/.codex/AGENTS.md` |
 | Claude Code | `~/.claude/CLAUDE.md` |
 | OpenCode | `~/.config/opencode/AGENTS.md` (aceita também `~/.claude/CLAUDE.md` como fallback) |
-| Cursor | `~/.cursor/rules/<arquivo>.mdc` (pasta de regras globais; o formato `.mdc` exige front-matter `description`/`globs`/`alwaysApply`). `~/.cursor/AGENTS.md` pode ser aceito como alternativa simples em versões recentes; preferir a pasta `rules/` para ambientes com versão estável documentada |
+| Cursor | MCP global em `~/.cursor/mcp.json` (servidor `xpz-global-instructions`) lendo a **fonte efetiva** de outra ferramenta instalada — ver `## CURSOR — INSTRUCIONAIS GLOBAIS VIA MCP`. Regras em `~/.cursor/rules/` ou `AGENTS.md` no perfil **não** substituem esse mecanismo para instruções globais do Agent |
 
 As ferramentas não precisam duplicar o mesmo texto em cada arquivo global: é válido
 **centralizar** as práticas recomendadas em um único arquivo e referenciar esse arquivo
@@ -215,6 +217,13 @@ Quando o ambiente já adotar centralização em uma fonte global consolidada, tr
 referência curta para essa fonte como proposta preferencial antes de sugerir duplicação
 literal. Neste contexto, "equivalente" significa carregar a mesma fonte efetiva, não
 necessariamente repetir o mesmo texto em todos os arquivos.
+
+**Fonte efetiva por ferramenta instalada:** não apontar o Cursor (nem o MCP) para
+`~/.codex/AGENTS.md` quando o Codex **não** estiver instalado na máquina; o mesmo
+vale para `~/.claude/CLAUDE.md` sem Claude Code e para `~/.config/opencode/AGENTS.md`
+sem OpenCode. A resolução segue `## DETECÇÃO DE INSTALAÇÃO` e referências cruzadas
+(`@~/.codex/AGENTS.md` em `CLAUDE.md`, `instructions[]` no OpenCode, etc.) antes de
+escolher o caminho gravado em `config.json` do MCP.
 
 Em fluxo com agente capaz de editar arquivos, lacunas nestes instrucionais devem
 conduzir a **oferta de correção assistida** após confirmação explícita (passo 9 do
@@ -248,6 +257,58 @@ instalada contém ao menos estas regras:
   worktree onde o commit acabou de ser feito. Capturar o hash do
   `git commit` que acabou de rodar, ou via `git -C <worktree> rev-parse HEAD`.
 ```
+
+---
+
+## CURSOR — INSTRUCIONAIS GLOBAIS VIA MCP
+
+No Cursor, instruções globais persistentes para o **Agent** não devem depender da UI
+de User Rules nem de editar `state.vscdb` / chave legada `aicontext.personalContext`
+(mecanismo antigo; não governa o Agent atual de forma confiável).
+
+**Mecanismo recomendado:** servidor MCP stdio `xpz-global-instructions` registrado em
+`~/.cursor/mcp.json`, instalado em `~/.cursor/xpz-global-instructions-mcp/` com leitura
+dinâmica da fonte efetiva via `config.json` (`agentsPath`). O Cursor expõe o servidor
+como `user-xpz-global-instructions` na sessão (pasta `mcps/` do projeto com
+`INSTRUCTIONS.md` derivado do campo `instructions` do `initialize`).
+
+**Artefatos canônicos no repositório de skills:**
+
+- `scripts/cursor-global-instructions-mcp/server.py` — servidor MCP
+- `scripts/Install-CursorGlobalInstructionsMcp.ps1` — instala/atualiza perfil do usuário,
+  faz merge em `mcp.json` preservando outros servidores e grava `agentsPath` resolvido
+
+**Resolução de `agentsPath` (ordem resumida; detalhe no script):**
+
+1. Parâmetro `-AgentsPath` explícito na instalação
+2. Referência `@<caminho>.md` em `~/.claude/CLAUDE.md` (quando existir e o arquivo apontado existir)
+3. Entradas `instructions[]` em `opencode.json` / `opencode.jsonc` (quando existirem)
+4. Se **Codex** instalado → `~/.codex/AGENTS.md` (deve existir; senão bloquear com orientação)
+5. Se **Claude Code** instalado → `~/.claude/CLAUDE.md`
+6. Se **OpenCode** instalado → `~/.config/opencode/AGENTS.md`
+7. Se nenhuma ferramenta com instrucionais globais estiver instalada → não instalar o MCP
+   até o usuário criar um arquivo fonte ou passar `-AgentsPath`
+
+**Não fazer:**
+
+- Prometer `~/.cursor/rules/*.mdc` ou `~/.cursor/AGENTS.md` como equivalente global ao
+  Codex/Claude/OpenCode para o Agent
+- Editar SQLite do Cursor para injetar regras
+- Duplicar o corpo inteiro do `AGENTS.md` no repositório de skills — o MCP **lê** a fonte
+  já mantida pelo usuário
+
+**Validação pós-instalação (nova sessão do Cursor, após reload/restart):**
+
+- Em `mcps/user-xpz-global-instructions/`, presença de `INSTRUCTIONS.md` coerente com a
+  fonte efetiva auditada
+- Agente cita o caminho correto da fonte (não um caminho de ferramenta não instalada)
+- Comportamento observável de regra presente na fonte (ex.: timestamp no início da resposta,
+  se estiver no `AGENTS.md` efetivo)
+- Ferramenta `read_global_agents_instructions` e resource do arquivo fonte respondem sem erro
+
+**Atualização:** após `git pull` que altere `server.py`, reexecutar o instalador (ou
+copiar o `server.py` canônico) e recarregar MCPs; `config.json` só precisa mudar quando a
+fonte efetiva do usuário mudar.
 
 ---
 
@@ -304,13 +365,16 @@ instalada contém ao menos estas regras:
      (**Cursor**, **OpenCode**); tratar **Codex** e **Claude Code** igualmente quando
      o texto efetivo não cumprir os tópicos mínimos.
      Orientação prática por destino:
-     - **Cursor:** criar ou atualizar `~/.cursor/rules/<nome>.mdc` com front-matter
-       válido (`description`, `globs` ou `alwaysApply` conforme o produto aceitar na
-       versão em uso) e, quando houver fonte global consolidada, oferecer primeiro uma
-       referência para essa fonte (ex.: `@~/.codex/AGENTS.md`); se a ferramenta não
-       carregar referências ou o usuário preferir arquivo autocontido, gravar o corpo
-       com os tópicos. Se o usuário preferir a alternativa simples aceita na sua versão,
-       `~/.cursor/AGENTS.md` conforme a tabela desta skill.
+     - **Cursor:** verificar se o MCP `xpz-global-instructions` está registrado em
+       `~/.cursor/mcp.json`, se `~/.cursor/xpz-global-instructions-mcp/config.json`
+       aponta para a **fonte efetiva** correta (respeitando ferramentas instaladas — ver
+       `## CURSOR — INSTRUCIONAIS GLOBAIS VIA MCP`) e se o conteúdo dessa fonte cobre os
+       tópicos mínimos. Se faltar MCP ou a fonte estiver errada/ausente: **ofertar**
+       executar `scripts/Install-CursorGlobalInstructionsMcp.ps1` do repositório de skills
+       (com `-AgentsPath` só quando a resolução automática não for possível), após
+       confirmação. Se faltar texto nos tópicos mínimos na fonte efetiva, alinhar o arquivo
+       da ferramenta dona (Codex/Claude/OpenCode), não inventar cópia paralela só no Cursor.
+       Validar em **nova sessão** após reload do Cursor.
      - **OpenCode:** criar ou atualizar `~/.config/opencode/AGENTS.md`; quando o
        ambiente já centralizar instruções em outro arquivo global (ex.:
        `~/.codex/AGENTS.md`, referenciado por `~/.claude/CLAUDE.md`), oferecer primeiro

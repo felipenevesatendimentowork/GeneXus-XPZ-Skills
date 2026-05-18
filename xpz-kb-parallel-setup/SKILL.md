@@ -476,7 +476,7 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
     - Arquivos de configuracao a verificar (somente se existirem):
       - Claude Code: `Join-Path $env:USERPROFILE '.claude\CLAUDE.md'`
       - Codex: `Join-Path $env:USERPROFILE '.codex\AGENTS.md'`
-      - Cursor: `Join-Path $env:USERPROFILE '.cursor\rules'` → verificar regras globais `.mdc`; se existir `Join-Path $env:USERPROFILE '.cursor\AGENTS.md'`, verificar também como alternativa simples
+      - Cursor: verificar MCP global `xpz-global-instructions` em `Join-Path $env:USERPROFILE '.cursor\mcp.json'` e `agentsPath` em `Join-Path $env:USERPROFILE '.cursor\xpz-global-instructions-mcp\config.json'` (fonte efetiva conforme ferramentas instaladas — ver `xpz-skills-setup`, secao `## CURSOR — INSTRUCIONAIS GLOBAIS VIA MCP`); seguir referencia do arquivo fonte quando aplicavel
       - OpenCode: `Join-Path $env:USERPROFILE '.config\opencode\AGENTS.md'`; se existir `Join-Path $env:USERPROFILE '.config\opencode\opencode.json'` ou `.jsonc`, ler campo `instructions[]` e verificar cada arquivo listado
     - Para cada arquivo encontrado, aplicar verificacao em dois niveis:
       - Nivel 1: o proprio arquivo contem `## Pasta paralela de KB GeneXus`? Se sim → coberto, nenhuma acao
