@@ -7,7 +7,9 @@ Wrapper local sanitizado para validar o contrato de Get-KbMetadata.ps1.
 Executa o script compartilhado `Test-XpzKbMetadataWrapper.ps1` para conferir se
 o wrapper local `Get-KbMetadata.ps1` expoe os campos obrigatorios existentes em
 `kb-source-metadata.md`: `last_xpz_materialization_run_at`, `kb_name` e
-`source_guid`.
+`source_guid`. Tambem valida que os campos criticos de identidade da KB
+(`kbGuid`, `kbName`, `versionGuid`, `versionName`) estao completos no
+metadata local antes de declarar o wrapper como OK.
 
 Este wrapper deve ser usado em auditorias de setup para impedir que um
 `Get-KbMetadata.ps1` funcional apenas em parse seja classificado como

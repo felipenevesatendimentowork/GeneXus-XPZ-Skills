@@ -77,6 +77,17 @@ function Normalize-MetadataValue {
     return $trimmed
 }
 
+function Test-GuidValue {
+    param([AllowNull()][string]$Value)
+
+    if (-not $Value) {
+        return $false
+    }
+
+    $parsed = [guid]::Empty
+    return [guid]::TryParse($Value, [ref]$parsed)
+}
+
 function Get-WrapperFields {
     param([string[]]$OutputLines)
 
@@ -113,6 +124,35 @@ if (-not $expected.kb_name) {
 
 if (-not $expected.source_guid) {
     $expected.source_guid = Normalize-MetadataValue (Get-MarkdownTableValue -Lines $metadataLines -SectionName 'Source' -FieldName 'kb (GUID)')
+}
+
+$critical = [ordered]@{
+    kbGuid = Normalize-MetadataValue (Get-MarkdownTableValue -Lines $metadataLines -SectionName 'Source' -FieldName 'kb (GUID)')
+    kbName = Normalize-MetadataValue (Get-MarkdownTableValue -Lines $metadataLines -SectionName 'Source/Version' -FieldName 'name')
+    versionGuid = Normalize-MetadataValue (Get-MarkdownTableValue -Lines $metadataLines -SectionName 'Source/Version' -FieldName 'guid')
+    versionName = Normalize-MetadataValue (Get-MarkdownTableValue -Lines $metadataLines -SectionName 'Source/Version' -FieldName 'name')
+}
+
+$incomplete = New-Object System.Collections.Generic.List[string]
+foreach ($field in @('kbGuid', 'kbName', 'versionGuid', 'versionName')) {
+    if (-not $critical[$field]) {
+        $incomplete.Add("$field ausente") | Out-Null
+    }
+}
+
+foreach ($field in @('kbGuid', 'versionGuid')) {
+    if ($critical[$field] -and -not (Test-GuidValue $critical[$field])) {
+        $incomplete.Add("$field invalido: '$($critical[$field])'") | Out-Null
+    }
+}
+
+if ($incomplete.Count -gt 0) {
+    foreach ($item in $incomplete) {
+        "PENDENTE_DE_DADOS: $item"
+    }
+
+    'METADATA_WRAPPER_INCOMPLETE'
+    return
 }
 
 $wrapperOutput = & $WrapperPath -MetadataPath $MetadataPath 2>&1
