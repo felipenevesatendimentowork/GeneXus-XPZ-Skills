@@ -3,6 +3,9 @@
 !/.gitignore
 !/.gitattributes
 !/.editorconfig
+!/.github/
+!/.github/workflows/
+!/.github/workflows/*.yml
 !/historico/
 !/historico/**
 !/scripts/

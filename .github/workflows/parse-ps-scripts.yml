@@ -1,0 +1,39 @@
+name: Parse PowerShell scripts
+
+on:
+  push:
+    paths:
+      - 'scripts/*.ps1'
+      - 'scripts/**/*.ps1'
+      - '**/*.example.ps1'
+      - '.github/workflows/parse-ps-scripts.yml'
+  pull_request:
+    paths:
+      - 'scripts/*.ps1'
+      - 'scripts/**/*.ps1'
+      - '**/*.example.ps1'
+      - '.github/workflows/parse-ps-scripts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parse:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check PowerShell version
+        run: |
+          if ($PSVersionTable.PSVersion -lt [version]'7.4') {
+            throw "PowerShell 7.4 or newer is required. Current version: $($PSVersionTable.PSVersion)"
+          }
+          $PSVersionTable.PSVersion.ToString()
+
+      - name: Parse scripts
+        run: ./scripts/Test-PsScriptsParse.ps1

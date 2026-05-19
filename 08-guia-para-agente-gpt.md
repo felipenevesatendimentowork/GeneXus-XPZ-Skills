@@ -85,6 +85,7 @@ Regras da escada:
 - exemplos sanitizados `.example.ps1` publicados pelas skills podem servir como referencia metodologica para reconstruir wrappers locais finais, mas nao substituem o wrapper local real nem autorizam fallback automatico de execucao no fluxo normal
 - quando wrappers locais precisarem nascer do zero no setup inicial da pasta paralela da KB, preferir adaptar os exemplos sanitizados completos da base como bootstrap tecnico, em vez de improvisar wrappers curtos ou parciais
 - scripts do motor com parâmetros totalmente dinâmicos por execução (ex: `Test-GeneXusImportFileEnvelope.ps1`) não requerem wrapper local — devem ser chamados diretamente pelo caminho absoluto do motor; wrapper local só se justifica quando há parâmetros estáticos da KB a encapsular
+- scripts publicos desta raiz devem ser executados em `pwsh` com PowerShell 7.4 LTS ou superior; preferir a versao LTS mais recente disponivel; nao usar Windows PowerShell 5.1 (`powershell.exe`) como runtime desses scripts
 - quando a sessao ja publicar o caminho de uma skill ou de seus exemplos, usar esse caminho publicado como referencia autoritativa; nao inferir caminho alternativo por heuristica
 
 ## Regra de leitura para runtime

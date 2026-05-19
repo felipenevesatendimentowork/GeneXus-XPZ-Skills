@@ -85,7 +85,6 @@ The checklist below is the consolidated end-to-end verification for any packagin
 
 ### PowerShell script hygiene (when editing `scripts/Test-GeneXus*.ps1` referenced by this skill)
 
-- [ ] Every gate script edited in the round was re-parsed (`[System.Management.Automation.Language.Parser]::ParseFile`) and produced zero parse errors under Windows PowerShell 5.1
-- [ ] Any error/info message embedded in a PowerShell double-quoted string `"..."` containing XML/markdown-like tokens (`<Tag>`, `</Tag>`, `<Type/>`) was rewritten using the `-f` format operator or a single-quoted string/here-string, to avoid PowerShell 5.1 parse or interpolation surprises
+- [ ] Every gate script edited in the round was re-parsed with `scripts/Test-PsScriptsParse.ps1` under `pwsh` 7.4+ and produced zero parse errors
+- [ ] Any error/info message embedded in a PowerShell double-quoted string `"..."` containing XML/markdown-like tokens (`<Tag>`, `</Tag>`, `<Type/>`) was rewritten using the `-f` format operator or a single-quoted string/here-string, to avoid parse or interpolation surprises
 - [ ] Long-running loops over the corpus (`Get-ChildItem -Recurse` on `CorpusFolder`) emit `Write-Progress` with `-Activity` matching the script name, throttled to avoid per-file output flooding, and a final `Write-Progress -Completed`
-

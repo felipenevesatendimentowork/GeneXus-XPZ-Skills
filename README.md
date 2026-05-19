@@ -189,6 +189,7 @@ Se você quer entender a base rapidamente:
 - esse script pode ser usado por projetos de produção que mantenham acervos versionados de XMLs extraidos de `XPZ`
 - a pasta `scripts/` existe como apoio operacional, analitico e editorial compartilhavel, mas nao e fonte normativa da documentacao consolidada da raiz
 - os scripts públicos desta raiz devem operar por parâmetros explícitos de entrada e saída, sem depender de caminhos absolutos privados
+- os scripts públicos desta raiz têm contrato de runtime em `pwsh` com PowerShell 7.4 LTS ou superior; usar a versão LTS mais recente disponível é preferível; Windows PowerShell 5.1 (`powershell.exe`) não é runtime suportado para esses scripts
 - os `.example.ps1` publicados nas skills funcionam como exemplos metodologicos importantes para bootstrap tecnico e reconstrucao assistida de wrappers locais finais
 - esses `.example.ps1` nao substituem o wrapper local real da pasta paralela da KB e nao devem virar fallback automatico de execucao no fluxo normal
 - quando a sessao ja publicar o caminho de uma skill ou de seus exemplos, esse caminho publicado prevalece sobre heuristica local de instalacao
@@ -376,6 +377,7 @@ Si quieres entender la base rápidamente:
 - ese script puede ser usado por proyectos de producción que mantengan acervos versionados de XML extraídos de `XPZ`
 - la carpeta `scripts/` existe como apoyo operativo, analítico y editorial compartible, pero no es fuente normativa de la documentación consolidada de la raíz
 - los scripts públicos de esta raíz deben operar por parámetros explícitos de entrada y salida, sin depender de rutas absolutas privadas
+- los scripts públicos de esta raíz tienen contrato de runtime en `pwsh` con PowerShell 7.4 LTS o superior; usar la versión LTS más reciente disponible es preferible; Windows PowerShell 5.1 (`powershell.exe`) no es runtime soportado para esos scripts
 - los `.example.ps1` publicados en las skills funcionan como ejemplos metodológicos importantes para bootstrap técnico y reconstrucción asistida de wrappers locales finales
 - esos `.example.ps1` no sustituyen el wrapper local real de la carpeta paralela de la KB y no deben convertirse en fallback automático de ejecución en el flujo normal
 - cuando la sesión ya publique la ruta de una skill o de sus ejemplos, esa ruta publicada prevalece sobre cualquier heurística local de instalación
@@ -563,6 +565,7 @@ If you want to understand the repository quickly:
 - that script can be used by production projects that keep versioned XML archives extracted from `XPZ`
 - the `scripts/` folder exists as shared operational, analytical, and editorial support, but it is not the normative source of the consolidated root documentation
 - the public scripts in this root must operate through explicit input and output parameters, without depending on private absolute paths
+- the public scripts in this root have a runtime contract of `pwsh` with PowerShell 7.4 LTS or newer; using the latest available LTS version is preferred; Windows PowerShell 5.1 (`powershell.exe`) is not a supported runtime for these scripts
 - the `.example.ps1` files published inside the skills act as important methodological examples for technical bootstrap and assisted reconstruction of final local wrappers
 - those `.example.ps1` files do not replace the real local wrapper of the KB parallel folder and must not become an automatic execution fallback in the normal flow
 - when the session already publishes the path of a skill or its examples, that published path takes precedence over local installation heuristics

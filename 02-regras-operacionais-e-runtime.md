@@ -53,6 +53,7 @@ Regras de uso:
 - `Regra operacional`: quando a base compartilhada ganhar um parametro operacional relevante, isso nao autoriza presumir que wrappers locais ou adaptadores da pasta paralela da KB ja o exponham; a exposicao local e decisao separada e pode estar defasada
 - `Regra operacional`: ao encontrar essa defasagem local, o agente deve tratar o caso como oportunidade de adaptacao local, sinalizar a sugestao ao usuario e aguardar aprovacao explicita; a ausencia de exposicao local nao e erro por si so
 - `Regra operacional`: wrapper recomendado para fluxo local de geracao/empacotamento, como `Test-*KbSourceSanity.ps1`, nao vira automaticamente wrapper minimo universal de materializacao oficial ou de `KbIntelligence`; a obrigatoriedade depende do fluxo realmente adotado pela pasta paralela da KB
+- `Regra operacional`: scripts publicos desta raiz devem ser executados em `pwsh` com PowerShell 7.4 LTS ou superior; a versao LTS mais recente disponivel e preferivel; Windows PowerShell 5.1 (`powershell.exe`) nao e runtime suportado para os scripts da base.
 - `Evidência direta`: `PreviewMode` foi validado operacionalmente com `XPZ` real nesta frente, sem alteracao real da KB.
 - `Evidência direta`: `IncludeItems` e `ExcludeItems` tiveram efeito operacional observavel em `PreviewMode` nesta instalacao.
 - `Regra operacional`: quando `IncludeItems` ou `ExcludeItems` receberem multiplos recortes, o wrapper deve normalizar a entrada como lista e serializar no formato aceito operacionalmente pela task carregada, em vez de repassar uma unica string composta.

@@ -1456,12 +1456,14 @@ Antes de gravar gates, fazer experimento controlado:
 - Existe combinação dessas flags com `ForceRebuild=true` que faça sentido proteger
   diferentemente?
 
-## Gate de parse AST para `scripts/*.ps1` e `.example.ps1` das skills
+## ENCERRADO — Gate de parse AST para `scripts/*.ps1` e `.example.ps1` das skills
 
 **Importância:** baixa
-**Maturidade:** pronta para implementar
+**Maturidade:** implementada
 
 **Origem:** revisão pré-push de 2026-05-16 sobre os gates da Fase 9 do `xpz-builder`; sugestão original do agente revisor ("smoke de parse AST em CI seria útil"); discussão e fechamento de design na mesma sessão.
+
+**Encerramento:** implementado em 2026-05-18 com `scripts/Test-PsScriptsParse.ps1`, workflow `.github/workflows/parse-ps-scripts.yml` e alinhamento documental do contrato `pwsh >= 7.4`.
 
 ### Objetivo
 
@@ -1513,9 +1515,23 @@ Durante a revisão da própria pendência, foi executado parse manual de 70 arqu
 
 O bloqueio anterior ("não há gatilho concreto") deixou de valer porque a decisão de runtime foi fechada: validar automaticamente `pwsh >= 7.4` é uma melhoria pequena, objetiva e alinhada ao contrato da base.
 
+### Correção aplicada
+
+- Criado `scripts/Test-PsScriptsParse.ps1`, com `#requires -Version 7.4`, varredura de `scripts/*.ps1` e `**/*.example.ps1` fora de `historico/`, relatório textual/JSON e exit code `1` em erro de parse.
+- Criado workflow `.github/workflows/parse-ps-scripts.yml`, usando `windows-latest` com shell explícito `pwsh`, checagem de versão mínima e chamada ao script local.
+- Ajustado `.gitignore` com exceção estreita para versionar workflows `.github/workflows/*.yml`.
+- Atualizado `xpz-builder/quality-checklist.md` para apontar para o script compartilhado e remover a premissa de Windows PowerShell 5.1.
+- Registrado o contrato de runtime em `README.md`, `02-regras-operacionais-e-runtime.md` e `08-guia-para-agente-gpt.md`.
+
+### Critério de aceite
+
+- `scripts/Test-PsScriptsParse.ps1` executa em `pwsh` 7.4+ e reporta zero erros no escopo atual.
+- O workflow delega a lógica ao script local, sem duplicar a varredura.
+- A documentação correlata não contradiz mais o contrato de runtime.
+
 ### Relacionado
 
-- Item de checklist já registrado em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*, commit `25d2bd6`) ainda cita Windows PowerShell 5.1 e deve ser alinhado ao novo contrato `pwsh >= 7.4` quando esta frente for implementada.
+- `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*) foi alinhado ao contrato `pwsh >= 7.4`.
 
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 
