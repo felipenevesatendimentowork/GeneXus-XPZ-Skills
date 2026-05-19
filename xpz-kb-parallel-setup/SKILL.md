@@ -257,6 +257,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 | `Rebuild-*KbIntelligenceIndex.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Test-*KbIndexGate.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Get-*KbMetadata.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
+| `Resolve-*KbIdentity.ps1` | recomendado quando a pasta precisa reconciliar identidade estavel da KB nativa local porque o XPZ veio com `Source` vazio ou incompleto | nenhum estado; ausencia nao bloqueia quando nao houver frente aprovada de reconciliacao de metadata |
 | `Test-*KbMetadataWrapper.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Test-*KbStructure.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Test-*KbSetupAudit.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
@@ -268,6 +269,12 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 - Alem do gate obrigatorio `Test-*KbPowerShellRuntime.ps1`, a pasta `scripts` deve prever pelo menos dois wrappers locais quando a pasta paralela da KB operar com fluxo oficial de materializacao XML sobre o motor compartilhado:
   - wrapper de atualizacao diaria a partir de `.xpz`, XML exportado ou pasta contendo o XML do pacote
   - wrapper de conferencia full que reutiliza o wrapper diario em modo `VerifyOnly + FullSnapshot`
+- Quando a pasta paralela precisar reconciliar identidade estavel da KB nativa local porque o XPZ exportado veio com `Source` vazio ou incompleto, recomendar wrapper local fino `Resolve-*KbIdentity.ps1`:
+  - delega para `scripts\Resolve-GeneXusKbIdentity.ps1` da base compartilhada
+  - opera em modo somente leitura sobre `model.ini`, `knowledgebase.connection` e banco interno da KB
+  - retorna `kbGuid`, `kbName`, `versionGuid`, `versionName`, `UNCPath` e `username` para apoiar preenchimento aprovado de `kb-source-metadata.md`
+  - quando chamado com opcao local equivalente a `-UpdateMetadata`, delega para `scripts\Update-XpzKbSourceMetadataIdentity.ps1`, preenche campos ausentes de identidade estavel e bloqueia divergencias nao vazias salvo aprovacao explicita para sobrescrita
+  - nao substitui o `Get-*KbMetadata.ps1`: resolve identidade a partir da KB nativa; `Get-*KbMetadata.ps1` le o metadata ja gravado
 - Quando a pasta paralela da KB adotar `KbIntelligence`, a pasta `scripts` tambem deve prever wrappers locais finos para:
   - consulta do indice derivado em `KbIntelligence\kb-intelligence.sqlite`
   - regeneracao e validacao do indice a partir de `ObjetosDaKbEmXml`
@@ -340,6 +347,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - [Test-KbObjetosDaKbNaming.example.ps1](examples/Test-KbObjetosDaKbNaming.example.ps1)
   - [Test-KbIndexGate.example.ps1](examples/Test-KbIndexGate.example.ps1)
   - [Get-KbMetadata.example.ps1](examples/Get-KbMetadata.example.ps1)
+  - [Resolve-KbIdentity.example.ps1](examples/Resolve-KbIdentity.example.ps1)
   - [Test-KbMetadataWrapper.example.ps1](examples/Test-KbMetadataWrapper.example.ps1)
   - [Test-KbSetupAudit.example.ps1](examples/Test-KbSetupAudit.example.ps1)
   - [Test-KbStructure.example.ps1](examples/Test-KbStructure.example.ps1)

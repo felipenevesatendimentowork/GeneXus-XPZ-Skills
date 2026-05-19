@@ -89,6 +89,12 @@ Wrappers esperados:
 - `Get-<NomeKb>KbMetadata.ps1`: le campos-chave de `kb-source-metadata.md` sem
   regex inline nos chamadores; expoe ao menos `last_xpz_materialization_run_at`,
   `kb_name` e `source_guid`.
+- `Resolve-<NomeKb>KbIdentity.ps1`: wrapper recomendado quando for preciso
+  reconciliar identidade estavel da KB nativa local porque o XPZ exportado veio
+  com `Source` vazio ou incompleto; delega ao motor compartilhado
+  `Resolve-GeneXusKbIdentity.ps1` em modo somente leitura e, quando chamado com
+  opcao explicita de atualizacao, ao motor
+  `Update-XpzKbSourceMetadataIdentity.ps1`.
 - `Test-<NomeKb>KbMetadataWrapper.ps1`: valida o contrato funcional do
   `Get-<NomeKb>KbMetadata.ps1` contra `kb-source-metadata.md`; retorna
   `METADATA_WRAPPER_OK`, `PENDENTE_DE_DADOS` ou `BLOCK: ...`.

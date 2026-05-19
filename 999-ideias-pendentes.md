@@ -1635,9 +1635,11 @@ Após import real bem-sucedido na KB nativa, o JSON do wrapper precisa expor de 
 ## Setup popula `kb-source-metadata.md` a partir da KB nativa, sem depender do XPZ
 
 **Importância:** alta
-**Maturidade:** pronta para implementar
+**Maturidade:** em implementacao
 
-**Origem:** investigação realizada em 2026-05-17 a partir de relato do agente da pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste`. Frente discutida no chat e fechada metodologicamente; só falta executar.
+**Origem:** investigação realizada em 2026-05-17 a partir de relato do agente da pasta paralela `C:\Dev\Test\Gx_wsEducacaoSpTeste`. Frente discutida no chat, fechada metodologicamente e agora em implementacao incremental.
+
+**Status em 2026-05-19:** primeira etapa implementada com motor compartilhado read-only `scripts/Resolve-GeneXusKbIdentity.ps1`, atualizador conservador `scripts/Update-XpzKbSourceMetadataIdentity.ps1` e wrapper sanitizado `xpz-kb-parallel-setup/examples/Resolve-KbIdentity.example.ps1`. O resolvedor foi testado com sucesso contra `C:\KBs\wsEducacaoSpTeste`, incluindo `knowledgebase.connection` em XML e Windows auth derivada do caso `IntegratedSecurity=False` sem usuario SQL. Teste adicional contra `C:\GxModels\FabricaBrasil18` mostrou que o `Source/Version/@name` do XPZ IDE usa `PWFProcessesNamespace=FabricaBrasil18`, não `Name=Design`; o resolvedor foi ajustado para preferir `PWFProcessesNamespace` quando existir. O atualizador passou em `-WhatIf`: em FabricaBrasil classificou identidade como coerente; em wsEducacaoSpTeste preencheria apenas campos ausentes. Ainda falta integrar a chamada como etapa oficial do setup/auditoria.
 
 ### Problema concreto que motiva a ideia
 
@@ -1666,9 +1668,9 @@ Não relaxar o gate `Test-GeneXusImportFileEnvelope.ps1`. Resolver upstream, na 
 | Campo | Fonte | Como obter |
 |---|---|---|
 | **KB GUID** (`Source/@kb`) | banco SQL `GX_KB_<nome>`, tabela `Entity` | `SELECT EntityGuid FROM Entity WHERE EntityTypeId=9` — exatamente 1 linha (`EntityTypeId=9` = `Udm.Types.KnowledgeBase` na tabela `EntityType`) |
-| **Nome da KB** | `<KB>\model.ini` | chave `ExternalNamespace` na seção `[MODEL 001]` (ou `PWFProcessesNamespace`, geralmente idênticas) |
+| **Nome da KB** | `<KB>\model.ini` | preferir `PWFProcessesNamespace` na seção `[MODEL 001]`; usar `ExternalNamespace` apenas como fallback |
 | **Version GUID** (`Source/Version/@guid`) | `<KB>\model.ini` | primeiro `___GUID=` da seção `[MODEL 001]` |
-| **Version Name** | `<KB>\model.ini` | chave `Name=` na seção `[MODEL 001]` (vale `Design` no caso wsEducacaoSpTeste) |
+| **Version Name** | `<KB>\model.ini` | usar o mesmo nome resolvido para a KB (`PWFProcessesNamespace` preferencial); `Name=Design` é nome do modelo e não deve preencher `Source/Version/@name` |
 | **UNCPath** | derivado | `\\<HOSTNAME>\<DRIVE>$\<resto-do-caminho>` a partir de `$KbNativePath` |
 | **username** | ambiente | `$env:USERDOMAIN + '\' + $env:USERNAME` |
 
@@ -1676,21 +1678,24 @@ Não relaxar o gate `Test-GeneXusImportFileEnvelope.ps1`. Resolver upstream, na 
 
 ### Arquitetura proposta
 
-**Novo script:** `scripts/Resolve-GeneXusKbIdentity.ps1` (motor compartilhado, read-only, sem efeitos colaterais).
+**Script criado:** `scripts/Resolve-GeneXusKbIdentity.ps1` (motor compartilhado, read-only, sem efeitos colaterais).
+
+**Atualizador criado:** `scripts/Update-XpzKbSourceMetadataIdentity.ps1` (motor compartilhado de escrita localizada). Ele chama o resolvedor, atualiza somente `Source/kb (GUID)`, `Source/username`, `Source/UNCPath`, `Source/Version/guid` e `Source/Version/name` em `kb-source-metadata.md`, preserva KMW e metadados de materializacao, preenche campos ausentes por padrao e bloqueia divergencias nao vazias salvo `-AllowIdentityOverwrite`.
 
 **Parâmetros:**
 - `[Parameter(Mandatory)] [string] $KbNativePath` — caminho da KB GeneXus (ex.: `C:\KBs\wsEducacaoSpTeste`)
-- `[PSCredential] $SqlCredential` — credenciais SQL Server, obrigatórias **apenas** quando a KB tiver `IntegratedSecurity=False` em `knowledgebase.connection`
+- `[PSCredential] $SqlCredential` — credenciais SQL Server, obrigatórias **apenas** quando a conexão resolvida exigir autenticação SQL
 
 **Lógica:**
 1. Validar que `$KbNativePath\model.ini` e `$KbNativePath\knowledgebase.connection` existem
-2. Ler `knowledgebase.connection` e extrair o nome do banco (campo `Database=` ou similar — confirmar o formato exato lendo o arquivo de uma KB real) e o flag `IntegratedSecurity`
+2. Ler `knowledgebase.connection` em formato XML, connection string ou pares `chave=valor`; extrair banco quando existir e, se ausente, derivar `GX_KB_<nome-da-pasta-nativa>` como default pragmático
 3. Montar connection string ADO.NET:
    - `IntegratedSecurity=True` → `"Server=localhost;Database=$db;Integrated Security=True;Encrypt=False;TrustServerCertificate=True"`
-   - `IntegratedSecurity=False` + `$SqlCredential` fornecido → `"Server=localhost;Database=$db;User Id=$($SqlCredential.UserName);Password=...;Encrypt=False;TrustServerCertificate=True"` (usar `SqlConnectionStringBuilder` para evitar injeção)
-   - `IntegratedSecurity=False` sem `$SqlCredential` → falhar com mensagem clara orientando o usuário a passar `-SqlCredential (Get-Credential)`
+   - XML GeneXus com `IntegratedSecurity=False` mas sem usuário SQL explícito → usar Windows auth, conforme evidência empírica já registrada para `wsEducacaoSpTeste`
+   - SQL auth resolvida + `$SqlCredential` fornecido → `"Server=localhost;Database=$db;User Id=$($SqlCredential.UserName);Password=...;Encrypt=False;TrustServerCertificate=True"` (usar `SqlConnectionStringBuilder` para evitar injeção)
+   - SQL auth resolvida sem `$SqlCredential` → falhar com mensagem clara orientando o usuário a passar `-SqlCredential (Get-Credential)`
 4. Consultar `SELECT EntityGuid FROM Entity WHERE EntityTypeId=9` — obter KB GUID
-5. Parsear `model.ini` para extrair `ExternalNamespace`, `Name`, e o `___GUID=` da seção `[MODEL 001]`
+5. Parsear `model.ini` para extrair `PWFProcessesNamespace`/`ExternalNamespace`, `Name` diagnostico, e o `___GUID=` da seção `[MODEL 001]`
 6. Computar `UNCPath` e `username` do ambiente
 7. Emitir saída estruturada (JSON ou hashtable ordenada):
 
@@ -1699,7 +1704,8 @@ Não relaxar o gate `Test-GeneXusImportFileEnvelope.ps1`. Resolver upstream, na 
   "kbGuid": "39e12e41-...",
   "kbName": "wsEducacaoSpTeste",
   "versionGuid": "3936c02b-...",
-  "versionName": "Design",
+  "versionName": "wsEducacaoSpTeste",
+  "modelName": "Design",
   "uncPath": "\\\\DESKTOPW11AJRS\\C$\\KBs\\wsEducacaoSpTeste",
   "username": "DESKTOPW11AJRS\\ANTONIOJOSE",
   "versionGuidSemanticCaveat": "Origem em [MODEL 001].___GUID (Udm.Types.Model), não em Udm.Types.KnowledgeBaseVersions. Aceito pragmaticamente."
@@ -1743,24 +1749,26 @@ Resultado `METADATA_WRAPPER_INCOMPLETE` para campos vazios (distinto de `METADAT
 ### Arquivos afetados
 
 - `scripts/Resolve-GeneXusKbIdentity.ps1` — novo
+- `scripts/Update-XpzKbSourceMetadataIdentity.ps1` — novo; reconcilia somente campos de identidade estavel em `kb-source-metadata.md`
 - `scripts/Test-XpzKbMetadataWrapper.ps1` — verificação de completude implementada em 2026-05-19; manter apenas ajustes futuros caso a assinatura do fluxo `Resolve` mude
 - `xpz-kb-parallel-setup/SKILL.md` — atualizar narrativa: setup popula automaticamente; nota antiga sobre "exports MSBuild podem não trazer GUID, exige re-export pela IDE" vira "setup resolve a partir da KB nativa; XPZ vazio não bloqueia mais"
 - `xpz-kb-parallel-setup/examples/Get-KbMetadata.example.ps1` — sem mudança (já lê os 3 campos certos)
 - `xpz-kb-parallel-setup/examples/Test-KbMetadataWrapper.example.ps1` — alinhar ao novo motor compartilhado se assinatura mudar
-- Eventualmente um novo `xpz-kb-parallel-setup/examples/Resolve-KbIdentity.example.ps1` se fizer sentido haver wrapper local
+- `xpz-kb-parallel-setup/examples/Resolve-KbIdentity.example.ps1` — wrapper sanitizado criado em 2026-05-19 para reconciliação opcional de identidade local
 
 ### Critério de aceite
 
 1. KB com IDE exportando `<Source />` vazio (caso wsEducacaoSpTeste) passa pelo setup com `kb-source-metadata.md` totalmente populado, sem warning de "refresh parcial" e sem necessidade de SkipGate em empacotamentos subsequentes.
-2. Setup com `IntegratedSecurity=True` em `knowledgebase.connection` funciona sem credencial adicional.
-3. Setup com `IntegratedSecurity=False` sem `-SqlCredential` falha com mensagem clara orientando o usuário; com `-SqlCredential` funciona.
+2. Setup com Windows auth resolvida em `knowledgebase.connection` funciona sem credencial adicional.
+3. Setup com SQL auth resolvida sem `-SqlCredential` falha com mensagem clara orientando o usuário; com `-SqlCredential` funciona.
 4. Auditoria de re-setup detecta divergência entre `kb-source-metadata.md` gravado e estado atual da KB nativa.
 5. Gate `Test-GeneXusImportFileEnvelope.ps1` continua bloqueando Source vazio — comportamento intencional, não alterar.
+6. Atualizador de metadata preenche campos ausentes, mas bloqueia divergencia nao vazia de identidade sem confirmacao explicita de sobrescrita.
 
 ### Decisões fechadas
 
 - **Sempre SQL Server**: confirmado, KBs GeneXus locais sempre usam MS SQL Server.
-- **Auth dual**: detectar `IntegratedSecurity` em `knowledgebase.connection`; aceitar `-SqlCredential` (PSCredential) quando False; falhar limpo se necessário.
+- **Auth dual**: detectar a forma efetiva de autenticacao em `knowledgebase.connection`; em XML GeneXus, `IntegratedSecurity=False` sem usuario SQL explicito nao basta para forcar SQL auth, pois ha evidencia empirica de Windows auth funcional nesse caso. Aceitar `-SqlCredential` (PSCredential) quando SQL auth for resolvida; falhar limpo se necessario.
 - **Connection string não sai pro output**: detalhe interno do `Resolve`, não fica gravado nem em `kb-source-metadata.md` nem em JSON de diagnóstico.
 - **Não tocar gate de envelope**: o gate continua rígido sobre Source vazio.
 - **Não chamar `Resolve` fora do setup**: setup é a única boca de entrada; downstream lê de `kb-source-metadata.md`.
@@ -1782,8 +1790,9 @@ SELECT EntityGuid FROM Entity WHERE EntityTypeId = 9
 **Pattern de leitura do `model.ini`:**
 
 Arquivo INI Windows-style. Seção `[MODEL 001]` contém:
-- `Name=Design`
-- `ExternalNamespace=<nome-da-kb>` (linha ~90 no caso testado)
+- `Name=Design` (nome do modelo; diagnostico, nao usar como `Source/Version/@name`)
+- `PWFProcessesNamespace=<nome-da-kb>` quando presente
+- `ExternalNamespace=<namespace-externo>` como fallback quando `PWFProcessesNamespace` faltar
 - `___GUID=<guid-do-model>` (linha ~185 no caso testado)
 
 Parsear como INI clássico (chave=valor, seção entre colchetes).
