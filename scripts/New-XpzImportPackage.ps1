@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
     Cria um import_file.xml a partir de uma frente local da pasta paralela da KB.

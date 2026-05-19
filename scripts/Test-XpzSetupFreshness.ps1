@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
     Verifica se o setup da pasta paralela da KB esta fresco em relacao ao repositorio de skills XPZ.

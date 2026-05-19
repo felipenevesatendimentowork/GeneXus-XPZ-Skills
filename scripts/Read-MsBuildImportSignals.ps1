@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Extrai sinais compactos de logs MSBuild de preview/importacao GeneXus.

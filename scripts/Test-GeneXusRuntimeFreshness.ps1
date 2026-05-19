@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
     Diagnostica se o runtime GeneXus reflete a versao mais recente de um objeto importado.
