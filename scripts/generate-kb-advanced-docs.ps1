@@ -81,7 +81,7 @@ function Get-ReferenceSummary {
         [System.Xml.XmlElement]$ObjectNode
     )
 
-    $refs = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+    $refs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     foreach ($attr in @("parent", "parentGuid", "parentType", "moduleGuid")) {
         $value = $ObjectNode.GetAttribute($attr)

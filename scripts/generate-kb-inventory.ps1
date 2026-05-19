@@ -63,7 +63,7 @@ function Get-StructuredReferences {
         [System.Xml.XmlElement]$ObjectNode
     )
 
-    $refs = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+    $refs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     $parent = $ObjectNode.GetAttribute("parent")
     if ($parent) { [void]$refs.Add("parent:$parent") }
