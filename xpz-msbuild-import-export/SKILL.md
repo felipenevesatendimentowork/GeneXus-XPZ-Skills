@@ -165,7 +165,7 @@ Arquivos de referência e quando carregar:
 
 ## EXPECTED INTERFACE
 
-Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Read-MsBuildImportSignals.ps1`, `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`, `Test-GeneXusKbConsistency.ps1`, `Test-GeneXusImportFileEnvelope.ps1`, `Watch-GeneXusMsBuildLog.ps1` e `Test-GeneXusRuntimeFreshness.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita. Os motores de montagem de `import_file.xml` referenciados no fluxo preferido (`Build-GeneXusImportFileEnvelope.ps1` para montagem direta a partir de XMLs de objeto e template clonável, `New-XpzImportPackage.ps1` como wrapper PowerShell do motor Python `New-XpzImportPackage.py` para montagem por frente da pasta paralela) também estão materializados em `scripts/` e são cobertos pela skill `xpz-builder` e pelas regras operacionais em `02-regras-operacionais-e-runtime.md`; quando esta skill aponta para eles (anti-padrão de export-casca, inventário pré-import), trata-se de uso operacional vigente, não de promessa aspiracional.
+Esta skill assume, como interface operacional, scripts pequenos e explicitamente parametrizados. `Test-GeneXusMsBuildSetup.ps1`, `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Read-MsBuildImportSignals.ps1`, `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`, `Test-GeneXusKbConsistency.ps1`, `Test-GeneXusImportFileEnvelope.ps1`, `Get-GeneXusImportPackageObjectInventory.ps1`, `Watch-GeneXusMsBuildLog.ps1` e `Test-GeneXusRuntimeFreshness.ps1` já foram materializados nesta fase; os demais não devem ser tratados como já implementados sem confirmação explícita. Os motores de montagem de `import_file.xml` referenciados no fluxo preferido (`Build-GeneXusImportFileEnvelope.ps1` para montagem direta a partir de XMLs de objeto e template clonável, `New-XpzImportPackage.ps1` como wrapper PowerShell do motor Python `New-XpzImportPackage.py` para montagem por frente da pasta paralela) também estão materializados em `scripts/` e são cobertos pela skill `xpz-builder` e pelas regras operacionais em `02-regras-operacionais-e-runtime.md`; quando esta skill aponta para eles (anti-padrão de export-casca, inventário pré-import), trata-se de uso operacional vigente, não de promessa aspiracional.
 
 Estado atual da materialização:
 
@@ -180,6 +180,7 @@ Estado atual da materialização:
 - `Compare-GeneXusPanelShape.ps1`: implementado para comparar dois Panels por shape compacto, incluindo Object attrs, Pattern/Data version, level/layout e controles
 - `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado para validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB
+- `Get-GeneXusImportPackageObjectInventory.ps1`: implementado para inventário determinístico de `import_file.xml`/XML com raiz `<ExportFile>`; lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>` e pode confrontar com delta declarado em texto `Tipo:Nome`; `.xpz` ainda não faz parte deste escopo inicial
 - `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; usar quando o invocador encerrar por timeout em KB grande para acompanhar o MSBuild ainda em execução sem depender do chat
 - `Test-GeneXusRuntimeFreshness.ps1`: implementado como diagnóstico somente leitura de frescor de runtime; usar quando o sub-estado for `importação real efetiva provada, geração de runtime pendente` para confirmar se artefatos de runtime já refletem a versão importada
 
@@ -219,6 +220,12 @@ Scripts nesta frente:
   - parâmetros opcionais: `-AsJson`
   - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `não apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
   - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
+- `Get-GeneXusImportPackageObjectInventory.ps1`
+  - status atual: implementado para `import_file.xml`/XML com raiz `<ExportFile>`
+  - objetivo: inventariar o conteúdo efetivo do pacote antes de preview/import, separando `Objects`, `Attributes` top-level, tipos mapeados, GUIDs e confronto opcional com delta declarado
+  - parâmetros obrigatórios: `-InputPath` (caminho do `import_file.xml`)
+  - parâmetros opcionais: `-DeclaredDeltaPath`, `-FailOnDeltaMismatch`, `-CatalogPath`, `-AsJson`
+  - fora do escopo inicial: leitura direta de `.xpz`; quando o pacote cotidiano já é `import_file.xml`, não fabricar `.xpz` só para esta validação
 - `Watch-GeneXusMsBuildLog.ps1`
   - status atual: implementado
   - objetivo: monitorar incrementalmente o log de uma execução headless em andamento; encerra sozinho quando o processo termina; usar especialmente em importações de KB grande onde o invocador pode encerrar por timeout antes do MSBuild concluir
@@ -285,6 +292,7 @@ Parâmetros específicos de importação:
 ## INVENTÁRIO DO PACOTE ANTES DO IMPORT REAL
 
 - O gate `Test-GeneXusImportFileEnvelope.ps1` valida estrutura do envelope; **não substitui** a verificação do **conjunto de objetos** que efetivamente seria aplicado à KB na importação.
+- Para `import_file.xml`/XML com raiz `<ExportFile>`, use `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <pacote> -AsJson` como inventário determinístico preferido. Quando houver lista esperada em texto `Tipo:Nome`, use também `-DeclaredDeltaPath <arquivo>`; para bloquear automaticamente divergência, acrescente `-FailOnDeltaMismatch`.
 - **Checklist obrigatório** antes de **importação real** quando o pacote **não** foi montado na mesma rodada pelo fluxo `xpz-builder` com manifesto explícito na conversa (objetos + intenção do lote):
   - Extrair a lista completa de objetos no `<ExportFile>` (por exemplo todos os `<Object` sob `<Objects>`, ou conteúdo equivalente dentro do `.xpz`).
   - Confrontar com o **delta declarado** / pedido do utilizador (tipo e nome de cada objeto em foco). Cada objeto **extra** deve ser classificado no espírito de `xpz-builder` como mudança pedida, auxiliar necessária ou **extra não pedida**; se for **extra não pedida** num pacote que o utilizador descreveu como correção pontual ou cirúrgica → **ABORT** salvo confirmação explícita.
@@ -329,7 +337,7 @@ Parâmetros específicos de importação:
      - `apto para prosseguir` → prosseguir normalmente
    - Este gate é não invasivo: lê apenas o arquivo local, não abre KB, não requer GeneXus instalado
    - Aplicar mesmo quando o arquivo vier de geração anterior já validada — o gate é obrigatório por rodada, não por sessão
-6c. Antes de **importação real**: executar o **inventário do pacote** (lista completa de objetos no envelope) e confrontá-lo com o delta declarado, conforme a secção **Inventário do pacote antes do import real**. Se o pacote contiver extras não conciliados ou módulo de sistema não pedido num pacote cirúrgico, **ABORT** salvo confirmação explícita do utilizador. Omitir este passo apenas quando o pacote foi gerado na mesma rodada pelo fluxo `xpz-builder` com manifesto na conversa que já feche o lote esperado.
+6c. Antes de **importação real**: executar o **inventário do pacote** (lista completa de objetos no envelope) e confrontá-lo com o delta declarado, conforme a secção **Inventário do pacote antes do import real**. Para `import_file.xml`, preferir `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <pacote> -AsJson`; se houver delta declarado em arquivo `Tipo:Nome`, passar `-DeclaredDeltaPath` e, quando a rodada exigir bloqueio automático, `-FailOnDeltaMismatch`. Se o pacote contiver extras não conciliados ou módulo de sistema não pedido num pacote cirúrgico, **ABORT** salvo confirmação explícita do utilizador. Omitir este passo apenas quando o pacote foi gerado na mesma rodada pelo fluxo `xpz-builder` com manifesto na conversa que já feche o lote esperado.
 7. Só depois abrir a KB e confirmar versão ativa e `Environment` ativo quando aplicável
    Quando o objetivo for confirmar versão e Environment para usar em `-VersionName`/`-EnvironmentName`, usar `GetActiveVersion` e `GetActiveEnvironment` — nunca `GetVersionProperty -Name Name` nem `GetEnvironmentProperty -Name Name`, pois esses retornam propriedades de metadados incompatíveis com o identificador aceito por `SetActiveVersion`/`SetActiveEnvironment` (verificado empiricamente: `GetVersionProperty -Name Name` retornou `"Design"` enquanto `GetActiveVersion` retornou `"wsEducacaoSpTeste"` na mesma KB)
 8. Se o objetivo for inspeção, priorizar:
@@ -461,6 +469,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] Quando `-VersionName` ou `-EnvironmentName` foram informados explicitamente, confirmar que o valor veio de `GetActiveVersion`/`GetActiveEnvironment` ou de fonte comprovadamente compatível com `SetActiveVersion`/`SetActiveEnvironment` — nunca de `GetVersionProperty -Name Name` nem de `GetEnvironmentProperty -Name Name`
 - [ ] Quando a frente foi descrita por fluxo funcional e o usuário reportar "não mudou no navegador" após import confirmado, foi verificado primeiro (1) se o objeto importado é o alvo executado pelo fluxo real, antes de (2) checar frescor de runtime ou (3) propor nova edição
 - [ ] Antes de importação real, o inventário completo de objetos no pacote foi confrontado com o delta declarado (ou o pacote veio da mesma rodada `xpz-builder` com manifesto que fecha o lote)
+- [ ] Para `import_file.xml`, o inventário foi obtido por `Get-GeneXusImportPackageObjectInventory.ps1` quando o script estava disponível; se houve delta declarado em arquivo, `-DeclaredDeltaPath` foi usado
 - [ ] Quando o pacote veio de export MSBuild ou reempacotamento manual, não se assumiu que o conteúdo coincide com a lista nominal nem que extras eram intencionais sem confirmação
 - [ ] Exportação headless não foi executada sem pedido ou confirmação explícita quando o objetivo do utilizador era apenas importar XML já existente na pasta paralela
 

@@ -1188,9 +1188,11 @@ Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 de
 ## Script de inventário de objetos em pacote importável (`import_file.xml` / `.xpz`)
 
 **Importância:** média
-**Maturidade:** ideia
+**Maturidade:** implementada parcialmente em 2026-05-19
 
 **Origem:** incidente operacional documentado em 2026-05-13 (export MSBuild com `-ObjectList` gerou `.xpz` com dependências e módulo de plataforma; import headless sem inventário completo do conteúdo real do pacote). A camada comportamental já foi incorporada em `xpz-msbuild-import-export`, `xpz-builder`, `10-base-operacional-msbuild-headless.md` e `08-guia-para-agente-gpt.md`; esta entrada cobre apenas **automação determinística** opcional.
+
+**Status em 2026-05-19:** escopo cotidiano implementado para `import_file.xml` em `scripts/Get-GeneXusImportPackageObjectInventory.ps1`. O script lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>`, mapeia GUIDs de tipo por `scripts/gx-object-type-catalog.json` e pode confrontar com um delta declarado em arquivo texto `Tipo:Nome`. Suporte direto a `.xpz` permanece pendente porque, no fluxo diário local, o artefato operacional principal é `import_file.xml`; `.xpz` fica mais associado a envio a terceiros.
 
 **Filiação editorial:** complementa o **Manifesto semântico de pacote** (intenção e narrativa na fase de empacotamento em `xpz-builder`). O inventário por script foca no **conteúdo efetivo** do artefato logo antes do import MSBuild — especialmente quando o pacote veio de export, reempacotamento manual ou patch, onde o manifesto da frente de empacotamento pode não existir ou não bater com o zip.
 
@@ -1200,21 +1202,20 @@ O gate `Test-GeneXusImportFileEnvelope.ps1` valida envelope (`ExportFile`, `KMW`
 
 ### Direção técnica proposta
 
-Script no motor compartilhado `scripts/` (nome provisório `Get-GeneXusImportPackageObjectInventory.ps1` ou extensão opcional de `Test-GeneXusImportFileEnvelope.ps1` com modo `-ListObjectsOnly` / `-AsJson`):
+Script no motor compartilhado `scripts/` (`Get-GeneXusImportPackageObjectInventory.ps1`):
 
-- **Entrada:** caminho para `import_file.xml` **ou** `.xpz` (tratar como ZIP, localizar `ExportFile`/XML interno com o mesmo esquema).
+- **Entrada:** caminho para `import_file.xml`/XML com raiz `<ExportFile>`; `.xpz` fica fora do escopo inicial e deve ser tratado em frente posterior, se voltar a ser necessário.
 - **Saída estruturada (JSON):** lista de objetos com `type`, `name`, `guid` quando disponível; contagem total; flags heurísticas opcionais (ex.: candidato a módulo de plataforma pelo par `Module` + nome conhecido como `GeneXus`).
-- **Modo opcional de confronto:** parâmetro com caminho para ficheiro de “delta declarado” (lista `Tipo:Nome` ou JSON) — emitir `MATCH` / `EXTRA_OBJECTS` / `MISSING_FROM_PACKAGE` com código de saída não zero nos casos bloqueantes acordados com o utilizador.
+- **Modo opcional de confronto:** parâmetro com caminho para ficheiro de “delta declarado” em texto linha a linha `Tipo:Nome`; emitir `MATCH` / `DELTA_MISMATCH`, com código de saída não zero quando `-FailOnDeltaMismatch` for usado.
 - **Ordem na trilha:** após `Test-GeneXusImportFileEnvelope.ps1` com sucesso, **antes** de `Invoke-GeneXusXpzImport.ps1` (ou equivalente local).
 
 Integração futura em wrappers locais da pasta paralela: um único comando que encadeia envelope + inventário + import, com falha cedo quando houver extras não justificados.
 
 ### Decisões em aberto
 
-- Fundir com o gate de envelope num único script (duas fases internas) ou manter scripts separados para responsabilidade única e reutilização?
-- Contrato exato do ficheiro “delta declarado” (texto linha a linha vs JSON) e se o confronto é sempre obrigatório ou só com `-StrictDeltaPath`.
+- Suporte direto a `.xpz`: localizar o `ExportFile`/XML interno em ZIPs reais GeneXus 18 sem ampliar risco do fluxo cotidiano.
+- Contrato JSON para “delta declarado”, se surgir necessidade além do formato texto linha a linha `Tipo:Nome`.
 - Lista de nomes/GUIDs de módulos de plataforma: configurável por `.json` na pasta paralela vs hardcoded mínimo + expansão documental.
-- `.xpz` com estrutura interna não padronizada na amostra — validar contra exports reais GeneXus 18 já usados na trilha.
 
 ### Limiar para implementar
 

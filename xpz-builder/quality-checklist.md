@@ -68,6 +68,7 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] `Build-GeneXusImportFileEnvelope.ps1` or `New-XpzImportPackage.ps1`/`.py` was used to assemble `import_file.xml` from object XMLs/front folder and a validated template or explicit metadata-derived minimal envelope; if the manual fallback was used, the divergence was justified explicitly
 - [ ] When the flow was headless MSBuild import and the delta XML already existed in the parallel folder, KB export was not proposed or executed as the default way to obtain a `.xpz` shell without explicit user request or documented confirmation that envelope assembly was blocked
 - [ ] `Test-GeneXusImportFileEnvelope.ps1` was run on the final `import_file.xml` (directly or through the helper) and returned `apto para prosseguir` or `apto com ressalvas` with explicit justification; `não apto para prosseguir` was never suppressed
+- [ ] `Get-GeneXusImportPackageObjectInventory.ps1` was run on the final `import_file.xml` when deterministic package-content inventory was needed for manifest, preview, import, or handoff; if a declared delta file existed, `-DeclaredDeltaPath` was used
 - [ ] No embedded XML declaration remained inside object payload under `<Objects>`
 - [ ] No text nodes or placeholder literals were present inside `<Objects>` (confirmed by envelope gate or explicit visual inspection)
 - [ ] When import logs were used, messages were classified by stage and category before diagnosis
