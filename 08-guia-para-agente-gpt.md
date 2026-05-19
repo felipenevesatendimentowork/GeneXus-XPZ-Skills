@@ -734,6 +734,8 @@ Regras da escada:
 - se houver relatorio da primeira materializacao e outro de reprocessamento confirmatorio ou conferencia full, nao misturar os papeis no handoff; identificar explicitamente qual arquivo representa a materializacao que criou/atualizou o acervo e qual arquivo representa apenas verificacao posterior
 - se a execucao tiver primeira materializacao seguida de reprocessamento confirmatorio ou conferencia full, preferir caminhos ou nomes de relatorio separados; nao sobrescrever silenciosamente o relatorio principal da primeira materializacao com o da segunda passagem
 - so afirmar metadado especifico de `kb-source-metadata.md`, como versao do GeneXus, build, GUID da KB, usuario ou caminho `Source`, quando esse metadado tiver aparecido explicitamente na saida real do wrapper ou quando o proprio `kb-source-metadata.md` tiver sido aberto e lido nominalmente na rodada atual
+- tratar `kb-source-metadata.md` por autoridade de campo: identidade estavel da KB vem do setup/resolvedor da KB nativa local ou de XPZ completo e coerente com ela; `KMW` vem de XPZ real ou template comparavel; timestamps de materializacao pertencem ao `xpz-sync`; `last_setup_audit_run_at` pertence ao setup/auditoria
+- se `Source/@kb` de pacote, template ou XPZ vier preenchido com GUID diferente da KB nativa local esperada, nao substituir esse GUID por conta propria nem prosseguir com import headless; bloquear a automacao e orientar o usuario a avaliar/importar manualmente pela IDE
 - nao presumir `Objects.xml` isolado nem manifesto externo separado se isso nao estiver documentado no `02`
 - usar o envelope sanitizado documentado na base como referencia estrutural antes de pedir XML externo adicional
 - depois da bateria de importacao e da consulta ao acervo real, separar explicitamente `problema de envelope`, `problema de shape minimo` e `problema de dependencia da KB`
@@ -1041,6 +1043,7 @@ Regras da escada:
 - quando o objeto depender de `parentGuid` ou `moduleGuid` externos relevantes, o agente deve preferir manter no `ObjectsIdentityMapping` a identidade correspondente com o mesmo `Guid`
 - o agente deve preservar sempre preenchidos, no formato normal, `Source/Version/@name`, `Object/@name` e `ObjectIdentity/@Name`
 - o agente deve garantir tambem que `Source/@kb` e `Source/Version/@guid` sejam GUIDs sintaticamente validos; placeholders textuais ja falharam em parse real nesta trilha
+- GUID sintaticamente valido nao basta para import headless por agente: quando houver identidade local esperada, `Source/@kb` tambem precisa corresponder a KB nativa local; divergencia é indicio de pacote de outra KB e deve ser encaminhada para importacao manual pela IDE
 - ao clonar/criar objeto a partir de XML existente, procurar residuos do objeto molde em `Object/@name`, `fullyQualifiedName`, `guid`, propriedade `Name`, `Description`, `Source`, `Rules/parm`, chamadas internas, dependencias e `ObjectsIdentityMapping`
 - cada residuo do objeto molde deve ser classificado como intencional, dependencia necessaria ou erro de clonagem; ocorrencia sem classificacao bloqueia o pacote
 - o agente nao deve gerar `KnowledgeBase`, `Settings` nem elemento top-level com nome da KB ao montar `.xpz` normal de objetos
