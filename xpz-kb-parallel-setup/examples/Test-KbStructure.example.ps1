@@ -11,6 +11,8 @@ antes de qualquer operacao.
 
 Os nomes de script verificados usam a forma curta sanitizada; na KB real, substituir
 pelos nomes definitivos com o identificador da KB (ex: Test-FabricaBrasilKbIndexGate.ps1).
+A auditoria detalhada de naming dos diretorios de ObjetosDaKbEmXml fica no wrapper
+dedicado `Test-KbObjetosDaKbNaming.ps1`.
 
 .PARAMETER KbRoot
 Caminho opcional para a raiz da pasta paralela da KB.
@@ -32,27 +34,6 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $KbRoot) {
     $KbRoot = Split-Path -Parent $PSScriptRoot
-}
-
-function Get-KnownTypeMap {
-    $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    $catalogPath = Join-Path $repoRoot 'scripts\gx-object-type-catalog.json'
-    if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
-        throw "Object type catalog not found: $catalogPath"
-    }
-
-    $rawCatalog = Get-Content -LiteralPath $catalogPath -Raw
-    $catalog = $rawCatalog | ConvertFrom-Json
-    $map = @{}
-    foreach ($property in $catalog.types.PSObject.Properties) {
-        $entry = $property.Value
-        if ($null -eq $entry.objectTypeGuid -or [string]::IsNullOrWhiteSpace([string]$entry.objectTypeGuid)) {
-            continue
-        }
-        $map[[string]$entry.objectTypeGuid.ToLowerInvariant()] = [string]$property.Name
-    }
-
-    return $map
 }
 
 $results = [System.Collections.Generic.List[pscustomobject]]::new()
@@ -93,6 +74,7 @@ foreach ($script in @(
     'Test-KbFullSnapshot.ps1',
     'Test-KbSetupFreshness.ps1',
     'Test-KbPowerShellRuntime.ps1',
+    'Test-KbObjetosDaKbNaming.ps1',
     'Query-KbIntelligence.ps1',
     'Rebuild-KbIntelligenceIndex.ps1',
     'Test-KbIndexGate.ps1',
@@ -122,6 +104,7 @@ $scriptsToParse = @(
     'Test-KbFullSnapshot.ps1',
     'Test-KbSetupFreshness.ps1',
     'Test-KbPowerShellRuntime.ps1',
+    'Test-KbObjetosDaKbNaming.ps1',
     'Query-KbIntelligence.ps1',
     'Rebuild-KbIntelligenceIndex.ps1',
     'Test-KbIndexGate.ps1',
@@ -153,49 +136,7 @@ foreach ($scriptName in $scriptsToParse) {
     }
 }
 
-# Auditoria de naming em ObjetosDaKbEmXml
-$acervoPath = Join-Path $KbRoot 'ObjetosDaKbEmXml'
-$namingDivergencias = [System.Collections.Generic.List[string]]::new()
-if (Test-Path -LiteralPath $acervoPath -PathType Container) {
-    $guidToType = Get-KnownTypeMap
-    foreach ($dir in Get-ChildItem -LiteralPath $acervoPath -Directory | Sort-Object Name) {
-        $xml = Get-ChildItem -LiteralPath $dir.FullName -Filter '*.xml' | Select-Object -First 1
-        if (-not $xml) { continue }
-        $content = Get-Content -LiteralPath $xml.FullName -Raw
-        $first1024 = $content.Substring(0, [Math]::Min(1024, $content.Length))
-        if ($first1024 -match '^\s*<\?xml[^>]*\?>\s*<Attributes?\b') {
-            $canonicalType = 'Attribute'
-        } elseif ($content -match '<Object\b[^>]*\btype="([^"]+)"') {
-            $guid = $Matches[1]
-            $canonicalType = if ($guidToType.ContainsKey($guid)) { $guidToType[$guid] } else { "GUID_DESCONHECIDO:$guid" }
-        } else {
-            $canonicalType = 'DESCONHECIDO'
-        }
-        $dirName = $dir.Name
-        if ($dirName -eq $canonicalType) {
-            $results.Add([pscustomobject]@{
-                Component = "ObjetosDaKbEmXml\$dirName"
-                Status    = 'NAMING_OK'
-                Path      = $dir.FullName
-            })
-        } else {
-            $results.Add([pscustomobject]@{
-                Component = "ObjetosDaKbEmXml\$dirName"
-                Status    = 'NAMING_DIVERGENTE'
-                Path      = "tipo real: $canonicalType; renomear para '$canonicalType' via xpz-kb-parallel-setup"
-            })
-            $namingDivergencias.Add("  $dirName -> $canonicalType")
-        }
-    }
-}
-
 $results | Format-Table -AutoSize
-
-if ($namingDivergencias.Count -gt 0) {
-    Write-Warning "$($namingDivergencias.Count) diretorio(s) em ObjetosDaKbEmXml com nome divergente do tipo canonico:"
-    $namingDivergencias | ForEach-Object { Write-Warning $_ }
-    Write-Warning "Corrija os nomes via xpz-kb-parallel-setup (modo_atualizacao)."
-}
 
 $blocked = @($results | Where-Object { $_.Status -in @('AUSENTE', 'PARSE_ERROR') })
 if ($blocked.Count -gt 0) {

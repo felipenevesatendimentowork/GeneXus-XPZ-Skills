@@ -119,10 +119,12 @@ Essa camada nao substituiria `xmlWellFormed`, `sourceSanityStatus` nem os gates 
 
 ## Wrapper compartilhado para auditoria de naming de `ObjetosDaKbEmXml`
 
-**Importância:** FALTA AVALIAR
-**Maturidade:** FALTA AVALIAR
+**Importância:** média
+**Maturidade:** implementada em 2026-05-18
 
 **Origem:** avaliacao de sugestao de agente externo em 2026-05-01.
+
+**Status em 2026-05-18:** promovida para implementacao no motor compartilhado como `scripts/Test-XpzObjetosDaKbNaming.ps1`, com wrapper exemplo `xpz-kb-parallel-setup/examples/Test-KbObjetosDaKbNaming.example.ps1` e integracao em `scripts/Test-XpzSetupAudit.ps1`.
 
 ### Problema concreto que motiva a ideia
 
@@ -130,22 +132,22 @@ A verificacao de naming dos diretorios de container em `ObjetosDaKbEmXml` e exec
 
 O risco pratico nao e de ambiguidade na regra, mas de variancia entre execucoes: agentes distintos podem diferir na forma de localizar o XML, nomear as colunas da tabela ou reportar a evidencia, mesmo seguindo a mesma secao da skill.
 
-### Ideia de melhoria
+### Ideia de melhoria implementada
 
-Adicionar ao motor compartilhado um script `Test-KbNamingAudit.ps1` que:
+Adicionar ao motor compartilhado um script `Test-XpzObjetosDaKbNaming.ps1` que:
 
 - receba como entrada o caminho de `ObjetosDaKbEmXml`
 - liste todos os subdiretorios presentes
 - leia pelo menos um XML por diretorio, extraia o elemento raiz ou `Object/@type`
 - mapeie o GUID para o nome canonico usando o mesmo catalogo ja consumido por `Build-KbIntelligenceIndex.py`
 - emita saida estruturada por diretorio com as colunas `Diretorio`, `Tipo real encontrado`, `Status` e, quando divergente, `Nome canonico esperado`
-- retorne `NAMING_OK` quando todos os diretorios estiverem conformes ou `NAMING_DIVERGENTE: <lista>` quando houver inversao
+- retorne `NAMING_OK` quando todos os diretorios estiverem conformes, `NAMING_DIVERGENT: <lista>` quando houver inversao ou `NAMING_INDETERMINADO: <lista>` quando houver diretorio sem XML classificavel ou GUID desconhecido
 
 O wrapper local de cada pasta paralela chamaria esse script e repassaria o resultado ao handoff, em vez de o agente executar o mapeamento inline.
 
-### O que justificaria implementar agora vs. aguardar
+### Criterio que justificou implementar
 
-O limiar de maturidade ainda nao foi atingido. O conjunto de tipos de container auditados e finito (Folder, Module, PackagedModule, Attribute) e o `8.g2.vii` ja tem criterio de parada curta bem definido. A implementacao faria sentido quando houver: (a) evidencia de handoffs superficiais recorrentes por variancia de execucao artesanal entre sessoes, ou (b) tres ou mais KBs paralelas ativas produzindo tabelas de naming inconsistentes.
+O limiar de maturidade foi atingido apos novo relato operacional em 2026-05-18: loops PowerShell inline para naming em pastas paralelas estavam gerando atrito recorrente, parser fragil e necessidade de scripts temporarios em `Temp/`. A implementacao consolida a verificacao no motor compartilhado e permite que `Test-XpzSetupAudit.ps1` reporte `naming/objetos-da-kb` de forma deterministica.
 
 ### Perguntas a responder antes de decidir
 

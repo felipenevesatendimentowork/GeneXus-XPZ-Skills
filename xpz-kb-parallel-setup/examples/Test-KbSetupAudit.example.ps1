@@ -8,6 +8,8 @@ Executa o script compartilhado `Test-XpzSetupAudit.ps1` para consolidar, em
 saida deterministica, as evidencias principais de auditoria operacional da
 pasta paralela: `sync/materializacao`, `indice/gate`, `indice/semantica`,
 `metadata wrapper`, `empacotamento local` e `estado_operacional_sugerido`.
+Tambem consolida `naming/objetos-da-kb`, delegando a verificacao para o
+wrapper local `Test-KbObjetosDaKbNaming.ps1` quando disponivel.
 
 Este wrapper nao substitui os gates especificos. Ele apenas centraliza a
 execucao deles para handoff e diagnostico curto em `modo_atualizacao`.
@@ -31,6 +33,9 @@ Caminho opcional para `Test-KbPackageCollision.ps1`.
 .PARAMETER PowerShellRuntimeWrapperPath
 Caminho opcional para `Test-KbPowerShellRuntime.ps1`.
 
+.PARAMETER NamingWrapperPath
+Caminho opcional para `Test-KbObjetosDaKbNaming.ps1`.
+
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
 
@@ -53,6 +58,8 @@ param(
     [string]$PackageCollisionWrapperPath,
 
     [string]$PowerShellRuntimeWrapperPath,
+
+    [string]$NamingWrapperPath,
 
     [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
 )
@@ -90,6 +97,13 @@ if (-not $PowerShellRuntimeWrapperPath) {
     $PowerShellRuntimeWrapperPath = Join-Path $PSScriptRoot 'Test-KbPowerShellRuntime.ps1'
 }
 
+if (-not $NamingWrapperPath) {
+    $candidate = Join-Path $PSScriptRoot 'Test-KbObjetosDaKbNaming.ps1'
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+        $NamingWrapperPath = $candidate
+    }
+}
+
 $enginePath = Join-Path $SharedSkillsRoot 'scripts\Test-XpzSetupAudit.ps1'
 if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
     throw "Shared setup audit script not found: $enginePath"
@@ -100,6 +114,7 @@ if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
     -GateWrapperPath $GateWrapperPath `
     -MetadataWrapperTestPath $MetadataWrapperTestPath `
     -PowerShellRuntimeTestPath $PowerShellRuntimeWrapperPath `
+    -NamingWrapperPath $NamingWrapperPath `
     -SourceSanityWrapperPath $SourceSanityWrapperPath `
     -PackageCollisionWrapperPath $PackageCollisionWrapperPath
 exit $LASTEXITCODE
