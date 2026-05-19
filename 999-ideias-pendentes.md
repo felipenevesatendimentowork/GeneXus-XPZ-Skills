@@ -1730,9 +1730,9 @@ Não relaxar o gate `Test-GeneXusImportFileEnvelope.ps1`. Resolver upstream, na 
 
 Não há necessidade de o `Sync` chamar `Resolve` — o setup é a única boca que injeta esses dados.
 
-### Validador `Test-XpzKbMetadataWrapper.ps1`
+### Verificação de completude em `Test-XpzKbMetadataWrapper.ps1`
 
-Adicionar verificação de **completude** dos campos críticos (não apenas legibilidade):
+Verificação de **completude** dos campos críticos implementada em 2026-05-19 (não apenas legibilidade):
 - `kbGuid` presente, não vazio, formato GUID válido
 - `kbName` presente, não vazio
 - `versionGuid` presente, não vazio, formato GUID válido
