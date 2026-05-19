@@ -244,11 +244,13 @@ if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
 }
 
 $hasInventoryMethodologyPendencies = $inventoryStatus -match '\b(INVENTORY_GAPS|INVENTORY_SHORT_NAMING|INVENTORY_CUSTOMIZED)\b'
+$hasMetadataWrapperPendencies = $metadataWrapperStatus -ne 'OK'
 
 $suggestedState = switch ($true) {
     ($powerShellRuntimeStatus -ne 'OK') { 'runtime_powershell_bloqueado'; break }
     ($syncStatus -eq 'PENDENTE') { 'pronto_para_primeira_materializacao'; break }
     ($namingStatus -eq 'DIVERGENT') { 'naming_objetos_da_kb_pendente'; break }
+    ($hasMetadataWrapperPendencies) { 'atualizacao_metodologica_pendente'; break }
     ($hasInventoryMethodologyPendencies) { 'atualizacao_metodologica_pendente'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'NAO_ADOTADO') { 'materializado_e_indice_validado'; break }
