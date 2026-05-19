@@ -12,6 +12,7 @@
       INVENTORY_OK                        - todos os wrappers canonicos presentes com naming padrao
       INVENTORY_GAPS: <nomes ausentes>    - wrappers ausentes (nem padrao nem curto encontrado)
       INVENTORY_SHORT_NAMING: <lista>     - wrappers existem no padrao curto; renomear para padrao
+      INVENTORY_CUSTOMIZED: <lista>        - wrappers presentes com divergencia metodologica objetiva
       INVENTORY_UNKNOWN: <motivo>         - nao foi possivel determinar o estado
 
 .PARAMETER KbParallelRoot
@@ -23,7 +24,8 @@
 
 .OUTPUTS
     String: "INVENTORY_OK", "INVENTORY_GAPS: <nomes ausentes>",
-    "INVENTORY_SHORT_NAMING: <nomes esperados>", ou
+    "INVENTORY_SHORT_NAMING: <nomes esperados>",
+    "INVENTORY_CUSTOMIZED: <nomes e motivos>", ou
     "INVENTORY_UNKNOWN: <motivo>"
 
 .EXAMPLE
@@ -44,6 +46,36 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $scriptsPath = Join-Path $KbParallelRoot 'scripts'
+
+function Get-RequiresVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $pattern = '^\s*#requires\s+-version\s+(?<version>\d+(\.\d+)*)\b'
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        $match = [regex]::Match($line, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        if ($match.Success) {
+            return $match.Groups['version'].Value
+        }
+
+        $trimmed = $line.Trim()
+        if ($trimmed.Length -eq 0) {
+            continue
+        }
+        if ($trimmed.StartsWith('#')) {
+            continue
+        }
+        if ($trimmed -eq '<#') {
+            continue
+        }
+
+        break
+    }
+
+    return $null
+}
 
 if (-not (Test-Path -LiteralPath $scriptsPath -PathType Container)) {
     Write-Output "INVENTORY_UNKNOWN: pasta scripts nao encontrada em $KbParallelRoot"
@@ -96,10 +128,13 @@ if ([string]::IsNullOrWhiteSpace($kbPrefix)) {
 # Mapear cada exemplo para o nome local esperado e verificar presenca
 $absent      = [System.Collections.Generic.List[string]]::new()
 $shortNaming = [System.Collections.Generic.List[string]]::new()
+$customized  = [System.Collections.Generic.List[string]]::new()
 $optionalBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 [void]$optionalBaseNames.Add('New-KbImportPackage')
 [void]$optionalBaseNames.Add('Notify-TaskComplete')
 [void]$optionalBaseNames.Add('Resolve-KbIdentity')
+$requiresVersionExemptBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+[void]$requiresVersionExemptBaseNames.Add('Test-KbPowerShellRuntime')
 
 foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter '*.example.ps1' -Name | Sort-Object) {
     $baseName = $exampleFile -replace '\.example\.ps1$', ''
@@ -112,11 +147,20 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
         $shortLocalName    = $null
     }
 
-    $standardExists = Test-Path -LiteralPath (Join-Path $scriptsPath $standardLocalName) -PathType Leaf
+    $standardPath   = Join-Path $scriptsPath $standardLocalName
+    $examplePath    = Join-Path $SkillsExamplesPath $exampleFile
+    $standardExists = Test-Path -LiteralPath $standardPath -PathType Leaf
     $shortExists    = $shortLocalName -and (Test-Path -LiteralPath (Join-Path $scriptsPath $shortLocalName) -PathType Leaf)
 
     if ($standardExists) {
-        # OK — nada a fazer
+        if (-not $requiresVersionExemptBaseNames.Contains($baseName)) {
+            $canonicalRequiresVersion = Get-RequiresVersion -Path $examplePath
+            $localRequiresVersion = Get-RequiresVersion -Path $standardPath
+            if ($canonicalRequiresVersion -and $localRequiresVersion -ne $canonicalRequiresVersion) {
+                $localLabel = if ($localRequiresVersion) { $localRequiresVersion } else { 'ausente' }
+                $customized.Add(('{0}(reason=requires_version_mismatch: local={1} canonical={2})' -f $standardLocalName, $localLabel, $canonicalRequiresVersion))
+            }
+        }
     } elseif ($shortExists) {
         $shortNaming.Add($standardLocalName)
     } elseif ($optionalBaseNames.Contains($baseName)) {
@@ -126,13 +170,20 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
     }
 }
 
-if ($absent.Count -eq 0 -and $shortNaming.Count -eq 0) {
+$statusParts = [System.Collections.Generic.List[string]]::new()
+if ($shortNaming.Count -gt 0) {
+    $statusParts.Add("INVENTORY_SHORT_NAMING: $($shortNaming -join ', ')")
+}
+if ($customized.Count -gt 0) {
+    $statusParts.Add("INVENTORY_CUSTOMIZED: $($customized -join ', ')")
+}
+if ($absent.Count -gt 0) {
+    $statusParts.Add("INVENTORY_GAPS: $($absent -join ', ')")
+}
+
+if ($statusParts.Count -eq 0) {
     Write-Output 'INVENTORY_OK'
-} elseif ($shortNaming.Count -gt 0 -and $absent.Count -eq 0) {
-    Write-Output "INVENTORY_SHORT_NAMING: $($shortNaming -join ', ')"
-} elseif ($shortNaming.Count -gt 0 -and $absent.Count -gt 0) {
-    Write-Output "INVENTORY_SHORT_NAMING: $($shortNaming -join ', ') | INVENTORY_GAPS: $($absent -join ', ')"
 } else {
-    Write-Output "INVENTORY_GAPS: $($absent -join ', ')"
+    Write-Output ($statusParts -join ' | ')
 }
 exit 0

@@ -243,13 +243,13 @@ if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
     $inventoryStatus = 'INVENTORY_UNKNOWN: motor Test-XpzWrapperInventory.ps1 ausente'
 }
 
-$hasInventoryGaps = $inventoryStatus -match '\bINVENTORY_GAPS\b'
+$hasInventoryMethodologyPendencies = $inventoryStatus -match '\b(INVENTORY_GAPS|INVENTORY_SHORT_NAMING|INVENTORY_CUSTOMIZED)\b'
 
 $suggestedState = switch ($true) {
     ($powerShellRuntimeStatus -ne 'OK') { 'runtime_powershell_bloqueado'; break }
     ($syncStatus -eq 'PENDENTE') { 'pronto_para_primeira_materializacao'; break }
     ($namingStatus -eq 'DIVERGENT') { 'naming_objetos_da_kb_pendente'; break }
-    ($hasInventoryGaps) { 'atualizacao_metodologica_pendente'; break }
+    ($hasInventoryMethodologyPendencies) { 'atualizacao_metodologica_pendente'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'NAO_ADOTADO') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'PENDENTE') { 'auditoria_de_empacotamento_pendente'; break }
@@ -270,9 +270,13 @@ Emit-Line -Key 'metadata wrapper' -Value $metadataWrapperStatus
 Emit-Line -Key 'metadata wrapper.evidencia' -Value $(if ($metadataWrapperRaw) { $metadataWrapperRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'empacotamento local' -Value $packageAuditStatus
 Emit-Line -Key 'empacotamento local.evidencia' -Value $packageEvidence
-if ($inventoryStatus -match '^(INVENTORY_SHORT_NAMING:[^|]+)\|\s*(INVENTORY_GAPS:.+)$') {
-    Emit-Line -Key 'wrappers/inventario' -Value $Matches[1].Trim()
-    Emit-Line -Key 'wrappers/inventario' -Value $Matches[2].Trim()
+if ($inventoryStatus -match '\|') {
+    foreach ($inventoryPart in @($inventoryStatus -split '\|')) {
+        $trimmedInventoryPart = $inventoryPart.Trim()
+        if (-not [string]::IsNullOrWhiteSpace($trimmedInventoryPart)) {
+            Emit-Line -Key 'wrappers/inventario' -Value $trimmedInventoryPart
+        }
+    }
 } else {
     Emit-Line -Key 'wrappers/inventario' -Value $inventoryStatus
 }
