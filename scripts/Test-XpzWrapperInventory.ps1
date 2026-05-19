@@ -99,6 +99,7 @@ $shortNaming = [System.Collections.Generic.List[string]]::new()
 $optionalBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 [void]$optionalBaseNames.Add('New-KbImportPackage')
 [void]$optionalBaseNames.Add('Notify-TaskComplete')
+[void]$optionalBaseNames.Add('Resolve-KbIdentity')
 
 foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter '*.example.ps1' -Name | Sort-Object) {
     $baseName = $exampleFile -replace '\.example\.ps1$', ''
