@@ -1459,7 +1459,7 @@ Antes de gravar gates, fazer experimento controlado:
 ## Gate de parse AST para `scripts/*.ps1` e `.example.ps1` das skills
 
 **Importância:** baixa
-**Maturidade:** pesquisa feita
+**Maturidade:** pronta para implementar
 
 **Origem:** revisão pré-push de 2026-05-16 sobre os gates da Fase 9 do `xpz-builder`; sugestão original do agente revisor ("smoke de parse AST em CI seria útil"); discussão e fechamento de design na mesma sessão.
 
@@ -1480,9 +1480,17 @@ Combo de duas peças:
 
 2. **Workflow GitHub Actions** `.github/workflows/parse-ps-scripts.yml`:
    - Dispara em `push` e `pull_request` com filtro `paths: ['scripts/**/*.ps1', '**/*.example.ps1']`
-   - Roda em `windows-latest` (não `ubuntu-latest`) para fidelidade com Windows PowerShell 5.1
+   - Roda em `windows-latest` com shell explícito `pwsh`, validando o contrato operacional `PowerShell >= 7.4`
    - Único step relevante: invocar `scripts/Test-PsScriptsParse.ps1`
    - Não duplica lógica — o workflow é apenas o gatilho
+
+### Contrato de runtime decidido em 2026-05-18
+
+- Runtime mínimo suportado para os scripts desta raiz: `pwsh` com PowerShell 7.4 LTS ou superior.
+- Runtime recomendado: versão LTS mais recente disponível.
+- Premissa de parque: usuários das skills XPZ podem ter pelo menos Windows 10 nas máquinas.
+- Windows PowerShell 5.1 (`powershell.exe`) não é runtime suportado para os scripts da base; parse ou execução em 5.1 pode falhar e não deve bloquear a evolução dos scripts.
+- O workflow deve testar o contrato real (`pwsh >= 7.4`), não compatibilidade legada com 5.1.
 
 ### Escopo
 
@@ -1493,19 +1501,21 @@ Combo de duas peças:
 ### Limitações conhecidas
 
 - Parse AST é puramente sintático. **Não pega** bugs sob `Set-StrictMode -Version Latest` em runtime (ex: `.Count` em null, `-split` retornando escalar quando não há separador, propriedade XML inexistente acessada por shorthand). Essa categoria continua coberta pela memória global do usuário (`feedback_*`) e por disciplina de teste pós-edição.
-- **Não pega** divergência de comportamento PS 5.1 vs pwsh 7+; o runner Windows reduz o risco mas não elimina (semântica de algumas APIs varia mesmo dentro de `windows-latest`).
+- **Não garante** comportamento funcional dos scripts; só garante que os arquivos carregam sintaticamente no runtime contratado.
+- **Não cobre** Windows PowerShell 5.1, por decisão explícita de contrato operacional.
 
-### Por que não está em "pronta para implementar"
+### Revisão de premissas em 2026-05-18
 
-Não há gatilho concreto: nenhuma regressão sintática real escapou recentemente e queimou. O caso permanece teórico. Promover para `pronta para implementar` quando:
+Durante a revisão da própria pendência, foi executado parse manual de 70 arquivos no escopo atual:
 
-- Aparecer primeira regressão sintática em script que escapou da revisão pré-push, **ou**
-- Houver mudança de processo (mais agentes externos editando `scripts/*.ps1` sem carregar `xpz-builder`), **ou**
-- A frente que implementa `Test-PsScriptsParse.ps1` aparecer como sub-tarefa natural de outra frente maior de manutenção de scripts.
+- Em `pwsh` 7.6.1: `FILES=70; ERRORS=0`.
+- Em Windows PowerShell 5.1: foram reportados erros de parse em scripts que passam em `pwsh`; isso confirmou que 5.1 não deve ser usado como contrato de compatibilidade.
+
+O bloqueio anterior ("não há gatilho concreto") deixou de valer porque a decisão de runtime foi fechada: validar automaticamente `pwsh >= 7.4` é uma melhoria pequena, objetiva e alinhada ao contrato da base.
 
 ### Relacionado
 
-- Item de checklist já registrado em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*, commit `25d2bd6`): "Every gate script edited in the round was re-parsed (`[System.Management.Automation.Language.Parser]::ParseFile`) and produced zero parse errors under Windows PowerShell 5.1". Esse item cobre o caso "agente XPZ edita script via skill"; o gate descrito aqui cobre o caso "edição direta sem skill carregada".
+- Item de checklist já registrado em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*, commit `25d2bd6`) ainda cita Windows PowerShell 5.1 e deve ser alinhado ao novo contrato `pwsh >= 7.4` quando esta frente for implementada.
 
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 
