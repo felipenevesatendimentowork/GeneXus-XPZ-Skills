@@ -1217,9 +1217,11 @@ Integração futura em wrappers locais da pasta paralela: um único comando que 
 - Contrato JSON para “delta declarado”, se surgir necessidade além do formato texto linha a linha `Tipo:Nome`.
 - Lista de nomes/GUIDs de módulos de plataforma: configurável por `.json` na pasta paralela vs hardcoded mínimo + expansão documental.
 
-### Limiar para implementar
+### Pendências restantes
 
-Implementar quando houver: (a) segunda ocorrência documentada de import headless com escopo “cirúrgico” que tenha levado extras não intencionais **apesar** da documentação nova; ou (b) pasta paralela que queira enforced chain no `.ps1` (sem depender só de disciplina do agente); ou (c) frente que precise de evidência em CI/revisão humana listando objetos do pacote automaticamente.
+- Suporte direto a `.xpz` continua pendente e deve ser tratado em frente posterior se voltar a ser necessário.
+- Encadeamento obrigatório em wrapper local ainda depende de decisão por pasta paralela; o script atual oferece a primitiva determinística para `import_file.xml`.
+- Integração com evidência de CI/revisão humana pode ser adicionada quando uma frente pedir inventário automático de pacote como artefato de fechamento.
 
 ### Relação com outras entradas em 999
 
@@ -1741,7 +1743,7 @@ Resultado `METADATA_WRAPPER_INCOMPLETE` para campos vazios (distinto de `METADAT
 ### Arquivos afetados
 
 - `scripts/Resolve-GeneXusKbIdentity.ps1` — novo
-- `scripts/Test-XpzKbMetadataWrapper.ps1` — adicionar verificação de completude
+- `scripts/Test-XpzKbMetadataWrapper.ps1` — verificação de completude implementada em 2026-05-19; manter apenas ajustes futuros caso a assinatura do fluxo `Resolve` mude
 - `xpz-kb-parallel-setup/SKILL.md` — atualizar narrativa: setup popula automaticamente; nota antiga sobre "exports MSBuild podem não trazer GUID, exige re-export pela IDE" vira "setup resolve a partir da KB nativa; XPZ vazio não bloqueia mais"
 - `xpz-kb-parallel-setup/examples/Get-KbMetadata.example.ps1` — sem mudança (já lê os 3 campos certos)
 - `xpz-kb-parallel-setup/examples/Test-KbMetadataWrapper.example.ps1` — alinhar ao novo motor compartilhado se assinatura mudar

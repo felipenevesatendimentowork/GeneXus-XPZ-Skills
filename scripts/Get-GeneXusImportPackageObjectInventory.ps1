@@ -1,4 +1,4 @@
-#requires -Version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Inventaria objetos efetivamente presentes em um import_file.xml GeneXus.

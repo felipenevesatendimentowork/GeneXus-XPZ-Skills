@@ -86,6 +86,7 @@ Regras da escada:
 - quando wrappers locais precisarem nascer do zero no setup inicial da pasta paralela da KB, preferir adaptar os exemplos sanitizados completos da base como bootstrap tecnico, em vez de improvisar wrappers curtos ou parciais
 - scripts do motor com parâmetros totalmente dinâmicos por execução (ex: `Test-GeneXusImportFileEnvelope.ps1`) não requerem wrapper local — devem ser chamados diretamente pelo caminho absoluto do motor; wrapper local só se justifica quando há parâmetros estáticos da KB a encapsular
 - scripts publicos desta raiz devem ser executados em `pwsh` com PowerShell 7.4 LTS ou superior; preferir a versao LTS mais recente disponivel; nao usar Windows PowerShell 5.1 (`powershell.exe`) como runtime desses scripts
+- validar parse de scripts PowerShell com `scripts/Test-PsScriptsParse.ps1` quando a frente editar `.ps1` ou `.example.ps1`; o workflow `.github/workflows/parse-ps-scripts.yml` executa a mesma verificacao em CI sob `pwsh` 7.4+
 - em `xpz-kb-parallel-setup`, validar `Test-*KbPowerShellRuntime.ps1` antes de qualquer outro wrapper local; se `pwsh` 7.4 LTS ou superior estiver ausente, tratar como bloqueio operacional da pasta paralela, nao como aviso informativo
 - quando a sessao ja publicar o caminho de uma skill ou de seus exemplos, usar esse caminho publicado como referencia autoritativa; nao inferir caminho alternativo por heuristica
 

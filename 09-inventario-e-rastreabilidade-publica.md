@@ -33,6 +33,8 @@ Preservar rastreabilidade da consolidacao, inventario documental, inventario bru
 - `Regra operacional`: esse arquivo nao deve ser apagado silenciosamente do repositório publico.
 - `Regra operacional`: se houver refatoracao, mudanca de local ou substituicao do motor, a alteracao deve ser documentada explicitamente e propagada aos consumidores externos antes de remover o arquivo anterior.
 - `Evidência direta`: o script recebeu adição do parâmetro `-KbMetadataPath` para gerar metadados da KB em formato Markdown, facilitando reuso em envelopes de importação.
+- `Evidência direta`: `scripts/Get-GeneXusImportPackageObjectInventory.ps1` passou a inventariar o conteudo efetivo de `import_file.xml`, listando objetos e atributos de topo e permitindo confronto opcional com delta declarado antes de importacao MSBuild.
+- `Inferência forte`: esse inventario complementa a validacao de envelope; ele nao transforma a pasta `scripts/` em fonte normativa, mas registra motor compartilhado relevante para rastreabilidade operacional.
 
 ## Nota sobre a skill experimental de MSBuild
 
