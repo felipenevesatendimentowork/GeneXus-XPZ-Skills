@@ -9,6 +9,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$MetadataWrapperTestPath,
 
+    [string]$PowerShellRuntimeTestPath,
+
     [string]$SourceSanityWrapperPath,
 
     [string]$PackageCollisionWrapperPath
@@ -78,6 +80,30 @@ function Emit-Line {
     )
 
     '{0}: {1}' -f $Key, $Value
+}
+
+$powerShellRuntimeRaw = $null
+$powerShellRuntimeStatus = $null
+try {
+    if (-not $PowerShellRuntimeTestPath) {
+        throw "BLOCK: wrapper de runtime PowerShell nao informado"
+    }
+    $powerShellRuntimeRaw = Invoke-WrapperText -Path $PowerShellRuntimeTestPath
+    if ($powerShellRuntimeRaw -match '\bPOWERSHELL_RUNTIME_OK\b') {
+        $powerShellRuntimeStatus = 'OK'
+    } else {
+        $powerShellRuntimeStatus = 'BLOCK'
+    }
+} catch {
+    $powerShellRuntimeRaw = $_.Exception.Message.Trim()
+    $powerShellRuntimeStatus = 'BLOCK'
+}
+
+if ($powerShellRuntimeStatus -ne 'OK') {
+    Emit-Line -Key 'powershell/runtime' -Value $powerShellRuntimeStatus
+    Emit-Line -Key 'powershell/runtime.evidencia' -Value $(if ($powerShellRuntimeRaw) { $powerShellRuntimeRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
+    Emit-Line -Key 'estado_operacional_sugerido' -Value 'runtime_powershell_bloqueado'
+    exit 1
 }
 
 $metadataPath = Join-Path $KbRoot 'kb-source-metadata.md'
@@ -179,6 +205,7 @@ if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
 $hasInventoryGaps = $inventoryStatus -match '\bINVENTORY_GAPS\b'
 
 $suggestedState = switch ($true) {
+    ($powerShellRuntimeStatus -ne 'OK') { 'runtime_powershell_bloqueado'; break }
     ($syncStatus -eq 'PENDENTE') { 'pronto_para_primeira_materializacao'; break }
     ($hasInventoryGaps) { 'atualizacao_metodologica_pendente'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
@@ -187,6 +214,8 @@ $suggestedState = switch ($true) {
     default { 'wrappers_atualizados' }
 }
 
+Emit-Line -Key 'powershell/runtime' -Value $powerShellRuntimeStatus
+Emit-Line -Key 'powershell/runtime.evidencia' -Value $(if ($powerShellRuntimeRaw) { $powerShellRuntimeRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'sync/materializacao' -Value $syncStatus
 Emit-Line -Key 'sync/materializacao.evidencia' -Value $syncEvidence
 Emit-Line -Key 'indice/gate' -Value $gateStatus

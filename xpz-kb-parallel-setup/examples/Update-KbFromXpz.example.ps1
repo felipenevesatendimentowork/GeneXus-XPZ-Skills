@@ -1,3 +1,4 @@
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Wrapper local sanitizado para atualizar `ObjetosDaKbEmXml` a partir de um XPZ/XML da KB.

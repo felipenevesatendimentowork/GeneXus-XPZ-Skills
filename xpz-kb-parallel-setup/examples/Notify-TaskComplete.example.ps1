@@ -1,3 +1,4 @@
+#requires -Version 7.4
 param(
     [string]$Title = "Codex",
     [string]$Message = "Tarefa concluida",

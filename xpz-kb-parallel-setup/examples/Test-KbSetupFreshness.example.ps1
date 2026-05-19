@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Wrapper local para verificar frescor do setup da pasta paralela da KB em relacao ao repositorio de skills XPZ.
@@ -16,13 +16,30 @@ pelo gatilho global (quando o usuario nao pede explicitamente setup, atualizacao
 #>
 
 param(
-    [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
+    [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills",
+
+    [string]$PowerShellRuntimeWrapperPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $KbParallelRoot = Split-Path -Parent $PSScriptRoot
+$PowerShellRuntimeWrapperPath = if ($PowerShellRuntimeWrapperPath) {
+    $PowerShellRuntimeWrapperPath
+} else {
+    Join-Path $PSScriptRoot 'Test-KbPowerShellRuntime.ps1'
+}
+
+if (-not (Test-Path -LiteralPath $PowerShellRuntimeWrapperPath -PathType Leaf)) {
+    throw "BLOCK: wrapper de runtime PowerShell ausente: $PowerShellRuntimeWrapperPath"
+}
+
+& $PowerShellRuntimeWrapperPath
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
 $enginePath = Join-Path $SharedSkillsRoot 'scripts\Test-XpzSetupFreshness.ps1'
 
 if (-not (Test-Path -LiteralPath $enginePath)) {

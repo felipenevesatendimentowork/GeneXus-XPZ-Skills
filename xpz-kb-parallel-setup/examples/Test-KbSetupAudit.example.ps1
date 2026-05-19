@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Wrapper local sanitizado para auditoria agregada da pasta paralela da KB.
@@ -28,6 +28,9 @@ Caminho opcional para `Test-KbSourceSanity.ps1`.
 .PARAMETER PackageCollisionWrapperPath
 Caminho opcional para `Test-KbPackageCollision.ps1`.
 
+.PARAMETER PowerShellRuntimeWrapperPath
+Caminho opcional para `Test-KbPowerShellRuntime.ps1`.
+
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
 
@@ -48,6 +51,8 @@ param(
     [string]$SourceSanityWrapperPath,
 
     [string]$PackageCollisionWrapperPath,
+
+    [string]$PowerShellRuntimeWrapperPath,
 
     [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
 )
@@ -81,6 +86,10 @@ if (-not $PackageCollisionWrapperPath) {
     }
 }
 
+if (-not $PowerShellRuntimeWrapperPath) {
+    $PowerShellRuntimeWrapperPath = Join-Path $PSScriptRoot 'Test-KbPowerShellRuntime.ps1'
+}
+
 $enginePath = Join-Path $SharedSkillsRoot 'scripts\Test-XpzSetupAudit.ps1'
 if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
     throw "Shared setup audit script not found: $enginePath"
@@ -90,5 +99,7 @@ if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
     -KbRoot $KbRoot `
     -GateWrapperPath $GateWrapperPath `
     -MetadataWrapperTestPath $MetadataWrapperTestPath `
+    -PowerShellRuntimeTestPath $PowerShellRuntimeWrapperPath `
     -SourceSanityWrapperPath $SourceSanityWrapperPath `
     -PackageCollisionWrapperPath $PackageCollisionWrapperPath
+exit $LASTEXITCODE

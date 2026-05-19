@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Wrapper local sanitizado para ler campos chave de kb-source-metadata.md.

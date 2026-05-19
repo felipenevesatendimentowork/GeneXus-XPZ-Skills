@@ -1,4 +1,4 @@
-#requires -version 5.1
+#requires -Version 7.4
 <#
 .SYNOPSIS
 Wrapper local sanitizado para verificar a estrutura da pasta paralela da KB.
@@ -92,6 +92,7 @@ foreach ($script in @(
     'Update-KbFromXpz.ps1',
     'Test-KbFullSnapshot.ps1',
     'Test-KbSetupFreshness.ps1',
+    'Test-KbPowerShellRuntime.ps1',
     'Query-KbIntelligence.ps1',
     'Rebuild-KbIntelligenceIndex.ps1',
     'Test-KbIndexGate.ps1',
@@ -120,6 +121,7 @@ $scriptsToParse = @(
     'Update-KbFromXpz.ps1',
     'Test-KbFullSnapshot.ps1',
     'Test-KbSetupFreshness.ps1',
+    'Test-KbPowerShellRuntime.ps1',
     'Query-KbIntelligence.ps1',
     'Rebuild-KbIntelligenceIndex.ps1',
     'Test-KbIndexGate.ps1',
