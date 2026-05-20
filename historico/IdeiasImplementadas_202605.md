@@ -319,3 +319,28 @@ Falha inicial por environment inexistente deve ser classificada com causa operac
 - Commit: `d3be871` (`Corrige classificação de environment inválido no BuildAll`)
 - Commit: `94cb81c` (`Corrige Join frágil em wrappers MSBuild`)
 - Scripts afetados: `scripts/Invoke-GeneXusKbBuildAll.ps1`; para `Join` frágil, também `scripts/Get-GeneXusKbProperty.ps1`, `scripts/Invoke-GeneXusKbSpecifyGenerate.ps1`, `scripts/Open-GeneXusKbHeadless.ps1` e `scripts/Test-GeneXusKbConsistency.ps1`
+
+## Alinhamento de bloqueios MSBuild em import/export e abertura headless
+
+**Importância original:** média
+**Status:** concluída em 2026-05-20
+
+### Origem
+
+Após a correção inicial de `SetActiveEnvironment` inválido em `BuildAll`, a mesma classe de falha precisava ficar alinhada nos wrappers da família `xpz-msbuild-import-export` e na abertura headless isolada. Sem esse alinhamento, uma versão ou `Environment` inexistente podia aparecer como falha operacional genérica do MSBuild, sem orientar claramente que o parâmetro explícito deveria ser omitido para usar o contexto ativo.
+
+### Implementação
+
+- `scripts/Invoke-GeneXusXpzExport.ps1`, `scripts/Invoke-GeneXusXpzImport.ps1`, `scripts/Open-GeneXusKbHeadless.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1` passaram a detectar falha de `SetActiveVersion` e `SetActiveEnvironment`.
+- Os wrappers extraem, quando disponível, a versão ou o `Environment` ativo e o `Environment` ausente reportado pelo MSBuild.
+- O diagnóstico estruturado passou a emitir `blockingReasons` específico para parâmetro inexistente e orientar omitir `-VersionName` ou `-EnvironmentName` quando o objetivo for usar o contexto ativo.
+- `00-indice-da-base-genexus-xpz-xml.md`, `08-guia-para-agente-gpt.md` e `xpz-msbuild-import-export/SKILL.md` foram atualizados para registrar a regra operacional.
+
+### Critério de aceite
+
+Falhas de posicionamento explícito de versão ou `Environment` devem ser diagnosticadas como bloqueio operacional de parâmetro inválido, e não como quebra genérica do wrapper. O exit code bruto do MSBuild pode continuar presente como evidência complementar, mas a causa acionável precisa estar explícita.
+
+### Rastreabilidade
+
+- Commit: `f8f811a` (`Alinha bloqueios MSBuild de import export`)
+- Scripts afetados: `scripts/Invoke-GeneXusXpzExport.ps1`, `scripts/Invoke-GeneXusXpzImport.ps1`, `scripts/Open-GeneXusKbHeadless.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`
