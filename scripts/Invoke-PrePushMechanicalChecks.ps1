@@ -15,7 +15,10 @@
     Raiz do repositorio. Default: pai de scripts/.
 
 .PARAMETER BaseRef
-    Ref base para commits e diff pendentes. Default: origin/main.
+    Referencia unica do intervalo analisado: commits pendentes, contagem,
+    arquivos alterados e diff --check usam sempre BaseRef..HEAD. Default:
+    origin/main (desde o ultimo estado remoto usual). O upstream da branch
+    so aparece no JSON como contexto informativo.
 
 .PARAMETER AsJson
     Emite diagnostico estruturado em JSON.
@@ -182,16 +185,19 @@ if ($commitLogResult.ExitCode -ne 0) {
 }
 
 $pendingCommits = @($commitLogResult.Lines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-$commitsAhead = $pendingCommits.Count
-$commitsBehind = 0
 
-if ($upstreamConfigured) {
-    $aheadResult = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-list', '--count', '@{upstream}..HEAD')
-    $behindResult = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-list', '--count', 'HEAD..@{upstream}')
-    if ($aheadResult.ExitCode -eq 0 -and $behindResult.ExitCode -eq 0) {
-        $commitsAhead = [int]$aheadResult.Lines[0]
-        $commitsBehind = [int]$behindResult.Lines[0]
-    }
+$aheadRange = "${effectiveBaseRef}..HEAD"
+$behindRange = "HEAD..${effectiveBaseRef}"
+$aheadResult = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-list', '--count', $aheadRange)
+$behindResult = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-list', '--count', $behindRange)
+
+$commitsAhead = 0
+$commitsBehind = 0
+if ($aheadResult.ExitCode -eq 0 -and $aheadResult.Lines.Count -gt 0) {
+    $commitsAhead = [int]$aheadResult.Lines[0]
+}
+if ($behindResult.ExitCode -eq 0 -and $behindResult.Lines.Count -gt 0) {
+    $commitsBehind = [int]$behindResult.Lines[0]
 }
 
 $changedFiles = @()
@@ -297,7 +303,7 @@ if ($AsJson) {
     [pscustomobject]$result | ConvertTo-Json -Depth 8
 } else {
     Write-Output ("STATUS={0}" -f $overallStatus)
-    Write-Output ("BRANCH={0} UPSTREAM={1} BASE={2}" -f $currentBranch, $(if ($upstreamRef) { $upstreamRef } else { '(nao configurado)' }), $effectiveBaseRef)
+    Write-Output ("BRANCH={0} INTERVALO_BASE={1} UPSTREAM_INFORMATIVO={2}" -f $currentBranch, $effectiveBaseRef, $(if ($upstreamRef) { $upstreamRef } else { '(nao configurado)' }))
     Write-Output ("COMMITS_AHEAD={0} COMMITS_BEHIND={1}" -f $commitsAhead, $commitsBehind)
 
     if ($commitsAhead -eq 0) {
