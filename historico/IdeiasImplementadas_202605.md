@@ -223,3 +223,44 @@ Foi trocado `[ordered]$ConsistencyResult` por `[System.Collections.Specialized.O
 
 - Detecção feita durante a frente que normalizou `msbuildExitCode` → `msBuildExitCode` (commit `4531b14`); o flag foi diferido para esta entrada por estar fora do escopo daquela frente.
 - Item de checklist em `xpz-builder/quality-checklist.md` (seção *PowerShell script hygiene*): "Every gate script edited in the round was re-parsed (...) and produced zero parse errors". Aplicar esse mesmo gate retroativamente neste script.
+
+## Inventário determinístico de objetos em `import_file.xml`
+
+**Importância original:** média
+**Status:** subfrente concluída em 2026-05-19
+
+### Origem
+
+Incidente operacional documentado em 2026-05-13: export MSBuild com `-ObjectList` gerou `.xpz` com dependências e módulo de plataforma. O risco identificado foi importar pacote sem inventário completo do conteúdo real, assumindo incorretamente que a lista nominal do export coincidia com os objetos efetivamente presentes no artefato.
+
+### Implementação
+
+- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: inventaria XML com raiz `<ExportFile>`, lista objetos sob `<Objects>` e atributos top-level sob `<Attributes>`.
+- O script mapeia GUIDs de tipo por `scripts/gx-object-type-catalog.json`.
+- O script aceita delta declarado em arquivo texto no formato `Tipo:Nome` e pode falhar com `-FailOnDeltaMismatch` quando há extras, ausentes ou itens incomparáveis.
+- `xpz-msbuild-import-export/SKILL.md`, `xpz-builder/SKILL.md`, `10-base-operacional-msbuild-headless.md` e `08-guia-para-agente-gpt.md` passaram a tratar o inventário como verificação determinística para `import_file.xml` antes de importação real.
+
+### Limite preservado como pendência
+
+Suporte direto a `.xpz` não foi implementado nesta subfrente. O script bloqueia `.xpz` explicitamente e orienta informar o `import_file.xml`/XML com raiz `<ExportFile>`. Essa pendência permanece em `999-ideias-pendentes.md` como parte da ideia maior de inventário de pacote importável.
+
+## Regras conceituais para provider/item desconhecido fora do XPZ/XML
+
+**Importância original:** FALTA AVALIAR
+**Status:** subfrente conceitual encerrada em 2026-05-10
+
+### Origem
+
+Investigação sobre falso negativo em busca de resíduos K2BTools na KB `wsEducacaoSpTeste`. A busca por XPZ/XML e pelo índice SQLite derivado não encontrava certos itens porque metadados de designer de provider estavam persistidos apenas no banco interno da KB (`GX_KB_*`), em tabelas como `EntityType`, `Entity`, `EntityVersion` e `EntityVersionComposition`.
+
+### Implementação conceitual
+
+A dimensão de classificação e comunicação foi aplicada diretamente na base compartilhada e nas skills:
+
+- `02-regras-operacionais-e-runtime.md`: seção "Limite do XPZ/XML frente a providers e extensoes GeneXus", com regras operacionais conceituais.
+- `xpz-reader/SKILL.md`: regra para classificar item antes de concluir ausência.
+- `xpz-index-triage/SKILL.md`: regra análoga para resultado negativo do índice.
+
+### Limite preservado como pendência
+
+A capacidade operacional de diagnóstico SQL somente leitura no banco interno da KB não foi implementada. A pendência restante continua em `999-ideias-pendentes.md`: definir sede, forma de conexão, script/procedimento e validações para consultas somente leitura contra `GX_KB_*`, sem jamais propor limpeza direta por SQL.

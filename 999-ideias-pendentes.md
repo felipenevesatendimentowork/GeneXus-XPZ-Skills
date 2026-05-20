@@ -673,6 +673,8 @@ degradação de performance pós-import que se beneficiaria da compactação.
 **Origem:** sugestão recebida de agente externo em 2026-05-10, verificada empiricamente na
 mesma sessão contra `GX_KB_wsEducacaoSpTeste`.
 
+**Status em 2026-05-20:** a subfrente conceitual de classificação e comunicação foi registrada em `historico/IdeiasImplementadas_202605.md`. Esta entrada permanece pendente apenas quanto à capacidade operacional de diagnóstico SQL somente leitura.
+
 ### Problema concreto que motiva a ideia
 
 As skills XPZ operam sobre XPZ/XML exportados, acervo `ObjetosDaKbEmXml` e índice derivado
@@ -817,15 +819,14 @@ Derivados da análise de três imprecisões introduzidas durante a investigaçã
 ### Frente de regras conceituais — encerrada em 2026-05-10
 
 A dimensão de **regras de classificação e comunicação** desta ideia foi tratada como frente
-separada e aplicada diretamente nas skills e na base compartilhada:
+separada, registrada em `historico/IdeiasImplementadas_202605.md` e aplicada diretamente nas skills e na base compartilhada:
 
 - `02-regras-operacionais-e-runtime.md` — nova seção "Limite do XPZ/XML frente a providers
   e extensoes GeneXus" com as oito regras operacionais conceituais
 - `xpz-reader/SKILL.md` — bullet de classificação de item antes de concluir ausência
 - `xpz-index-triage/SKILL.md` — bullet análogo para resultado negativo do índice
 
-O que permanece pendente nesta entrada é apenas a capacidade de **diagnóstico SQL somente
-leitura** no banco interno da KB, coberta pelo limiar abaixo.
+O que permanece pendente nesta entrada é apenas a capacidade operacional de **diagnóstico SQL somente leitura** no banco interno da KB, coberta pelo limiar abaixo.
 
 ### Limiar para implementar (diagnóstico SQL)
 
@@ -1101,28 +1102,32 @@ Camada de julgamento (regra textual em `xpz-builder`): consolidar os resultados 
 
 Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 dependências ou 1.3 drift de tipagem) implementado e em uso real, gerando saída estruturada que sirva de conteúdo para uma das seções do manifesto; e (b) decisão editorial fechada sobre formato, posição, nomenclatura e política de versionamento Git.
 
-## Script de inventário de objetos em pacote importável (`import_file.xml` / `.xpz`)
+## Suporte direto a `.xpz` no inventário de pacote importável
 
 **Importância:** média
-**Maturidade:** implementada parcialmente em 2026-05-19
+**Maturidade:** ideia
 
 **Origem:** incidente operacional documentado em 2026-05-13 (export MSBuild com `-ObjectList` gerou `.xpz` com dependências e módulo de plataforma; import headless sem inventário completo do conteúdo real do pacote). A camada comportamental já foi incorporada em `xpz-msbuild-import-export`, `xpz-builder`, `10-base-operacional-msbuild-headless.md` e `08-guia-para-agente-gpt.md`; esta entrada cobre apenas **automação determinística** opcional.
 
-**Status em 2026-05-19:** escopo cotidiano implementado para `import_file.xml` em `scripts/Get-GeneXusImportPackageObjectInventory.ps1`. O script lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>`, mapeia GUIDs de tipo por `scripts/gx-object-type-catalog.json` e pode confrontar com um delta declarado em arquivo texto `Tipo:Nome`. Suporte direto a `.xpz` permanece pendente porque, no fluxo diário local, o artefato operacional principal é `import_file.xml`; `.xpz` fica mais associado a envio a terceiros.
+**Status em 2026-05-20:** a subfrente de inventário determinístico para `import_file.xml` foi movida para `historico/IdeiasImplementadas_202605.md`. Permanece pendente apenas o suporte direto a `.xpz` e decisões de integração que extrapolam o fluxo cotidiano com `import_file.xml`.
 
 **Filiação editorial:** complementa o **Manifesto semântico de pacote** (intenção e narrativa na fase de empacotamento em `xpz-builder`). O inventário por script foca no **conteúdo efetivo** do artefato logo antes do import MSBuild — especialmente quando o pacote veio de export, reempacotamento manual ou patch, onde o manifesto da frente de empacotamento pode não existir ou não bater com o zip.
 
 ### Problema concreto que motiva a ideia
 
-O gate `Test-GeneXusImportFileEnvelope.ps1` valida envelope (`ExportFile`, `KMW`, `Source`, GUIDs, etc.), mas **não** substitui a lista explícita de **todos** os objetos que seriam aplicados à KB. Hoje essa lista é obrigação **manual** do agente (ler `<Objects>`, expandir `.xpz` se necessário, confrontar com o delta declarado). Agentes que saltam o passo ou assumem “lista nominal do export = conteúdo do pacote” reintroduzem risco de importar extras (módulos de sistema, SDTs não alterados, dependências não pedidas) e de custo operacional alto (ex.: rebuild amplo), mesmo sem corrupção estrutural da KB.
+O gate `Test-GeneXusImportFileEnvelope.ps1` valida envelope (`ExportFile`, `KMW`, `Source`, GUIDs, etc.), mas **não** substitui a lista explícita de **todos** os objetos que seriam aplicados à KB. Para `import_file.xml`, a primitiva determinística já existe em `scripts/Get-GeneXusImportPackageObjectInventory.ps1`.
+
+O gap restante é `.xpz`: quando o pacote vem de export IDE/MSBuild ou envio a terceiros, o agente ainda precisa expandir o zip, localizar o XML interno correto e só então aplicar o inventário. Agentes que saltam esse passo ou assumem “lista nominal do export = conteúdo do pacote” reintroduzem risco de importar extras (módulos de sistema, SDTs não alterados, dependências não pedidas) e de custo operacional alto (ex.: rebuild amplo), mesmo sem corrupção estrutural da KB.
 
 ### Direção técnica proposta
 
-Script no motor compartilhado `scripts/` (`Get-GeneXusImportPackageObjectInventory.ps1`):
+Evoluir `scripts/Get-GeneXusImportPackageObjectInventory.ps1` para aceitar `.xpz` diretamente:
 
-- **Entrada:** caminho para `import_file.xml`/XML com raiz `<ExportFile>`; `.xpz` fica fora do escopo inicial e deve ser tratado em frente posterior, se voltar a ser necessário.
-- **Saída estruturada (JSON):** lista de objetos com `type`, `name`, `guid` quando disponível; contagem total; flags heurísticas opcionais (ex.: candidato a módulo de plataforma pelo par `Module` + nome conhecido como `GeneXus`).
-- **Modo opcional de confronto:** parâmetro com caminho para ficheiro de “delta declarado” em texto linha a linha `Tipo:Nome`; emitir `MATCH` / `DELTA_MISMATCH`, com código de saída não zero quando `-FailOnDeltaMismatch` for usado.
+- detectar que `InputPath` é `.xpz`
+- abrir o pacote como ZIP sem extrair para local instável
+- localizar o `ExportFile`/XML interno real em pacotes GeneXus 18
+- abortar se houver zero ou mais de um candidato inequívoco
+- aplicar o mesmo contrato de saída já usado para `import_file.xml`
 - **Ordem na trilha:** após `Test-GeneXusImportFileEnvelope.ps1` com sucesso, **antes** de `Invoke-GeneXusXpzImport.ps1` (ou equivalente local).
 
 Integração futura em wrappers locais da pasta paralela: um único comando que encadeia envelope + inventário + import, com falha cedo quando houver extras não justificados.
@@ -1133,10 +1138,10 @@ Integração futura em wrappers locais da pasta paralela: um único comando que 
 - Contrato JSON para “delta declarado”, se surgir necessidade além do formato texto linha a linha `Tipo:Nome`.
 - Lista de nomes/GUIDs de módulos de plataforma: configurável por `.json` na pasta paralela vs hardcoded mínimo + expansão documental.
 
-### Pendências restantes
+### Pendências restantes antes de implementar
 
-- Suporte direto a `.xpz` continua pendente e deve ser tratado em frente posterior se voltar a ser necessário.
-- Encadeamento obrigatório em wrapper local ainda depende de decisão por pasta paralela; o script atual oferece a primitiva determinística para `import_file.xml`.
+- Testar estrutura interna de pelo menos alguns `.xpz` reais GeneXus 18 para fechar a regra de localização do XML interno.
+- Definir se o script deve extrair para `Temp/` auditável ou processar em memória.
 - Integração com evidência de CI/revisão humana pode ser adicionada quando uma frente pedir inventário automático de pacote como artefato de fechamento.
 
 ### Relação com outras entradas em 999
@@ -1476,7 +1481,7 @@ Após import real bem-sucedido na KB nativa, o JSON do wrapper precisa expor de 
 **Importância:** média
 **Maturidade:** ideia
 
-**Origem:** revisão crítica pós-fechamento da frente `Resolve-GeneXusKbIdentity` em 2026-05-20. A frente original de preenchimento de metadata vazio foi movida para `historico/IdeasImplementadas.md`; esta é uma frente nova, limitada a auditoria de drift quando o metadata já está preenchido.
+**Origem:** revisão crítica pós-fechamento da frente `Resolve-GeneXusKbIdentity` em 2026-05-20. A frente original de preenchimento de metadata vazio foi registrada em `historico/IdeiasImplementadas_202605.md`; esta é uma frente nova, limitada a auditoria de drift quando o metadata já está preenchido.
 
 ### Problema concreto
 
@@ -1507,7 +1512,7 @@ Uma pasta com `kb-source-metadata.md` preenchido, wrappers de metadata OK e iden
 
 ### Relacionado
 
-- `historico/IdeasImplementadas.md` — caso concluído de preenchimento de metadata a partir da KB nativa quando o XPZ vem com `Source` vazio
+- `historico/IdeiasImplementadas_202605.md` — caso concluído de preenchimento de metadata a partir da KB nativa quando o XPZ vem com `Source` vazio
 - `scripts/Resolve-GeneXusKbIdentity.ps1`
 - `scripts/Update-XpzKbSourceMetadataIdentity.ps1`
 - `scripts/Test-XpzSetupAudit.ps1`
