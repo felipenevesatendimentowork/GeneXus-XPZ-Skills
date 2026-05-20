@@ -985,6 +985,13 @@ try {
             summary              = $summary
             exitCode             = $importExitCode
             msBuildExitCode      = $msBuildExitCode
+            executionEvidence    = [ordered]@{
+                msBuildExitCode = $msBuildExitCode
+                msBuildFailed   = ($msBuildExitCode -ne 0)
+                wrapperExitCode = $importExitCode
+                StdOutPath      = $stdOutPath
+                StdErrPath      = $stdErrPath
+            }
             postProcessingFailed = $true
             postProcessingError  = $postProcessingError
             diagnosticDegraded   = $true
@@ -1005,7 +1012,8 @@ try {
         }
         catch {
             $msBuildExitCodeText = if ($null -eq $msBuildExitCode) { 'null' } else { [string]$msBuildExitCode }
-            $json = '{"status":"' + $status + '","exitCode":' + $importExitCode + ',"msBuildExitCode":' + $msBuildExitCodeText + ',"postProcessingFailed":true,"note":"Fallback minimo: serializacao do fallback tambem falhou. Consultar msbuild.stdout.log."}'
+            $msBuildFailedText = if ($null -eq $msBuildExitCode) { 'null' } elseif ($msBuildExitCode -ne 0) { 'true' } else { 'false' }
+            $json = '{"status":"' + $status + '","exitCode":' + $importExitCode + ',"msBuildExitCode":' + $msBuildExitCodeText + ',"executionEvidence":{"msBuildExitCode":' + $msBuildExitCodeText + ',"msBuildFailed":' + $msBuildFailedText + ',"wrapperExitCode":' + $importExitCode + '},"postProcessingFailed":true,"note":"Fallback minimo: serializacao do fallback tambem falhou. Consultar msbuild.stdout.log."}'
         }
     }
     try { Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json } catch {}

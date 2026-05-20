@@ -288,6 +288,11 @@ Rodada empírica em `C:\KBs\OnlineShopSS` importou alteração estrutural simple
 
 Conclusão limitada: import/export puro não demonstrou dependência observável desses subdirs nessa rodada. A mudança foi aplicada como defesa preventiva e simetria de ambiente headless com `xpz-msbuild-build`, cuja necessidade já estava provada empiricamente.
 
+### Rastreabilidade
+
+- Commit: `c08089b` (`Enriquece PATH em wrappers MSBuild headless`)
+- Commit: `5509d2d` (`Aplica PATH preventivo em import export XPZ`)
+
 ## Classificação de environment inválido e `Join` nulo no BuildAll
 
 **Importância original:** média

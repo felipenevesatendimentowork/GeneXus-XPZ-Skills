@@ -177,6 +177,44 @@ function Add-WarningMessage {
     }
 }
 
+function Add-GeneXusSubdirsToPath {
+    param([string]$ResolvedGeneXusDir)
+
+    $gxSubPathCandidates = @(
+        $ResolvedGeneXusDir,
+        (Join-Path $ResolvedGeneXusDir 'gxnet'),
+        (Join-Path $ResolvedGeneXusDir 'gxnet\bin'),
+        (Join-Path $ResolvedGeneXusDir 'gxnetcore')
+    )
+
+    $gxSubPathsAdded = @()
+    $gxSubPathsSkipped = @()
+
+    foreach ($candidate in $gxSubPathCandidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            $gxSubPathsAdded += $candidate
+        } else {
+            $gxSubPathsSkipped += $candidate
+        }
+    }
+
+    if ($gxSubPathsAdded.Count -gt 0) {
+        $env:PATH = ($gxSubPathsAdded -join ';') + ';' + $env:PATH
+    }
+
+    $script:PathEnrichment = [ordered]@{
+        applied        = ($gxSubPathsAdded.Count -gt 0)
+        subdirsAdded   = $gxSubPathsAdded
+        subdirsSkipped = $gxSubPathsSkipped
+    }
+
+    if ($gxSubPathsSkipped.Count -gt 0) {
+        Add-WarningMessage -Message ("Subdirs esperados do GeneXus ausentes em '{0}': {1}. Instalacao pode estar nao-padrao; tools internas chamadas por Process.Start sem caminho absoluto podem falhar." -f $ResolvedGeneXusDir, ($gxSubPathsSkipped -join ', '))
+    }
+
+    Add-StrategyTrace -Message ("PATH enriquecido preventivamente com subdirs do GeneXus para preview headless de import: [{0}]. Subdirs ausentes: [{1}]." -f ($gxSubPathsAdded -join ', '), ($gxSubPathsSkipped -join ', '))
+}
+
 function Resolve-ProbeScriptPath {
     $scriptDirectory = Split-Path -Parent $PSCommandPath
     $probePath = Join-Path $scriptDirectory 'Test-GeneXusMsBuildSetup.ps1'
@@ -548,6 +586,11 @@ function Get-PreviewExitCode {
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace = New-Object System.Collections.Generic.List[string]
+$script:PathEnrichment = [ordered]@{
+    applied        = $false
+    subdirsAdded   = @()
+    subdirsSkipped = @()
+}
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
 
@@ -643,6 +686,8 @@ try {
     $resolvedKbPath = [string]$probeStage.Diagnostic.resolvedPaths.KbPath
     $resolvedXpzPath = $xpzValidation.Path
     $resolvedUpdateFilePath = $updateFileValidation.Path
+
+    Add-GeneXusSubdirsToPath -ResolvedGeneXusDir $resolvedGeneXusDir
 
     $importTaskPropertyNames = Get-ImportTaskPropertyNames -ResolvedGeneXusDir $resolvedGeneXusDir
     Add-StrategyTrace -Message ('Import task properties carregadas da instalação atual: {0}' -f ($importTaskPropertyNames -join ', '))
@@ -867,6 +912,7 @@ try {
         observedContext = [ordered]@{
             ActiveVersion = $activeVersionOutput
             ActiveEnvironment = $activeEnvironmentOutput
+            pathEnrichment = $script:PathEnrichment
         }
         artifacts = [ordered]@{
             ProbeLogPath = $probeLogPath
@@ -908,6 +954,13 @@ try {
             summary              = $summary
             exitCode             = $previewExitCode
             msBuildExitCode      = $msBuildExitCode
+            executionEvidence    = [ordered]@{
+                msBuildExitCode = $msBuildExitCode
+                msBuildFailed   = ($msBuildExitCode -ne 0)
+                wrapperExitCode = $previewExitCode
+                StdOutPath      = $stdOutPath
+                StdErrPath      = $stdErrPath
+            }
             postProcessingFailed = $true
             postProcessingError  = $postProcessingError
             diagnosticDegraded   = $true
@@ -928,7 +981,8 @@ try {
         }
         catch {
             $msBuildExitCodeText = if ($null -eq $msBuildExitCode) { 'null' } else { [string]$msBuildExitCode }
-            $json = '{"status":"' + $status + '","exitCode":' + $previewExitCode + ',"msBuildExitCode":' + $msBuildExitCodeText + ',"postProcessingFailed":true,"note":"Fallback minimo: serializacao do fallback tambem falhou. Consultar msbuild.stdout.log."}'
+            $msBuildFailedText = if ($null -eq $msBuildExitCode) { 'null' } elseif ($msBuildExitCode -ne 0) { 'true' } else { 'false' }
+            $json = '{"status":"' + $status + '","exitCode":' + $previewExitCode + ',"msBuildExitCode":' + $msBuildExitCodeText + ',"executionEvidence":{"msBuildExitCode":' + $msBuildExitCodeText + ',"msBuildFailed":' + $msBuildFailedText + ',"wrapperExitCode":' + $previewExitCode + '},"postProcessingFailed":true,"note":"Fallback minimo: serializacao do fallback tambem falhou. Consultar msbuild.stdout.log."}'
         }
     }
     try { Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json } catch {}
