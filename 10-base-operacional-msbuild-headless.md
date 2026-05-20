@@ -1137,7 +1137,7 @@ A política da skill mantém `C:\Program Files (x86)` estritamente somente leitu
 
 Os wrappers da família `xpz-msbuild-build` (`Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`) enriquecem `$env:PATH` automaticamente após resolver `$resolvedGeneXusDir` e antes de invocar o MSBuild. O enriquecimento usa lista fixa dos quatro subdirs conhecidos, filtrada por `Test-Path` para tolerar instalações não-padrão. Subdirs ausentes são reportados em `warnings[]` e em `observedContext.pathEnrichment.subdirsSkipped` do JSON de resultado.
 
-Os wrappers da família `xpz-msbuild-import-export` (`Invoke-GeneXusXpzImport.ps1` e `Invoke-GeneXusXpzExport.ps1`) aplicam o mesmo enriquecimento preventivo do `PATH` e registram o resultado em `observedContext.pathEnrichment`. A justificativa aqui é simetria e consistência do ambiente headless, não reprodução de falha em import/export puro.
+Os wrappers da família `xpz-msbuild-import-export` (`Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzImport.ps1` e `Invoke-GeneXusXpzExport.ps1`) aplicam o mesmo enriquecimento preventivo do `PATH` e registram o resultado em `observedContext.pathEnrichment`. A justificativa aqui é simetria e consistência do ambiente headless, não reprodução de falha em import/export puro.
 
 ### Evidência empírica (FabricaBrasil18, 2026-05-20)
 

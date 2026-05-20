@@ -277,6 +277,7 @@ Frente concluída em 2026-05-20 aplicou enriquecimento automático de `$env:PATH
 ### Implementação
 
 - `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Invoke-GeneXusXpzExport.ps1` passaram a enriquecer preventivamente o `$env:PATH` após resolver `GeneXusDir` e antes de invocar `MSBuild`.
+- `scripts/Test-GeneXusXpzImportPreview.ps1` passou posteriormente a aplicar a mesma política antes do preview de importação.
 - O enriquecimento usa os subdirs conhecidos do GeneXus 18: raiz `GeneXus18\`, `gxnet\`, `gxnet\bin\` e `gxnetcore\`.
 - O resultado é registrado no JSON em `observedContext.pathEnrichment`, com `applied`, `subdirsAdded` e `subdirsSkipped`.
 - `xpz-msbuild-import-export/SKILL.md` documenta o contrato do novo campo.
@@ -292,6 +293,7 @@ Conclusão limitada: import/export puro não demonstrou dependência observável
 
 - Commit: `c08089b` (`Enriquece PATH em wrappers MSBuild headless`)
 - Commit: `5509d2d` (`Aplica PATH preventivo em import export XPZ`)
+- Commit: `ebc7678` (`Corrige gaps da revisão pré-push MSBuild`)
 
 ## Classificação de environment inválido e `Join` nulo no BuildAll
 
@@ -377,3 +379,4 @@ Falha com causa específica não deve duplicar em `blockingReasons` o texto gen�
 - Commit: `b0f65f1` (`Separa evidência bruta de bloqueios MSBuild`)
 - Commit: `968be69` (`Padroniza executionEvidence em wrappers MSBuild`)
 - Commit: `646cdd7` (`Corrige contrato executionEvidence de consistência`)
+- Commit: `ebc7678` (`Corrige gaps da revisão pré-push MSBuild`)
