@@ -691,6 +691,11 @@ $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings        = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace   = New-Object System.Collections.Generic.List[string]
 $script:TimingLog       = [ordered]@{}
+$script:PathEnrichment  = [ordered]@{
+    applied        = $false
+    subdirsAdded   = @()
+    subdirsSkipped = @()
+}
 $script:WatcherContext  = [ordered]@{
     startWatcherRequested = $StartWatcher.IsPresent
     watcherLaunched       = $false
@@ -733,6 +738,7 @@ try {
                 ReorgDetected     = $false
                 TimedOut          = $false
                 MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -795,6 +801,7 @@ try {
                 ReorgDetected     = $false
                 TimedOut          = $false
                 MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -855,6 +862,7 @@ try {
                 ReorgDetected     = $false
                 TimedOut          = $false
                 MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -915,6 +923,7 @@ try {
                 ReorgDetected     = $false
                 TimedOut          = $false
                 MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -975,6 +984,7 @@ try {
                 ReorgDetected     = $false
                 TimedOut          = $false
                 MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -1054,6 +1064,7 @@ try {
                 ReorgDetected     = $false
                 TimedOut          = $false
                 MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = $probeDiagnostic.resolvedPaths.GeneXusDir
@@ -1089,7 +1100,35 @@ try {
     $resolvedMsBuildPath = [string]$probeStage.Diagnostic.resolvedPaths.MsBuildPath
     $resolvedKbPath      = [string]$probeStage.Diagnostic.resolvedPaths.KbPath
 
-    # Resolver parâmetros efetivos de reorg
+    # Enriquecer $env:PATH com subdirs do GeneXus que hospedam tools chamadas internamente
+    # por Process.Start sem caminho absoluto (gxexec, UpdConfigWeb, BuildService, Reor.exe).
+    # Sem isso, builds headless cuja KB atinja as fases "DeveloperMenu Compilacao" ou
+    # "Atualizacao de configuracao da web" falham com "Nao foi possivel encontrar uma parte
+    # do caminho". A IDE GeneXus ja faz esse enriquecimento implicito; MSBuild via wrapper
+    # externo herda apenas o PATH do shell do agente. Evidencia empirica:
+    # Temp\xpz-build-verify-path-20260520-r1d (sem enriquecimento, falha) vs
+    # Temp\xpz-build-verify-path-20260520-r2 (com enriquecimento, compilou limpo).
+    $gxSubPathCandidates = @(
+        $resolvedGeneXusDir,
+        (Join-Path $resolvedGeneXusDir 'gxnet'),
+        (Join-Path $resolvedGeneXusDir 'gxnet\bin'),
+        (Join-Path $resolvedGeneXusDir 'gxnetcore')
+    )
+    $gxSubPathsAdded   = @($gxSubPathCandidates | Where-Object { Test-Path -LiteralPath $_ })
+    $gxSubPathsSkipped = @($gxSubPathCandidates | Where-Object { -not (Test-Path -LiteralPath $_) })
+    if ($gxSubPathsAdded.Count -gt 0) {
+        $env:PATH = ($gxSubPathsAdded -join ';') + ';' + $env:PATH
+    }
+    $script:PathEnrichment = [ordered]@{
+        applied        = ($gxSubPathsAdded.Count -gt 0)
+        subdirsAdded   = $gxSubPathsAdded
+        subdirsSkipped = $gxSubPathsSkipped
+    }
+    if ($gxSubPathsSkipped.Count -gt 0) {
+        Add-WarningMessage -Message ("Subdirs esperados do GeneXus ausentes em '{0}': {1}. Instalacao pode estar nao-padrao; tools internas chamadas por Process.Start sem caminho absoluto (gxexec, UpdConfigWeb) podem falhar." -f $resolvedGeneXusDir, ($gxSubPathsSkipped -join ', '))
+    }
+    Add-StrategyTrace -Message ("PATH enriquecido com subdirs do GeneXus para tools internas: [{0}]. Subdirs ausentes: [{1}]." -f ($gxSubPathsAdded -join ', '), ($gxSubPathsSkipped -join ', '))
+
     $effectiveFailIfReorg       = $FailIfReorg
     $effectiveDoNotExecuteReorg = $DoNotExecuteReorg
     $allowReorgConfirmed        = $false
@@ -1153,6 +1192,7 @@ try {
                         ReorgDetected     = $false
                         TimedOut          = $false
                         MsBuildExitCode   = $null
+                        pathEnrichment    = $script:PathEnrichment
                     }
                     resolvedPaths    = [ordered]@{
                         GeneXusDir       = $resolvedGeneXusDir
@@ -1245,6 +1285,7 @@ try {
                         ReorgDetected     = $false
                         TimedOut          = $false
                         MsBuildExitCode   = $null
+                        pathEnrichment    = $script:PathEnrichment
                     }
                     resolvedPaths    = [ordered]@{
                         GeneXusDir       = $resolvedGeneXusDir
@@ -1489,6 +1530,7 @@ try {
             ReorgDetected     = $reorgDetected
             TimedOut          = $timedOut
             MsBuildExitCode   = $msBuildExitCode
+            pathEnrichment    = $script:PathEnrichment
         }
         resolvedPaths    = [ordered]@{
             GeneXusDir       = $resolvedGeneXusDir

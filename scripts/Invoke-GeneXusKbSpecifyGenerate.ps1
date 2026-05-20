@@ -462,6 +462,11 @@ function Resolve-BuildStatus {
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings        = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace   = New-Object System.Collections.Generic.List[string]
+$script:PathEnrichment  = [ordered]@{
+    applied        = $false
+    subdirsAdded   = @()
+    subdirsSkipped = @()
+}
 
 $confirmWideRebuildMode    = $null
 $allowWideRebuildConfirmed = $false
@@ -491,6 +496,7 @@ try {
                 ActiveEnvironment = $null
                 SpecifyDone       = $false
                 GenerateDone      = $false
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -546,6 +552,7 @@ try {
                 ActiveEnvironment = $null
                 SpecifyDone       = $false
                 GenerateDone      = $false
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -609,6 +616,7 @@ try {
                 ActiveEnvironment = $null
                 SpecifyDone       = $false
                 GenerateDone      = $false
+                pathEnrichment    = $script:PathEnrichment
             }
             resolvedPaths    = [ordered]@{
                 GeneXusDir       = $probeDiagnostic.resolvedPaths.GeneXusDir
@@ -641,6 +649,31 @@ try {
     $resolvedGeneXusDir  = [string]$probeStage.Diagnostic.resolvedPaths.GeneXusDir
     $resolvedMsBuildPath = [string]$probeStage.Diagnostic.resolvedPaths.MsBuildPath
     $resolvedKbPath      = [string]$probeStage.Diagnostic.resolvedPaths.KbPath
+
+    # Enriquecer $env:PATH com subdirs do GeneXus que hospedam tools chamadas internamente
+    # por Process.Start sem caminho absoluto (gxexec, UpdConfigWeb, BuildService, Reor.exe).
+    # Ver nota detalhada no wrapper irmao Invoke-GeneXusKbBuildAll.ps1. Em SpecifyGenerate
+    # puro (sem compile) a falha pode aparecer se SpecifyAll disparar reorg internamente.
+    $gxSubPathCandidates = @(
+        $resolvedGeneXusDir,
+        (Join-Path $resolvedGeneXusDir 'gxnet'),
+        (Join-Path $resolvedGeneXusDir 'gxnet\bin'),
+        (Join-Path $resolvedGeneXusDir 'gxnetcore')
+    )
+    $gxSubPathsAdded   = @($gxSubPathCandidates | Where-Object { Test-Path -LiteralPath $_ })
+    $gxSubPathsSkipped = @($gxSubPathCandidates | Where-Object { -not (Test-Path -LiteralPath $_) })
+    if ($gxSubPathsAdded.Count -gt 0) {
+        $env:PATH = ($gxSubPathsAdded -join ';') + ';' + $env:PATH
+    }
+    $script:PathEnrichment = [ordered]@{
+        applied        = ($gxSubPathsAdded.Count -gt 0)
+        subdirsAdded   = $gxSubPathsAdded
+        subdirsSkipped = $gxSubPathsSkipped
+    }
+    if ($gxSubPathsSkipped.Count -gt 0) {
+        Add-WarningMessage -Message ("Subdirs esperados do GeneXus ausentes em '{0}': {1}. Instalacao pode estar nao-padrao; tools internas chamadas por Process.Start sem caminho absoluto (gxexec, UpdConfigWeb) podem falhar." -f $resolvedGeneXusDir, ($gxSubPathsSkipped -join ', '))
+    }
+    Add-StrategyTrace -Message ("PATH enriquecido com subdirs do GeneXus para tools internas: [{0}]. Subdirs ausentes: [{1}]." -f ($gxSubPathsAdded -join ', '), ($gxSubPathsSkipped -join ', '))
 
     # Confirmação explícita de regeneração ampla (ForceRebuild=true + -AllowWideRebuild)
     # -AllowWideRebuild so autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
@@ -687,6 +720,7 @@ try {
                         ActiveEnvironment = $null
                         SpecifyDone       = $false
                         GenerateDone      = $false
+                        pathEnrichment    = $script:PathEnrichment
                     }
                     resolvedPaths    = [ordered]@{
                         GeneXusDir       = $resolvedGeneXusDir
@@ -843,6 +877,7 @@ try {
             SpecifyDone       = $specifyDone
             GenerateDone      = $generateDone
             MsBuildExitCode   = $msBuildExitCode
+            pathEnrichment    = $script:PathEnrichment
         }
         resolvedPaths    = [ordered]@{
             GeneXusDir       = $resolvedGeneXusDir

@@ -1100,3 +1100,51 @@ Testado em execução real em 2026-05-10 na KB `wsEducacaoSpTeste`:
 - exportação sem `-VersionName` → sucesso; `GetActiveVersion` confirmou `"wsEducacaoSpTeste"` como identificador ativo
 
 Conclusão: `GetVersionProperty -Name Name` retorna propriedade de metadados descritiva da versão, não o identificador aceito por `SetActiveVersion`. Para posicionar versão antes de exportação ou importação, usar `GetActiveVersion` como fonte do identificador — nunca `GetVersionProperty -Name Name`.
+
+## Achado Empírico Sobre Subdirs Do GeneXus E PATH Em Headless
+
+Tasks internas do MSBuild GeneXus invocam binários auxiliares (`gxexec`, `UpdConfigWeb`, `BuildService`, `Reor.exe`) por nome, sem caminho absoluto, esperando que o `$env:PATH` do processo já contenha os subdirs do install. A IDE GeneXus aplica esse enriquecimento implicitamente; um MSBuild lançado por wrapper externo (Claude Code, CI sem ambiente do GeneXus, qualquer orquestrador) herda apenas o `PATH` do shell do agente, que tipicamente não inclui esses subdirs.
+
+### Sintoma
+
+Build headless cuja KB atinja fases que invoquem essas tools falha com mensagens genéricas:
+
+- `error : O sistema não pode encontrar o arquivo especificado`
+- `error : Não foi possível executar o comando 'gxexec ...'. Não foi possível encontrar uma parte do caminho.` (.NET Framework — expõe o nome do binário)
+- `> DeveloperMenu Compilação para Default (.NET Framework) falhou`
+- `> Build All Task falhou`
+
+Em environments .NET Core a mensagem é mais opaca porque a task `BuildAll` usa `CaptureOutput="true"` e a `Process.Start` interna falha sem propagar o nome do binário.
+
+### Subdirs relevantes do GeneXus 18
+
+Sob `C:\Program Files (x86)\GeneXus\GeneXus18\`:
+
+- `GeneXus18\` (raiz) — `GeneXus.exe` e outros
+- `gxnet\` — `GXExec.exe`, `UpdConfigWeb.exe`, `BuildService.exe`, `VirtualDir.exe` (.NET Framework)
+- `gxnet\bin\` — `GxConfig.exe`, `GXDataInitialization.exe`, `GxSetFrm.exe`, `Reor.exe`, `Runx86.exe`
+- `gxnetcore\` — `UpdConfigWeb.exe`, `BuildService.exe`, `VirtualDir.exe` (.NET Core)
+
+A política da skill mantém `C:\Program Files (x86)` estritamente somente leitura; ler para incluir subdirs no `PATH` do processo é compatível com essa política, pois não escreve nada.
+
+### Política dos wrappers
+
+Os wrappers da família `xpz-msbuild-build` (`Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`) enriquecem `$env:PATH` automaticamente após resolver `$resolvedGeneXusDir` e antes de invocar o MSBuild. O enriquecimento usa lista fixa dos quatro subdirs conhecidos, filtrada por `Test-Path` para tolerar instalações não-padrão. Subdirs ausentes são reportados em `warnings[]` e em `observedContext.pathEnrichment.subdirsSkipped` do JSON de resultado.
+
+A skill `xpz-msbuild-import-export` está pendente de auditoria simétrica — em fluxos de import/export puro, o problema não aparece porque essas tasks não invocam `GXExec.exe`/`UpdConfigWeb.exe`, mas reorg implícita disparada pelo import poderia cair na mesma rasteira.
+
+### Evidência empírica (FabricaBrasil18, 2026-05-20)
+
+Reprodução com `Invoke-GeneXusKbBuildAll.ps1` em `.Net Environment` (.NET Framework), GeneXus 18 Up 14:
+
+| Rodada | PATH | Status | exit | MsBuildExitCode | BuildAllDone | Duração | Mensagem chave |
+|---|---|---|---|---|---|---|---|
+| 1d (baseline) | default (sem GeneXus) | `compilou com erros` | 45 | 1 | false | 90 s | `gxexec ... Não foi possível encontrar uma parte do caminho` |
+| 2 (manual) | enriquecido pelo invocador | `compilou limpo` | 0 | 0 | true | 261 s | (sem erro) |
+| 3 (pós-fix) | enriquecido pelo próprio wrapper | `compilou limpo` | 0 | 0 | true | (idem) | (sem erro) |
+
+Artefatos preservados em `Temp\xpz-build-verify-path-20260520-r1d\` e `Temp\xpz-build-verify-path-20260520-r2\`.
+
+### Observação sobre cobertura empírica anterior
+
+A matriz 2×2 documentada em `xpz-msbuild-build/SKILL.md` (coleta de 2026-05-12) registra builds limpos em FabricaBrasil18/NETPostgreSQL sem PATH enriquecido. Hipótese de reconciliação: aqueles builds anteriores não atingiam a fase `Atualização de configuração da web` (a KB estava em estado que não disparava a fase). O sintoma é condicional à fase ser atingida, não universal a toda chamada headless. Mantida a matriz histórica como evidência do estado da KB naquela data.

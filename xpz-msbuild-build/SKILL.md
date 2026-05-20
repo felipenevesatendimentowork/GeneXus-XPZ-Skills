@@ -399,6 +399,46 @@ e confirmação explícita** por frase exata.
 > e sem consequência funcional. O filtro é seguro porque cada assinatura é ancorada
 > simultaneamente no formato do erro, na mensagem de acesso negado e no caminho de
 > instalação do GeneXus, não no padrão genérico `Access denied`.
+>
+> **Observação sobre cobertura desta matriz (atualização 2026-05-20):** os builds
+> da matriz 2×2 acima foram limpos em modo headless sem PATH enriquecido — porque
+> nenhum deles atingiu a fase `Atualização de configuração da web` ou
+> `DeveloperMenu Compilação`. Quando essas fases são atingidas, builds headless sem
+> PATH enriquecido com subdirs do GeneXus 18 falham com mensagem genérica
+> `O sistema não pode encontrar o arquivo especificado` (ou, em .NET Framework, a
+> versão verbose `gxexec ... Não foi possível encontrar uma parte do caminho`).
+> Ver nota "Padrão conhecido — subdirs do GeneXus 18 e PATH herdado em headless"
+> abaixo. A política de enriquecimento aplicada pelos wrappers elimina esse modo
+> de falha; a matriz histórica é preservada como evidência do estado das KBs em
+> 2026-05-12.
+
+> **Padrão conhecido — subdirs do GeneXus 18 e PATH herdado em headless:**
+> Tasks internas do MSBuild GeneXus invocam binários auxiliares (`gxexec`,
+> `UpdConfigWeb`, `BuildService`, `Reor.exe`) por nome, sem caminho absoluto,
+> esperando subdirs do install já presentes em `$env:PATH`. A IDE GeneXus enriquece
+> esse PATH implicitamente; um MSBuild lançado por wrapper externo herda apenas o
+> PATH do shell do agente, que tipicamente não inclui esses subdirs. Sintomas:
+> falha em `DeveloperMenu Compilação para Default (.NET Framework)` ou
+> `Atualização de configuração da web`, com `Build All Task falhou` e
+> `MsBuildExitCode=1`.
+>
+> Os wrappers `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`
+> aplicam enriquecimento automático de `$env:PATH` após resolver `$resolvedGeneXusDir`,
+> com lista fixa: raiz `GeneXus18\`, `gxnet\`, `gxnet\bin\`, `gxnetcore\`. Filtro por
+> `Test-Path` tolera instalações não-padrão. O resultado é registrado em
+> `observedContext.pathEnrichment` do JSON, com `applied` (booleano), `subdirsAdded`
+> e `subdirsSkipped`. Subdirs esperados ausentes geram warning em `warnings[]`.
+>
+> **Evidência empírica (FabricaBrasil18, GeneXus 18 Up 14, 2026-05-20):**
+>
+> | Rodada | PATH | Status | exit | MsBuildExitCode | BuildAllDone | Duração |
+> |---|---|---|---|---|---|---|
+> | baseline | default (sem GeneXus) | `compilou com erros` | 45 | 1 | false | 90 s |
+> | manual | enriquecido pelo invocador | `compilou limpo` | 0 | 0 | true | 261 s |
+> | pós-fix | enriquecido pelo próprio wrapper | `compilou limpo` | 0 | 0 | true | (idem) |
+>
+> Detalhes técnicos em `10-base-operacional-msbuild-headless.md`, seção "Achado
+> Empírico Sobre Subdirs Do GeneXus E PATH Em Headless".
 
 > **Padrão conhecido — ruído estrutural do GeneXus 18 em stderr:**
 > O GeneXus 18 escreve exatamente 3 linhas `context [anonymous] 1:12 attribute component
