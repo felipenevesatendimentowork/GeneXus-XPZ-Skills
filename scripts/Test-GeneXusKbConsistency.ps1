@@ -295,9 +295,9 @@ function New-ExecutionEvidence {
         msBuildExitCode = $MsBuildExitCode
         msBuildFailed   = $msBuildFailed
         wrapperExitCode = $WrapperExitCode
-        stdOutPath      = $StdOutPath
-        stdErrPath      = $StdErrPath
-        executionLogPath = $ExecutionLogPath
+        StdOutPath      = $StdOutPath
+        StdErrPath      = $StdErrPath
+        ExecutionLogPath = $ExecutionLogPath
     }
 }
 
