@@ -53,6 +53,10 @@ Antes de concluir rotina pré-push, não basta ler os diffs dos commits pendente
 
 **Escopo:** a rotina pré-push é de **análise, busca de coerência e relatório** ao usuário. **Não** inclui, por defeito, alterar arquivos nem criar commits com base no relatório. Em face dos gaps, o agente **apresenta** o diagnóstico e, se fizer sentido, um diff ou lista de alterações sugeridas, e **só grava** no repositório após **aprovação explícita** do usuário ou **pedido explícito** na mesma interação para aplicar essas alterações. Exceção: quando a instrução inicial do usuário já tiver sido explicitamente «aplica as correções que encontrares» ou equivalente.
 
+**Passo mecânico inicial:** executar `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` quando o chamador for agente). Esse script coordena contexto git, `git diff --check`, classificação dos arquivos alterados e delega parse a `scripts/Test-PsScriptsParse.ps1` — **sem** substituir a busca semântica abaixo.
+
+**Regra em camadas para skills longas:** ao alinhar nomenclatura ou contrato JSON em skill XPZ (ex.: `executionEvidence`, `pathEnrichment`, `postProcessingFailed`), varrer **no mesmo arquivo** antes de considerar a frente fechada: (1) checklist final ou gates de fechamento; (2) fluxo operacional e captura de resultado (passos numerados, RESPONSIBILITIES, seção “Capturar e relatar”); (3) inventário de scripts, constraints, blocos de contrato por script e sub-estados narrativos. Se qualquer camada ainda usar só a forma antiga (ex.: `msBuildExitCode` top-level como canônico) sem apontar o bloco canônico (`executionEvidence.msBuildExitCode`), reportar como gap da mesma frente — não tratar como coberto só porque `02`, `08` ou `10` já estão alinhados.
+
 Para cada frente alterada:
 
 1. Identificar termos, scripts, wrappers, parâmetros, estados, caminhos e regras operacionais introduzidos ou modificados.
@@ -75,7 +79,7 @@ Para cada frente alterada:
    - flags descartados, com justificativa
    - áreas não cobertas pela busca
 
-A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse e testes locais estejam limpos.
+A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse (`scripts/Test-PsScriptsParse.ps1`, também invocado por `scripts/Invoke-PrePushMechanicalChecks.ps1`) e testes locais estejam limpos.
 
 ## Rastreabilidade privada de moldes sanitizados
 
