@@ -287,3 +287,33 @@ Frente concluída em 2026-05-20 aplicou enriquecimento automático de `$env:PATH
 Rodada empírica em `C:\KBs\OnlineShopSS` importou alteração estrutural simples de atributo (`ShoppingCartItemQuantity`, `Length`/`AttMaxLen` 4→5) sem enriquecimento manual de `PATH` e importou a reversão (5→4) com `PATH` enriquecido manualmente. Ambas concluíram com sucesso operacional e `importedItems` contendo o atributo esperado; não houve sinal de `Database Impact Analysis`, `Reorganization`, `bldReorganization`, `gxexec`, `UpdConfigWeb`, `BuildService`, `Reor.exe` nem erro de resolução de caminho no stdout.
 
 Conclusão limitada: import/export puro não demonstrou dependência observável desses subdirs nessa rodada. A mudança foi aplicada como defesa preventiva e simetria de ambiente headless com `xpz-msbuild-build`, cuja necessidade já estava provada empiricamente.
+
+## Classificação de environment inválido e `Join` nulo no BuildAll
+
+**Importância original:** média
+**Status:** concluída em 2026-05-20
+
+### Origem
+
+Em 2026-05-20, durante verificação empírica da frente de PATH enriquecido, observou-se que quando o MSBuild falhava em fase muito inicial, sem produzir conteúdo filtrável em stdout/stderr, o pós-processamento de `scripts/Invoke-GeneXusKbBuildAll.ps1` podia explodir com:
+
+```
+"Exception calling \"Join\" with \"2\" argument(s): \"Value cannot be null. (Parameter 'values')\""
+```
+
+O caso reproduzível usava `EnvironmentName='NETFrameworkPostgreSQL'`, que era nome de pasta de output, não `EnvironmentName` válido. O MSBuild emitia `error : Ambiente 'NETFrameworkPostgreSQL' não existe`, mas o wrapper retornava `falha operacional` com `exitCode: 90`, mascarando a causa real.
+
+### Implementação
+
+- `scripts/Invoke-GeneXusKbBuildAll.ps1` passou a detectar falha de `Set Active Environment` no stdout.
+- O wrapper extrai o environment ausente e o environment ativo quando disponíveis, emitindo `blockingReasons` específico para `SetActiveEnvironment`.
+- O `Join` frágil no filtro de ruído de stderr foi trocado por expressão array-safe com `@(...) -join`, evitando exceção quando a coleção vem vazia.
+
+### Critério de aceite
+
+Falha inicial por environment inexistente deve ser classificada com causa operacional explícita no JSON, em vez de quebrar no pós-processamento. O diagnóstico top-level deve apontar que o environment solicitado não existe nesta KB e orientar omitir `-EnvironmentName` para usar o environment ativo.
+
+### Rastreabilidade
+
+- Commit: `d3be871` (`Corrige classificação de environment inválido no BuildAll`)
+- Script afetado: `scripts/Invoke-GeneXusKbBuildAll.ps1`
