@@ -1,5 +1,9 @@
 # Ideias Pendentes
 
+## Política de retirada de pendências
+
+Quando uma entrada deste arquivo for resolvida, implementada ou incorporada ao contrato metodológico vigente, ela deve ser movida para o arquivo mensal correspondente em `historico/IdeiasImplementadas_YYYYMM.md` antes de ser retirada daqui. Este arquivo deve manter apenas ideias ainda pendentes ou subfrentes residuais explicitamente abertas.
+
 ## Gate `lastUpdate` futuro em `Test-GeneXusImportFileEnvelope.ps1`
 
 **Importância:** média
@@ -1878,43 +1882,6 @@ Para `xpz-builder`, isso significaria expor um vocabulário de operações de al
 - `xpz-builder/SKILL.md` e `xpz-builder/responsibilities-by-type/`
 - `01a-catalogo-e-padroes-empiricos.md` (fonte de validação dos padrões)
 - `01e-moldes-sanitizados-core.md` a `01h-moldes-sanitizados-metadados-e-artefatos.md` (insumo)
-
-## Enriquecimento de `$env:PATH` em `xpz-msbuild-import-export` por simetria
-
-### Problema concreto que motiva a ideia
-
-Frente concluída em 2026-05-20 aplicou enriquecimento automático de `$env:PATH` com 4 subdirs do GeneXus 18 (`GeneXus18\`, `gxnet\`, `gxnet\bin\`, `gxnetcore\`) em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`. Sem isso, tasks internas que invocam `gxexec`, `UpdConfigWeb`, `BuildService` ou `Reor.exe` por nome (sem caminho absoluto) falham em MSBuild headless, porque o `PATH` herdado do agente externo não inclui esses subdirs (a IDE GeneXus enriquece implicitamente; orquestrador externo não).
-
-A skill `xpz-msbuild-import-export` invoca MSBuild através de `Invoke-GeneXusXpzImport.ps1` e `Invoke-GeneXusXpzExport.ps1`, sem aplicar o mesmo enriquecimento.
-
-### Hipótese de risco
-
-Import e export puros normalmente não invocam `GXExec.exe`/`UpdConfigWeb.exe` — operam só sobre o envelope XML e estado da KB. Porém:
-
-- import de objeto com alteração estrutural de atributo pode disparar reorg implícita (evidência registrada em `02-regras-operacionais-e-runtime.md` linha 70: `SpecifyAll` executou `gxexec bldReorganization.cs` após import de atributo com mudança de tamanho)
-- alguns fluxos podem encadear specify/generate após import sem isolamento
-
-Em ambos os casos, a mesma rasteira de PATH se aplica. Aplicar enriquecimento preventivamente é barato e elimina classe inteira de falhas latentes.
-
-### O que justificaria implementar agora vs. aguardar
-
-- aguardar: nenhum sintoma confirmado empiricamente em import/export puro; mudança preventiva sem caso de uso quebrado
-- implementar agora: simetria com a frente recém-concluída; mesma técnica, mesma evidência conceitual; baixíssimo custo; evita debugging futuro
-
-### Perguntas a responder antes de decidir
-
-- Algum fluxo atual de import/export já caiu nessa rasteira em produção (mesmo sem ter sido diagnosticado como tal)?
-- Vale uma rodada empírica de import com mudança estrutural antes de aplicar o fix preventivo?
-
-### Limiar para implementar
-
-Próxima vez que o usuário pedir trabalho em `xpz-msbuild-import-export`, ou primeira ocorrência confirmada de falha de import por essa causa.
-
-### Relacionado
-
-- `10-base-operacional-msbuild-headless.md` — seção "Achado Empírico Sobre Subdirs Do GeneXus E PATH Em Headless"
-- `xpz-msbuild-build/SKILL.md` — nota "Padrão conhecido — subdirs do GeneXus 18 e PATH herdado em headless"
-- `scripts/Invoke-GeneXusKbBuildAll.ps1` e `scripts/Invoke-GeneXusKbSpecifyGenerate.ps1` — referência da implementação aplicada
 
 ## Bug colateral: `Exception calling "Join" with "2" argument(s)` em `Invoke-GeneXusKbBuildAll.ps1`
 

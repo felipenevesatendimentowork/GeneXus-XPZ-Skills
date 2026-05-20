@@ -1131,7 +1131,7 @@ A política da skill mantém `C:\Program Files (x86)` estritamente somente leitu
 
 Os wrappers da família `xpz-msbuild-build` (`Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`) enriquecem `$env:PATH` automaticamente após resolver `$resolvedGeneXusDir` e antes de invocar o MSBuild. O enriquecimento usa lista fixa dos quatro subdirs conhecidos, filtrada por `Test-Path` para tolerar instalações não-padrão. Subdirs ausentes são reportados em `warnings[]` e em `observedContext.pathEnrichment.subdirsSkipped` do JSON de resultado.
 
-A skill `xpz-msbuild-import-export` está pendente de auditoria simétrica — em fluxos de import/export puro, o problema não aparece porque essas tasks não invocam `GXExec.exe`/`UpdConfigWeb.exe`, mas reorg implícita disparada pelo import poderia cair na mesma rasteira.
+Os wrappers da família `xpz-msbuild-import-export` (`Invoke-GeneXusXpzImport.ps1` e `Invoke-GeneXusXpzExport.ps1`) aplicam o mesmo enriquecimento preventivo do `PATH` e registram o resultado em `observedContext.pathEnrichment`. A justificativa aqui é simetria e consistência do ambiente headless, não reprodução de falha em import/export puro.
 
 ### Evidência empírica (FabricaBrasil18, 2026-05-20)
 
@@ -1144,6 +1144,12 @@ Reprodução com `Invoke-GeneXusKbBuildAll.ps1` em `.Net Environment` (.NET Fram
 | 3 (pós-fix) | enriquecido pelo próprio wrapper | `compilou limpo` | 0 | 0 | true | (idem) | (sem erro) |
 
 Artefatos preservados em `Temp\xpz-build-verify-path-20260520-r1d\` e `Temp\xpz-build-verify-path-20260520-r2\`.
+
+### Evidência empírica complementar (OnlineShopSS, 2026-05-20)
+
+Em `C:\KBs\OnlineShopSS`, uma importação real de alteração estrutural simples em atributo (`ShoppingCartItemQuantity`, `Length`/`AttMaxLen` 4→5) concluiu sem enriquecimento manual de `PATH`, com `importedItems` contendo o atributo esperado e sem sinais de `Database Impact Analysis`, `Reorganization`, `bldReorganization`, `gxexec`, `UpdConfigWeb`, `BuildService`, `Reor.exe` ou erro de resolução de caminho no stdout. A importação real inversa (5→4) também concluiu com sucesso quando o invocador enriqueceu manualmente o `PATH` antes da chamada.
+
+Conclusão limitada: import/export puro não demonstrou dependência observável desses subdirs na rodada testada. O enriquecimento nos wrappers de `xpz-msbuild-import-export` permanece como defesa preventiva e alinhamento com o ambiente esperado pela IDE, enquanto a necessidade provada empiricamente continua pertencendo aos fluxos de build/specify/generate que atingem fases internas dependentes desses executáveis auxiliares.
 
 ### Observação sobre cobertura empírica anterior
 

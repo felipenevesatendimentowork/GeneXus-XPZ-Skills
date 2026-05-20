@@ -77,6 +77,7 @@ Do NOT use esta skill para:
 
 - Usar [10-base-operacional-msbuild-headless](../10-base-operacional-msbuild-headless.md) como base principal desta frente
 - Validar explicitamente `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory`, `LogPath` e `Genexus.Tasks.targets`
+- Enriquecer preventivamente o `$env:PATH` herdado com subdirs do GeneXus 18 (`GeneXus18`, `gxnet`, `gxnet\bin`, `gxnetcore`) antes de chamar `MSBuild`, registrando `observedContext.pathEnrichment`; isso é defesa de ambiente headless, não evidência de falha reproduzida em import/export puro
 - Tratar `Test-GeneXusMsBuildSetup.ps1` como probe (sondagem técnica inicial) não invasivo, anterior a qualquer abertura de KB
 - Tratar `C:\Program Files (x86)` como estritamente somente leitura
 - Garantir que logs, temporários, `.msbuild` e artefatos sejam gerados fora de `C:\Program Files (x86)`
@@ -353,6 +354,7 @@ Parâmetros específicos de importação:
    - `msBuildExitCode` — valor bruto da task MSBuild, sem derivação; preservado ao lado de `exitCode` como evidência primária da conclusão da task
    - `postProcessingFailed` / `postProcessingError` — marca booleana e mensagem quando o pós-processamento do wrapper (parse de stdout, montagem do diagnóstico, serialização JSON ou gravação do log) falhou após o MSBuild já ter rodado
    - `stdoutSignals` com campos semânticos do domínio (ex: `importWarnings`, `exportMarkerFound`/`gxWarnings`) — presente nos scripts de import/export; omitido nos scripts cujos sinais de domínio já fluem por campos próprios (`observedContext`, `propertyValue`, `consistencyResult`)
+   - `observedContext.pathEnrichment` — registro preventivo do enriquecimento de `PATH` aplicado pelo wrapper (`applied`, `subdirsAdded`, `subdirsSkipped`)
    - `stderrContent` — linhas reais de stderr após filtrar ruído GeneXus 18; pode conter o padrão lateral `mismatched input ']' expecting 'default'`, documentado em `10-base-operacional-msbuild-headless.md` como ruído de runtime não bloqueante — não confundir com falha operacional
    - `stderrFilteredNoise` — linhas filtradas do ruído GeneXus 18 (`context [anonymous] N:N attribute component isn't defined`)
    - caminho do `.msbuild`
@@ -447,6 +449,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory` e `LogPath` foram explicitados
 - [ ] O probe só auto-criou `WorkingDirectory` quando o caminho explícito era seguro e permaneceu bloqueando caminhos proibidos, inválidos ou ambíguos
 - [ ] `GeneXusDir` e `MsBuildPath` foram resolvidos por precedência e fallback rastreáveis
+- [ ] `observedContext.pathEnrichment` registrou o enriquecimento preventivo do `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`)
 - [ ] `Genexus.Tasks.targets` foi validado
 - [ ] `PreviewMode` foi priorizado quando a intenção era inspeção
 - [ ] Quando o objetivo era importação (preview ou real): `Test-GeneXusImportFileEnvelope.ps1` foi executado antes de qualquer chamada ao MSBuild

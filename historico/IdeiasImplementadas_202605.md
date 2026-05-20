@@ -264,3 +264,26 @@ A dimensão de classificação e comunicação foi aplicada diretamente na base 
 ### Limite preservado como pendência
 
 A capacidade operacional de diagnóstico SQL somente leitura no banco interno da KB não foi implementada. A pendência restante continua em `999-ideias-pendentes.md`: definir sede, forma de conexão, script/procedimento e validações para consultas somente leitura contra `GX_KB_*`, sem jamais propor limpeza direta por SQL.
+
+## Enriquecimento de `$env:PATH` em `xpz-msbuild-import-export` por simetria
+
+**Importância original:** média
+**Status:** concluída em 2026-05-20
+
+### Origem
+
+Frente concluída em 2026-05-20 aplicou enriquecimento automático de `$env:PATH` com subdirs do GeneXus 18 em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`. Sem isso, tasks internas que invocam `gxexec`, `UpdConfigWeb`, `BuildService` ou `Reor.exe` por nome falham em MSBuild headless, porque o `PATH` herdado do agente externo não inclui os mesmos subdirs que a IDE GeneXus injeta implicitamente.
+
+### Implementação
+
+- `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Invoke-GeneXusXpzExport.ps1` passaram a enriquecer preventivamente o `$env:PATH` após resolver `GeneXusDir` e antes de invocar `MSBuild`.
+- O enriquecimento usa os subdirs conhecidos do GeneXus 18: raiz `GeneXus18\`, `gxnet\`, `gxnet\bin\` e `gxnetcore\`.
+- O resultado é registrado no JSON em `observedContext.pathEnrichment`, com `applied`, `subdirsAdded` e `subdirsSkipped`.
+- `xpz-msbuild-import-export/SKILL.md` documenta o contrato do novo campo.
+- `10-base-operacional-msbuild-headless.md` registra a política dos wrappers e a evidência empírica complementar.
+
+### Evidência e limite da conclusão
+
+Rodada empírica em `C:\KBs\OnlineShopSS` importou alteração estrutural simples de atributo (`ShoppingCartItemQuantity`, `Length`/`AttMaxLen` 4→5) sem enriquecimento manual de `PATH` e importou a reversão (5→4) com `PATH` enriquecido manualmente. Ambas concluíram com sucesso operacional e `importedItems` contendo o atributo esperado; não houve sinal de `Database Impact Analysis`, `Reorganization`, `bldReorganization`, `gxexec`, `UpdConfigWeb`, `BuildService`, `Reor.exe` nem erro de resolução de caminho no stdout.
+
+Conclusão limitada: import/export puro não demonstrou dependência observável desses subdirs nessa rodada. A mudança foi aplicada como defesa preventiva e simetria de ambiente headless com `xpz-msbuild-build`, cuja necessidade já estava provada empiricamente.

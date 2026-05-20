@@ -183,6 +183,57 @@ function Add-WarningMessage {
     }
 }
 
+function Add-GeneXusSubdirsToPath {
+    param([string]$ResolvedGeneXusDir)
+
+    $gxSubPathCandidates = @(
+        $ResolvedGeneXusDir,
+        (Join-Path $ResolvedGeneXusDir 'gxnet'),
+        (Join-Path $ResolvedGeneXusDir 'gxnet\bin'),
+        (Join-Path $ResolvedGeneXusDir 'gxnetcore')
+    )
+
+    $currentPathEntries = @($env:PATH -split ';' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    $gxSubPathsAdded = @()
+    $gxSubPathsSkipped = @()
+
+    foreach ($candidate in $gxSubPathCandidates) {
+        if (-not (Test-Path -LiteralPath $candidate -PathType Container)) {
+            $gxSubPathsSkipped += $candidate
+            continue
+        }
+
+        $alreadyPresent = $false
+        foreach ($entry in $currentPathEntries) {
+            if ([string]::Equals($entry.TrimEnd('\'), $candidate.TrimEnd('\'), [System.StringComparison]::OrdinalIgnoreCase)) {
+                $alreadyPresent = $true
+                break
+            }
+        }
+
+        if (-not $alreadyPresent) {
+            $gxSubPathsAdded += $candidate
+            $currentPathEntries += $candidate
+        }
+    }
+
+    if ($gxSubPathsAdded.Count -gt 0) {
+        $env:PATH = ($gxSubPathsAdded -join ';') + ';' + $env:PATH
+    }
+
+    $script:PathEnrichment = [ordered]@{
+        applied        = ($gxSubPathsAdded.Count -gt 0)
+        subdirsAdded   = $gxSubPathsAdded
+        subdirsSkipped = $gxSubPathsSkipped
+    }
+
+    if ($gxSubPathsSkipped.Count -gt 0) {
+        Add-WarningMessage -Message ("Subdirs esperados do GeneXus ausentes em '{0}': {1}. Instalacao pode estar nao-padrao; tools internas chamadas por Process.Start sem caminho absoluto podem falhar." -f $ResolvedGeneXusDir, ($gxSubPathsSkipped -join ', '))
+    }
+
+    Add-StrategyTrace -Message ("PATH enriquecido preventivamente com subdirs do GeneXus para execucao headless de import/export: [{0}]. Subdirs ausentes: [{1}]." -f ($gxSubPathsAdded -join ', '), ($gxSubPathsSkipped -join ', '))
+}
+
 function Resolve-ProbeScriptPath {
     $scriptDirectory = Split-Path -Parent $PSCommandPath
     $probePath = Join-Path $scriptDirectory 'Test-GeneXusMsBuildSetup.ps1'
@@ -560,6 +611,11 @@ function Get-ImportExitCode {
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
 $script:Warnings = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace = New-Object System.Collections.Generic.List[string]
+$script:PathEnrichment = [ordered]@{
+    applied        = $false
+    subdirsAdded   = @()
+    subdirsSkipped = @()
+}
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
 
@@ -658,6 +714,8 @@ try {
     $resolvedXpzPath = $xpzValidation.Path
     $resolvedUpdateFilePath = $updateFileValidation.Path
 
+    Add-GeneXusSubdirsToPath -ResolvedGeneXusDir $resolvedGeneXusDir
+
     $importTaskPropertyNames = Get-ImportTaskPropertyNames -ResolvedGeneXusDir $resolvedGeneXusDir
     Add-StrategyTrace -Message ('Import task properties carregadas da instalação atual: {0}' -f ($importTaskPropertyNames -join ', '))
 
@@ -691,6 +749,11 @@ try {
                 ImportKbInformation = $ImportKbInformation
                 IncludeItems = $IncludeItems
                 ExcludeItems = $ExcludeItems
+            }
+            observedContext = [ordered]@{
+                ActiveVersion = $null
+                ActiveEnvironment = $null
+                pathEnrichment = $script:PathEnrichment
             }
             resolvedPaths = [ordered]@{
                 GeneXusDir = $resolvedGeneXusDir
@@ -843,6 +906,7 @@ try {
             ActiveVersion = (Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'")
             ActiveEnvironment = (Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'")
             OpenOutput = (Get-MarkerValue -Text $stdOutText -Marker '__OPEN_OUTPUT__=')
+            pathEnrichment = $script:PathEnrichment
         }
         resolvedPaths = [ordered]@{
             GeneXusDir = $resolvedGeneXusDir
