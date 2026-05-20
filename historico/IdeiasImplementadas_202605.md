@@ -365,3 +365,7 @@ Após o alinhamento de bloqueios para versão e `Environment` inválidos, os dia
 ### Critério de aceite
 
 Falha com causa específica não deve duplicar em `blockingReasons` o texto genérico de exit code. O exit bruto deve continuar disponível no JSON, agora em `executionEvidence`.
+
+### Rastreabilidade
+
+- Commit: `b0f65f1` (`Separa evidência bruta de bloqueios MSBuild`)
