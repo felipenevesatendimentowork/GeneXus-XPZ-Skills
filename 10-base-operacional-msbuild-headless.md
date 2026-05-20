@@ -686,6 +686,32 @@ Saídas esperadas dos scripts:
   - operação concluída, porém ainda pendente de confirmação funcional
 - no diagnóstico JSON, distinguir `exitCode` (valor classificado pelo wrapper — 0/32/41/42/... — e também exit code do processo) de `executionEvidence.msBuildExitCode` (local canônico do valor bruto da task MSBuild); `msBuildExitCode` top-level, quando existir, é compatibilidade transitória e deve duplicar o valor canônico; ambos devem aparecer no diagnóstico parcial em caso de falha no pos-processamento
 
+### Contrato Transversal De Diagnóstico JSON Dos Wrappers MSBuild
+
+Este contrato aplica-se aos wrappers que já chamaram `MSBuild` ou processaram seus logs. Ele não pertence ao probe `Test-GeneXusMsBuildSetup.ps1`, que não abre KB nem invoca tasks operacionais.
+
+- `exitCode`
+  - valor classificado pelo wrapper e também exit code do processo
+- `executionEvidence`
+  - registro objetivo da execução quando o wrapper já chamou `MSBuild`: `msBuildExitCode`, `msBuildFailed`, `wrapperExitCode` e caminhos dos logs brutos quando disponíveis
+  - quando o `MSBuild` falhar sem causa acionável classificada, `blockingReasons` deve conter fallback explícito apontando para `executionEvidence` e logs
+  - `executionEvidence.msBuildExitCode` é o local canônico do código bruto retornado pela task `MSBuild`; `msBuildExitCode` top-level, quando existir por compatibilidade, deve duplicar esse valor e não deve ser usado como padrão novo
+  - `observedContext.MsBuildExitCode`, quando existir em wrappers da família build, é contexto observado/compatibilidade e não substitui `executionEvidence.msBuildExitCode` como fonte canônica
+  - em falha de pós-processamento do wrapper, o diagnóstico degradado deve preservar `executionEvidence` com os dados brutos já coletados antes da falha
+- `postProcessingFailed` / `postProcessingError`
+  - `postProcessingFailed=true` sinaliza falha local do wrapper depois que o `MSBuild` já rodou, como parse de stdout, montagem do diagnóstico, serialização JSON ou gravação do log
+  - `postProcessingError` deve carregar a mensagem curta da falha local quando disponível
+  - em exportação, `postProcessingFailed=true` pode aparecer sem `diagnosticDegraded`; nessa família, o sub-estado é decidido por `executionEvidence`, marcas do log bruto e existência do XPZ gerado
+- `diagnosticDegraded` / `diagnosticDegradedReason`
+  - `diagnosticDegraded` (booleano) sinaliza que o pós-processamento local do wrapper ficou parcial ou falhou após o `MSBuild` já ter concluído; `diagnosticDegradedReason` (string) carrega a causa textual curta
+  - hoje contratado e emitido em `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`; o contrato completo de resiliência do pós-processamento está em `xpz-msbuild-import-export/SKILL.md`
+  - `diagnosticDegraded=true` pode coexistir com `postProcessingFailed=false`, por exemplo quando a task concluiu e o diagnóstico principal foi montado, mas a leitura compacta de `msbuild.import.signals.json` falhou ou ficou parcial
+  - semântica: **não** reclassifica a task `MSBuild` — a evidência primária de conclusão da task permanece em `executionEvidence` e nos marcadores do log bruto (`__IMPORTED_ITEM__`, `__EXPORTED_FILE__`)
+  - quando `diagnosticDegraded=true` coexistir com `executionEvidence.msBuildExitCode=0` e evidência de marca no log bruto, o sub-estado correto é `concluído com diagnóstico degradado` ou o sub-estado mais específico definido pela skill consumidora; não é `falha operacional` por si só
+- `observedContext`
+  - registra contexto técnico observado pelo wrapper, como versão ativa, `Environment` ativo, `OpenOutput`, `pathEnrichment` e, em wrappers de build, campos legados como `MsBuildExitCode`
+  - `observedContext.pathEnrichment` registra o enriquecimento preventivo de `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`) quando o wrapper aplica essa política
+
 ### Contrato Inicial De `Test-GeneXusMsBuildSetup.ps1`
 
 Nesta fase, o primeiro script da trilha deve ser apenas um probe (sondagem técnica inicial) de ambiente.
@@ -792,17 +818,6 @@ Formato esperado do diagnóstico estruturado:
     - confirmação de que `LogPath` está fora de `C:\Program Files (x86)`
 - `blockingReasons`
   - lista explícita dos motivos acionáveis que impediram prosseguir, quando houver
-  - não deve duplicar o valor bruto de exit code quando já houver causa específica; evidência bruta de execução deve ficar em `executionEvidence`
-- `executionEvidence`
-  - registro objetivo da execução quando o wrapper já chamou MSBuild: `msBuildExitCode`, `msBuildFailed`, `wrapperExitCode` e caminhos dos logs brutos quando disponíveis
-  - quando o MSBuild falhar sem causa acionável classificada, `blockingReasons` deve conter fallback explícito apontando para `executionEvidence` e logs
-  - `executionEvidence.msBuildExitCode` é o local canônico do código bruto retornado pela task MSBuild; `msBuildExitCode` top-level, quando existir por compatibilidade, deve duplicar esse valor e não deve ser usado como padrão novo
-  - em falha de pós-processamento do wrapper, o diagnóstico degradado deve preservar `executionEvidence` com os dados brutos já coletados antes da falha
-- `diagnosticDegraded` / `diagnosticDegradedReason`
-  - `diagnosticDegraded` (booleano) sinaliza que o pós-processamento local do wrapper ficou parcial ou falhou após o MSBuild já ter concluído; `diagnosticDegradedReason` (string) carrega a causa textual curta
-  - hoje contratado e emitido em `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`; o contrato completo de resiliência do pós-processamento está em `xpz-msbuild-import-export/SKILL.md`
-  - semântica: **não** reclassifica a task MSBuild — a evidência primária de conclusão da task permanece em `executionEvidence` e nos marcadores do log bruto (`__IMPORTED_ITEM__`, `__EXPORTED_FILE__`)
-  - quando `diagnosticDegraded=true` coexistir com `executionEvidence.msBuildExitCode=0` e evidência de marca no log bruto, o sub-estado correto é `concluído com falha no pós-processamento do wrapper`, não `falha operacional`
 - `warnings`
   - lista de alertas não bloqueantes, quando houver
 - `strategyTrace`

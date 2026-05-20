@@ -141,7 +141,7 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
   compartilhado) e em qualquer diagnostico de sub-estado de import — incluindo
   classificacao apos exception interna do wrapper, leitura de
   `__IMPORTED_ITEM__` no log bruto (`msbuild.stdout.log`) e identificacao de
-  `postProcessingFailed=true` no `import.json` —, usar `xpz-msbuild-import-export`;
+  `postProcessingFailed=true` ou `diagnosticDegraded=true` no `import.json` —, usar `xpz-msbuild-import-export`;
   nao reinterpretar sub-estados de import localmente. Em particular: falha de
   pos-processamento do wrapper com evidencia de import no log bruto NAO e falha
   de import — e o sub-estado nomeado
@@ -150,6 +150,9 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
 - Em diagnostico degradado de import/export MSBuild, quando existir
   `executionEvidence.msBuildExitCode`, tratar esse campo como fonte canonica do
   exit bruto do MSBuild; `msBuildExitCode` top-level e compatibilidade transitoria.
+- `diagnosticDegraded=true` pode aparecer sem `postProcessingFailed=true`; nesse caso,
+  tratar a rodada como diagnostico parcial/degradado, nao como sucesso limpo nem como
+  falha operacional automatica.
 - Em exportacao headless via MSBuild (`Invoke-GeneXusXpzExport.ps1` do motor
   compartilhado) e em qualquer diagnostico de sub-estado de export — incluindo
   classificacao apos exception interna do wrapper, leitura de

@@ -653,7 +653,7 @@ Read tool → $buildLog (build-all.log)
 
 Campos relevantes:
 - `status` — categoria de resultado (ver EXPECTED INTERFACE)
-- `exitCode` — código de saída classificado pelo wrapper (0 quando `compilou limpo`/`specify e generate concluídos`, valor não nulo quando há impedimento ou falha); também é o exit code do processo. O valor bruto da task MSBuild aparece em `observedContext.MsBuildExitCode` (PascalCase, dentro do contexto observado) e em `executionEvidence.msBuildExitCode`. `executionEvidence.msBuildExitCode` é o local canônico; `msBuildExitCode` top-level, quando existir por compatibilidade transitória em algum wrapper, deve duplicar esse valor.
+- `exitCode` — código de saída classificado pelo wrapper (0 quando `compilou limpo`/`specify e generate concluídos`, valor não nulo quando há impedimento ou falha); também é o exit code do processo. O valor bruto da task MSBuild aparece canonicamente em `executionEvidence.msBuildExitCode`. `observedContext.MsBuildExitCode` (PascalCase, dentro do contexto observado), quando presente, é contexto observado/compatibilidade e não substitui o campo canônico; `msBuildExitCode` top-level, quando existir por compatibilidade transitória em algum wrapper, deve duplicar o valor canônico.
 - `executionEvidence` — evidência bruta da execução (`msBuildExitCode`, `msBuildFailed`, `wrapperExitCode`, logs brutos); `blockingReasons` deve priorizar causas acionáveis e não repetir o exit code bruto quando uma causa específica já existir
 - `summary` — descrição legível do resultado
 - `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
