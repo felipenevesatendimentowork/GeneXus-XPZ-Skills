@@ -220,6 +220,7 @@ Scripts nesta frente:
   - parâmetros opcionais: `-AsJson`
   - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `não apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
   - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
+  - regra cross-KB: formato GUID valido nao basta para import headless; quando houver KB nativa local esperada, `Source/@kb` do pacote/template deve corresponder a essa KB. Divergencia indica pacote de outra KB e bloqueia automacao por agente; encaminhar para avaliacao/importacao manual pela IDE, conforme `02-regras-operacionais-e-runtime.md`.
 - `Get-GeneXusImportPackageObjectInventory.ps1`
   - status atual: implementado para `import_file.xml`/XML com raiz `<ExportFile>`
   - objetivo: inventariar o conteúdo efetivo do pacote antes de preview/import, separando `Objects`, `Attributes` top-level, tipos mapeados, GUIDs e confronto opcional com delta declarado

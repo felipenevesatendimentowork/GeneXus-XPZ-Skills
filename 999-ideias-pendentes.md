@@ -1771,7 +1771,7 @@ Resultado `METADATA_WRAPPER_INCOMPLETE` para campos vazios (distinto de `METADAT
 - **Auth dual**: detectar a forma efetiva de autenticacao em `knowledgebase.connection`; em XML GeneXus, `IntegratedSecurity=False` sem usuario SQL explicito nao basta para forcar SQL auth, pois ha evidencia empirica de Windows auth funcional nesse caso. Aceitar `-SqlCredential` (PSCredential) quando SQL auth for resolvida; falhar limpo se necessario.
 - **Connection string não sai pro output**: detalhe interno do `Resolve`, não fica gravado nem em `kb-source-metadata.md` nem em JSON de diagnóstico.
 - **Não tocar gate de envelope**: o gate continua rígido sobre Source vazio.
-- **Não chamar `Resolve` fora do setup**: setup é a única boca de entrada; downstream lê de `kb-source-metadata.md`.
+- **Downstream lê `kb-source-metadata.md`**: `Resolve` não vira fallback ad hoc de empacotamento, sync ou import. Reconciliação explícita de identidade estável só entra via setup/auditoria aprovada, usando o resolvedor e o atualizador conservador para preencher ausentes ou bloquear divergências.
 
 ### Pendência residual (não bloqueante)
 

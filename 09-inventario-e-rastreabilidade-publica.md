@@ -35,6 +35,9 @@ Preservar rastreabilidade da consolidacao, inventario documental, inventario bru
 - `Evidência direta`: o script recebeu adição do parâmetro `-KbMetadataPath` para gerar metadados da KB em formato Markdown, facilitando reuso em envelopes de importação.
 - `Evidência direta`: `scripts/Get-GeneXusImportPackageObjectInventory.ps1` passou a inventariar o conteudo efetivo de `import_file.xml`, listando objetos e atributos de topo e permitindo confronto opcional com delta declarado antes de importacao MSBuild.
 - `Inferência forte`: esse inventario complementa a validacao de envelope; ele nao transforma a pasta `scripts/` em fonte normativa, mas registra motor compartilhado relevante para rastreabilidade operacional.
+- `Evidência direta`: `scripts/Resolve-GeneXusKbIdentity.ps1` foi incorporado como motor compartilhado somente leitura para resolver identidade estavel da KB nativa local a partir de `model.ini`, `knowledgebase.connection` e banco interno da KB.
+- `Evidência direta`: `scripts/Update-XpzKbSourceMetadataIdentity.ps1` foi incorporado como atualizador conservador e localizado dos campos de identidade estavel em `kb-source-metadata.md`, preenchendo ausentes e bloqueando divergencias nao vazias salvo aprovacao explicita.
+- `Evidência direta`: `scripts/Test-XpzWrapperInventorySelfTest.ps1` foi incorporado como bateria minima de validacao do inventario de wrappers locais, cobrindo casos de gaps, naming curto e customizacao metodologica.
 
 ## Nota sobre a skill experimental de MSBuild
 

@@ -364,6 +364,7 @@ Reference files and when to load them:
    - Use `import_file.xml` as the primary package artifact for manual IDE import unless `.xpz` is explicitly required
    - Wrap in `<ExportFile>` with `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`
    - Keep `Source/@kb` and `Source/Version/@guid` in valid GUID format
+   - Valid GUID format is not enough for headless import: when a local target KB identity is known, `Source/@kb` from the package or template must match that native KB. If it differs, treat the package as cross-KB, **ABORT** agent automation, and route the case to manual IDE evaluation per [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md).
    - Do NOT include special KB block unless explicitly documented as required
 18. Set or preserve `lastUpdate` according to the batch-role classification:
    - Classify each active XML as `modified in this round` or `reused unchanged for mandatory dependency closure`
