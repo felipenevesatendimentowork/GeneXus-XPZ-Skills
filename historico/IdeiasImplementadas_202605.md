@@ -2,6 +2,27 @@
 
 Registro de ideias que sairam de `999-ideias-pendentes.md` por terem sido implementadas ou incorporadas ao contrato metodologico vigente.
 
+## Documenta `diagnosticDegraded` na base operacional e amplia escopo de `executionEvidence` em 09
+
+**Importancia original:** media
+**Status:** concluida em 2026-05-20
+
+### Origem
+
+Avaliacao pre-push apontada por agente externo em 2026-05-20. Dois gaps:
+
+- `diagnosticDegraded` / `diagnosticDegradedReason` estavam contratados em `xpz-msbuild-import-export/SKILL.md` e emitidos em `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`, mas a base operacional `10-base-operacional-msbuild-headless.md` e o inventario publico `09-inventario-e-rastreabilidade-publica.md` nao definiam o campo. Quem lesse so a base 10 nao tinha ancora para interpretar o campo no JSON.
+- A linha de inventario em `09` sobre separacao `blockingReasons` / `executionEvidence` enumerava so as familias `xpz-msbuild-build` e `xpz-msbuild-import-export`. `scripts/Test-GeneXusKbConsistency.ps1` tambem emite `executionEvidence` via `New-ExecutionEvidence` e ficava orfao dessa narrativa.
+
+### Implementacao
+
+- `10-base-operacional-msbuild-headless.md`: novo item `diagnosticDegraded` / `diagnosticDegradedReason` no contrato de diagnostico JSON, com semantica explicita (nao reclassifica a task MSBuild) e sub-estado correto quando coexistir com `executionEvidence.msBuildExitCode=0`.
+- `09-inventario-e-rastreabilidade-publica.md`: linha 51 complementada para incluir `Test-GeneXusKbConsistency.ps1` no escopo de `executionEvidence`; nova linha registrando `diagnosticDegraded`/`diagnosticDegradedReason` como contrato emitido por import e preview.
+
+### Decisao final
+
+Cobertura em `02-regras-operacionais-e-runtime.md` e `08-guia-para-agente-gpt.md` foi avaliada e considerada desnecessaria por ora: esses documentos tratam de regras operacionais e leitura de log, nao de contrato de campo de diagnostico. Se em uso futuro o agente precisar reagir ao campo em fluxos de leitura de log, espelho em `08` entra como nova frente.
+
 ## Setup popula `kb-source-metadata.md` a partir da KB nativa, sem depender do XPZ
 
 **Importancia original:** alta

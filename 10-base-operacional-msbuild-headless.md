@@ -798,6 +798,11 @@ Formato esperado do diagnóstico estruturado:
   - quando o MSBuild falhar sem causa acionável classificada, `blockingReasons` deve conter fallback explícito apontando para `executionEvidence` e logs
   - `executionEvidence.msBuildExitCode` é o local canônico do código bruto retornado pela task MSBuild; `msBuildExitCode` top-level, quando existir por compatibilidade, deve duplicar esse valor e não deve ser usado como padrão novo
   - em falha de pós-processamento do wrapper, o diagnóstico degradado deve preservar `executionEvidence` com os dados brutos já coletados antes da falha
+- `diagnosticDegraded` / `diagnosticDegradedReason`
+  - `diagnosticDegraded` (booleano) sinaliza que o pós-processamento local do wrapper ficou parcial ou falhou após o MSBuild já ter concluído; `diagnosticDegradedReason` (string) carrega a causa textual curta
+  - hoje contratado e emitido em `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`; o contrato completo de resiliência do pós-processamento está em `xpz-msbuild-import-export/SKILL.md`
+  - semântica: **não** reclassifica a task MSBuild — a evidência primária de conclusão da task permanece em `executionEvidence` e nos marcadores do log bruto (`__IMPORTED_ITEM__`, `__EXPORTED_FILE__`)
+  - quando `diagnosticDegraded=true` coexistir com `executionEvidence.msBuildExitCode=0` e evidência de marca no log bruto, o sub-estado correto é `concluído com falha no pós-processamento do wrapper`, não `falha operacional`
 - `warnings`
   - lista de alertas não bloqueantes, quando houver
 - `strategyTrace`
