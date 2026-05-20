@@ -343,4 +343,5 @@ Falhas de posicionamento explícito de versão ou `Environment` devem ser diagno
 ### Rastreabilidade
 
 - Commit: `f8f811a` (`Alinha bloqueios MSBuild de import export`)
-- Scripts afetados: `scripts/Invoke-GeneXusXpzExport.ps1`, `scripts/Invoke-GeneXusXpzImport.ps1`, `scripts/Open-GeneXusKbHeadless.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`
+- Commit: `a3eac08` (`Registra alinhamento MSBuild e ajusta warning`)
+- Scripts afetados: `scripts/Invoke-GeneXusXpzExport.ps1`, `scripts/Invoke-GeneXusXpzImport.ps1`, `scripts/Open-GeneXusKbHeadless.ps1`, `scripts/Test-GeneXusXpzImportPreview.ps1` e, no ajuste residual do commit `a3eac08`, `scripts/Invoke-GeneXusKbBuildAll.ps1`
