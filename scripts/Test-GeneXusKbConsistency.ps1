@@ -282,8 +282,7 @@ function New-ExecutionEvidence {
         [object]$MsBuildExitCode,
         [int]$WrapperExitCode,
         [string]$StdOutPath,
-        [string]$StdErrPath,
-        [string]$ExecutionLogPath
+        [string]$StdErrPath
     )
 
     $msBuildFailed = $null
@@ -297,7 +296,6 @@ function New-ExecutionEvidence {
         wrapperExitCode = $WrapperExitCode
         StdOutPath      = $StdOutPath
         StdErrPath      = $StdErrPath
-        ExecutionLogPath = $ExecutionLogPath
     }
 }
 
@@ -448,8 +446,7 @@ if ($fixMode) {
                 -MsBuildExitCode $null `
                 -WrapperExitCode 30 `
                 -StdOutPath $null `
-                -StdErrPath $null `
-                -ExecutionLogPath $resolvedLogPath
+                -StdErrPath $null
             msBuildExitCode = $null
             stderrContent        = @()
             stderrFilteredNoise  = @()
@@ -528,8 +525,7 @@ try {
                 -MsBuildExitCode $null `
                 -WrapperExitCode $probeStage.ExitCode `
                 -StdOutPath $null `
-                -StdErrPath $null `
-                -ExecutionLogPath $resolvedLogPath
+                -StdErrPath $null
             msBuildExitCode = $null
             stderrContent        = @()
             stderrFilteredNoise  = @()
@@ -623,8 +619,7 @@ try {
             -MsBuildExitCode $msBuildExitCode `
             -WrapperExitCode $scriptExitCode `
             -StdOutPath $stdOutPath `
-            -StdErrPath $stdErrPath `
-            -ExecutionLogPath $resolvedLogPath
+            -StdErrPath $stdErrPath
         msBuildExitCode = $msBuildExitCode
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
         stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
@@ -675,8 +670,7 @@ catch {
             -MsBuildExitCode $null `
             -WrapperExitCode 90 `
             -StdOutPath $null `
-            -StdErrPath $null `
-            -ExecutionLogPath $resolvedLogPath
+            -StdErrPath $null
         msBuildExitCode = $null
         stderrContent        = @()
         stderrFilteredNoise  = @()
