@@ -47,6 +47,7 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] Applicable local functional review chains, contracts, and operational rules were verified end-to-end in the saved XML before packaging
 - [ ] Local repository rules were treated as repository-specific specialization, not as universal XPZ methodology
 - [ ] `Source/@kb` and `Source/Version/@guid` are valid GUIDs
+- [ ] When the local target KB identity is known, `Source/@kb` matches that native KB; cross-KB packages were aborted for agent-driven headless import and routed to manual IDE evaluation
 - [ ] Every new operator, function, conversion, and string/numeric pattern introduced in `Source` is backed by layer-1 methodological evidence
 - [ ] Local corpus evidence, when used for `Source`, was treated only as confirmation or tie-breaker
 - [ ] No essential `Source` construct was accepted only because it looked plausible
