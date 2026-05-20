@@ -681,10 +681,10 @@ Saídas esperadas dos scripts:
   - sucesso operacional
   - falha operacional
   - operação apenas em preview
-  - sucesso operacional com falha no pos-processamento — `msBuildExitCode=0`, evidência primária do log bruto presente (`__IMPORTED_ITEM__` ou `__EXPORTED_FILE__` mais arquivo XPZ existente), mas pos-processamento local do wrapper falhou e o JSON saiu com `postProcessingFailed=true`; não é `falha operacional`
-  - preview apenas com falha no pos-processamento — análogo ao anterior na fase de preview: `msBuildExitCode=0` sem alterar a KB, evidência primária preservada no log bruto, pos-processamento local falhou; não é `falha operacional`
+  - sucesso operacional com falha no pos-processamento — `executionEvidence.msBuildExitCode=0`, evidência primária do log bruto presente (`__IMPORTED_ITEM__` ou `__EXPORTED_FILE__` mais arquivo XPZ existente), mas pos-processamento local do wrapper falhou e o JSON saiu com `postProcessingFailed=true`; não é `falha operacional`
+  - preview apenas com falha no pos-processamento — análogo ao anterior na fase de preview: `executionEvidence.msBuildExitCode=0` sem alterar a KB, evidência primária preservada no log bruto, pos-processamento local falhou; não é `falha operacional`
   - operação concluída, porém ainda pendente de confirmação funcional
-- no diagnóstico JSON, distinguir `exitCode` (valor classificado pelo wrapper — 0/32/41/42/... — e também exit code do processo) de `msBuildExitCode` (valor bruto da task MSBuild, preservado em campo próprio); ambos devem aparecer no diagnóstico parcial em caso de falha no pos-processamento
+- no diagnóstico JSON, distinguir `exitCode` (valor classificado pelo wrapper — 0/32/41/42/... — e também exit code do processo) de `executionEvidence.msBuildExitCode` (local canônico do valor bruto da task MSBuild); `msBuildExitCode` top-level, quando existir, é compatibilidade transitória e deve duplicar o valor canônico; ambos devem aparecer no diagnóstico parcial em caso de falha no pos-processamento
 
 ### Contrato Inicial De `Test-GeneXusMsBuildSetup.ps1`
 
