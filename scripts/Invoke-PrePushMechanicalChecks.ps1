@@ -17,8 +17,9 @@
 .PARAMETER BaseRef
     Referencia unica do intervalo analisado: commits pendentes, contagem,
     arquivos alterados e diff --check usam sempre BaseRef..HEAD. Default:
-    origin/main (desde o ultimo estado remoto usual). O upstream da branch
-    so aparece no JSON como contexto informativo.
+    origin/main (desde o ultimo estado remoto usual). Se a ref nao existir,
+    o script falha com mensagem clara (sem fallback automatico para main).
+    O upstream da branch so aparece no JSON como contexto informativo.
 
 .PARAMETER AsJson
     Emite diagnostico estruturado em JSON.
@@ -92,6 +93,30 @@ function Test-GitRefExists {
     return ($result.ExitCode -eq 0)
 }
 
+function Resolve-GitRepositoryContext {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$StartPath
+    )
+
+    $topLevelResult = Invoke-RepoGit -RepositoryRoot $StartPath -Arguments @('rev-parse', '--show-toplevel')
+    if ($topLevelResult.ExitCode -ne 0) {
+        throw ("Nao foi possivel resolver repositorio git a partir de '{0}'. Verifique o caminho ou use git rev-parse --show-toplevel manualmente. Detalhe: {1}" -f $StartPath, $topLevelResult.Text)
+    }
+
+    $repositoryRoot = $topLevelResult.Lines[0].Trim()
+    $gitDirResult = Invoke-RepoGit -RepositoryRoot $repositoryRoot -Arguments @('rev-parse', '--git-dir')
+    $gitDir = $null
+    if ($gitDirResult.ExitCode -eq 0 -and $gitDirResult.Lines.Count -gt 0) {
+        $gitDir = $gitDirResult.Lines[0].Trim()
+    }
+
+    return [pscustomobject]@{
+        RepositoryRoot = $repositoryRoot
+        GitDir         = $gitDir
+    }
+}
+
 function Get-ChangedFileKind {
     param(
         [Parameter(Mandatory = $true)]
@@ -150,11 +175,10 @@ function Add-ChangedFilesByKind {
     return $byKind
 }
 
-$resolvedRoot = (Resolve-Path -LiteralPath $RootPath).Path
-$gitDir = Join-Path $resolvedRoot '.git'
-if (-not (Test-Path -LiteralPath $gitDir)) {
-    throw "Repositorio git nao encontrado em: $resolvedRoot"
-}
+$startPath = (Resolve-Path -LiteralPath $RootPath).Path
+$gitContext = Resolve-GitRepositoryContext -StartPath $startPath
+$resolvedRoot = $gitContext.RepositoryRoot
+$resolvedGitDir = $gitContext.GitDir
 
 $branchResult = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-parse', '--abbrev-ref', 'HEAD')
 if ($branchResult.ExitCode -ne 0) {
@@ -171,11 +195,7 @@ if ($upstreamConfigured) {
 
 $effectiveBaseRef = $BaseRef
 if (-not (Test-GitRefExists -RepositoryRoot $resolvedRoot -Ref $effectiveBaseRef)) {
-    if (Test-GitRefExists -RepositoryRoot $resolvedRoot -Ref 'main') {
-        $effectiveBaseRef = 'main'
-    } else {
-        throw "Ref base nao encontrada: $BaseRef"
-    }
+    throw ("Ref base '{0}' nao encontrada. Para medir commits locais ainda nao enviados ao remoto, confirme que origin/main existe (ex.: git fetch origin) ou passe -BaseRef com uma ref valida. Nao ha fallback automatico para main." -f $BaseRef)
 }
 
 $range = "$effectiveBaseRef..HEAD"
@@ -280,6 +300,8 @@ $result = [ordered]@{
     status                 = $overallStatus
     rootPath               = $resolvedRoot
     git                    = [ordered]@{
+        repositoryRoot      = $resolvedRoot
+        gitDir              = $resolvedGitDir
         branch              = $currentBranch
         upstream            = $upstreamRef
         baseRef             = $effectiveBaseRef
