@@ -147,6 +147,9 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
   de import — e o sub-estado nomeado
   `importacao real efetiva provada por evidencia de stdout (falha no
   pos-processamento do wrapper)`.
+- Em diagnostico degradado de import/export MSBuild, quando existir
+  `executionEvidence.msBuildExitCode`, tratar esse campo como fonte canonica do
+  exit bruto do MSBuild; `msBuildExitCode` top-level e compatibilidade transitoria.
 - Em exportacao headless via MSBuild (`Invoke-GeneXusXpzExport.ps1` do motor
   compartilhado) e em qualquer diagnostico de sub-estado de export — incluindo
   classificacao apos exception interna do wrapper, leitura de
