@@ -277,6 +277,30 @@ function Split-NonEmptyLines {
     return ,$result
 }
 
+function New-ExecutionEvidence {
+    param(
+        [object]$MsBuildExitCode,
+        [int]$WrapperExitCode,
+        [string]$StdOutPath,
+        [string]$StdErrPath,
+        [string]$ExecutionLogPath
+    )
+
+    $msBuildFailed = $null
+    if ($null -ne $MsBuildExitCode) {
+        $msBuildFailed = ([int]$MsBuildExitCode -ne 0)
+    }
+
+    return [ordered]@{
+        msBuildExitCode = $MsBuildExitCode
+        msBuildFailed   = $msBuildFailed
+        wrapperExitCode = $WrapperExitCode
+        stdOutPath      = $StdOutPath
+        stdErrPath      = $StdErrPath
+        executionLogPath = $ExecutionLogPath
+    }
+}
+
 function Get-StepSummaries {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
@@ -420,6 +444,12 @@ if ($fixMode) {
                 StdErrPath      = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            executionEvidence = New-ExecutionEvidence `
+                -MsBuildExitCode $null `
+                -WrapperExitCode 30 `
+                -StdOutPath $null `
+                -StdErrPath $null `
+                -ExecutionLogPath $resolvedLogPath
             msBuildExitCode = $null
             stderrContent        = @()
             stderrFilteredNoise  = @()
@@ -494,6 +524,12 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            executionEvidence = New-ExecutionEvidence `
+                -MsBuildExitCode $null `
+                -WrapperExitCode $probeStage.ExitCode `
+                -StdOutPath $null `
+                -StdErrPath $null `
+                -ExecutionLogPath $resolvedLogPath
             msBuildExitCode = $null
             stderrContent        = @()
             stderrFilteredNoise  = @()
@@ -583,6 +619,12 @@ try {
             StdErrPath       = $stdErrPath
             ExecutionLogPath = $resolvedLogPath
         }
+        executionEvidence = New-ExecutionEvidence `
+            -MsBuildExitCode $msBuildExitCode `
+            -WrapperExitCode $scriptExitCode `
+            -StdOutPath $stdOutPath `
+            -StdErrPath $stdErrPath `
+            -ExecutionLogPath $resolvedLogPath
         msBuildExitCode = $msBuildExitCode
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered
         stderrFilteredNoise  = Split-NonEmptyLines -Text $stdErrNoise
@@ -629,6 +671,12 @@ catch {
             StdErrPath       = $null
             ExecutionLogPath = $resolvedLogPath
         }
+        executionEvidence = New-ExecutionEvidence `
+            -MsBuildExitCode $null `
+            -WrapperExitCode 90 `
+            -StdOutPath $null `
+            -StdErrPath $null `
+            -ExecutionLogPath $resolvedLogPath
         msBuildExitCode = $null
         stderrContent        = @()
         stderrFilteredNoise  = @()

@@ -796,6 +796,8 @@ Formato esperado do diagnóstico estruturado:
 - `executionEvidence`
   - registro objetivo da execução quando o wrapper já chamou MSBuild: `msBuildExitCode`, `msBuildFailed`, `wrapperExitCode` e caminhos dos logs brutos quando disponíveis
   - quando o MSBuild falhar sem causa acionável classificada, `blockingReasons` deve conter fallback explícito apontando para `executionEvidence` e logs
+  - `executionEvidence.msBuildExitCode` é o local canônico do código bruto retornado pela task MSBuild; `msBuildExitCode` top-level, quando existir por compatibilidade, deve duplicar esse valor e não deve ser usado como padrão novo
+  - em falha de pós-processamento do wrapper, o diagnóstico degradado deve preservar `executionEvidence` com os dados brutos já coletados antes da falha
 - `warnings`
   - lista de alertas não bloqueantes, quando houver
 - `strategyTrace`

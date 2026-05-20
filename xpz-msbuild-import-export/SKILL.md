@@ -351,9 +351,9 @@ Parâmetros específicos de importação:
    Em exportação full, preferir `-FullExport` quando o wrapper expuser esse atalho.
 10. Se o objetivo for importação real, exigir autorização explícita e ambiente controlado
 11. Capturar e relatar:
-   - `exitCode` — valor classificado pelo wrapper (0/32/41/42/...) combinando `msBuildExitCode` com presença de artefato gerado, `UpdateFile` ou outros sinais; é também o exit code do processo
-   - `msBuildExitCode` — valor bruto da task MSBuild, sem derivação; preservado ao lado de `exitCode` como evidência primária da conclusão da task
-   - `executionEvidence` — evidência bruta da execução (`msBuildExitCode`, `msBuildFailed`, `wrapperExitCode`, logs brutos); `blockingReasons` deve priorizar causas acionáveis e não repetir o exit code bruto quando uma causa específica já existir
+   - `exitCode` — valor classificado pelo wrapper (0/32/41/42/...) combinando o código bruto do MSBuild com presença de artefato gerado, `UpdateFile` ou outros sinais; é também o exit code do processo
+   - `executionEvidence` — evidência bruta da execução (`msBuildExitCode`, `msBuildFailed`, `wrapperExitCode`, logs brutos); `executionEvidence.msBuildExitCode` é o local canônico do código bruto da task MSBuild, e `blockingReasons` deve priorizar causas acionáveis sem repetir o exit code bruto quando uma causa específica já existir
+   - `msBuildExitCode` top-level — compatibilidade transitória quando o wrapper já expõe esse campo; deve duplicar `executionEvidence.msBuildExitCode` e não substitui o bloco canônico
    - `postProcessingFailed` / `postProcessingError` — marca booleana e mensagem quando o pós-processamento do wrapper (parse de stdout, montagem do diagnóstico, serialização JSON ou gravação do log) falhou após o MSBuild já ter rodado
    - `stdoutSignals` com campos semânticos do domínio (ex: `importWarnings`, `exportMarkerFound`/`gxWarnings`) — presente nos scripts de import/export; omitido nos scripts cujos sinais de domínio já fluem por campos próprios (`observedContext`, `propertyValue`, `consistencyResult`)
    - `observedContext.pathEnrichment` — registro preventivo do enriquecimento de `PATH` aplicado pelo wrapper (`applied`, `subdirsAdded`, `subdirsSkipped`)
