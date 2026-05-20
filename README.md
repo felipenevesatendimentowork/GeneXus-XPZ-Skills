@@ -178,6 +178,8 @@ Se você quer entender a base rapidamente:
 - quando `XpzExportadosPelaIDE` ainda não existir, o agente deve perguntar onde o usuário pretende salvar os `.xpz` antes de prosseguir com o processamento
 - no setup inicial da pasta paralela da KB, se o caminho da pasta nativa da KB nao vier informado, o agente deve pedir esse caminho ao usuario antes de concluir o setup
 - no setup inicial da pasta paralela da KB, `kb-source-metadata.md` deve nascer em formato compativel com o motor compartilhado e preservar o campo nominal `last_xpz_materialization_run_at`
+- no setup inicial da pasta paralela da KB, quando a pasta nativa da KB estiver confirmada, a identidade estavel deve ser reconciliada a partir da KB nativa local por `scripts/Resolve-GeneXusKbIdentity.ps1`; campos ausentes em `kb-source-metadata.md` podem ser preenchidos por `scripts/Update-XpzKbSourceMetadataIdentity.ps1` em frente aprovada, preservando os demais metadados
+- `Source` vazio ou incompleto em XPZ pode ser metadado incompleto da propria KB; `Source/@kb` preenchido com GUID de outra KB indica pacote cross-KB e bloqueia importacao headless por agente, encaminhando para avaliacao/importacao manual pela IDE
 - quando `ObjetosDaKbEmXml` ainda não existir, o agente deve tratar isso como KB ainda não materializada e parar antes de assumir qualquer snapshot
 - ao concluir o setup inicial da pasta paralela da KB, o agente deve deixar explicito que a estrutura esta pronta, mas `ObjetosDaKbEmXml` ainda nao foi materializada
 - ao concluir o setup inicial, o agente deve oferecer `A)` exportacao do `.xpz` full pela IDE para `XpzExportadosPelaIDE` ou `B)` geracao do `.xpz` full a partir da pasta nativa da KB via trilha `MSBuild`, seguida de materializacao dos XMLs
@@ -368,6 +370,8 @@ Si quieres entender la base rápidamente:
 - cuando `XpzExportadosPelaIDE` todavía no exista, el agente debe preguntar dónde el usuario pretende guardar los `.xpz` antes de continuar con el procesamiento
 - en el setup inicial de la carpeta paralela de la KB, si el camino de la carpeta nativa de la KB no viene informado, el agente debe pedir ese camino al usuario antes de concluir el setup
 - en el setup inicial de la carpeta paralela de la KB, `kb-source-metadata.md` debe nacer en formato compatible con el motor compartido y preservar el campo nominal `last_xpz_materialization_run_at`
+- en el setup inicial de la carpeta paralela de la KB, cuando la carpeta nativa de la KB este confirmada, la identidad estable debe reconciliarse desde la KB nativa local mediante `scripts/Resolve-GeneXusKbIdentity.ps1`; los campos ausentes en `kb-source-metadata.md` pueden ser completados por `scripts/Update-XpzKbSourceMetadataIdentity.ps1` en una frente aprobada, preservando los demas metadatos
+- `Source` vacio o incompleto en un XPZ puede ser metadata incompleta de la propia KB; `Source/@kb` completado con GUID de otra KB indica paquete cross-KB y bloquea la importacion headless por agente, encaminando a evaluacion/importacion manual por la IDE
 - cuando `ObjetosDaKbEmXml` todavía no exista, el agente debe tratar esto como KB aún no materializada y detenerse antes de asumir cualquier snapshot
 - al concluir el setup inicial de la carpeta paralela de la KB, el agente debe dejar explícito que la estructura está lista, pero `ObjetosDaKbEmXml` todavía no fue materializada
 - al concluir el setup inicial, el agente debe ofrecer `A)` exportación del `.xpz` full por la IDE hacia `XpzExportadosPelaIDE` o `B)` generación del `.xpz` full a partir de la carpeta nativa de la KB por la trilha `MSBuild`, seguida de materialización de los XMLs
@@ -558,6 +562,8 @@ If you want to understand the repository quickly:
 - when `XpzExportadosPelaIDE` does not exist yet, the agent must ask where the user intends to save the `.xpz` files before continuing with processing
 - in the initial setup of the KB parallel folder, if the native KB folder path is not provided, the agent must ask the user for that path before concluding setup
 - in the initial setup of the KB parallel folder, `kb-source-metadata.md` must start in a format compatible with the shared engine and preserve the nominal `last_xpz_materialization_run_at` field
+- in the initial setup of the KB parallel folder, when the native KB folder is confirmed, stable identity must be reconciled from the local native KB through `scripts/Resolve-GeneXusKbIdentity.ps1`; missing fields in `kb-source-metadata.md` may be filled by `scripts/Update-XpzKbSourceMetadataIdentity.ps1` in an approved front, preserving the remaining metadata
+- empty or incomplete `Source` in an XPZ may be incomplete metadata from the KB itself; `Source/@kb` filled with another KB's GUID indicates a cross-KB package and blocks agent-driven headless import, routing the case to manual IDE evaluation/import
 - when `ObjetosDaKbEmXml` does not exist yet, the agent must treat this as a KB not yet materialized and stop before assuming any snapshot
 - when concluding the initial setup of the KB parallel folder, the agent must make it explicit that the structure is ready, but `ObjetosDaKbEmXml` has not yet been materialized
 - when concluding the initial setup, the agent must offer `A)` full `.xpz` export by the IDE into `XpzExportadosPelaIDE` or `B)` full `.xpz` generation from the native KB folder through the `MSBuild` track, followed by XML materialization

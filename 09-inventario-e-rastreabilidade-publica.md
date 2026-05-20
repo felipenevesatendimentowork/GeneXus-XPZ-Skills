@@ -37,7 +37,7 @@ Preservar rastreabilidade da consolidacao, inventario documental, inventario bru
 - `Inferência forte`: esse inventario complementa a validacao de envelope; ele nao transforma a pasta `scripts/` em fonte normativa, mas registra motor compartilhado relevante para rastreabilidade operacional.
 - `Evidência direta`: `scripts/Resolve-GeneXusKbIdentity.ps1` foi incorporado como motor compartilhado somente leitura para resolver identidade estavel da KB nativa local a partir de `model.ini`, `knowledgebase.connection` e banco interno da KB.
 - `Evidência direta`: `scripts/Update-XpzKbSourceMetadataIdentity.ps1` foi incorporado como atualizador conservador e localizado dos campos de identidade estavel em `kb-source-metadata.md`, preenchendo ausentes e bloqueando divergencias nao vazias salvo aprovacao explicita.
-- `Evidência direta`: `scripts/Test-XpzWrapperInventorySelfTest.ps1` foi incorporado como bateria minima de validacao do inventario de wrappers locais, cobrindo casos de gaps, naming curto e customizacao metodologica.
+- `Evidência direta`: `scripts/Test-XpzWrapperInventorySelfTest.ps1` foi incorporado como bateria minima de validacao do inventario de wrappers locais, cobrindo a classificacao `INVENTORY_CUSTOMIZED` por divergencia de `#requires -Version` e a excecao intencional do wrapper de runtime.
 
 ## Nota sobre a skill experimental de MSBuild
 
