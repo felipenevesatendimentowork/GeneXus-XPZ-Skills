@@ -345,3 +345,23 @@ Falhas de posicionamento explícito de versão ou `Environment` devem ser diagno
 - Commit: `f8f811a` (`Alinha bloqueios MSBuild de import export`)
 - Commit: `a3eac08` (`Registra alinhamento MSBuild e ajusta warning`)
 - Scripts afetados: `scripts/Invoke-GeneXusXpzExport.ps1`, `scripts/Invoke-GeneXusXpzImport.ps1`, `scripts/Open-GeneXusKbHeadless.ps1`, `scripts/Test-GeneXusXpzImportPreview.ps1` e, no ajuste residual do commit `a3eac08`, `scripts/Invoke-GeneXusKbBuildAll.ps1`
+
+## Separação entre causas acionáveis e evidência bruta em wrappers MSBuild
+
+**Importância original:** média
+**Status:** concluída em 2026-05-20
+
+### Origem
+
+Após o alinhamento de bloqueios para versão e `Environment` inválidos, os diagnósticos JSON ainda podiam acumular em `blockingReasons` tanto a causa acionável quanto o fato bruto `MSBuild terminou com exitCode N`. Isso preservava evidência, mas tornava a lista de bloqueios mais ruidosa.
+
+### Implementação
+
+- `blockingReasons` passou a priorizar causas acionáveis de decisão.
+- A evidência bruta de execução passou a ser registrada em `executionEvidence`, com `msBuildExitCode`, `msBuildFailed`, `wrapperExitCode` e caminhos dos logs brutos.
+- Quando o MSBuild falha sem causa acionável classificada, o wrapper mantém um bloqueio fallback orientando consultar `executionEvidence` e os logs.
+- A separação foi aplicada aos wrappers `Open-GeneXusKbHeadless.ps1`, `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzImport.ps1`, `Invoke-GeneXusXpzExport.ps1`, `Get-GeneXusKbProperty.ps1`, `Invoke-GeneXusKbSpecifyGenerate.ps1` e `Invoke-GeneXusKbBuildAll.ps1`.
+
+### Critério de aceite
+
+Falha com causa específica não deve duplicar em `blockingReasons` o texto genérico de exit code. O exit bruto deve continuar disponível no JSON, agora em `executionEvidence`.

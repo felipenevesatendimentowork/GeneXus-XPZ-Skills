@@ -892,7 +892,9 @@ try {
     } else {
         $status = 'falha operacional'
         $summary = 'Importação real falhou durante a execução.'
-        Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}.' -f $msBuildExitCode)
+        if ($script:BlockingReasons.Count -eq 0) {
+            Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
+        }
     }
 
     if (-not [string]::IsNullOrWhiteSpace($resolvedUpdateFilePath) -and (Test-Path -LiteralPath $resolvedUpdateFilePath -PathType Leaf)) {
@@ -904,6 +906,13 @@ try {
         summary = $summary
         exitCode = $importExitCode
         msBuildExitCode      = $msBuildExitCode
+        executionEvidence = [ordered]@{
+            msBuildExitCode = $msBuildExitCode
+            msBuildFailed = ($msBuildExitCode -ne 0)
+            wrapperExitCode = $importExitCode
+            StdOutPath = $stdOutPath
+            StdErrPath = $stdErrPath
+        }
         postProcessingFailed = $postProcessingFailed
         postProcessingError  = $postProcessingError
         diagnosticDegraded   = $diagnosticDegraded

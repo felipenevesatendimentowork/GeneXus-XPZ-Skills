@@ -791,7 +791,11 @@ Formato esperado do diagnóstico estruturado:
     - confirmação de que `WorkingDirectory` está fora de `C:\Program Files (x86)`
     - confirmação de que `LogPath` está fora de `C:\Program Files (x86)`
 - `blockingReasons`
-  - lista explícita dos motivos que impediram prosseguir, quando houver
+  - lista explícita dos motivos acionáveis que impediram prosseguir, quando houver
+  - não deve duplicar o valor bruto de exit code quando já houver causa específica; evidência bruta de execução deve ficar em `executionEvidence`
+- `executionEvidence`
+  - registro objetivo da execução quando o wrapper já chamou MSBuild: `msBuildExitCode`, `msBuildFailed`, `wrapperExitCode` e caminhos dos logs brutos quando disponíveis
+  - quando o MSBuild falhar sem causa acionável classificada, `blockingReasons` deve conter fallback explícito apontando para `executionEvidence` e logs
 - `warnings`
   - lista de alertas não bloqueantes, quando houver
 - `strategyTrace`

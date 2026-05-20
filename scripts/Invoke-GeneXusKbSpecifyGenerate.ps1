@@ -868,14 +868,21 @@ try {
         }
     }
 
-    if ($buildStatus.ExitCode -ne 0) {
-        Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
+    if ($buildStatus.ExitCode -ne 0 -and $script:BlockingReasons.Count -eq 0) {
+        Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
     }
 
     $diagnostic = [ordered]@{
         status           = $buildStatus.Status
         summary          = $buildStatus.Summary
         exitCode         = $buildStatus.ExitCode
+        executionEvidence = [ordered]@{
+            msBuildExitCode = $msBuildExitCode
+            msBuildFailed = ($msBuildExitCode -ne 0)
+            wrapperExitCode = $buildStatus.ExitCode
+            StdOutPath = $stdOutPath
+            StdErrPath = $stdErrPath
+        }
         stage            = 'specify-generate'
         requestedContext = [ordered]@{
             VersionName                = $VersionName

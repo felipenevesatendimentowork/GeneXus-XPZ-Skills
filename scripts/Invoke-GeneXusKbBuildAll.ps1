@@ -1494,8 +1494,8 @@ try {
         }
     }
 
-    if ($buildStatus.ExitCode -ne 0) {
-        Add-BlockingReason -Reason ('Execucao MSBuild terminou com exitCode {0}. Status: {1}.' -f $msBuildExitCode, $buildStatus.Status)
+    if ($buildStatus.ExitCode -ne 0 -and $script:BlockingReasons.Count -eq 0) {
+        Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
     }
 
     if ($buildStatus.Status -eq 'reorg necessaria detectada') {
@@ -1511,6 +1511,13 @@ try {
         status           = $buildStatus.Status
         summary          = $buildStatus.Summary
         exitCode         = $buildStatus.ExitCode
+        executionEvidence = [ordered]@{
+            msBuildExitCode = $msBuildExitCode
+            msBuildFailed = ($msBuildExitCode -ne 0)
+            wrapperExitCode = $buildStatus.ExitCode
+            StdOutPath = $stdOutPath
+            StdErrPath = $stdErrPath
+        }
         stage            = 'build-all'
         requestedContext = [ordered]@{
             VersionName                = $VersionName

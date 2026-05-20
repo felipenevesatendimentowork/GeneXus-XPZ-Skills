@@ -495,8 +495,8 @@ try {
 
     $propertyValue = Get-MarkerValue -Text $stdOutText -Marker '__PROP_VALUE__='
 
-    if ($msBuildExitCode -ne 0) {
-        Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}.' -f $msBuildExitCode)
+    if ($msBuildExitCode -ne 0 -and $script:BlockingReasons.Count -eq 0) {
+        Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
     }
 
     if ($msBuildExitCode -eq 0 -and $null -eq $propertyValue) {
@@ -515,6 +515,13 @@ try {
         status        = $status
         summary       = $summary
         exitCode      = $operationExitCode
+        executionEvidence = [ordered]@{
+            msBuildExitCode = $msBuildExitCode
+            msBuildFailed = ($msBuildExitCode -ne 0)
+            wrapperExitCode = $operationExitCode
+            StdOutPath = $stdOutPath
+            StdErrPath = $stdErrPath
+        }
         level         = $Level
         target        = if ([string]::IsNullOrWhiteSpace($Target)) { $null } else { $Target }
         propertyName  = $Name

@@ -858,9 +858,11 @@ try {
     }
 
     if ($exportExitCode -ne 0) {
-        Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}.' -f $msBuildExitCode)
         if ($stdOutText -match "A versão '([^']+)' não existe") {
             Add-BlockingReason -Reason ("SetActiveVersion rejeitou VersionName '$($Matches[1])' — provavel incompatibilidade entre nome descritivo retornado por GetVersionProperty e identificador aceito pela task; para exportar da versao ativa, omitir -VersionName.")
+        }
+        if ($script:BlockingReasons.Count -eq 0) {
+            Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
         }
     }
 
@@ -879,6 +881,13 @@ try {
         summary = $summary
         exitCode = $exportExitCode
         msBuildExitCode      = $msBuildExitCode
+        executionEvidence = [ordered]@{
+            msBuildExitCode = $msBuildExitCode
+            msBuildFailed = ($msBuildExitCode -ne 0)
+            wrapperExitCode = $exportExitCode
+            StdOutPath = $stdOutPath
+            StdErrPath = $stdErrPath
+        }
         postProcessingFailed = $postProcessingFailed
         postProcessingError  = $postProcessingError
         stage = 'export'

@@ -48,6 +48,7 @@ Preservar rastreabilidade da consolidacao, inventario documental, inventario bru
 - `Evidência direta`: essa skill tambem ja inclui a implementacao inicial de `scripts/Invoke-GeneXusXpzExport.ps1` para exportacao headless de `XPZ` com parametros explicitos.
 - `Evidência direta`: essa skill tambem ja inclui a implementacao inicial de `scripts/Invoke-GeneXusXpzImport.ps1` para importacao real de `XPZ` com parametros explicitos.
 - `Evidência direta`: wrappers MSBuild headless passaram a registrar o enriquecimento preventivo de `PATH` em `observedContext.pathEnrichment`, com `applied`, `subdirsAdded` e `subdirsSkipped`.
+- `Evidência direta`: wrappers MSBuild headless passaram a separar causas acionaveis em `blockingReasons` da evidencia bruta de execucao em `executionEvidence`.
 - `Evidência direta`: `Open-GeneXusKbHeadless.ps1` foi validado com uma KB de teste sanitizada (`KB_Teste_A`), com `EnvironmentName=NETSQLServer`.
 - `Evidência direta`: `Test-GeneXusXpzImportPreview.ps1` foi validado com um `XPZ` full exportado nessa mesma KB sanitizada.
 - `Evidência direta`: o `PreviewMode` executado nessa validacao nao alterou a KB.

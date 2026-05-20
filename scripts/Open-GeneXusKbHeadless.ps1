@@ -458,14 +458,21 @@ try {
     $status = if ($operationExitCode -eq 0) { 'sucesso operacional' } else { 'falha operacional' }
     $summary = if ($operationExitCode -eq 0) { 'Abertura headless da KB concluída e contexto ativo consultado.' } else { 'Abertura headless da KB falhou durante a execução do MSBuild.' }
 
-    if ($operationExitCode -ne 0) {
-        Add-BlockingReason -Reason ('Execução MSBuild terminou com exitCode {0}.' -f $msBuildExitCode)
+    if ($operationExitCode -ne 0 -and $script:BlockingReasons.Count -eq 0) {
+        Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
     }
 
     $diagnostic = [ordered]@{
         status = $status
         summary = $summary
         exitCode = $operationExitCode
+        executionEvidence = [ordered]@{
+            msBuildExitCode = $msBuildExitCode
+            msBuildFailed = ($msBuildExitCode -ne 0)
+            wrapperExitCode = $operationExitCode
+            StdOutPath = $stdOutPath
+            StdErrPath = $stdErrPath
+        }
         stage = 'open-kb'
         requestedContext = [ordered]@{
             VersionName = $VersionName
