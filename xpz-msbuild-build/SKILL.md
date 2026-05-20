@@ -780,6 +780,8 @@ Campos relevantes:
 - [ ] `Invoke-GeneXusDbImpact.ps1` foi executado antes de `Invoke-GeneXusDbReorg.ps1` quando o objetivo era inspecionar o impacto
 - [ ] `Invoke-GeneXusDbReorg.ps1` recebeu confirmação interativa explícita, mesmo quando precedida de `ImpactDatabaseOnly`
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
+- [ ] `executionEvidence.msBuildExitCode` foi registrado como local canônico do valor bruto da task MSBuild; `msBuildExitCode` top-level, quando existir, foi tratado apenas como compatibilidade transitória e duplicação do valor canônico
+- [ ] `observedContext.pathEnrichment` registrou o enriquecimento preventivo do `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`)
 - [ ] O resultado foi classificado em categoria explícita
 - [ ] Sucesso operacional foi separado de confirmação funcional
 - [ ] Quando a frente foi descrita por fluxo funcional ("o objeto que X", "a tela que abre ao Y", "o objeto chamado quando Z") em vez de referência direta ao nome, foi confirmado que o objeto em `importedItems` é o alvo executado pelo fluxo descrito antes de declarar a frente encerrada — independente do tipo de objeto
