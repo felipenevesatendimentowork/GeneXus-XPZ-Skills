@@ -772,7 +772,7 @@ try {
     # GeneXus 18 grava exatamente 3 linhas "context [anonymous] N:N attribute component
     # isn't defined" no stderr durante SpecifyAll — ruído sistêmico do modo headless;
     # a IDE absorve sem registrar. Filtrar antes de classificar.
-    $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFilteredNoise = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }) -join "`n"
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
     # Ruido estrutural do dotnet publish em Program Files\GAM\Platforms\NetCore*.

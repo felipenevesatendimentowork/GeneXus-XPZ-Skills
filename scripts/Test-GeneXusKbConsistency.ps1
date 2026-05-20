@@ -534,7 +534,7 @@ try {
 
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
-    $stdErrNoise    = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrNoise    = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }) -join "`n"
     $stdErrFiltered = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
     $consistencyResult = Build-ConsistencyResult -StdOutText $stdOutText -MsBuildExitCode $msBuildExitCode
