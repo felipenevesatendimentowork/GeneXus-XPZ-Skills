@@ -265,7 +265,7 @@ $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 $agentSemanticChecklist = @(
     'Identificar termos, scripts, wrappers, parametros, estados, caminhos e regras novos ou alterados no diff',
     'Buscar esses termos no repositorio inteiro',
-    'Comparar README.md, 02-regras-operacionais-e-runtime.md, 08-guia-para-agente-gpt.md, skills correlatas, examples/ e scripts/',
+    'Comparar README.md, 02-regras-operacionais-e-runtime.md, 08-guia-para-agente-gpt.md, skills correlatas, exemplos canonicos *.example.ps1 nas skills afetadas (hoje principalmente xpz-kb-parallel-setup/examples/; nao ha examples/ na raiz) e scripts/',
     'Para cada SKILL.md alterada, varrer no mesmo arquivo: checklist final, fluxo/captura de resultado e inventario de scripts ou blocos de contrato por script',
     'Reportar gaps confirmados, flags descartados com justificativa e areas nao cobertas pela busca'
 )

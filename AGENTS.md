@@ -66,7 +66,7 @@ Para cada frente alterada:
    - `README.md`
    - `02-regras-operacionais-e-runtime.md`
    - `08-guia-para-agente-gpt.md`
-   - exemplos em `examples/`
+   - exemplos canônicos `*.example.ps1` nas skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`; não há `examples/` na raiz)
    - scripts compartilhados em `scripts/`
 4. Confirmar se há:
    - documentação antiga que contradiz a nova
