@@ -40,7 +40,7 @@ Além dessa base principal, a raiz também pode conter documentação operaciona
 - `07-open-points-e-checklist.md`
 - `08-guia-para-agente-gpt.md`
 - `09-inventario-e-rastreabilidade-publica.md`
-- `10-base-operacional-msbuild-headless.md`: base operacional da trilha MSBuild headless, usada pela skill `xpz-msbuild-import-export`
+- `10-base-operacional-msbuild-headless.md`: base operacional da trilha MSBuild headless, usada pelas skills `xpz-msbuild-import-export` e `xpz-msbuild-build`
 
 Os arquivos `10-matriz-part-types-por-tipo.md`, `11-campos-estaveis-vs-variaveis.md` e `12-diffs-estruturais-por-tipo.md` sao stubs de compatibilidade retroativa: cada um redireciona para o equivalente na serie `01` (`01b`, `01c`, `01d`). Nao contem conteudo proprio e nao devem ser usados como fonte direta.
 
@@ -232,7 +232,7 @@ Además de esa base principal, la raíz también puede contener documentación o
 - `07-open-points-e-checklist.md`
 - `08-guia-para-agente-gpt.md`
 - `09-inventario-e-rastreabilidade-publica.md`
-- `10-base-operacional-msbuild-headless.md`: base operacional de la trilha MSBuild headless, usada por la skill `xpz-msbuild-import-export`
+- `10-base-operacional-msbuild-headless.md`: base operacional de la trilha MSBuild headless, usada por las skills `xpz-msbuild-import-export` y `xpz-msbuild-build`
 
 Los archivos `10-matriz-part-types-por-tipo.md`, `11-campos-estaveis-vs-variaveis.md` y `12-diffs-estruturais-por-tipo.md` son stubs de compatibilidad retroactiva: cada uno redirige al equivalente en la serie `01` (`01b`, `01c`, `01d`). No contienen contenido propio y no deben usarse como fuente directa.
 
@@ -424,7 +424,7 @@ In addition to that main base, the root may also contain complementary operation
 - `07-open-points-e-checklist.md`
 - `08-guia-para-agente-gpt.md`
 - `09-inventario-e-rastreabilidade-publica.md`
-- `10-base-operacional-msbuild-headless.md`: operational base for the headless MSBuild trail, used by the `xpz-msbuild-import-export` skill
+- `10-base-operacional-msbuild-headless.md`: operational base for the headless MSBuild trail, used by the `xpz-msbuild-import-export` and `xpz-msbuild-build` skills
 
 The files `10-matriz-part-types-por-tipo.md`, `11-campos-estaveis-vs-variaveis.md`, and `12-diffs-estruturais-por-tipo.md` are backward-compatibility stubs: each one redirects to its equivalent in the `01` series (`01b`, `01c`, `01d`). They contain no content of their own and must not be used as a direct source.
 

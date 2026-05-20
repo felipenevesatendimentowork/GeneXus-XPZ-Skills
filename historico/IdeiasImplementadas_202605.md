@@ -308,6 +308,7 @@ O caso reproduzível usava `EnvironmentName='NETFrameworkPostgreSQL'`, que era n
 - `scripts/Invoke-GeneXusKbBuildAll.ps1` passou a detectar falha de `Set Active Environment` no stdout.
 - O wrapper extrai o environment ausente e o environment ativo quando disponíveis, emitindo `blockingReasons` específico para `SetActiveEnvironment`.
 - O `Join` frágil no filtro de ruído de stderr foi trocado por expressão array-safe com `@(...) -join`, evitando exceção quando a coleção vem vazia.
+- A correção de `Join` frágil também foi aplicada aos wrappers `scripts/Get-GeneXusKbProperty.ps1`, `scripts/Invoke-GeneXusKbSpecifyGenerate.ps1`, `scripts/Open-GeneXusKbHeadless.ps1` e `scripts/Test-GeneXusKbConsistency.ps1`.
 
 ### Critério de aceite
 
@@ -316,4 +317,5 @@ Falha inicial por environment inexistente deve ser classificada com causa operac
 ### Rastreabilidade
 
 - Commit: `d3be871` (`Corrige classificação de environment inválido no BuildAll`)
-- Script afetado: `scripts/Invoke-GeneXusKbBuildAll.ps1`
+- Commit: `94cb81c` (`Corrige Join frágil em wrappers MSBuild`)
+- Scripts afetados: `scripts/Invoke-GeneXusKbBuildAll.ps1`; para `Join` frágil, também `scripts/Get-GeneXusKbProperty.ps1`, `scripts/Invoke-GeneXusKbSpecifyGenerate.ps1`, `scripts/Open-GeneXusKbHeadless.ps1` e `scripts/Test-GeneXusKbConsistency.ps1`

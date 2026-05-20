@@ -2,7 +2,7 @@
 
 ## Status
 
-Documento base de uso operacional da skill `xpz-msbuild-import-export`.
+Documento base de uso operacional compartilhado da trilha MSBuild headless, usado pelas skills `xpz-msbuild-import-export` e `xpz-msbuild-build`.
 
 Já existe um `SKILL.md` materializado em `xpz-msbuild-import-export/SKILL.md`, apto para uso sob demanda em pasta paralela de KB GeneXus, com operação controlada e limites explícitos.
 
@@ -26,7 +26,7 @@ Este documento é par de `02-regras-operacionais-e-runtime.md`, não downstream 
 
 ## Objetivo
 
-Consolidar as diretrizes operacionais, restrições, riscos conhecidos e evidências de validação da skill dedicada à importação e exportação de `XPZ` do GeneXus por automação headless baseada em `MSBuild`, sem depender da operação manual pela IDE.
+Consolidar as diretrizes operacionais, restrições, riscos conhecidos e evidências de validação da trilha MSBuild headless: importação/exportação de `XPZ` e build/geração do GeneXus por automação baseada em `MSBuild`, sem depender da operação manual pela IDE.
 
 ## Escopo Operacional Atual
 

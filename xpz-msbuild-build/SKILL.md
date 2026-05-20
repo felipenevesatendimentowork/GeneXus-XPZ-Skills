@@ -127,6 +127,10 @@ Do NOT use esta skill para:
 - Nunca inferir ou alterar configuração sem instrução explícita
 - Validar explicitamente `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory`,
   `LogPath` e `Genexus.Tasks.targets` antes de qualquer build
+- Quando `SetActiveVersion` ou `SetActiveEnvironment` falhar, tratar como bloqueio
+  operacional explícito: a versão ou o `Environment` solicitado não existe na KB. O
+  diagnóstico deve orientar omitir `-VersionName` ou `-EnvironmentName` para usar o
+  contexto ativo, quando esse for o objetivo.
 
 ---
 
@@ -178,6 +182,10 @@ WORKFLOW e nota de comportamento crítico abaixo.
 - `-WorkingDirectory` (obrigatório)
 - `-LogPath` (obrigatório)
 - `-VerboseLog` (opcional)
+
+Se `-VersionName` ou `-EnvironmentName` for informado com valor inválido para a KB, o
+wrapper deve detectar a falha de `SetActiveVersion`/`SetActiveEnvironment`, emitir
+`blockingReasons` específico e orientar omitir o parâmetro para usar o contexto ativo.
 
 **Parâmetros específicos:**
 
