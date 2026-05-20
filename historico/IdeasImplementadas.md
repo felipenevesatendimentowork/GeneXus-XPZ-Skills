@@ -16,7 +16,7 @@ Investigacao iniciada em 2026-05-17 a partir de relato da pasta paralela `C:\Dev
 - `scripts/Resolve-GeneXusKbIdentity.ps1`: motor compartilhado somente leitura para resolver identidade estavel da KB nativa local.
 - `scripts/Update-XpzKbSourceMetadataIdentity.ps1`: atualizador conservador dos campos de identidade estavel em `kb-source-metadata.md`, preenchendo ausentes e bloqueando divergencias nao vazias sem aprovacao explicita.
 - `xpz-kb-parallel-setup/examples/Resolve-KbIdentity.example.ps1`: wrapper sanitizado para reconstrucao local controlada.
-- `xpz-kb-parallel-setup/SKILL.md`: setup inicial com KB nativa confirmada deve resolver identidade antes de declarar `kb-source-metadata.md` apto; re-setup/auditoria trata divergencia como finding e usa o atualizador somente em frente aprovada.
+- `xpz-kb-parallel-setup/SKILL.md`: setup inicial com KB nativa confirmada deve resolver identidade antes de declarar `kb-source-metadata.md` apto; metadata ausente, incompleto ou ilegivel e bloqueado pelos gates de metadata; divergencia preenchida contra a KB nativa ficou registrada como frente futura em `999-ideias-pendentes.md`; correcao de campos ausentes ou divergentes usa o atualizador somente em frente aprovada.
 - `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `README.md`, `09-inventario-e-rastreabilidade-publica.md`, `xpz-builder/SKILL.md` e `xpz-msbuild-import-export/SKILL.md`: regras alinhadas para autoridade de campo, bloqueio cross-KB e rastreabilidade operacional.
 
 ### Decisao final
