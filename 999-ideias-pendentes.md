@@ -1632,6 +1632,48 @@ Após import real bem-sucedido na KB nativa, o JSON do wrapper precisa expor de 
 - Skill `xpz-sync` — receptora natural da próxima ação sugerida.
 - `kb-source-metadata.md` — fonte canônica para localizar pasta paralela e índice.
 
+## Auditoria de drift de identidade estável da KB
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** revisão crítica pós-fechamento da frente `Resolve-GeneXusKbIdentity` em 2026-05-20. A frente original de preenchimento de metadata vazio foi movida para `historico/IdeasImplementadas.md`; esta é uma frente nova, limitada a auditoria de drift quando o metadata já está preenchido.
+
+### Problema concreto
+
+A auditoria atual detecta `kb-source-metadata.md` ausente, campos críticos vazios, GUID inválido e wrapper `Get-*KbMetadata.ps1` incapaz de expor os campos documentados. Isso cobre metadata incompleto ou quebrado.
+
+Ela não prova, porém, que identidade preenchida e sintaticamente válida ainda corresponde à KB nativa local atual. Casos possíveis:
+
+- GUID antigo depois de recriar, mover ou substituir a KB nativa
+- `kb-source-metadata.md` copiado de outra pasta paralela
+- `username` ou `UNCPath` defasados, com GUID ainda válido
+- valores preenchidos manualmente no passado
+
+Nesses casos, `Test-XpzKbMetadataWrapper.ps1` pode retornar `METADATA_WRAPPER_OK`, porque compara o wrapper contra o próprio `kb-source-metadata.md`; `Test-XpzSetupAudit.ps1` propaga essa dimensão, mas não chama `Resolve-GeneXusKbIdentity.ps1` para comparar metadata gravado contra identidade resolvida agora.
+
+### Direção de investigação
+
+Adicionar uma comparação somente leitura de identidade estável ao fluxo de auditoria, sem transformar `Resolve` em fallback ad hoc de `xpz-sync`, `xpz-builder` ou import MSBuild.
+
+Alternativas a avaliar:
+
+- estender `scripts/Test-XpzSetupAudit.ps1` para executar uma comparação read-only quando houver caminho de KB nativa local confiável
+- criar gate dedicado, por exemplo `scripts/Test-XpzKbIdentityDrift.ps1`
+- reaproveitar `scripts/Update-XpzKbSourceMetadataIdentity.ps1 -WhatIf` se a saída for suficientemente estável e legível para auditoria
+
+### Critério de aceite
+
+Uma pasta com `kb-source-metadata.md` preenchido, wrappers de metadata OK e identidade divergente da KB nativa local deve produzir finding explícito de drift de identidade. A correção automática continua proibida: preenchimento ou sobrescrita de campos deve seguir por frente aprovada de reconciliação via `Update-XpzKbSourceMetadataIdentity.ps1`.
+
+### Relacionado
+
+- `historico/IdeasImplementadas.md` — caso concluído de preenchimento de metadata a partir da KB nativa quando o XPZ vem com `Source` vazio
+- `scripts/Resolve-GeneXusKbIdentity.ps1`
+- `scripts/Update-XpzKbSourceMetadataIdentity.ps1`
+- `scripts/Test-XpzSetupAudit.ps1`
+- `scripts/Test-XpzKbMetadataWrapper.ps1`
+
 ## Dry-run com diff unificado padronizado em scripts de escrita XPZ
 
 **Importância:** média
