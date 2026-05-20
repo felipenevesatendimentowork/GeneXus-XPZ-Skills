@@ -1376,13 +1376,21 @@ try {
 
     # Detecta falha de SetActiveVersion (versão informada não existe na KB)
     $setVersionFailed = [bool]($stdOutText -match 'Set Active Version falhou')
+    $setEnvironmentFailed = [bool]($stdOutText -match 'Set Active Environment falhou')
 
     $activeVersionOutput     = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
     $activeEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'"
+    $missingEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "Ambiente '([^']+)' n[aã]o existe"
 
     if ($setVersionFailed) {
         $actualVersion = if (-not [string]::IsNullOrWhiteSpace($activeVersionOutput)) { $activeVersionOutput } else { '(desconhecida)' }
         Add-BlockingReason -Reason ("SetActiveVersion falhou — a versao '{0}' nao existe nesta KB. A versao ativa no momento da abertura era '{1}'. Para usar a versao ativa, omita o parametro -VersionName." -f $VersionName, $actualVersion)
+    }
+
+    if ($setEnvironmentFailed) {
+        $actualEnvironment = if (-not [string]::IsNullOrWhiteSpace($activeEnvironmentOutput)) { $activeEnvironmentOutput } else { '(desconhecido)' }
+        $requestedEnvironment = if (-not [string]::IsNullOrWhiteSpace($missingEnvironmentOutput)) { $missingEnvironmentOutput } else { $EnvironmentName }
+        Add-BlockingReason -Reason ("SetActiveEnvironment falhou — o Environment '{0}' nao existe nesta KB. O Environment ativo no momento da abertura era '{1}'. Para usar o Environment ativo, omita o parametro -EnvironmentName." -f $requestedEnvironment, $actualEnvironment)
     }
 
     if (-not [string]::IsNullOrWhiteSpace($VersionName) -and [string]::IsNullOrWhiteSpace($activeVersionOutput) -and -not $setVersionFailed) {
@@ -1405,7 +1413,7 @@ try {
     # O GeneXus nao conta isso como erro: stdout reporta "0 avisos, 0 erros".
     # Evidencia empirica: FabricaBrasil18 e wsEducacaoSpTeste em 2026-05-10, sempre 3x,
     # mesma posicao, independente do conteudo da KB. Filtrar antes de classificar.
-    $stdErrFilteredNoise = [string]::Join("`n", ([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }))
+    $stdErrFilteredNoise = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }) -join "`n"
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
     # Ruido estrutural do dotnet publish em Program Files\GAM\Platforms\NetCore*.
