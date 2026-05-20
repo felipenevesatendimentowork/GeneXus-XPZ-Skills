@@ -78,6 +78,7 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 - `03-risco-e-decisao-por-tipo.md`
 - `07-open-points-e-checklist.md`
 - `08-guia-para-agente-gpt.md`
+- `10-base-operacional-msbuild-headless.md`
 
 ## Ordem recomendada de leitura
 
@@ -92,6 +93,8 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 9. `07-open-points-e-checklist.md`
 10. `08-guia-para-agente-gpt.md`
 11. `09-inventario-e-rastreabilidade-publica.md`
+
+`10-base-operacional-msbuild-headless.md`: leitura obrigatória quando a frente envolver importação, exportação, build, geração ou validação por `MSBuild` headless.
 
 `06-padroes-de-objeto-e-nomenclatura.md`: leitura suplementar — indicado quando a duvida envolver nomenclatura de objetos, prefixos de tipo ou comportamento de `Folder` vs `Module` no `fullyQualifiedName`.
 

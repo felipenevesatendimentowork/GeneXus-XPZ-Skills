@@ -110,6 +110,7 @@ Do NOT use esta skill para:
 - Tratar `Get*Property` como operação de leitura segura, sem efeito sobre a KB
 - Não usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName` em exportação ou importação; esse valor é o nome descritivo da versão (ex: `"Design"`), não o identificador aceito por `SetActiveVersion` (ex: `"wsEducacaoSpTeste"`); para obter o identificador compatível, usar `GetActiveVersion`
 - Não usar o valor retornado por `GetEnvironmentProperty -Name Name` como `-EnvironmentName` pelo mesmo motivo; usar `GetActiveEnvironment` para obter o identificador ativo compatível
+- Quando `SetActiveVersion` ou `SetActiveEnvironment` falhar, tratar como bloqueio operacional explícito: a versão ou o `Environment` solicitado não existe na KB. O diagnóstico deve orientar omitir `-VersionName` ou `-EnvironmentName` para usar o contexto ativo, quando esse for o objetivo.
 - Validar `-Level` e `-Name` explicitamente antes de emitir a task; exigir `-Target`
   quando `-Level` for `Generator`, `DataStore` ou `Object`
 - Nunca inferir o nome da propriedade; sempre exigir `-Name` explícito

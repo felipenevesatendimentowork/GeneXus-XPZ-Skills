@@ -425,6 +425,12 @@ function New-MsBuildProjectContent {
     <OpenKnowledgeBase Directory="`$(KBPath)" />
     <SetActiveVersion Condition="'`$(KBVersion)' != ''" VersionName="`$(KBVersion)" />
     <SetActiveEnvironment Condition="'`$(KBEnvironment)' != ''" EnvironmentName="`$(KBEnvironment)" />
+    <GetActiveVersion CaptureOutput="true">
+      <Output TaskParameter="TaskOutput" PropertyName="ActiveVersionOutput" />
+    </GetActiveVersion>
+    <GetActiveEnvironment CaptureOutput="true">
+      <Output TaskParameter="TaskOutput" PropertyName="ActiveEnvironmentOutput" />
+    </GetActiveEnvironment>
     <Import
       File="`$(XPZPath)"
       AutomaticBackup="`$(AutomaticBackup)"
@@ -434,6 +440,8 @@ function New-MsBuildProjectContent {
       <Output TaskParameter="ImportedItems" ItemName="ImportedItem" />
     </Import>
     <Message Text="__IMPORTED_ITEM__=%(ImportedItem.Identity)" Importance="High" Condition="'@(ImportedItem)' != ''" />
+    <Message Text="__ACTIVE_VERSION__=`$(ActiveVersionOutput)" Importance="High" />
+    <Message Text="__ACTIVE_ENVIRONMENT__=`$(ActiveEnvironmentOutput)" Importance="High" />
     <CloseKnowledgeBase />
     <OnError ExecuteTargets="CloseOnError" />
   </Target>
@@ -504,6 +512,19 @@ function Get-MatchingLines {
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and $_.Trim().StartsWith($Prefix, [System.StringComparison]::OrdinalIgnoreCase) } |
             ForEach-Object { $_.Trim().Substring($Prefix.Length) }
     )
+}
+
+function Get-RegexValue {
+    param(
+        [string]$Text,
+        [string]$Pattern
+    )
+
+    $match = [regex]::Match($Text, $Pattern)
+    if (-not $match.Success -or $match.Groups.Count -lt 2) {
+        return $null
+    }
+    return $match.Groups[1].Value.Trim()
 }
 
 function Get-PreviewExitCode {
@@ -767,6 +788,24 @@ try {
         Add-StrategyTrace -Message $diagnosticDegradedReason
     }
 
+    $setVersionFailed     = [bool]($stdOutText -match 'Set Active Version falhou')
+    $setEnvironmentFailed = [bool]($stdOutText -match 'Set Active Environment falhou')
+
+    $activeVersionOutput      = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
+    $activeEnvironmentOutput  = Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'"
+    $missingEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "Ambiente '([^']+)' n[aã]o existe"
+
+    if ($setVersionFailed) {
+        $actualVersion = if (-not [string]::IsNullOrWhiteSpace($activeVersionOutput)) { $activeVersionOutput } else { '(desconhecida)' }
+        Add-BlockingReason -Reason ("SetActiveVersion falhou — a versao '{0}' nao existe nesta KB. A versao ativa no momento da abertura era '{1}'. Para usar a versao ativa, omita o parametro -VersionName." -f $VersionName, $actualVersion)
+    }
+
+    if ($setEnvironmentFailed) {
+        $actualEnvironment = if (-not [string]::IsNullOrWhiteSpace($activeEnvironmentOutput)) { $activeEnvironmentOutput } else { '(desconhecido)' }
+        $requestedEnvironment = if (-not [string]::IsNullOrWhiteSpace($missingEnvironmentOutput)) { $missingEnvironmentOutput } else { $EnvironmentName }
+        Add-BlockingReason -Reason ("SetActiveEnvironment falhou — o Environment '{0}' nao existe nesta KB. O Environment ativo no momento da abertura era '{1}'. Para usar o Environment ativo, omita o parametro -EnvironmentName." -f $requestedEnvironment, $actualEnvironment)
+    }
+
     $previewExitCode = Get-PreviewExitCode -MsBuildExitCode $msBuildExitCode -StdOutText $stdOutText -StdErrText $stdErrText -ResolvedUpdateFilePath $resolvedUpdateFilePath
     if ($previewExitCode -eq 0) {
         if ($postProcessingFailed) {
@@ -815,6 +854,10 @@ try {
             ImportKbInformation = $ImportKbInformation
             IncludeItems = $IncludeItems
             ExcludeItems = $ExcludeItems
+        }
+        observedContext = [ordered]@{
+            ActiveVersion = $activeVersionOutput
+            ActiveEnvironment = $activeEnvironmentOutput
         }
         artifacts = [ordered]@{
             ProbeLogPath = $probeLogPath

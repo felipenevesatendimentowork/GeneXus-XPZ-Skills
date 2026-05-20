@@ -862,6 +862,24 @@ try {
         Add-StrategyTrace -Message $diagnosticDegradedReason
     }
 
+    $setVersionFailed     = [bool]($stdOutText -match 'Set Active Version falhou')
+    $setEnvironmentFailed = [bool]($stdOutText -match 'Set Active Environment falhou')
+
+    $activeVersionOutput      = Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'"
+    $activeEnvironmentOutput  = Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'"
+    $missingEnvironmentOutput = Get-RegexValue -Text $stdOutText -Pattern "Ambiente '([^']+)' n[aã]o existe"
+
+    if ($setVersionFailed) {
+        $actualVersion = if (-not [string]::IsNullOrWhiteSpace($activeVersionOutput)) { $activeVersionOutput } else { '(desconhecida)' }
+        Add-BlockingReason -Reason ("SetActiveVersion falhou — a versao '{0}' nao existe nesta KB. A versao ativa no momento da abertura era '{1}'. Para usar a versao ativa, omita o parametro -VersionName." -f $VersionName, $actualVersion)
+    }
+
+    if ($setEnvironmentFailed) {
+        $actualEnvironment = if (-not [string]::IsNullOrWhiteSpace($activeEnvironmentOutput)) { $activeEnvironmentOutput } else { '(desconhecido)' }
+        $requestedEnvironment = if (-not [string]::IsNullOrWhiteSpace($missingEnvironmentOutput)) { $missingEnvironmentOutput } else { $EnvironmentName }
+        Add-BlockingReason -Reason ("SetActiveEnvironment falhou — o Environment '{0}' nao existe nesta KB. O Environment ativo no momento da abertura era '{1}'. Para usar o Environment ativo, omita o parametro -EnvironmentName." -f $requestedEnvironment, $actualEnvironment)
+    }
+
     $importExitCode = Get-ImportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedUpdateFilePath $resolvedUpdateFilePath
     if ($importExitCode -eq 0) {
         if ($postProcessingFailed) {
@@ -903,8 +921,8 @@ try {
             ExcludeItems = $ExcludeItems
         }
         observedContext = [ordered]@{
-            ActiveVersion = (Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'")
-            ActiveEnvironment = (Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'")
+            ActiveVersion = $activeVersionOutput
+            ActiveEnvironment = $activeEnvironmentOutput
             OpenOutput = (Get-MarkerValue -Text $stdOutText -Marker '__OPEN_OUTPUT__=')
             pathEnrichment = $script:PathEnrichment
         }
