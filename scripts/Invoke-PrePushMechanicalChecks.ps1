@@ -10,6 +10,8 @@
 
     Nao substitui busca de coerencia cruzada, regra em camadas de skills longas
     nem relatorio final ao usuario — ver AGENTS.md secao "Revisao pre-push".
+    Emite avisos informativos se a branch nao for main ou se a working tree
+    tiver alteracoes nao commitadas fora do intervalo BaseRef..HEAD.
 
 .PARAMETER RootPath
     Raiz do repositorio. Default: pai de scripts/.
@@ -179,6 +181,55 @@ function Add-ChangedFilesByKind {
     return $byKind
 }
 
+function Get-WorkingTreeDiagnostics {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepositoryRoot,
+
+        [int]$MaxSamplePaths = 15
+    )
+
+    $statusResult = Invoke-RepoGit -RepositoryRoot $RepositoryRoot -Arguments @('status', '--porcelain')
+    if ($statusResult.ExitCode -ne 0) {
+        throw ("Falha ao ler working tree (git status --porcelain). Detalhe: {0}" -f $statusResult.Text)
+    }
+
+    $untrackedFiles = [System.Collections.Generic.List[string]]::new()
+    $dirtyTrackedFiles = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($line in @($statusResult.Lines)) {
+        if ([string]::IsNullOrWhiteSpace($line) -or $line.Length -lt 4) {
+            continue
+        }
+
+        $status = $line.Substring(0, 2)
+        $path = $line.Substring(3).Trim()
+        if ($path -match ' -> ') {
+            $path = ($path -split ' -> ', 2)[1].Trim()
+        }
+
+        if ($status -eq '??') {
+            [void]$untrackedFiles.Add($path)
+        } else {
+            [void]$dirtyTrackedFiles.Add($path)
+        }
+    }
+
+    $untrackedAll = @($untrackedFiles)
+    $dirtyTrackedAll = @($dirtyTrackedFiles)
+    $isClean = ($untrackedAll.Count -eq 0 -and $dirtyTrackedAll.Count -eq 0)
+
+    return [pscustomobject]@{
+        Status              = $(if ($isClean) { 'clean' } else { 'dirty' })
+        UntrackedCount      = $untrackedAll.Count
+        DirtyTrackedCount   = $dirtyTrackedAll.Count
+        UntrackedFiles      = @($untrackedAll | Select-Object -First $MaxSamplePaths)
+        DirtyTrackedFiles   = @($dirtyTrackedAll | Select-Object -First $MaxSamplePaths)
+        UntrackedTruncated  = ($untrackedAll.Count -gt $MaxSamplePaths)
+        DirtyTrackedTruncated = ($dirtyTrackedAll.Count -gt $MaxSamplePaths)
+    }
+}
+
 $startPath = (Resolve-Path -LiteralPath $RootPath).Path
 $gitContext = Resolve-GitRepositoryContext -StartPath $startPath
 $resolvedRoot = $gitContext.RepositoryRoot
@@ -189,6 +240,10 @@ if ($branchResult.ExitCode -ne 0) {
     throw 'Nao foi possivel resolver a branch atual.'
 }
 $currentBranch = $branchResult.Lines[0].Trim()
+
+$expectedBranch = 'main'
+$onExpectedBranch = ($currentBranch -ceq $expectedBranch)
+$workingTree = Get-WorkingTreeDiagnostics -RepositoryRoot $resolvedRoot
 
 $upstreamResult = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-parse', '--abbrev-ref', '@{upstream}')
 $upstreamRef = $null
@@ -296,6 +351,18 @@ $agentOperationalReminders = @(
     'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos.'
 )
 
+$agentWarnings = [System.Collections.Generic.List[string]]::new()
+if (-not $onExpectedBranch) {
+    [void]$agentWarnings.Add(
+        ("Branch atual e '{0}'; este repositorio espera trabalho direto em {1}." -f $currentBranch, $expectedBranch)
+    )
+}
+if ($workingTree.Status -ne 'clean') {
+    [void]$agentWarnings.Add(
+        'Working tree com alteracoes fora do intervalo BaseRef..HEAD; o diff de commits nao cobre modificacoes nao commitadas.'
+    )
+}
+
 $agentSemanticChecklist = @(
     'Identificar termos, scripts, wrappers, parametros, estados, caminhos e regras novos ou alterados no diff',
     'Buscar esses termos no repositorio inteiro',
@@ -311,6 +378,17 @@ $result = [ordered]@{
         repositoryRoot      = $resolvedRoot
         gitDir              = $resolvedGitDir
         branch              = $currentBranch
+        expectedBranch      = $expectedBranch
+        onExpectedBranch    = $onExpectedBranch
+        workingTree         = [ordered]@{
+            status                = $workingTree.Status
+            untrackedCount        = $workingTree.UntrackedCount
+            dirtyTrackedCount     = $workingTree.DirtyTrackedCount
+            untrackedFiles        = @($workingTree.UntrackedFiles)
+            dirtyTrackedFiles     = @($workingTree.DirtyTrackedFiles)
+            untrackedTruncated    = $workingTree.UntrackedTruncated
+            dirtyTrackedTruncated = $workingTree.DirtyTrackedTruncated
+        }
         upstream            = $upstreamRef
         baseRef             = $effectiveBaseRef
         range               = $range
@@ -327,6 +405,7 @@ $result = [ordered]@{
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
+    agentWarnings             = @($agentWarnings)
     agentSemanticChecklist   = @($agentSemanticChecklist)
 }
 
@@ -335,6 +414,20 @@ if ($AsJson) {
 } else {
     Write-Output ("STATUS={0}" -f $overallStatus)
     Write-Output ("BRANCH={0} INTERVALO_BASE={1} UPSTREAM_INFORMATIVO={2}" -f $currentBranch, $effectiveBaseRef, $(if ($upstreamRef) { $upstreamRef } else { '(nao configurado)' }))
+    Write-Output ("ON_EXPECTED_BRANCH={0} EXPECTED_BRANCH={1}" -f $(if ($onExpectedBranch) { 'true' } else { 'false' }), $expectedBranch)
+    Write-Output ("WORKING_TREE={0} UNTRACKED={1} DIRTY_TRACKED={2}" -f $workingTree.Status, $workingTree.UntrackedCount, $workingTree.DirtyTrackedCount)
+    foreach ($warning in @($agentWarnings)) {
+        Write-Output ("AVISO: {0}" -f $warning)
+    }
+    foreach ($path in @($workingTree.UntrackedFiles)) {
+        Write-Output ("WORKING_TREE_UNTRACKED: {0}" -f $path)
+    }
+    foreach ($path in @($workingTree.DirtyTrackedFiles)) {
+        Write-Output ("WORKING_TREE_DIRTY: {0}" -f $path)
+    }
+    if ($workingTree.UntrackedTruncated -or $workingTree.DirtyTrackedTruncated) {
+        Write-Output 'WORKING_TREE_PATHS_TRUNCATED=true'
+    }
     Write-Output ("COMMITS_AHEAD={0} COMMITS_BEHIND={1}" -f $commitsAhead, $commitsBehind)
     Write-Output 'NOTA=Com origin/main existente mas desatualizada, a contagem pode nao refletir o remoto atual; git fetch origin antes da rotina quando necessario (ver AGENTS.md).'
 
