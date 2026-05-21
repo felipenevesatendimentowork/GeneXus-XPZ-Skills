@@ -271,6 +271,8 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 | `Test-*KbSetupAudit.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
 | `Test-*KbSourceSanity.ps1` | empacotamento local adotado | `auditoria_de_empacotamento_pendente` |
 | `Test-*KbPackageCollision.ps1` | empacotamento local adotado | `auditoria_de_empacotamento_pendente` |
+| `New-*KbFront.ps1` | recomendado quando agentes abrem frentes locais com frequencia e precisam evitar comandos PowerShell compostos | nenhum estado, enquanto o motor compartilhado puder ser chamado diretamente ou os passos atomicos forem executados separadamente |
+| `Get-*KbLastUpdate.ps1` | recomendado quando agentes atualizam `lastUpdate` em XMLs locais com frequencia e precisam evitar comandos PowerShell compostos | nenhum estado, enquanto o motor compartilhado puder ser chamado diretamente ou o timestamp puder ser obtido por comando atomico |
 | `New-*KbImportPackage.ps1` | recomendado quando o empacotamento local for recorrente e a KB precisar de comando curto/allowlist | nenhum estado, enquanto o motor compartilhado puder ser chamado diretamente |
 | `Notify-TaskComplete.ps1` | opcional | nenhum estado |
 
@@ -309,6 +311,17 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - retorna `COLLISION_OK` quando a rodada pretendida ainda nao existe
   - retorna `BLOCK: ...` quando a rodada `nn` ja existir para o mesmo prefixo de frente, com sugestao do proximo `nn` livre
   - deve ser o unico ponto local para decidir se o pacote pode ser gravado ou se a frente deve bloquear por colisao
+- Quando agentes abrirem frentes locais com frequencia em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, recomendar wrapper local fino para abertura de frente, por exemplo `New-*KbFront.ps1`:
+  - recebe `NomeCurto`, opcionalmente `ExtraGuidCount`, `ReuseIfExists` e `AsJson`
+  - delega para `scripts\New-GeneXusXpzFront.ps1` da base compartilhada
+  - cria ou reutiliza a subpasta `NomeCurto_GUID_YYYYMMDD` em chamada atomica
+  - devolve `frontGuid`, `yyyymmdd`, `frontDir`, `createdAtUtc`, GUIDs adicionais e motivo de bloqueio quando aplicavel
+  - nao decide sozinho se o trabalho e `same front` ou `new front`; essa decisao continua pertencendo ao fluxo da `xpz-builder`
+- Quando agentes atualizarem `lastUpdate` em XMLs locais com frequencia, recomendar wrapper local fino para timestamp, por exemplo `Get-*KbLastUpdate.ps1`:
+  - recebe opcionalmente `Count` e `AsJson`
+  - delega para `scripts\Get-GeneXusXpzLastUpdate.ps1` da base compartilhada
+  - retorna timestamp UTC no formato `yyyy-MM-ddTHH:mm:ss.0000000Z`
+  - nao substitui a classificacao `modified in this round` vs `reused unchanged for mandatory dependency closure`; apenas fornece o instante canonico para objetos realmente alterados
 - Quando o empacotamento local com `import_file.xml` for recorrente, recomendar wrapper local fino para criacao do pacote, por exemplo `New-*KbImportPackage.ps1`:
   - recebe `FrontName`, `NN`, opcionalmente `TemplatePackagePath` e opcionalmente `AsJson`
   - delega para `scripts\New-XpzImportPackage.ps1` da base compartilhada
@@ -326,6 +339,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - Somente leitura: não grava nada, não abre a KB, não invoca MSBuild
 - A ausencia isolada de `Test-*KbSourceSanity.ps1` nao impede, por si so, classificar a pasta como tendo camada minima de wrappers para materializacao oficial ou para `KbIntelligence`; ele passa a ser esperado quando a KB adota fluxo local de geracao e empacotamento que dependa desse gate.
 - A ausencia isolada de `Test-*KbPackageCollision.ps1` tambem nao impede, por si so, classificar a pasta como tendo camada minima de wrappers para materializacao oficial ou para `KbIntelligence`; ele passa a ser esperado quando a KB adota fluxo local de empacotamento com `import_file.xml` local.
+- A ausencia isolada de `New-*KbFront.ps1` ou `Get-*KbLastUpdate.ps1` nao impede, por si so, classificar a pasta como atualizada; eles sao recomendados para reduzir comandos compostos e facilitar allowlist quando a pasta tiver uso recorrente de abertura de frente ou regravacao de `lastUpdate`.
 - A ausencia isolada de `New-*KbImportPackage.ps1` nao impede, por si so, classificar a pasta como atualizada; ele e recomendado para empacotamento recorrente e allowlist, mas o motor compartilhado pode ser chamado diretamente quando o agente informar `-RepoRoot`.
 - Um helper local de notificacao pode existir como apoio operacional, mas nao substitui os wrappers principais
 - O wrapper local deve ser fino:
@@ -349,6 +363,8 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - [Rebuild-KbIntelligenceIndex.example.ps1](examples/Rebuild-KbIntelligenceIndex.example.ps1)
   - [Test-KbSourceSanity.example.ps1](examples/Test-KbSourceSanity.example.ps1)
   - [Test-KbPackageCollision.example.ps1](examples/Test-KbPackageCollision.example.ps1)
+  - [New-KbFront.example.ps1](examples/New-KbFront.example.ps1)
+  - [Get-KbLastUpdate.example.ps1](examples/Get-KbLastUpdate.example.ps1)
   - [New-KbImportPackage.example.ps1](examples/New-KbImportPackage.example.ps1)
   - [Notify-TaskComplete.example.ps1](examples/Notify-TaskComplete.example.ps1)
   - [Test-KbPowerShellRuntime.example.ps1](examples/Test-KbPowerShellRuntime.example.ps1)
@@ -789,9 +805,11 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
    - `Get-*KbMetadata.ps1`, se a KB local adotar `KbIntelligence`
    - `Test-*KbMetadataWrapper.ps1`, se a KB local adotar `KbIntelligence`
    - `Test-*KbStructure.ps1`, se a KB local adotar `KbIntelligence`
+   - `New-*KbFront.ps1`, recomendado se a KB local abrir frentes de XML gerado com frequencia e precisar de comando curto/allowlist para criar ou reutilizar `NomeCurto_GUID_YYYYMMDD`
+   - `Get-*KbLastUpdate.ps1`, recomendado se a KB local atualizar `lastUpdate` em XMLs locais com frequencia e precisar de comando curto/allowlist para obter timestamp GeneXus
    - `New-*KbImportPackage.ps1`, recomendado se a KB local adotar empacotamento recorrente e precisar de comando curto/allowlist
    - helper local opcional de notificacao, se houver necessidade operacional
-20. Se os scripts `Test-*KbIndexGate.ps1`, `Get-*KbMetadata.ps1`, `Test-*KbMetadataWrapper.ps1`, `Test-*KbStructure.ps1` e, quando adotado, `New-*KbImportPackage.ps1` forem criados ou confirmados durante o setup ou atualizacao, registrar os padroes de allowlist correspondentes em `.claude\settings.json` da pasta paralela da KB:
+20. Se os scripts `Test-*KbIndexGate.ps1`, `Get-*KbMetadata.ps1`, `Test-*KbMetadataWrapper.ps1`, `Test-*KbStructure.ps1` e, quando adotados, `New-*KbFront.ps1`, `Get-*KbLastUpdate.ps1` ou `New-*KbImportPackage.ps1` forem criados ou confirmados durante o setup ou atualizacao, registrar os padroes de allowlist correspondentes em `.claude\settings.json` da pasta paralela da KB:
    - Para cada script, adicionar uma entrada no array `permissions.allow` no formato `PowerShell(& "<caminho-absoluto-do-script>" *)`
    - Usar o nome real do script no caminho (ex: `Test-FabricaBrasilKbIndexGate.ps1`), nao o nome sanitizado do exemplo
    - Se `.claude\settings.json` ainda nao existir, criar com estrutura minima
@@ -817,6 +835,10 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
    - no minimo, confirmar parse do `.ps1`, existencia do engine compartilhado apontado por ele e ausencia de placeholders sanitizados em configuracao efetiva
    - quando houver frente local segura para teste, preferir execucao controlada com `-AsJson`; se nao houver frente segura, declarar a validacao limitada a parse/caminho
    - nao criar pacote real apenas para validar o wrapper sem autorizacao explicita do usuario
+27b. Se `New-*KbFront.ps1` ou `Get-*KbLastUpdate.ps1` forem criados ou atualizados nesta frente, validar esses wrappers diretamente antes do fechamento:
+   - no minimo, confirmar parse do `.ps1`, existencia do engine compartilhado apontado por ele e ausencia de placeholders sanitizados em configuracao efetiva
+   - para `Get-*KbLastUpdate.ps1`, preferir execucao controlada com `-AsJson`
+   - para `New-*KbFront.ps1`, testar em pasta temporaria ou em frente real somente quando isso fizer parte do escopo aprovado; nao criar subpasta real de frente na KB apenas para validar o wrapper sem autorizacao explicita do usuario
 28. Se a estrutura de pastas e documentos estiver pronta, mas a camada minima de wrappers locais ainda nao existir ou ainda mantiver placeholders sanitizados em configuracao efetiva, reportar isso como `estrutura parcial` ou `bootstrap incompleto`, nao como setup concluido
 29. Ao concluir o setup inicial, deixar explicito que a estrutura esta pronta, mas `ObjetosDaKbEmXml` ainda nao foi materializada
 30. Se a primeira materializacao oficial ocorrer depois do setup, atualizar ou neutralizar a memoria local provisoria criada no setup que ainda afirme `ObjetosDaKbEmXml` nao materializada, `aguardando primeiro XPZ` ou equivalente

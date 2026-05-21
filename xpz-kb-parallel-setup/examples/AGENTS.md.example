@@ -79,6 +79,15 @@ Wrappers esperados:
   frente antes do empacotamento; delega ao script compartilhado de sanidade do
   `Source` e devolve `xmlWellFormed`, `sourceSanityStatus` e
   `probablyImportable`.
+- `New-<NomeKb>KbFront.ps1`: wrapper recomendado quando agentes abrem frentes
+  locais com frequencia; delega ao motor compartilhado
+  `New-GeneXusXpzFront.ps1` para criar ou reutilizar
+  `ObjetosGeradosParaImportacaoNaKbNoGenexus\NomeCurto_GUID_YYYYMMDD`, gerar o
+  GUID da frente e devolver GUIDs adicionais do lote em chamada atomica.
+- `Get-<NomeKb>KbLastUpdate.ps1`: wrapper recomendado quando agentes atualizam
+  `lastUpdate` em XMLs locais com frequencia; delega ao motor compartilhado
+  `Get-GeneXusXpzLastUpdate.ps1` para obter timestamp UTC no formato GeneXus em
+  chamada atomica.
 - `New-<NomeKb>KbImportPackage.ps1`: wrapper recomendado quando o empacotamento
   local for recorrente; delega ao motor compartilhado `New-XpzImportPackage.ps1`
   para criar `import_file.xml` a partir da subpasta ativa da frente em

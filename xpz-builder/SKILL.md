@@ -64,7 +64,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - When a local XML candidate already exists on disk and depends materially on `Source`, run `..\scripts\Test-GeneXusSourceSanity.ps1 -InputPath <arquivo>` before packaging; treat `sourceSanityStatus=fail` as a hard stop and `warn` as consultative conservative review
 - Classify each package candidate by content delta as `requested change`, `necessary auxiliary change`, or `extra unrequested change` before packaging
 - Require explicit signaling before packaging when a candidate item remains as `extra unrequested change`, including metadata, reserialization, or known noise that is not strictly required
-- Generate valid `lastUpdate` timestamp (real local time, not placeholder)
+- Generate valid GeneXus `lastUpdate` timestamp (real write instant, not placeholder)
 - Treat `ObjetosDaKbEmXml` as official snapshot and read-only for agents
 - Treat any detected or intended edit in `ObjetosDaKbEmXml` for a delta that has not yet returned by official KB re-export as an explicit process error, not as a mere operational detail
 - If the object has not yet returned from the KB by official export, perform the work only in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
@@ -181,6 +181,8 @@ Reference files and when to load them:
    - determine whether the case is `same front` or `new front`
    - do NOT infer `same front` only because the object is the same
    - if continuity was not explicitly stated and no direct repository evidence closes that ambiguity, block automatic inheritance of the previous front identity and follow the applicable local rule
+   - When the repository publishes a local front-opening wrapper (for example `New-*KbFront.ps1`) or the shared engine `scripts\New-GeneXusXpzFront.ps1` is directly approved, prefer that atomic wrapper/engine to create or reuse the front folder, generate the front GUID, calculate `YYYYMMDD`, and return any extra GUIDs needed by the batch
+   - Treat front-opening wrappers as convenience and permission-hygiene helpers, not as proof that the front is semantically correct; the `same front` vs `new front` decision above remains mandatory
    - only after that, define:
      - `NomeCurto`
      - `GUID` generated when the front is opened
@@ -369,7 +371,7 @@ Reference files and when to load them:
 18. Set or preserve `lastUpdate` according to the batch-role classification:
    - Classify each active XML as `modified in this round` or `reused unchanged for mandatory dependency closure`
    - If any textual change was persisted in the final XML, classify the item as `modified in this round`
-   - Modified object → set `lastUpdate` to the real local timestamp of the final write
+   - Modified object → set `lastUpdate` to the real GeneXus timestamp of the final write; when available, prefer a local wrapper such as `Get-*KbLastUpdate.ps1` or the shared engine `scripts\Get-GeneXusXpzLastUpdate.ps1` to capture that value in one atomic call
    - Unchanged dependency object → preserve the official `lastUpdate` from the official corpus XML
    - If classification and materialized `lastUpdate` diverge → **ABORT**
 19. Audit `lastUpdate` after every local write:
