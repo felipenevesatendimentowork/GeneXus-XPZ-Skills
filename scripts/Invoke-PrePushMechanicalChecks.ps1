@@ -348,7 +348,8 @@ if ($whitespaceStatus -ne 'clean') {
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
 $agentOperationalReminders = @(
-    'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos.'
+    'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos.',
+    'Com commitsBehind > 0, reportar no relatorio semantico e sugerir fetch + integracao (pull --rebase ou merge) antes do push; nao fazer push automatico.'
 )
 
 $agentWarnings = [System.Collections.Generic.List[string]]::new()
@@ -364,7 +365,7 @@ if ($workingTree.Status -ne 'clean') {
 }
 if ($commitsBehind -gt 0) {
     [void]$agentWarnings.Add(
-        ("Remoto ({0}) esta {1} commit(s) a frente de HEAD; push pode exigir pull, merge ou rebase antes." -f $effectiveBaseRef, $commitsBehind)
+        ("Remoto ({0}) esta {1} commit(s) a frente de HEAD; reportar e sugerir git fetch origin e integracao (ex.: git pull --rebase origin main) antes do push — nao fazer push automatico." -f $effectiveBaseRef, $commitsBehind)
     )
 }
 
