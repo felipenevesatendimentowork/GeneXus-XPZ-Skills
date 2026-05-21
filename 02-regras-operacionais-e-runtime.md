@@ -1539,6 +1539,8 @@ Regras de uso:
 - preservar marcas estruturais e contexto de `parent`
 - nao responder com linguagem otimista do tipo “casca simples”
 - abortar se o caso exigir descolar o objeto do contexto gerado sem paralelo bruto
+- tratar derivados gerados por pattern como artefatos de saida: nao gravar nem empacotar correcao manual diretamente neles; identificar a fonte declarativa e trabalhar nela, como pattern pai, instancia declarativa, objeto pai ou objeto chamado
+- ler derivados gerados apenas quando houver diagnostico concreto que exija confirmar erro, caller gerado ou artefato de runtime; leitura casual de derivado nao deve ser o ponto de partida
 
 #### Exemplos de aplicação
 - `WebPanel` vindo de familia gerada por defaults nao deve ser reaproveitado como molde generico para tela livre
