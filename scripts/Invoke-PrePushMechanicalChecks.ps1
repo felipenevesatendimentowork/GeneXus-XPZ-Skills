@@ -11,7 +11,9 @@
     Nao substitui busca de coerencia cruzada, regra em camadas de skills longas
     nem relatorio final ao usuario — ver AGENTS.md secao "Revisao pre-push".
     Emite avisos informativos se a branch nao for main ou se a working tree
-    tiver alteracoes nao commitadas fora do intervalo BaseRef..HEAD.
+    tiver alteracoes nao commitadas fora do intervalo BaseRef..HEAD. Com
+    commitsBehind > 0, define pushReadiness=blocked e marca o diff do intervalo
+    como apenas diagnostico (sem falhar parse/whitespace).
 
 .PARAMETER RootPath
     Raiz do repositorio. Default: pai de scripts/.
@@ -347,9 +349,12 @@ if ($whitespaceStatus -ne 'clean') {
 
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
+$pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
+$intervalDiffDiagnosticOnly = ($commitsBehind -gt 0)
+
 $agentOperationalReminders = @(
     'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos.',
-    'Com commitsBehind > 0, reportar no relatorio semantico e sugerir fetch + integracao (pull --rebase ou merge) antes do push; nao fazer push automatico.'
+    'Com PUSH_READINESS=blocked (commitsBehind > 0), lista de arquivos e git diff --check no intervalo sao apenas diagnosticos; pre-push nao libera push ate integrar o remoto.'
 )
 
 $agentWarnings = [System.Collections.Generic.List[string]]::new()
@@ -365,7 +370,7 @@ if ($workingTree.Status -ne 'clean') {
 }
 if ($commitsBehind -gt 0) {
     [void]$agentWarnings.Add(
-        ("Remoto ({0}) esta {1} commit(s) a frente de HEAD; reportar e sugerir git fetch origin e integracao (ex.: git pull --rebase origin main) antes do push — nao fazer push automatico." -f $effectiveBaseRef, $commitsBehind)
+        ("Remoto ({0}) esta {1} commit(s) a frente de HEAD: intervalo {2} e arquivos listados sao apenas diagnosticos; push bloqueado ate integrar. Se ainda nao houve fetch, git fetch origin; se commitsBehind persistir, integrar (ex.: git pull --rebase origin main) antes do push." -f $effectiveBaseRef, $commitsBehind, $range)
     )
 }
 
@@ -375,8 +380,10 @@ $agentSemanticChecklist = @(
 )
 
 $result = [ordered]@{
-    status                 = $overallStatus
-    rootPath               = $resolvedRoot
+    status                      = $overallStatus
+    pushReadiness               = $pushReadiness
+    intervalDiffDiagnosticOnly  = $intervalDiffDiagnosticOnly
+    rootPath                    = $resolvedRoot
     git                    = [ordered]@{
         repositoryRoot      = $resolvedRoot
         gitDir              = $resolvedGitDir
@@ -432,6 +439,10 @@ if ($AsJson) {
         Write-Output 'WORKING_TREE_PATHS_TRUNCATED=true'
     }
     Write-Output ("COMMITS_AHEAD={0} COMMITS_BEHIND={1}" -f $commitsAhead, $commitsBehind)
+    Write-Output ("PUSH_READINESS={0}" -f $pushReadiness)
+    if ($intervalDiffDiagnosticOnly) {
+        Write-Output 'INTERVAL_DIFF_DIAGNOSTIC_ONLY=true'
+    }
     Write-Output 'NOTA=Com origin/main existente mas desatualizada, a contagem pode nao refletir o remoto atual; git fetch origin antes da rotina quando necessario (ver AGENTS.md).'
 
     if ($commitsAhead -eq 0) {
