@@ -53,7 +53,14 @@ Antes de concluir rotina pré-push, não basta ler os diffs dos commits pendente
 
 **Escopo:** a rotina pré-push é de **análise, busca de coerência e relatório** ao usuário. **Não** inclui alterar arquivos nem criar commits com base no relatório. Em face dos gaps, o agente **apresenta** o diagnóstico e, se fizer sentido, um diff ou lista de alterações sugeridas, e **só grava** no repositório após **aprovação explícita** do usuário **depois** do relatório — mesmo que a intenção inicial da sessão fosse aplicar correções; a pré-push não autoriza aplicar automaticamente com base apenas nessa intenção inicial. Uma única aprovação explícita (ex.: «ok, aplica os gaps do relatório») cobre o **conjunto** de alterações sugeridas, salvo o usuário pedir confirmação item a item.
 
-**Passo mecânico inicial:** executar `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` quando o chamador for agente). Por padrão o script compara a branch atual com `origin/main` — ou seja, **tudo que foi commitado localmente e ainda não foi enviado ao remoto** (desde o último push usual em `main`). Contagem de commits, lista de commits, arquivos alterados e `git diff --check` usam **o mesmo** intervalo (`BaseRef..HEAD`, com `BaseRef` default `origin/main`); não altere `-BaseRef` salvo necessidade explícita. O script também delega parse a `scripts/Test-PsScriptsParse.ps1` e classifica os arquivos do diff — **sem** substituir a busca semântica abaixo. O orquestrador **avisa** (sem falhar o gate mecânico) se a branch não for `main` ou se a working tree tiver alterações não commitadas fora desse intervalo.
+**Passo mecânico inicial:** executar `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` quando o chamador for agente). Por padrão o script compara a branch atual com `origin/main` — ou seja, **tudo que foi commitado localmente e ainda não foi enviado ao remoto** (desde o último push usual em `main`). Contagem de commits, lista de commits, arquivos alterados e `git diff --check` usam **o mesmo** intervalo (`BaseRef..HEAD`, com `BaseRef` default `origin/main`); não altere `-BaseRef` salvo necessidade explícita. O script classifica os arquivos **do diff desse intervalo** e delega parse a `scripts/Test-PsScriptsParse.ps1` — **sem** substituir a busca semântica abaixo. O orquestrador **avisa** (sem falhar o gate mecânico) se a branch não for `main` ou se a working tree tiver alterações não commitadas fora desse intervalo.
+
+**Limites do passo mecânico (evitar leituras erradas):**
+
+- **Parse:** `Test-PsScriptsParse.ps1` varre **todo** o repositório ativo (`scripts/*.ps1` e `*.example.ps1` fora de `historico/`) — gate de saúde do repo, **não** limitado ao diff do intervalo. Pode falhar o mecânico com `commitsAhead=0` se houver script quebrado fora do que mudou.
+- **Working tree:** com `commitsAhead=0` não há diff nem `git diff --check` no intervalo («nada commitado pendente de push»). A pré-push **não** substitui revisão de alterações **só** na working tree; o orquestrador avisa contagens, mas não analisa esses arquivos no intervalo.
+- **`exit 0` vs push:** `exit 0` do orquestrador **não** significa «pode dar push» nem pré-push concluída. Ler `PUSH_READINESS` (e `pushReadiness` no JSON): com `blocked`, push fica proibido até integrar o remoto, mesmo com parse/whitespace limpos.
+- **`pushReadiness=blocked`:** bloqueia **push** e torna diff/arquivos do intervalo apenas diagnósticos; **não** dispensa a fase semântica sobre os commits locais ainda pendentes — continuar o relatório de coerência cruzada.
 
 **Referência remota fresca:** quando a intenção for comparar contra o **remoto real atual** (não só a cópia local da última vez que você fez fetch), garantir `origin/main` atualizada com `git fetch origin` **antes** do passo mecânico. Ref inexistente (o script falha com mensagem clara) e ref existente porém desatualizada são casos distintos — a segunda pode superestimar commits «à frente» ou mascarar divergência com o remoto.
 
@@ -83,7 +90,7 @@ Para cada frente alterada:
    - flags descartados, com justificativa
    - áreas não cobertas pela busca
 
-A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse (`scripts/Test-PsScriptsParse.ps1`, também invocado por `scripts/Invoke-PrePushMechanicalChecks.ps1`) e testes locais estejam limpos. **Não** tratar `exit 0` do passo mecânico como pré-push concluída.
+A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse (`scripts/Test-PsScriptsParse.ps1`, também invocado por `scripts/Invoke-PrePushMechanicalChecks.ps1`) e testes locais estejam limpos. **Não** tratar `exit 0` do passo mecânico como pré-push concluída **nem** como autorização de push quando `PUSH_READINESS=blocked`.
 
 ## Rastreabilidade privada de moldes sanitizados
 

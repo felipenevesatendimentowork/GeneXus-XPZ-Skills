@@ -353,8 +353,11 @@ $pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
 $intervalDiffDiagnosticOnly = ($commitsBehind -gt 0)
 
 $agentOperationalReminders = @(
-    'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos.',
-    'Com PUSH_READINESS=blocked (commitsBehind > 0), lista de arquivos e git diff --check no intervalo sao apenas diagnosticos; pre-push nao libera push ate integrar o remoto.'
+    'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos; sem fetch, commitsBehind pode ficar 0 com remoto real ja adiantado.',
+    'Parse (Test-PsScriptsParse.ps1) varre todo scripts/ e *.example.ps1 fora de historico/, nao apenas o diff do intervalo.',
+    'Com commitsAhead=0 nao ha diff no intervalo; pre-push nao substitui revisao de alteracoes so na working tree (ver avisos de worktree).',
+    'exit 0 mecanico nao autoriza push: ler PUSH_READINESS; com blocked, integrar remoto antes do push.',
+    'Com PUSH_READINESS=blocked, diff/arquivos do intervalo sao diagnosticos; fase semantica sobre commits locais continua obrigatoria.'
 )
 
 $agentWarnings = [System.Collections.Generic.List[string]]::new()
