@@ -318,9 +318,10 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - devolve `frontGuid`, `yyyymmdd`, `frontDir`, `createdAtUtc`, GUIDs adicionais e motivo de bloqueio quando aplicavel
   - nao decide sozinho se o trabalho e `same front` ou `new front`; essa decisao continua pertencendo ao fluxo da `xpz-builder`
 - Quando agentes atualizarem `lastUpdate` em XMLs locais com frequencia, recomendar wrapper local fino para timestamp, por exemplo `Get-*KbLastUpdate.ps1`:
-  - recebe opcionalmente `Count` e `AsJson`
+  - recebe opcionalmente `Count`, `AsJson`, baseline oficial e margem de frescor
   - delega para `scripts\Get-GeneXusXpzLastUpdate.ps1` da base compartilhada
   - retorna timestamp UTC no formato `yyyy-MM-ddTHH:mm:ss.0000000Z`
+  - quando receber baseline oficial, calcula `max(UtcNow + margem, lastUpdate do baseline + margem)`, com margem padrao de 60 segundos
   - nao substitui a classificacao `modified in this round` vs `reused unchanged for mandatory dependency closure`; apenas fornece o instante canonico para objetos realmente alterados
 - Quando o empacotamento local com `import_file.xml` for recorrente, recomendar wrapper local fino para criacao do pacote, por exemplo `New-*KbImportPackage.ps1`:
   - recebe `FrontName`, `NN`, opcionalmente `TemplatePackagePath` e opcionalmente `AsJson`

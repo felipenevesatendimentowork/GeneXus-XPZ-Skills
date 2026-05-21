@@ -64,7 +64,10 @@ If the main need is to prepare or validate the initial folder structure around t
 - When a local XML candidate already exists on disk and depends materially on `Source`, run `..\scripts\Test-GeneXusSourceSanity.ps1 -InputPath <arquivo>` before packaging; treat `sourceSanityStatus=fail` as a hard stop and `warn` as consultative conservative review
 - Classify each package candidate by content delta as `requested change`, `necessary auxiliary change`, or `extra unrequested change` before packaging
 - Require explicit signaling before packaging when a candidate item remains as `extra unrequested change`, including metadata, reserialization, or known noise that is not strictly required
-- Generate valid GeneXus `lastUpdate` timestamp (real write instant, not placeholder)
+- Generate valid GeneXus `lastUpdate` timestamp by mechanical rule, not by literal guess: for a modified object use `max(UtcNow + 60s, official-corpus lastUpdate + 60s)` and then reread the saved XML to confirm the persisted value
+- Preserve the official `lastUpdate` only for objects that are intentionally reenviados sem mudanca as dependency or package-composition closure
+- Treat `lastUpdate` equal to or older than the official corpus as a blocking defect when the object was modified in the round
+- Treat manually rounded timestamps, copied timestamps from another file, copied baseline `lastUpdate` on a modified object, or arbitrary future values as invalid `lastUpdate` generation
 - Treat `ObjetosDaKbEmXml` as official snapshot and read-only for agents
 - Treat any detected or intended edit in `ObjetosDaKbEmXml` for a delta that has not yet returned by official KB re-export as an explicit process error, not as a mere operational detail
 - If the object has not yet returned from the KB by official export, perform the work only in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
@@ -99,6 +102,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - In that package name, the front is identified only by the prefix `NomeCurto_GUID_YYYYMMDD`; `nn` is only the short package round for that front
 - Before writing `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, run a deterministic collision gate in `.ps1`; do NOT leave this decision to ad hoc reasoning
 - When the recommended helper `Build-GeneXusImportFileEnvelope.ps1` is used, the collision gate is embedded and runs before any byte is written; the file is materialized only when the gate passes
+- When the recommended helper `Build-GeneXusImportFileEnvelope.ps1` is used for a delta of existing objects, prefer enabling `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>` and declaring modified objects with `-ModifiedObjectNames` or `-ModifiedObjectGuids`; the helper blocks `lastUpdate` older than the acervo, `lastUpdate` equal to the acervo for declared modified objects, and unjustified future timestamps before serializing the package
 - When the target flow is **headless MSBuild import** (`xpz-msbuild-import-export`) and the object XML already exists in the parallel KB tree (`ObjetosDaKbEmXml` as read-only reference or `ObjetosGeradosParaImportacaoNaKbNoGenexus` as working copy), prefer assembling **`import_file.xml`** with a shared structured engine: `Build-GeneXusImportFileEnvelope.ps1` for direct template-based assembly, or `New-XpzImportPackage.ps1`/`.py` for front-based assembly from the parallel KB folder. Use a validated template (`KMW`, `Source`, `ObjectsIdentityMapping` from local precedent, or metadata such as `kb-source-metadata.md` per `xpz-kb-parallel-setup` for simple/minimal envelopes), then import that package — do **not** run a KB **export** only to obtain a `.xpz` "shell" to patch in parallel XML unless the user explicitly requests that path or confirms that envelope metadata cannot be obtained otherwise (if an exported `.xpz` is used anyway, `xpz-msbuild-import-export` requires a full pre-import object inventory)
 - For compact inspection of XML/XPZ without dumping large `CDATA`, use `scripts\Extract-XpzObject.ps1`, `scripts\Get-GeneXusObjectSummary.ps1`, and, for Panel shape checks, `scripts\Compare-GeneXusPanelShape.ps1` before resorting to raw `Select-String` or broad `rg` output.
 - In the manual fallback path (textual envelope assembly without the helper), prefer a local wrapper such as `Test-*KbPackageCollision.ps1`, delegating to the shared engine `scripts\Test-XpzPackageCollision.ps1`
@@ -371,12 +375,12 @@ Reference files and when to load them:
 18. Set or preserve `lastUpdate` according to the batch-role classification:
    - Classify each active XML as `modified in this round` or `reused unchanged for mandatory dependency closure`
    - If any textual change was persisted in the final XML, classify the item as `modified in this round`
-   - Modified object → set `lastUpdate` to the real GeneXus timestamp of the final write; when available, prefer a local wrapper such as `Get-*KbLastUpdate.ps1` or the shared engine `scripts\Get-GeneXusXpzLastUpdate.ps1` to capture that value in one atomic call
+   - Modified object → set `lastUpdate` to `max(UtcNow + 60s, official-corpus lastUpdate + 60s)`; when available, prefer a local wrapper such as `Get-*KbLastUpdate.ps1` or the shared engine `scripts\Get-GeneXusXpzLastUpdate.ps1 -BaselineXmlPath <xml-do-acervo>` to capture that value in one atomic call
    - Unchanged dependency object → preserve the official `lastUpdate` from the official corpus XML
    - If classification and materialized `lastUpdate` diverge → **ABORT**
 19. Audit `lastUpdate` after every local write:
    - After writing or rewriting an object XML, reopen the saved file and confirm the root `lastUpdate`
-   - If the object was actually modified, `lastUpdate` must reflect the real instant of that last write
+   - If the object was actually modified, `lastUpdate` must be strictly fresher than the official corpus baseline and normally use the 60-second freshness margin
    - If the object was not modified and is included only for mandatory dependency closure, preserve the official `lastUpdate` from the corpus XML
    - Do NOT continue to packaging until the saved-file header has been checked
 20. Before packaging, classify active XML roots and validate packaging hygiene:

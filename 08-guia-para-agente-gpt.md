@@ -915,7 +915,7 @@ Regras da escada:
 - Evidência direta: ao gerar `Transaction` ou `WebPanel`, o agente deve partir de um molde XML completo
 - Evidência direta: o agente nao deve materializar objeto final a partir de resumo textual sem XML completo
 - Regra operacional: antes de empacotar, classificar cada XML ativo como `alterado na rodada` ou `reenviado sem mudanca por dependencia obrigatoria`
-- Regra operacional: se o objeto foi realmente alterado na rodada, o `lastUpdate` deve refletir o instante real da ultima gravacao
+- Regra operacional: se o objeto foi realmente alterado na rodada, o `lastUpdate` deve ser calculado por procedimento mecanico: `max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial, ou `UtcNow + 60s` quando for objeto novo sem baseline
 - Regra operacional: se o objeto entrou apenas por dependencia obrigatoria ou composicao minima do pacote, o `lastUpdate` oficial anterior deve ser preservado
 - Regra operacional: o agente deve abortar o empacotamento quando houver divergencia entre a classificacao do item e o `lastUpdate` materializado
 - Regra operacional: antes de serializar o pacote, classificar as raizes top-level em `Object`, `Attribute` ou `outro tipo`
@@ -1035,9 +1035,9 @@ Regras da escada:
 - o agente deve incluir o objeto em `<Objects>` seguindo o envelope XPZ observado documentado em `02-regras-operacionais-e-runtime.md`
 - em pacote misto com `Transaction`, `WorkWithForWeb` e atributos novos, `Transaction` e `WorkWithForWeb` ficam em `<Objects>` e os atributos top-level ficam em `<Attributes>`
 - se houver `WorkWithForWeb` no pacote misto, preservar tambem a referencia de `Pattern` no bloco `Dependencies`
-- ao gerar ou alterar XML de objeto GeneXus, obter o horario local no momento da gravacao e preencher `lastUpdate` com o instante real correspondente
+- ao gerar ou alterar XML de objeto GeneXus, obter o horario local no momento da gravacao e preencher `lastUpdate` com `max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial, ou `UtcNow + 60s` quando o objeto for novo
 - `lastUpdate` nao e detalhe cosmetico; ele deve ser conferido no arquivo salvo depois de cada gravacao local
-- se o objeto mudou, `lastUpdate` deve ser regravado com o instante real da ultima escrita
+- se o objeto mudou, `lastUpdate` deve ser regravado pelo helper ou por calculo equivalente, nunca por palpite, hora cheia, minuto arredondado, copia de outro arquivo ou valor herdado do acervo
 - se o objeto nao mudou e entrou apenas para dependencia, preservar o `lastUpdate` oficial
 - nao concluir XML ou pacote enquanto o `lastUpdate` do arquivo final nao tiver sido relido e confirmado
 - nao concluir XML GeneXus grande apenas porque a escrita terminou; reler cabecalho, cauda e trecho funcional afetado, validar XML bem-formado, fechamento da raiz e `CDATA` antes de empacotar
@@ -1048,6 +1048,7 @@ Regras da escada:
 - se houver export real comparavel da IDE para a mesma composicao, preferir repetir o shape desse export em vez de improvisar `Dependencies` ou `ObjectsIdentityMapping`
 - para pacote misto com `Transaction`, `WorkWithForWeb` e `Procedure`, preferir objetos embutidos em `<Objects>` quando esse for o formato validado pelo molde real
 - quando o formato exigir UTC com `Z`, converter corretamente a partir do horario local real; nao reaproveitar timestamp antigo nem de rodada anterior
+- para empacotamento com `Build-GeneXusImportFileEnvelope.ps1`, preferir `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>` e informar `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para que o script bloqueie `lastUpdate` velho, igual ao acervo em objeto modificado ou futuro demais antes de escrever o pacote
 - o agente deve tratar `ObjectsIdentityMapping` como mapeamento de contexto; nao repetir ali cada objeto exportado nem inventar pares `Object` -> `ObjectIdentity` 1:1
 - quando o objeto depender de `parentGuid` ou `moduleGuid` externos relevantes, o agente deve preferir manter no `ObjectsIdentityMapping` a identidade correspondente com o mesmo `Guid`
 - o agente deve preservar sempre preenchidos, no formato normal, `Source/Version/@name`, `Object/@name` e `ObjectIdentity/@Name`

@@ -235,7 +235,7 @@ Orientar futuras coletas de templates comparáveis.
 
 ### Regras de gate em `lastUpdate` (acordo de trilha)
 
-- **Objeto modificado nesta rodada** (texto alterado e `lastUpdate` deve refletir a ultima gravacao no ambiente que produz o XML): apos parse do valor em UTC, **nao** pode exceder `[DateTime]::UtcNow` no host autor além de uma **margem pequena** (segundos — valor a calibrar na implementacao). Acima disso → **bloquear** empacotamento ou corrigir com timestamp medido no host autoral; **nunca** placeholder nem "hora desejada".
+- **Objeto modificado nesta rodada** (texto alterado e `lastUpdate` deve refletir a ultima gravacao no ambiente que produz o XML): calcular `NEW_TS = max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial; apos parse do valor em UTC, bloquear se o timestamp for igual/anterior ao acervo, ficar abaixo da margem de frescor declarada ou exceder o futuro aceitavel sem justificativa pelo acervo + margem. **Nunca** placeholder, hora cheia, minuto arredondado nem "hora desejada".
 - **Objeto preservado** (reenviado so por fecho de dependencias, `lastUpdate` **igual** ao XML oficial do acervo): **aceitar** `lastUpdate` futuro em relacao ao relogio atual; e caso improvavel (corpus ou maquina de origem ja desalinhados). **Nao** aplicar o bloqueio duro de futuro a este papel.
 
 Estas regras **complementam** (nao substituem) as regras canonicas de `lastUpdate` em `02-regras-operacionais-e-runtime.md` e o fluxo de auditoria em `xpz-builder` (classificacao modificado vs dependencia preservada, releitura do ficheiro gravado).
@@ -262,7 +262,7 @@ Declarar explicitamente: `fullyQualifiedName` (ou identificador estavel), valor 
 
 ### Automacao
 
-A implementacao no script `scripts/Test-GeneXusImportFileEnvelope.ps1` (parametros para distinguir modificado vs preservado, comparacao opcional com snapshot oficial) fica como **melhoria pendente** — ver entrada dedicada em `999-ideias-pendentes.md`.
+A verificacao mecanica foi incorporada ao ponto de montagem `scripts/Build-GeneXusImportFileEnvelope.ps1` por `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>`, com declaracao opcional de modificados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids`. O helper `scripts/Get-GeneXusXpzLastUpdate.ps1` aceita `-BaselineXmlPath` e calcula o timestamp canonico com margem padrao de 60 segundos. `Test-GeneXusImportFileEnvelope.ps1` continua validando o envelope estatico; sozinho, ele nao tem contexto suficiente para inferir acervo e classificacao de modificado vs preservado.
 
 ---
 

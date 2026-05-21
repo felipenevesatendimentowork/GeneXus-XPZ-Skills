@@ -11,6 +11,23 @@ param(
 
     [string[]]$TopLevelAttributesXmlPaths,
 
+    [string]$AcervoPath,
+
+    [switch]$RequireLastUpdateFresh,
+
+    [string[]]$ModifiedObjectNames,
+
+    [string[]]$ModifiedObjectGuids,
+
+    [ValidateRange(1, 3600)]
+    [int]$FreshnessMarginSeconds = 60,
+
+    [ValidateRange(0, 3600)]
+    [int]$FutureToleranceSeconds = 120,
+
+    [ValidateSet("pass", "warn", "block")]
+    [string]$NewObjectPolicy = "warn",
+
     [switch]$SkipGate,
 
     [switch]$Force,
@@ -53,6 +70,229 @@ function Assert-XmlWellFormed {
         throw "$Role nao e XML bem-formado ('$Path'): $($_.Exception.Message)"
     }
     return $doc
+}
+
+function Format-GeneXusLastUpdate {
+    param([Parameter(Mandatory = $true)][DateTime]$Value)
+
+    return $Value.ToUniversalTime().ToString(
+        "yyyy-MM-dd'T'HH:mm:ss'.0000000Z'",
+        [System.Globalization.CultureInfo]::InvariantCulture
+    )
+}
+
+function Read-ObjectLastUpdate {
+    param(
+        [Parameter(Mandatory = $true)][System.Xml.XmlElement]$Root,
+        [Parameter(Mandatory = $true)][string]$SourceLabel
+    )
+
+    $raw = $Root.GetAttribute("lastUpdate")
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        throw "$SourceLabel sem Object/@lastUpdate."
+    }
+
+    $parsed = [DateTimeOffset]::MinValue
+    $ok = [DateTimeOffset]::TryParse(
+        $raw,
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::AssumeUniversal,
+        [ref]$parsed
+    )
+    if (-not $ok) {
+        throw "$SourceLabel com Object/@lastUpdate invalido: '$raw'."
+    }
+
+    return $parsed.UtcDateTime
+}
+
+function Test-ObjectIdentityMatch {
+    param(
+        [Parameter(Mandatory = $true)][System.Xml.XmlElement]$Candidate,
+        [Parameter(Mandatory = $true)][System.Xml.XmlElement]$Baseline
+    )
+
+    $candidateGuid = $Candidate.GetAttribute("guid")
+    $baselineGuid = $Baseline.GetAttribute("guid")
+    if (-not [string]::IsNullOrWhiteSpace($candidateGuid) -and $candidateGuid -eq $baselineGuid) {
+        return $true
+    }
+
+    $candidateFqn = $Candidate.GetAttribute("fullyQualifiedName")
+    $baselineFqn = $Baseline.GetAttribute("fullyQualifiedName")
+    if (-not [string]::IsNullOrWhiteSpace($candidateFqn) -and $candidateFqn -eq $baselineFqn) {
+        return $true
+    }
+
+    $candidateName = $Candidate.GetAttribute("name")
+    $baselineName = $Baseline.GetAttribute("name")
+    if (-not [string]::IsNullOrWhiteSpace($candidateName) -and $candidateName -eq $baselineName) {
+        return $true
+    }
+
+    return $false
+}
+
+function Find-BaselineObjectXml {
+    param(
+        [Parameter(Mandatory = $true)][string]$RootPath,
+        [Parameter(Mandatory = $true)][System.Xml.XmlElement]$CandidateRoot
+    )
+
+    if (-not (Test-Path -LiteralPath $RootPath -PathType Container)) {
+        throw "AcervoPath nao encontrado ou nao e pasta: $RootPath"
+    }
+
+    $candidateNames = [System.Collections.Generic.List[string]]::new()
+    foreach ($attrName in @("fullyQualifiedName", "name")) {
+        $value = $CandidateRoot.GetAttribute($attrName)
+        if (-not [string]::IsNullOrWhiteSpace($value)) {
+            $candidateNames.Add($value) | Out-Null
+        }
+    }
+
+    $candidateFiles = @()
+    foreach ($candidateName in @($candidateNames | Select-Object -Unique)) {
+        $leaf = "$candidateName.xml"
+        $candidateFiles += @(Get-ChildItem -LiteralPath $RootPath -Recurse -File -Filter $leaf -ErrorAction SilentlyContinue)
+    }
+
+    if ($candidateFiles.Count -eq 0) {
+        $guid = $CandidateRoot.GetAttribute("guid")
+        if (-not [string]::IsNullOrWhiteSpace($guid)) {
+            $candidateFiles += @(Get-ChildItem -LiteralPath $RootPath -Recurse -File -Filter "*.xml" -ErrorAction SilentlyContinue | Select-String -SimpleMatch $guid | ForEach-Object { $_.Path } | Sort-Object -Unique | ForEach-Object { Get-Item -LiteralPath $_ })
+        }
+    }
+
+    foreach ($file in @($candidateFiles | Sort-Object FullName -Unique)) {
+        try {
+            $doc = Assert-XmlWellFormed -Path $file.FullName -Role "BaselineObjectXml"
+        } catch {
+            continue
+        }
+        if ($doc.DocumentElement.LocalName -eq "Object" -and (Test-ObjectIdentityMatch -Candidate $CandidateRoot -Baseline $doc.DocumentElement)) {
+            return $doc
+        }
+    }
+
+    return $null
+}
+
+function Test-LastUpdateFreshness {
+    param(
+        [Parameter(Mandatory = $true)][System.Xml.XmlDocument[]]$Docs,
+        [Parameter(Mandatory = $true)][string]$BaselineRootPath
+    )
+
+    $checks = [System.Collections.Generic.List[object]]::new()
+    $warnings = [System.Collections.Generic.List[string]]::new()
+    $blockingReasons = [System.Collections.Generic.List[string]]::new()
+    $nowUtc = [DateTime]::UtcNow
+    $maxFuture = $nowUtc.AddSeconds($FutureToleranceSeconds)
+    $modifiedNamesSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $modifiedGuidsSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($name in @($ModifiedObjectNames)) {
+        if (-not [string]::IsNullOrWhiteSpace($name)) {
+            [void]$modifiedNamesSet.Add($name)
+        }
+    }
+    foreach ($guid in @($ModifiedObjectGuids)) {
+        if (-not [string]::IsNullOrWhiteSpace($guid)) {
+            [void]$modifiedGuidsSet.Add($guid)
+        }
+    }
+
+    foreach ($doc in $Docs) {
+        $root = $doc.DocumentElement
+        $name = $root.GetAttribute("name")
+        $fqn = $root.GetAttribute("fullyQualifiedName")
+        $guid = $root.GetAttribute("guid")
+        $label = if (-not [string]::IsNullOrWhiteSpace($fqn)) { $fqn } elseif (-not [string]::IsNullOrWhiteSpace($name)) { $name } else { $guid }
+        $candidateLastUpdate = Read-ObjectLastUpdate -Root $root -SourceLabel "ObjectXml '$label'"
+        $isDeclaredModified = $modifiedNamesSet.Contains($name) -or $modifiedNamesSet.Contains($fqn) -or $modifiedGuidsSet.Contains($guid)
+        $baselineDoc = Find-BaselineObjectXml -RootPath $BaselineRootPath -CandidateRoot $root
+
+        if ($null -eq $baselineDoc) {
+            $message = "last-update-baseline-missing: '$label' nao foi encontrado em AcervoPath; NewObjectPolicy=$NewObjectPolicy."
+            if ($NewObjectPolicy -eq "block") {
+                $blockingReasons.Add($message) | Out-Null
+                $status = "fail"
+            } elseif ($NewObjectPolicy -eq "warn") {
+                $warnings.Add($message) | Out-Null
+                $status = "warn"
+            } else {
+                $status = "pass"
+            }
+            $checks.Add([pscustomobject]@{
+                objectName       = $name
+                fullyQualifiedName = $fqn
+                guid             = $guid
+                role             = if ($isDeclaredModified) { "declared-modified" } else { "unclassified-or-new" }
+                candidateLastUpdate = Format-GeneXusLastUpdate -Value $candidateLastUpdate
+                baselineLastUpdate  = $null
+                status           = $status
+                code             = "baseline-missing"
+            }) | Out-Null
+            continue
+        }
+
+        $baselineLastUpdate = Read-ObjectLastUpdate -Root $baselineDoc.DocumentElement -SourceLabel "BaselineObjectXml '$label'"
+        $minimumFreshLastUpdate = $baselineLastUpdate.AddSeconds($FreshnessMarginSeconds)
+        $maxAllowedFuture = $maxFuture
+        if ($minimumFreshLastUpdate -gt $maxAllowedFuture) {
+            $maxAllowedFuture = $minimumFreshLastUpdate
+        }
+        $statusCode = "pass"
+        $status = "pass"
+
+        if ($candidateLastUpdate -lt $baselineLastUpdate) {
+            $status = "fail"
+            $statusCode = "older-than-baseline"
+            $blockingReasons.Add("last-update-older-than-baseline: '$label' tem lastUpdate $(Format-GeneXusLastUpdate -Value $candidateLastUpdate), anterior ao acervo $(Format-GeneXusLastUpdate -Value $baselineLastUpdate).") | Out-Null
+        } elseif ($candidateLastUpdate -eq $baselineLastUpdate) {
+            if ($isDeclaredModified) {
+                $status = "fail"
+                $statusCode = "declared-modified-equals-baseline"
+                $blockingReasons.Add("last-update-not-fresh: '$label' foi declarado como modificado, mas preserva lastUpdate igual ao acervo $(Format-GeneXusLastUpdate -Value $baselineLastUpdate).") | Out-Null
+            } else {
+                $status = "warn"
+                $statusCode = "equals-baseline-presumed-preserved"
+                $warnings.Add("last-update-preserved: '$label' preserva lastUpdate igual ao acervo; aceito apenas se for dependencia/objeto reenviado sem mudanca.") | Out-Null
+            }
+        } elseif ($isDeclaredModified -and $candidateLastUpdate -lt $minimumFreshLastUpdate) {
+            $status = "fail"
+            $statusCode = "declared-modified-below-freshness-margin"
+            $blockingReasons.Add("last-update-margin-too-small: '$label' foi declarado como modificado, mas lastUpdate $(Format-GeneXusLastUpdate -Value $candidateLastUpdate) e menor que acervo + $FreshnessMarginSeconds segundos ($(Format-GeneXusLastUpdate -Value $minimumFreshLastUpdate)).") | Out-Null
+        } elseif ((-not $isDeclaredModified) -and $candidateLastUpdate -gt $baselineLastUpdate -and $candidateLastUpdate -lt $minimumFreshLastUpdate) {
+            $status = "warn"
+            $statusCode = "freshness-margin-small-unclassified"
+            $warnings.Add("last-update-margin-small: '$label' esta acima do acervo, mas abaixo de acervo + $FreshnessMarginSeconds segundos; se for objeto alterado, recalcular lastUpdate.") | Out-Null
+        } elseif ($candidateLastUpdate -gt $maxAllowedFuture) {
+            $status = "fail"
+            $statusCode = "too-far-in-future"
+            $blockingReasons.Add("last-update-too-far-in-future: '$label' tem lastUpdate $(Format-GeneXusLastUpdate -Value $candidateLastUpdate), maior que UtcNow + $FutureToleranceSeconds segundos e sem justificativa pelo acervo + margem.") | Out-Null
+        }
+
+        $checks.Add([pscustomobject]@{
+            objectName       = $name
+            fullyQualifiedName = $fqn
+            guid             = $guid
+            role             = if ($isDeclaredModified) { "declared-modified" } else { "unclassified-or-preserved" }
+            candidateLastUpdate = Format-GeneXusLastUpdate -Value $candidateLastUpdate
+            baselineLastUpdate  = Format-GeneXusLastUpdate -Value $baselineLastUpdate
+            freshnessMarginSeconds = $FreshnessMarginSeconds
+            futureToleranceSeconds = $FutureToleranceSeconds
+            status           = $status
+            code             = $statusCode
+        }) | Out-Null
+    }
+
+    return [pscustomobject]@{
+        checks          = $checks.ToArray()
+        warnings        = $warnings.ToArray()
+        blockingReasons = $blockingReasons.ToArray()
+    }
 }
 
 function Read-TemplatePackage {
@@ -160,6 +400,21 @@ foreach ($path in $ObjectXmlPaths) {
     $objectDocs += (Assert-XmlWellFormed -Path $path -Role "ObjectXml")
 }
 
+$lastUpdateFreshness = [pscustomobject]@{
+    checks          = @()
+    warnings        = @()
+    blockingReasons = @()
+}
+if ($RequireLastUpdateFresh) {
+    if ([string]::IsNullOrWhiteSpace($AcervoPath)) {
+        throw "RequireLastUpdateFresh exige AcervoPath apontando para ObjetosDaKbEmXml."
+    }
+    $lastUpdateFreshness = Test-LastUpdateFreshness -Docs $objectDocs -BaselineRootPath $AcervoPath
+    if (@($lastUpdateFreshness.blockingReasons).Count -gt 0) {
+        throw "BLOCK: lastUpdate invalido antes do empacotamento. $(@($lastUpdateFreshness.blockingReasons) -join ' | ')"
+    }
+}
+
 $panelObjectNames = @(
     $objectDocs |
         Where-Object { $_.DocumentElement.GetAttribute("type").ToLowerInvariant() -eq $PanelObjectTypeGuid } |
@@ -259,10 +514,12 @@ $buildResult = [ordered]@{
     objectCount       = $objectDocs.Count
     topLevelAttrCount = $attributeDocs.Count
     topLevelAttrSource = $topLevelAttrSource
+    lastUpdateFreshness = $lastUpdateFreshness
     gateStatus        = $null
     gateInvoked       = (-not $SkipGate.IsPresent)
     blockingReasons   = @()
     warnings          = @(
+        @($lastUpdateFreshness.warnings)
         if ($panelObjectNames.Count -gt 0) {
             "panel-level-layout-coupling: Panel detectado no pacote ($((@($panelObjectNames) | Sort-Object -Unique) -join ', ')); para Panel SD, nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada."
         }

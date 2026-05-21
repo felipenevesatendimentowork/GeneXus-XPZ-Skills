@@ -138,9 +138,12 @@ Regras de uso:
 - `Regra operacional`: quando o acervo individualizado e o pacote processado tiverem `lastUpdate` valido, usar esse campo como protecao contra regressao de ordem de processamento.
 - `Regra operacional`: item vindo de pacote mais antigo nao deve sobrepor em disco um XML individualizado com `lastUpdate` mais novo; nesse caso, o processamento deve marcar o item como ignorado por obsolescencia, nao como falha de leitura.
 - `Evidência direta`: em importacao real de `Attribute`, a KB preservou o `lastUpdate` do XML como `Modified Date`, independentemente do `Import Date`.
-- `Regra operacional`: ao gerar ou alterar XML de objeto GeneXus, preencher `lastUpdate` com o instante real da gravacao, obtido do relogio local atualizado do ambiente que produz o XML.
-- `Regra operacional`: toda regravacao de XML gerado localmente deve atualizar `lastUpdate` para o instante real da ultima escrita.
+- `Regra operacional`: ao gerar ou alterar XML de objeto GeneXus, preencher `lastUpdate` por procedimento mecanico, obtido do relogio local atualizado do ambiente que produz o XML e comparado com o acervo oficial quando existir baseline do mesmo objeto.
+- `Regra operacional`: para objeto realmente modificado, calcular `NEW_TS = max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)`; se o acervo oficial estiver ausente por se tratar de objeto novo, usar `UtcNow + 60s` e registrar explicitamente que nao houve baseline oficial comparado.
+- `Regra operacional`: toda regravacao de XML gerado localmente deve atualizar `lastUpdate` para `NEW_TS`; nao usar hora cheia, minuto arredondado, valor literal escrito a mao, `lastUpdate` copiado de outro XML ou timestamp herdado do acervo em objeto modificado.
 - `Regra operacional`: quando o XML serializar `lastUpdate` em UTC com sufixo `Z`, converter corretamente a partir do horario local real; nao reutilizar timestamp antigo, aproximado ou herdado de rodada anterior.
+- `Regra operacional`: se o `lastUpdate` salvo de objeto modificado ficar igual ou anterior ao `lastUpdate` do acervo oficial, tratar como defeito bloqueante, porque o GeneXus pode aceitar o import sem atualizar efetivamente o objeto.
+- `Regra operacional`: se o `lastUpdate` salvo ficar varios minutos no futuro sem justificativa pelo acervo oficial + margem, tratar como defeito bloqueante, porque pode disparar avisos de KB modificada depois da hora atual e mascarar diagnosticos reais.
 - `Regra operacional`: em pacote de importacao, somente o objeto efetivamente alterado deve receber `lastUpdate` novo; objetos apenas reenviados para fechamento de dependencias devem manter o `lastUpdate` original do XML da KB.
 - `Regra operacional`: em XMLs GeneXus parecidos, nao assumir que a mesma insercao vai casar em todos os objetos; confirmar o trecho exato em cada arquivo antes de aplicar a mesma edicao.
 - `Regra operacional`: depois de regravar XML local, validar no arquivo final tanto o `lastUpdate` quanto a presenca real dos nos inseridos no ponto esperado.
@@ -198,9 +201,10 @@ Regras de uso:
 
 - `Regra operacional`: gravou ou regravou XML local de objeto, releia o arquivo salvo antes de seguir.
 - `Regra operacional`: a conferencia minima obrigatoria e: cabecalho final lido, `lastUpdate` confirmado e decisao registrada entre `objeto alterado` versus `objeto nao alterado`.
-- `Regra operacional`: objeto realmente alterado deve sair com `lastUpdate` novo do instante real da ultima escrita.
+- `Regra operacional`: objeto realmente alterado deve sair com `lastUpdate` calculado por `max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial; a margem padrao e 60 segundos.
 - `Regra operacional`: objeto reenviado apenas por dependencia ou composicao de pacote deve preservar o `lastUpdate` oficial do XML da KB.
 - `Regra operacional`: empacotamento nao deve prosseguir enquanto o `lastUpdate` do arquivo final nao tiver sido conferido no proprio XML salvo.
+- `Regra operacional`: quando o empacotamento usar `scripts/Build-GeneXusImportFileEnvelope.ps1`, preferir `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>` e declarar objetos modificados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para transformar a conferencia em gate mecanico antes da gravacao do pacote.
 
 ## Topologia operacional do workspace
 
@@ -987,7 +991,7 @@ Regras de uso:
 ## Checklist obrigatorio antes do empacotamento
 
 - `Regra operacional`: antes de empacotar, classificar cada XML ativo como `alterado na rodada` ou `reenviado sem mudanca por dependencia obrigatoria`.
-- `Regra operacional`: se o objeto foi realmente modificado nesta rodada, o `lastUpdate` deve refletir o instante real da ultima gravacao.
+- `Regra operacional`: se o objeto foi realmente modificado nesta rodada, o `lastUpdate` deve seguir `max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial, ou `UtcNow + 60s` para objeto novo sem baseline.
 - `Regra operacional`: se o objeto nao foi modificado e entrou apenas para dependencia obrigatoria ou composicao minima do pacote, o `lastUpdate` oficial anterior deve ser preservado.
 - `Regra operacional`: o empacotamento deve abortar quando houver divergencia entre a classificacao do item e o `lastUpdate` materializado.
 - `Regra operacional`: antes de empacotar, classificar a raiz top-level de cada XML ativo em `Object`, `Attribute` ou `outro tipo`.
