@@ -1314,10 +1314,6 @@ Regras de uso:
 - `Evidência direta`: no par minimo `XPZExemploTRNWWComparacaoSemWW.xpz` e `XPZExemploTRNWWComparacaoComWW.xpz`, a inclusao de `WWExemploMinPaisA` elevou o pacote de `25` para `49` identidades em `ObjectsIdentityMapping`, mesmo acrescentando apenas um objeto top-level.
 - `Inferência forte`: para `WorkWithForWeb`, o aumento de risco operacional nao esta apenas no XML do pattern; ele tambem aparece como ampliacao do grafo de identidades e dependencias de contexto.
 - `Regra operacional`: ao montar pacote minimo com `WorkWithForWeb`, comparar sempre a lista de `ObjectsIdentityMapping` com a versao sem `WW`; o delta de identidades ajuda a separar dependencia real do pattern de ruido do contêiner.
-- `Evidência direta`: no caso `CriaAnimalRefatora` (FabricaBrasil18, 2026-05-20), reimportar os `WorkWithForWeb` pais com apenas `lastUpdate` atualizado, sem alterar `Form`, `Source`, `parm`, actions, parameters ou properties, fez o GeneXus reaplicar o pattern e regenerar os `*General`; os erros `spc0008` de chamada para Web Component com `URL Access = No` desapareceram no build seguinte.
-- `Inferência forte`: quando um derivado de pattern fica inconsistente apos rename, refactor de identidade ou mudanca de visibilidade do alvo, o pattern pai pode continuar serializado com texto antigo em `gxobject`, mas a regeneracao resolve o alvo pelo nome atual e recompõe os derivados.
-- `Regra operacional`: nessa classe de correcao, considerar uma rodada cirurgica de regeneracao de pattern por `lastUpdate`: copiar o XML oficial do pattern pai do acervo materializado para a frente, atualizar apenas `lastUpdate`, empacotar, importar e executar build posterior.
-- `Limite conhecido`: essa trilha nao corrige inconsistencias internas editadas manualmente em derivados gerados, nem substitui reaplicar o pattern pela IDE quando a propria definicao do pattern mudou; tambem nao dispensa validar import real e build depois da rodada.
 
 ### Politica para `Table` e `Index`
 
