@@ -204,7 +204,7 @@ Regras de uso:
 - `Regra operacional`: objeto realmente alterado deve sair com `lastUpdate` calculado por `max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial; a margem padrao e 60 segundos.
 - `Regra operacional`: objeto reenviado apenas por dependencia ou composicao de pacote deve preservar o `lastUpdate` oficial do XML da KB.
 - `Regra operacional`: empacotamento nao deve prosseguir enquanto o `lastUpdate` do arquivo final nao tiver sido conferido no proprio XML salvo.
-- `Regra operacional`: quando o empacotamento usar `scripts/Build-GeneXusImportFileEnvelope.ps1`, preferir `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>` e declarar objetos modificados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para transformar a conferencia em gate mecanico antes da gravacao do pacote.
+- `Regra operacional`: quando o empacotamento usar `scripts/Build-GeneXusImportFileEnvelope.ps1`, informar obrigatoriamente `-AcervoPath <ObjetosDaKbEmXml>`; o script sempre executa o gate de `lastUpdate`, e objetos modificados devem ser declarados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para transformar a conferencia em bloqueio mecanico antes da gravacao do pacote.
 
 ## Topologia operacional do workspace
 

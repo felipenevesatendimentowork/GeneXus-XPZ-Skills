@@ -20,13 +20,13 @@ Relato operacional de agente externo consolidou ocorrencias de 2026-05-13, 2026-
 ### Implementacao
 
 - `scripts/Get-GeneXusXpzLastUpdate.ps1`: passa a aceitar `-BaselineXmlPath` e `-FreshnessMarginSeconds`, retornando `max(UtcNow + margem, baseline lastUpdate + margem)`.
-- `scripts/Build-GeneXusImportFileEnvelope.ps1`: novo gate opcional `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>`, com declaracao de objetos modificados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids`, bloqueando `lastUpdate` anterior ao acervo, igual ao acervo em objeto declarado modificado, margem insuficiente e futuro injustificado.
+- `scripts/Build-GeneXusImportFileEnvelope.ps1`: `-AcervoPath <ObjetosDaKbEmXml>` passou a ser obrigatorio e o gate de `lastUpdate` roda sempre, com declaracao de objetos modificados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids`, bloqueando `lastUpdate` anterior ao acervo, igual ao acervo em objeto declarado modificado, margem insuficiente e futuro injustificado.
 - `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `xpz-builder/SKILL.md` e `xpz-kb-parallel-setup/SKILL.md`: regra alinhada para `NEW_TS = max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)`, preservando `lastUpdate` oficial apenas em dependencias reenviadas sem mudanca.
 - `xpz-kb-parallel-setup/examples/Get-KbLastUpdate.example.ps1`: wrapper exemplo atualizado para repassar baseline e margem ao motor compartilhado.
 
 ### Decisao final
 
-A frente foi implementada no motor de timestamp e no helper de envelope, em vez de ficar apenas como anotacao pendente. A validacao dentro de `Test-GeneXusImportFileEnvelope.ps1` puro continua limitada por nao ter, sozinho, contexto de acervo e classificacao de objeto modificado; por isso o enforcement principal ficou no ponto de montagem `Build-GeneXusImportFileEnvelope.ps1`.
+A frente foi implementada no motor de timestamp e no helper de envelope, em vez de ficar apenas como anotacao pendente. A validacao dentro de `Test-GeneXusImportFileEnvelope.ps1` puro continua limitada por nao ter, sozinho, contexto de acervo e classificacao de objeto modificado; por isso o enforcement principal ficou no ponto de montagem `Build-GeneXusImportFileEnvelope.ps1`, com `AcervoPath` obrigatorio e sem opt-in de frescor.
 
 ## Documenta `diagnosticDegraded` na base operacional e amplia escopo de `executionEvidence` em 09
 

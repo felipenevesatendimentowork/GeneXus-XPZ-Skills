@@ -11,9 +11,8 @@ param(
 
     [string[]]$TopLevelAttributesXmlPaths,
 
+    [Parameter(Mandatory = $true)]
     [string]$AcervoPath,
-
-    [switch]$RequireLastUpdateFresh,
 
     [string[]]$ModifiedObjectNames,
 
@@ -400,19 +399,9 @@ foreach ($path in $ObjectXmlPaths) {
     $objectDocs += (Assert-XmlWellFormed -Path $path -Role "ObjectXml")
 }
 
-$lastUpdateFreshness = [pscustomobject]@{
-    checks          = @()
-    warnings        = @()
-    blockingReasons = @()
-}
-if ($RequireLastUpdateFresh) {
-    if ([string]::IsNullOrWhiteSpace($AcervoPath)) {
-        throw "RequireLastUpdateFresh exige AcervoPath apontando para ObjetosDaKbEmXml."
-    }
-    $lastUpdateFreshness = Test-LastUpdateFreshness -Docs $objectDocs -BaselineRootPath $AcervoPath
-    if (@($lastUpdateFreshness.blockingReasons).Count -gt 0) {
-        throw "BLOCK: lastUpdate invalido antes do empacotamento. $(@($lastUpdateFreshness.blockingReasons) -join ' | ')"
-    }
+$lastUpdateFreshness = Test-LastUpdateFreshness -Docs $objectDocs -BaselineRootPath $AcervoPath
+if (@($lastUpdateFreshness.blockingReasons).Count -gt 0) {
+    throw "BLOCK: lastUpdate invalido antes do empacotamento. $(@($lastUpdateFreshness.blockingReasons) -join ' | ')"
 }
 
 $panelObjectNames = @(

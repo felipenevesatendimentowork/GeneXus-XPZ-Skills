@@ -1048,7 +1048,7 @@ Regras da escada:
 - se houver export real comparavel da IDE para a mesma composicao, preferir repetir o shape desse export em vez de improvisar `Dependencies` ou `ObjectsIdentityMapping`
 - para pacote misto com `Transaction`, `WorkWithForWeb` e `Procedure`, preferir objetos embutidos em `<Objects>` quando esse for o formato validado pelo molde real
 - quando o formato exigir UTC com `Z`, converter corretamente a partir do horario local real; nao reaproveitar timestamp antigo nem de rodada anterior
-- para empacotamento com `Build-GeneXusImportFileEnvelope.ps1`, preferir `-RequireLastUpdateFresh -AcervoPath <ObjetosDaKbEmXml>` e informar `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para que o script bloqueie `lastUpdate` velho, igual ao acervo em objeto modificado ou futuro demais antes de escrever o pacote
+- para empacotamento com `Build-GeneXusImportFileEnvelope.ps1`, informar obrigatoriamente `-AcervoPath <ObjetosDaKbEmXml>`; o script sempre executa o gate de `lastUpdate`, e o agente deve informar `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para que o script bloqueie `lastUpdate` velho, igual ao acervo em objeto modificado ou futuro demais antes de escrever o pacote
 - o agente deve tratar `ObjectsIdentityMapping` como mapeamento de contexto; nao repetir ali cada objeto exportado nem inventar pares `Object` -> `ObjectIdentity` 1:1
 - quando o objeto depender de `parentGuid` ou `moduleGuid` externos relevantes, o agente deve preferir manter no `ObjectsIdentityMapping` a identidade correspondente com o mesmo `Guid`
 - o agente deve preservar sempre preenchidos, no formato normal, `Source/Version/@name`, `Object/@name` e `ObjectIdentity/@Name`
