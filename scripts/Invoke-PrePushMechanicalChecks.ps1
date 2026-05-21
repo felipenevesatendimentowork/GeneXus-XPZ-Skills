@@ -359,16 +359,18 @@ if (-not $onExpectedBranch) {
 }
 if ($workingTree.Status -ne 'clean') {
     [void]$agentWarnings.Add(
-        'Working tree com alteracoes fora do intervalo BaseRef..HEAD; o diff de commits nao cobre modificacoes nao commitadas.'
+        ("Working tree fora do intervalo de commits: {0} arquivo(s) rastreado(s) modificado(s) sem commit e {1} nao rastreado(s); a pre-push nao analisa essas alteracoes em BaseRef..HEAD." -f $workingTree.DirtyTrackedCount, $workingTree.UntrackedCount)
+    )
+}
+if ($commitsBehind -gt 0) {
+    [void]$agentWarnings.Add(
+        ("Remoto ({0}) esta {1} commit(s) a frente de HEAD; push pode exigir pull, merge ou rebase antes." -f $effectiveBaseRef, $commitsBehind)
     )
 }
 
 $agentSemanticChecklist = @(
-    'Identificar termos, scripts, wrappers, parametros, estados, caminhos e regras novos ou alterados no diff',
-    'Buscar esses termos no repositorio inteiro',
-    'Comparar README.md, 02-regras-operacionais-e-runtime.md, 08-guia-para-agente-gpt.md, skills correlatas, exemplos canonicos *.example.ps1 nas skills afetadas (hoje principalmente xpz-kb-parallel-setup/examples/; nao ha examples/ na raiz) e scripts/',
-    'Para cada SKILL.md alterada, varrer no mesmo arquivo: checklist final, fluxo/captura de resultado e inventario de scripts ou blocos de contrato por script',
-    'Reportar gaps confirmados, flags descartados com justificativa e areas nao cobertas pela busca'
+    'Fase semantica: seguir integralmente a secao Revisao pre-push do AGENTS.md na raiz do repositorio (fonte autoritativa).',
+    'Nao tratar exit 0 deste passo mecanico como pre-push concluida.'
 )
 
 $result = [ordered]@{
