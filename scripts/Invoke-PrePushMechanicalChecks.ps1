@@ -17,9 +17,13 @@
 .PARAMETER BaseRef
     Referencia unica do intervalo analisado: commits pendentes, contagem,
     arquivos alterados e diff --check usam sempre BaseRef..HEAD. Default:
-    origin/main (desde o ultimo estado remoto usual). Se a ref nao existir,
-    o script falha com mensagem clara (sem fallback automatico para main).
-    O upstream da branch so aparece no JSON como contexto informativo.
+    origin/main (copia local do ultimo fetch; desde o ultimo push usual em main).
+    Se a ref nao existir, o script falha com mensagem clara (sem fallback
+    automatico para main). Com a ref existente mas desatualizada em relacao ao
+    remoto, o intervalo pode superestimar commits pendentes; o agente deve
+    executar git fetch origin antes da rotina quando precisar comparar contra
+    o remoto atual (ver AGENTS.md). O upstream da branch so aparece no JSON
+    como contexto informativo.
 
 .PARAMETER AsJson
     Emite diagnostico estruturado em JSON.
@@ -288,6 +292,10 @@ if ($whitespaceStatus -ne 'clean') {
 
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
+$agentOperationalReminders = @(
+    'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos.'
+)
+
 $agentSemanticChecklist = @(
     'Identificar termos, scripts, wrappers, parametros, estados, caminhos e regras novos ou alterados no diff',
     'Buscar esses termos no repositorio inteiro',
@@ -317,8 +325,9 @@ $result = [ordered]@{
     gates                  = [ordered]@{
         parse = $parseGate
     }
-    mechanicalFailures     = @($mechanicalFailures)
-    agentSemanticChecklist = @($agentSemanticChecklist)
+    mechanicalFailures       = @($mechanicalFailures)
+    agentOperationalReminders = @($agentOperationalReminders)
+    agentSemanticChecklist   = @($agentSemanticChecklist)
 }
 
 if ($AsJson) {
@@ -327,6 +336,7 @@ if ($AsJson) {
     Write-Output ("STATUS={0}" -f $overallStatus)
     Write-Output ("BRANCH={0} INTERVALO_BASE={1} UPSTREAM_INFORMATIVO={2}" -f $currentBranch, $effectiveBaseRef, $(if ($upstreamRef) { $upstreamRef } else { '(nao configurado)' }))
     Write-Output ("COMMITS_AHEAD={0} COMMITS_BEHIND={1}" -f $commitsAhead, $commitsBehind)
+    Write-Output 'NOTA=Com origin/main existente mas desatualizada, a contagem pode nao refletir o remoto atual; git fetch origin antes da rotina quando necessario (ver AGENTS.md).'
 
     if ($commitsAhead -eq 0) {
         Write-Output 'PENDING_COMMITS=none'
