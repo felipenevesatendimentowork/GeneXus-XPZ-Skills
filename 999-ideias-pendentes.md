@@ -1691,6 +1691,22 @@ O repositório é público (já há `09-inventario-e-rastreabilidade-publica.md`
 - **Trilíngue**: `README.md` é trilíngue. Os quatro novos devem ser também? Possivelmente sim — o repo já assumiu compromisso público trilíngue.
 - **CONTRIBUTING**: precisa refletir as regras locais do `AGENTS.md` (edição segura de .md, anti-duplicata em 998/999, revisão pré-push) traduzidas para humano contribuidor.
 
+### Atualização (frente pré-push, 2026-05-21)
+
+**Estudar implementação de `CONTRIBUTING.md`** — não é correção da rotina pré-push (que já está em `AGENTS.md`, `08-guia-para-agente-gpt.md` e `scripts/Invoke-PrePushMechanicalChecks.ps1` para agentes). O gap é de **onboarding humano**: quem contribui sem ler regras de agente não encontra «como revisar antes do push».
+
+**Contexto:** na pré-push semântica, `README.md` e `02-regras-operacionais-e-runtime.md` são **alvos de coerência** (comparar o diff com a base), não o manual da rotina. `CONTRIBUTING.md` seria a ponte para humanos: orquestrador ou passos manuais, busca cruzada, relatório antes de gravar/push, sem auto-correção pós-relatório.
+
+**Escopo sugerido do estudo (antes de redigir o arquivo):**
+
+- O que traduzir do `AGENTS.md` vs o que remeter só por link (evitar duplicar `AGENTS.md` inteiro).
+- Seção pré-push alinhada ao orquestrador atual (`origin/main..HEAD`, `git fetch origin`, avisos de branch/worktree/arquivos sem commit).
+- Trilíngue (PT primário + ES/EN) — mesmo compromisso do `README.md`.
+- Relação com `README.md` (visão geral) e `02` (runtime XPZ): CONTRIBUTING = fluxo de contribuição, não duplicar conteúdo empírico.
+- Prioridade relativa aos outros três arquivos da mesma ideia (`SECURITY`, `CODE_OF_CONDUCT`, `CHANGELOG`).
+
+**Origem desta atualização:** revisão pré-push por agentes (Codex, Claude, Cursor) em 2026-05-20/21; item 4 da lista de gaps documentais.
+
 ### Decisões em aberto
 
 - Canal de contato no SECURITY.md.
