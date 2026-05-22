@@ -52,6 +52,19 @@ Atalho ergonômico para exportação full. Equivale a ExportAll=true.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
+
+.PARAMETER MonitorLogPath
+Caminho opcional do log gravado por Watch-GeneXusMsBuildLog.ps1.
+
+.PARAMETER StartWatcher
+Switch. Quando presente, o próprio wrapper dispara Watch-GeneXusMsBuildLog.ps1 antes
+de iniciar o MSBuild. Requer -MonitorLogPath.
+
+.PARAMETER WatcherIntervalSeconds
+Intervalo de polling em segundos do watcher. Padrão: 5.
+
+.PARAMETER WatcherSilenceThresholdSeconds
+Segundos sem nova linha no log antes de o watcher emitir alerta de silêncio. Padrão: 120.
 #>
 
 param(
@@ -89,11 +102,27 @@ param(
 
     [switch]$FullExport,
 
-    [switch]$VerboseLog
+    [switch]$VerboseLog,
+
+    [string]$MonitorLogPath,
+
+    [switch]$StartWatcher,
+
+    [ValidateRange(1, 60)]
+    [int]$WatcherIntervalSeconds = 5,
+
+    [ValidateRange(30, 3600)]
+    [int]$WatcherSilenceThresholdSeconds = 120
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+$watcherSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildWatcherSupport.ps1'
+if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
+    throw "Watcher support script not found: $watcherSupportPath"
+}
+. $watcherSupportPath
 
 if ($FullExport) {
     $ExportAll = 'true'
@@ -579,17 +608,63 @@ $script:PathEnrichment = [ordered]@{
     subdirsAdded   = @()
     subdirsSkipped = @()
 }
+$script:TimingLog = [ordered]@{}
+$script:WatcherContext = New-GeneXusMsBuildWatcherContext -StartWatcherRequested $StartWatcher.IsPresent
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
+$script:TimingLog['scriptStart'] = Get-GeneXusMsBuildNowIso
 
 try {
+    $watcherParameterValidation = Test-GeneXusMsBuildWatcherParameters -StartWatcherRequested $StartWatcher.IsPresent -MonitorLogPath $MonitorLogPath
+    if (-not $watcherParameterValidation.ok) {
+        Add-BlockingReason -Reason $watcherParameterValidation.reason
+        $blocked = [ordered]@{
+            status = 'bloqueado por politica de seguranca'
+            summary = $watcherParameterValidation.summary
+            exitCode = 46
+            stage = 'pre-export'
+            requestedContext = [ordered]@{
+                VersionName = $VersionName
+                EnvironmentName = $EnvironmentName
+                ObjectList = $ObjectList
+                ExportAll = $ExportAll
+                StartWatcherRequested = $StartWatcher.IsPresent
+            }
+            resolvedPaths = [ordered]@{
+                GeneXusDir = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath = (Get-FullPathSafe -PathValue $KbPath)
+                XpzPath = (Get-FullPathSafe -PathValue $XpzPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath = $resolvedLogPath
+            }
+            artifacts = [ordered]@{ ExecutionLogPath = $resolvedLogPath }
+            watcherContext = $script:WatcherContext
+            timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            blockingReasons = @($script:BlockingReasons)
+            warnings = @($script:Warnings)
+            strategyTrace = @($script:StrategyTrace)
+        }
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
     if ($VerboseLog.IsPresent) {
         Add-StrategyTrace -Message 'VerboseLog habilitado para detalhamento adicional da exportação headless.'
     }
 
     $artifactDirectory = New-ArtifactDirectory
     $probeLogPath = Join-Path $artifactDirectory 'probe-stage.json'
+    $script:TimingLog['probeStart'] = Get-GeneXusMsBuildNowIso
     $probeStage = Invoke-ProbeStage -ProbeLogPath $probeLogPath
+    $script:TimingLog['probeEnd'] = Get-GeneXusMsBuildNowIso
 
     Add-StrategyTrace -Message ('Probe executado antes da exportação com exitCode {0}.' -f $probeStage.ExitCode)
 
@@ -639,6 +714,8 @@ try {
                 ExecutionLogPath = $resolvedLogPath
                 XpzPath = (Get-FullPathSafe -PathValue $XpzPath)
             }
+            watcherContext = $script:WatcherContext
+            timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             blockingReasons = @($probeDiagnostic.blockingReasons + $script:BlockingReasons)
             warnings = @($probeDiagnostic.warnings)
             strategyTrace = @($probeDiagnostic.strategyTrace + $script:StrategyTrace)
@@ -678,6 +755,8 @@ try {
                 ExecutionLogPath = $resolvedLogPath
                 XpzPath = $xpzValidation.Path
             }
+            watcherContext = $script:WatcherContext
+            timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             blockingReasons = @($script:BlockingReasons)
             warnings = @($script:Warnings)
             strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -758,6 +837,8 @@ try {
                 ExecutionLogPath = $resolvedLogPath
                 XpzPath = $resolvedXpzPath
             }
+            watcherContext = $script:WatcherContext
+            timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             blockingReasons = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
             warnings = @($script:Warnings)
             strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
@@ -779,7 +860,19 @@ try {
     [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-Utf8NoBomEncoding))
     Add-StrategyTrace -Message ('Arquivo .msbuild temporário gerado em: {0}' -f $msBuildFilePath)
 
+    if ($StartWatcher.IsPresent) {
+        Start-GeneXusMsBuildWatcherProcess `
+            -WatcherContext $script:WatcherContext `
+            -ScriptsDirectory (Split-Path -Parent $PSCommandPath) `
+            -LogFilePath $stdOutPath `
+            -MonitorLogFilePath $MonitorLogPath `
+            -IntervalSeconds $WatcherIntervalSeconds `
+            -SilenceThresholdSeconds $WatcherSilenceThresholdSeconds
+    }
+
+    $script:TimingLog['msbuildStart'] = Get-GeneXusMsBuildNowIso
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
+    $script:TimingLog['msbuildEnd'] = Get-GeneXusMsBuildNowIso
     # Pos-processamento resiliente: a partir daqui o MSBuild ja rodou.
     # Falha local nao pode descartar evidencia real do MSBuild (incluindo __EXPORTED_FILE__).
     $postProcessingFailed    = $false
@@ -899,6 +992,7 @@ try {
             ReferenceType = $ReferenceType
             ExportKbInfo = $ExportKbInfo
             ExportAll = $ExportAll
+            StartWatcherRequested = $StartWatcher.IsPresent
         }
         observedContext = [ordered]@{
             ActiveVersion = $activeVersionOutput
@@ -924,6 +1018,8 @@ try {
             XpzPath = $resolvedXpzPath
             XpzSizeBytes = $fileSizeBytes
         }
+        watcherContext = $script:WatcherContext
+        timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         stdoutSignals = [ordered]@{
             exportMarkerFound = (-not [string]::IsNullOrWhiteSpace($exportedFileMarker))
             gxWarnings        = $gxWarningLines
@@ -967,6 +1063,8 @@ try {
                 ExecutionLogPath     = $resolvedLogPath
                 XpzPath              = $resolvedXpzPath
             }
+            watcherContext       = $script:WatcherContext
+            timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             exportedFileMarker    = $exportedFileMarker
             note                  = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria.'
         }
@@ -1000,6 +1098,7 @@ catch {
             ReferenceType = $ReferenceType
             ExportKbInfo = $ExportKbInfo
             ExportAll = $ExportAll
+            StartWatcherRequested = $StartWatcher.IsPresent
         }
         resolvedPaths = [ordered]@{
             GeneXusDir = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -1020,6 +1119,8 @@ catch {
             ExecutionLogPath = $resolvedLogPath
             XpzPath = (Get-FullPathSafe -PathValue $XpzPath)
         }
+        watcherContext = $script:WatcherContext
+        timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         stdoutSignals = [ordered]@{
             exportMarkerFound = $false
             gxWarnings        = @()

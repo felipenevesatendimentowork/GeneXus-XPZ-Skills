@@ -621,6 +621,8 @@ Scripts propostos:
   - objetivo: produzir JSON compacto de logs brutos de preview/import, com itens importados, warnings, erros, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
 - `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`
   - objetivo: extrair, resumir e comparar objetos GeneXus em XML/XPZ sem imprimir pacote completo nem CDATA extenso
+- `GeneXusMsBuildWatcherSupport.ps1`
+  - objetivo: centralizar o contrato comum de watcher usado pelos wrappers MSBuild (`-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e delay curto para drenagem do log do monitor), evitando implementações divergentes por wrapper
 - `Watch-GeneXusMsBuildLog.ps1`
   - objetivo: monitorar incrementalmente o log de uma execução headless em andamento, sem depender do chat para polling; encerra sozinho quando o processo termina
   - parâmetros obrigatórios: `-Pid`, `-LogPath`
@@ -648,6 +650,10 @@ Parâmetros transversais esperados:
 - `-WorkingDirectory`
 - `-LogPath`
 - `-VerboseLog`
+- `-StartWatcher` (quando suportado pelo wrapper, dispara `Watch-GeneXusMsBuildLog.ps1` antes do MSBuild; requer `-MonitorLogPath`)
+- `-MonitorLogPath` (caminho do log próprio do watcher; quando existir, alimenta `timing.phases`)
+- `-WatcherIntervalSeconds` (default 5)
+- `-WatcherSilenceThresholdSeconds` (default 120)
 
 Parâmetros específicos de exportação:
 

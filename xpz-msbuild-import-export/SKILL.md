@@ -183,7 +183,8 @@ Estado atual da materialização:
 - `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado para validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB
 - `Get-GeneXusImportPackageObjectInventory.ps1`: implementado para inventário determinístico de `import_file.xml`/XML com raiz `<ExportFile>`; lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>` e pode confrontar com delta declarado em texto `Tipo:Nome`; `.xpz` ainda não faz parte deste escopo inicial
-- `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; usar quando o invocador encerrar por timeout em KB grande para acompanhar o MSBuild ainda em execução sem depender do chat
+- `GeneXusMsBuildWatcherSupport.ps1`: implementado como helper comum do contrato de watcher dos wrappers MSBuild; centraliza `-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e leitura do log do monitor
+- `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; usar em preview/import/export grandes para acompanhar o MSBuild sem depender do chat; em importação real de pacote amplo ou com muitos `WorkWithForWeb`, usar watcher como padrão operacional recomendado
 - `Test-GeneXusRuntimeFreshness.ps1`: implementado como diagnóstico somente leitura de frescor de runtime; usar quando o sub-estado for `importação real efetiva provada, geração de runtime pendente` para confirmar se artefatos de runtime já refletem a versão importada
 
 Scripts nesta frente:
@@ -235,6 +236,9 @@ Scripts nesta frente:
   - objetivo: monitorar incrementalmente o log de uma execução headless em andamento; encerra sozinho quando o processo termina; usar especialmente em importações de KB grande onde o invocador pode encerrar por timeout antes do MSBuild concluir
   - parâmetros obrigatórios: `-Pid`, `-LogPath`
   - parâmetros opcionais: `-MonitorLog`, `-IntervalSeconds` (default 5), `-SilenceThresholdSeconds` (default 120)
+- `GeneXusMsBuildWatcherSupport.ps1`
+  - status atual: implementado
+  - objetivo: helper comum para os wrappers MSBuild dispararem o watcher e registrarem `watcherContext`/`timing.phases` com o mesmo contrato
 - `Test-GeneXusRuntimeFreshness.ps1`
   - status atual: implementado
   - objetivo: diagnosticar se o runtime GeneXus reflete a versão mais recente de um objeto após import+build; somente leitura, não abre KB, não invoca MSBuild

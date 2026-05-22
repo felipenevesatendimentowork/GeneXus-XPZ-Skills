@@ -67,6 +67,19 @@ não dispensa a confirmação, apenas muda o canal.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
+
+.PARAMETER MonitorLogPath
+Caminho opcional do log gravado por Watch-GeneXusMsBuildLog.ps1.
+
+.PARAMETER StartWatcher
+Switch. Quando presente, o próprio wrapper dispara Watch-GeneXusMsBuildLog.ps1 antes
+de iniciar o MSBuild. Requer -MonitorLogPath.
+
+.PARAMETER WatcherIntervalSeconds
+Intervalo de polling em segundos do watcher. Padrão: 5.
+
+.PARAMETER WatcherSilenceThresholdSeconds
+Segundos sem nova linha no log antes de o watcher emitir alerta de silêncio. Padrão: 120.
 #>
 
 param(
@@ -97,11 +110,27 @@ param(
 
     [switch]$ConfirmWideRebuild,
 
-    [switch]$VerboseLog
+    [switch]$VerboseLog,
+
+    [string]$MonitorLogPath,
+
+    [switch]$StartWatcher,
+
+    [ValidateRange(1, 60)]
+    [int]$WatcherIntervalSeconds = 5,
+
+    [ValidateRange(30, 3600)]
+    [int]$WatcherSilenceThresholdSeconds = 120
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+$watcherSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildWatcherSupport.ps1'
+if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
+    throw "Watcher support script not found: $watcherSupportPath"
+}
+. $watcherSupportPath
 
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
@@ -467,13 +496,56 @@ $script:PathEnrichment  = [ordered]@{
     subdirsAdded   = @()
     subdirsSkipped = @()
 }
+$script:TimingLog       = [ordered]@{}
+$script:WatcherContext  = New-GeneXusMsBuildWatcherContext -StartWatcherRequested $StartWatcher.IsPresent
 
 $confirmWideRebuildMode    = $null
 $allowWideRebuildConfirmed = $false
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
+$script:TimingLog['scriptStart'] = Get-GeneXusMsBuildNowIso
 
 try {
+    $watcherParameterValidation = Test-GeneXusMsBuildWatcherParameters -StartWatcherRequested $StartWatcher.IsPresent -MonitorLogPath $MonitorLogPath
+    if (-not $watcherParameterValidation.ok) {
+        Add-BlockingReason -Reason $watcherParameterValidation.reason
+        $blocked = [ordered]@{
+            status           = 'bloqueado por politica de seguranca'
+            summary          = $watcherParameterValidation.summary
+            exitCode         = 46
+            stage            = 'pre-specify-generate'
+            requestedContext = [ordered]@{
+                VersionName           = $VersionName
+                EnvironmentName       = $EnvironmentName
+                ForceRebuild          = $ForceRebuild
+                DetailedNavigation    = $DetailedNavigation
+                StartWatcherRequested = $StartWatcher.IsPresent
+            }
+            resolvedPaths    = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $KbPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath          = $resolvedLogPath
+            }
+            artifacts        = [ordered]@{ ExecutionLogPath = $resolvedLogPath }
+            watcherContext   = $script:WatcherContext
+            timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            blockingReasons  = @($script:BlockingReasons)
+            warnings         = @($script:Warnings)
+            strategyTrace    = @($script:StrategyTrace)
+        }
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
     # Gate de segurança: -ConfirmWideRebuild sem -AllowWideRebuild não tem sentido e é bloqueado por política
     if ($ConfirmWideRebuild.IsPresent -and -not $AllowWideRebuild.IsPresent) {
         Add-BlockingReason -Reason '-ConfirmWideRebuild so pode ser usado em conjunto com -AllowWideRebuild. Para confirmar regeneracao ampla interativamente, use apenas -AllowWideRebuild. Para modo nao-interativo, use -AllowWideRebuild -ConfirmWideRebuild apos confirmar a operacao com o usuario humano.'
@@ -590,7 +662,9 @@ try {
 
     $artifactDirectory = New-ArtifactDirectory
     $probeLogPath = Join-Path $artifactDirectory 'probe-stage.json'
+    $script:TimingLog['probeStart'] = Get-GeneXusMsBuildNowIso
     $probeStage = Invoke-ProbeStage -ProbeLogPath $probeLogPath
+    $script:TimingLog['probeEnd'] = Get-GeneXusMsBuildNowIso
 
     Add-StrategyTrace -Message ('Probe executado antes da verificação com exitCode {0}.' -f $probeStage.ExitCode)
 
@@ -765,7 +839,19 @@ try {
     [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-Utf8NoBomEncoding))
     Add-StrategyTrace -Message ('Arquivo .msbuild temporário gerado em: {0}' -f $msBuildFilePath)
 
+    if ($StartWatcher.IsPresent) {
+        Start-GeneXusMsBuildWatcherProcess `
+            -WatcherContext $script:WatcherContext `
+            -ScriptsDirectory (Split-Path -Parent $PSCommandPath) `
+            -LogFilePath $stdOutPath `
+            -MonitorLogFilePath $MonitorLogPath `
+            -IntervalSeconds $WatcherIntervalSeconds `
+            -SilenceThresholdSeconds $WatcherSilenceThresholdSeconds
+    }
+
+    $script:TimingLog['msbuildStart'] = Get-GeneXusMsBuildNowIso
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
+    $script:TimingLog['msbuildEnd'] = Get-GeneXusMsBuildNowIso
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
 
@@ -892,6 +978,7 @@ try {
             AllowWideRebuildRequested  = $AllowWideRebuild.IsPresent
             AllowWideRebuildConfirmed  = $allowWideRebuildConfirmed
             ConfirmWideRebuildMode     = $confirmWideRebuildMode
+            StartWatcherRequested      = $StartWatcher.IsPresent
         }
         observedContext  = [ordered]@{
             ActiveVersion     = $activeVersionOutput
@@ -916,6 +1003,8 @@ try {
             StdErrPath       = $stdErrPath
             ExecutionLogPath = $resolvedLogPath
         }
+        watcherContext   = $script:WatcherContext
+        timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         stdoutSignals        = [ordered]@{
             blockingPattern = $detectedBlockingPattern
             postBuildEvents = $postBuildEventLines
@@ -954,6 +1043,7 @@ catch {
             AllowWideRebuildRequested  = $AllowWideRebuild.IsPresent
             AllowWideRebuildConfirmed  = $allowWideRebuildConfirmed
             ConfirmWideRebuildMode     = $confirmWideRebuildMode
+            StartWatcherRequested      = $StartWatcher.IsPresent
         }
         resolvedPaths    = [ordered]@{
             GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
@@ -972,6 +1062,8 @@ catch {
             StdErrPath       = $null
             ExecutionLogPath = $resolvedLogPath
         }
+        watcherContext   = $script:WatcherContext
+        timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         stdoutSignals        = [ordered]@{
             blockingPattern = $null
             postBuildEvents = @()

@@ -315,6 +315,10 @@ e confirmação explícita** por frase exata.
   no log antes de o watcher emitir alerta de silêncio; repassado ao watcher; usado
   apenas quando `-StartWatcher` está presente; intervalo válido: 30-3600)
 
+  O contrato acima é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`.
+  Ao evoluir watcher, timing ou `watcherContext`, manter o helper comum como sede
+  da regra e evitar lógica divergente dentro dos wrappers.
+
   > **Limitação conhecida de `timing.phases`:** somente fases com par completo
   > (`iniciado` + `terminado`) aparecem na lista. Fases cujo `terminado` nunca é
   > emitido — por erro ou abort — são silenciosamente omitidas (ex.: `Atualização

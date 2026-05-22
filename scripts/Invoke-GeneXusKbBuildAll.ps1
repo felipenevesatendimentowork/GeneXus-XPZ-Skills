@@ -198,6 +198,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$watcherSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildWatcherSupport.ps1'
+if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
+    throw "Watcher support script not found: $watcherSupportPath"
+}
+. $watcherSupportPath
+
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
 function Get-Utf8NoBomEncoding {
@@ -271,45 +277,6 @@ function Resolve-ProbeScriptPath {
         throw "Probe script not found: $probePath"
     }
     return $probePath
-}
-
-function Start-WatcherProcess {
-    param(
-        [string]$LogFilePath,
-        [string]$MonitorLogFilePath,
-        [int]$Interval,
-        [int]$SilenceThreshold
-    )
-
-    $scriptDirectory = Split-Path -Parent $PSCommandPath
-    $watcherScript   = Join-Path $scriptDirectory 'Watch-GeneXusMsBuildLog.ps1'
-    $script:WatcherContext['watcherScriptPath']     = $watcherScript
-    $script:WatcherContext['watcherMonitorLogPath'] = $MonitorLogFilePath
-
-    if (-not (Test-Path -LiteralPath $watcherScript -PathType Leaf)) {
-        Add-WarningMessage -Message ('Watch-GeneXusMsBuildLog.ps1 nao localizado em: {0}. Watcher nao iniciado.' -f $watcherScript)
-        $script:WatcherContext['watcherLaunchError'] = 'script nao localizado'
-        return
-    }
-
-    try {
-        $watchArgs = @(
-            '-NoExit', '-NoProfile',
-            '-File', $watcherScript,
-            '-ProcessId', $PID,
-            '-LogPath', $LogFilePath,
-            '-MonitorLog', $MonitorLogFilePath,
-            '-IntervalSeconds', $Interval,
-            '-SilenceThresholdSeconds', $SilenceThreshold
-        )
-        $watchProc = Start-Process pwsh -ArgumentList $watchArgs -PassThru
-        $script:WatcherContext['watcherLaunched'] = $true
-        $script:WatcherContext['watcherPid']      = $watchProc.Id
-        Add-StrategyTrace -Message ('Watcher iniciado automaticamente: PID={0}, script={1}' -f $watchProc.Id, $watcherScript)
-    } catch {
-        Add-WarningMessage -Message ('Falha ao iniciar watcher: {0}. Build prossegue sem watcher.' -f $_.Exception.Message)
-        $script:WatcherContext['watcherLaunchError'] = $_.Exception.Message
-    }
 }
 
 function Invoke-ProbeStage {
@@ -525,106 +492,6 @@ function Split-NonEmptyLines {
     return ,$result
 }
 
-function Get-NowIso {
-    return [DateTime]::Now.ToString('yyyy-MM-ddTHH:mm:sszzz')
-}
-
-function Get-DurationSeconds {
-    param([string]$StartIso, [string]$EndIso)
-    if ([string]::IsNullOrWhiteSpace($StartIso) -or [string]::IsNullOrWhiteSpace($EndIso)) {
-        return $null
-    }
-    return [int]([DateTime]::Parse($EndIso) - [DateTime]::Parse($StartIso)).TotalSeconds
-}
-
-function Get-PhaseTimings {
-    param([string]$MonitorLogPath)
-
-    if ([string]::IsNullOrWhiteSpace($MonitorLogPath) -or
-        -not (Test-Path -LiteralPath $MonitorLogPath -PathType Leaf)) {
-        return @()
-    }
-
-    try {
-        # Leitura com FileShare.ReadWrite — Watch pode ainda estar com o arquivo aberto
-        $lines = New-Object System.Collections.Generic.List[string]
-        $fs = New-Object -TypeName System.IO.FileStream -ArgumentList @(
-            $MonitorLogPath,
-            [System.IO.FileMode]::Open,
-            [System.IO.FileAccess]::Read,
-            [System.IO.FileShare]::ReadWrite
-        )
-        $reader = New-Object -TypeName System.IO.StreamReader -ArgumentList @($fs, [System.Text.Encoding]::UTF8)
-        try {
-            $l = $reader.ReadLine()
-            while ($null -ne $l) { [void]$lines.Add($l); $l = $reader.ReadLine() }
-        } finally {
-            $reader.Dispose()
-            $fs.Dispose()
-        }
-
-        $starts = [ordered]@{}
-        $phases = New-Object System.Collections.ArrayList
-
-        foreach ($line in $lines) {
-            # Formato Watch: [yyyy-MM-dd HH:mm:ss] ========== <fase> iniciado/terminado ==========
-            if ($line -match '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+={3,}\s+(.+?)\s+(iniciado|terminado)\s+={3,}') {
-                $ts       = $Matches[1]
-                $rawName  = $Matches[2].Trim()
-                # Chave normalizada (sem espacos) para fechar pares com grafia inconsistente
-                # do GeneXus (ex.: "Get Active Version" iniciado / "GetActiveVersion" terminado).
-                # O campo name no JSON usa o rawName do terminado — forma canonica do GeneXus.
-                $normName = $rawName -replace '\s+', ''
-                $state    = $Matches[3]
-                if ($state -eq 'iniciado') {
-                    # Guarda [normName] -> [ts, rawName] para recuperar o nome original do iniciado
-                    # (usado apenas como fallback; terminado sobrescreve o rawName no JSON)
-                    $starts[$normName] = @{ ts = $ts; rawName = $rawName }
-                } elseif ($state -eq 'terminado' -and $starts.Contains($normName)) {
-                    [void]$phases.Add([ordered]@{
-                        name            = $rawName          # nome do terminado (forma canonica)
-                        start           = $starts[$normName].ts
-                        end             = $ts
-                        durationSeconds = Get-DurationSeconds -StartIso $starts[$normName].ts -EndIso $ts
-                    })
-                    $starts.Remove($normName)
-                }
-            }
-        }
-
-        return @($phases)
-    } catch {
-        Add-WarningMessage -Message ('Get-PhaseTimings falhou: {0}' -f $_.Exception.Message)
-        return @()
-    }
-}
-
-function Get-TimingSection {
-    # scriptEnd capturado antes do sleep para nao inflar totalDurationSeconds
-    $scriptEnd = Get-NowIso
-
-    # Aguarda Watch drenar as linhas finais do log antes de ler as fases.
-    # Watch dorme 2s apos detectar que o processo morreu e so entao grava os
-    # marcadores restantes. Com intervalo de polling de 3s, o pior caso e
-    # ~5s apos o termino do MSBuild. 6s garante a janela completa.
-    if (-not [string]::IsNullOrWhiteSpace($MonitorLogPath)) {
-        Start-Sleep -Seconds 6
-    }
-
-    return [ordered]@{
-        scriptStart            = $script:TimingLog['scriptStart']
-        probeStart             = $script:TimingLog['probeStart']
-        probeEnd               = $script:TimingLog['probeEnd']
-        probeDurationSeconds   = Get-DurationSeconds -StartIso $script:TimingLog['probeStart']  -EndIso $script:TimingLog['probeEnd']
-        msbuildStart           = $script:TimingLog['msbuildStart']
-        msbuildEnd             = $script:TimingLog['msbuildEnd']
-        msbuildDurationSeconds = Get-DurationSeconds -StartIso $script:TimingLog['msbuildStart'] -EndIso $script:TimingLog['msbuildEnd']
-        scriptEnd              = $scriptEnd
-        totalDurationSeconds   = Get-DurationSeconds -StartIso $script:TimingLog['scriptStart']  -EndIso $scriptEnd
-        phases                 = Get-PhaseTimings -MonitorLogPath $MonitorLogPath
-    }
-}
-
 function Resolve-BuildStatus {
     param(
         [int]$MsBuildExitCode,
@@ -696,19 +563,12 @@ $script:PathEnrichment  = [ordered]@{
     subdirsAdded   = @()
     subdirsSkipped = @()
 }
-$script:WatcherContext  = [ordered]@{
-    startWatcherRequested = $StartWatcher.IsPresent
-    watcherLaunched       = $false
-    watcherPid            = $null
-    watcherMonitorLogPath = $null
-    watcherScriptPath     = $null
-    watcherLaunchError    = $null
-}
+$script:WatcherContext  = New-GeneXusMsBuildWatcherContext -StartWatcherRequested $StartWatcher.IsPresent
 $confirmReorgMode       = $null
 $confirmWideRebuildMode = $null
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
-$script:TimingLog['scriptStart'] = Get-NowIso
+$script:TimingLog['scriptStart'] = Get-GeneXusMsBuildNowIso
 
 try {
     # Gate de segurança: -ConfirmWideRebuild sem -AllowWideRebuild não tem sentido e é bloqueado por política
@@ -760,7 +620,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
-        $blocked['timing'] = Get-TimingSection
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -823,7 +683,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
-        $blocked['timing'] = Get-TimingSection
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -884,7 +744,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
-        $blocked['timing'] = Get-TimingSection
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -945,7 +805,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
-        $blocked['timing'] = Get-TimingSection
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -958,11 +818,12 @@ try {
     }
 
     # Gate de segurança: -StartWatcher requer -MonitorLogPath
-    if ($StartWatcher.IsPresent -and [string]::IsNullOrWhiteSpace($MonitorLogPath)) {
-        Add-BlockingReason -Reason '-StartWatcher requer -MonitorLogPath. Forneca o caminho do log do monitor para que watcher e build possam ser conectados.'
+    $watcherParameterValidation = Test-GeneXusMsBuildWatcherParameters -StartWatcherRequested $StartWatcher.IsPresent -MonitorLogPath $MonitorLogPath
+    if (-not $watcherParameterValidation.ok) {
+        Add-BlockingReason -Reason $watcherParameterValidation.reason
         $blocked = [ordered]@{
             status           = 'bloqueado por politica de seguranca'
-            summary          = '-StartWatcher requer -MonitorLogPath. Execute novamente informando -MonitorLogPath com o caminho do log do monitor.'
+            summary          = $watcherParameterValidation.summary
             exitCode         = 46
             stage            = 'pre-build'
             requestedContext = [ordered]@{
@@ -1006,7 +867,7 @@ try {
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
         }
-        $blocked['timing'] = Get-TimingSection
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
@@ -1024,9 +885,9 @@ try {
 
     $artifactDirectory = New-ArtifactDirectory
     $probeLogPath = Join-Path $artifactDirectory 'probe-stage.json'
-    $script:TimingLog['probeStart'] = Get-NowIso
+    $script:TimingLog['probeStart'] = Get-GeneXusMsBuildNowIso
     $probeStage = Invoke-ProbeStage -ProbeLogPath $probeLogPath
-    $script:TimingLog['probeEnd'] = Get-NowIso
+    $script:TimingLog['probeEnd'] = Get-GeneXusMsBuildNowIso
 
     Add-StrategyTrace -Message ('Probe executado antes do build com exitCode {0}.' -f $probeStage.ExitCode)
 
@@ -1087,7 +948,7 @@ try {
             strategyTrace    = @($probeDiagnostic.strategyTrace + $script:StrategyTrace)
         }
 
-        $blocked['timing'] = Get-TimingSection
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
         if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
             Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
@@ -1214,7 +1075,7 @@ try {
                     warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
                     strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
                 }
-                $aborted['timing'] = Get-TimingSection
+                $aborted['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
                 $abortedJson = ConvertTo-JsonText -InputObject $aborted
                 if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
                     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $abortedJson
@@ -1307,7 +1168,7 @@ try {
                     warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
                     strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
                 }
-                $aborted['timing'] = Get-TimingSection
+                $aborted['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
             $abortedJson = ConvertTo-JsonText -InputObject $aborted
                 if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
                     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $abortedJson
@@ -1349,16 +1210,18 @@ try {
     Add-StrategyTrace -Message ('Arquivo .msbuild temporario gerado em: {0}' -f $msBuildFilePath)
 
     if ($StartWatcher.IsPresent) {
-        Start-WatcherProcess `
-            -LogFilePath          $stdOutPath `
-            -MonitorLogFilePath   $MonitorLogPath `
-            -Interval             $WatcherIntervalSeconds `
-            -SilenceThreshold     $WatcherSilenceThresholdSeconds
+        Start-GeneXusMsBuildWatcherProcess `
+            -WatcherContext         $script:WatcherContext `
+            -ScriptsDirectory       (Split-Path -Parent $PSCommandPath) `
+            -LogFilePath            $stdOutPath `
+            -MonitorLogFilePath     $MonitorLogPath `
+            -IntervalSeconds        $WatcherIntervalSeconds `
+            -SilenceThresholdSeconds $WatcherSilenceThresholdSeconds
     }
 
-    $script:TimingLog['msbuildStart'] = Get-NowIso
+    $script:TimingLog['msbuildStart'] = Get-GeneXusMsBuildNowIso
     $msBuildResult   = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
-    $script:TimingLog['msbuildEnd'] = Get-NowIso
+    $script:TimingLog['msbuildEnd'] = Get-GeneXusMsBuildNowIso
     $msBuildExitCode = $msBuildResult.ExitCode
     $timedOut        = $msBuildResult.TimedOut
 
@@ -1576,7 +1439,7 @@ try {
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
     }
 
-    $diagnostic['timing'] = Get-TimingSection
+    $diagnostic['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
     $json = ConvertTo-JsonText -InputObject $diagnostic
     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json
     Write-Output $json
@@ -1637,7 +1500,7 @@ catch {
         strategyTrace    = @($script:StrategyTrace)
     }
 
-    $failure['timing'] = Get-TimingSection
+    $failure['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
     $failureJson = ConvertTo-JsonText -InputObject $failure
     try {
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
