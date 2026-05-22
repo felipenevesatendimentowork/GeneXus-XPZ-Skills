@@ -214,6 +214,7 @@ function Test-LastUpdateFreshness {
 
         if ($null -eq $baselineDoc) {
             $message = "last-update-baseline-missing: '$label' nao foi encontrado em AcervoPath; NewObjectPolicy=$NewObjectPolicy."
+            $statusCode = "baseline-missing"
             if ($NewObjectPolicy -eq "block") {
                 $blockingReasons.Add($message) | Out-Null
                 $status = "fail"
@@ -223,6 +224,11 @@ function Test-LastUpdateFreshness {
             } else {
                 $status = "pass"
             }
+            if ($candidateLastUpdate -gt $maxFuture) {
+                $status = "fail"
+                $statusCode = "baseline-missing-too-far-in-future"
+                $blockingReasons.Add("last-update-too-far-in-future: '$label' sem baseline oficial tem lastUpdate $(Format-GeneXusLastUpdate -Value $candidateLastUpdate), maior que UtcNow + $FutureToleranceSeconds segundos.") | Out-Null
+            }
             $checks.Add([pscustomobject]@{
                 objectName       = $name
                 fullyQualifiedName = $fqn
@@ -231,7 +237,7 @@ function Test-LastUpdateFreshness {
                 candidateLastUpdate = Format-GeneXusLastUpdate -Value $candidateLastUpdate
                 baselineLastUpdate  = $null
                 status           = $status
-                code             = "baseline-missing"
+                code             = $statusCode
             }) | Out-Null
             continue
         }
