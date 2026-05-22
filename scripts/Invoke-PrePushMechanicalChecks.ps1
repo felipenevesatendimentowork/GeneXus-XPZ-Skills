@@ -357,10 +357,22 @@ $agentOperationalReminders = @(
     'Parse (Test-PsScriptsParse.ps1) varre todo scripts/ e *.example.ps1 fora de historico/, nao apenas o diff do intervalo.',
     'Com commitsAhead=0 nao ha diff no intervalo; pre-push nao substitui revisao de alteracoes so na working tree (ver avisos de worktree).',
     'exit 0 mecanico nao autoriza push: ler PUSH_READINESS; com blocked, integrar remoto antes do push.',
-    'Com PUSH_READINESS=blocked, diff/arquivos do intervalo sao diagnosticos; fase semantica sobre commits locais continua obrigatoria.'
+    'Com PUSH_READINESS=blocked, diff/arquivos do intervalo sao diagnosticos; fase semantica sobre commits locais continua obrigatoria.',
+    'Com SKILL.md no diff, abrir satelites referenciados no proprio SKILL (quality-checklist, wwp-packaging, responsibilities-by-type) para regra em camadas.'
 )
 
 $agentWarnings = [System.Collections.Generic.List[string]]::new()
+$skillMdInDiff = @($changedFiles | Where-Object { $_ -match '/SKILL\.md$' })
+if ($skillMdInDiff.Count -gt 0) {
+    $skillSummary = if ($skillMdInDiff.Count -le 3) {
+        ($skillMdInDiff -join ', ')
+    } else {
+        ('{0} (+{1} mais)' -f $skillMdInDiff[0], ($skillMdInDiff.Count - 1))
+    }
+    [void]$agentWarnings.Add(
+        ("SKILL.md alterado no intervalo ({0}): verificar satelites referenciados no proprio arquivo (ex. quality-checklist.md, wwp-packaging.md, responsibilities-by-type/) para regra em camadas." -f $skillSummary)
+    )
+}
 if (-not $onExpectedBranch) {
     [void]$agentWarnings.Add(
         ("Branch atual e '{0}'; este repositorio espera trabalho direto em {1}." -f $currentBranch, $expectedBranch)

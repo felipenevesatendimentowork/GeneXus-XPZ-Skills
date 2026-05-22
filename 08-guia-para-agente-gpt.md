@@ -91,7 +91,8 @@ Regras da escada:
 - na rotina pre-push, executar primeiro `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` recomendado para agentes); intervalo unico `origin/main..HEAD` para contagem, lista de commits, arquivos do diff e `git diff --check`
 - o parse delegado (`Test-PsScriptsParse.ps1`) varre todo `scripts/` e `*.example.ps1` fora de `historico/`, nao apenas o diff; com `commitsAhead=0` nao ha diff no intervalo — alteracoes so na working tree ficam fora da analise (o script avisa contagens)
 - ler `PUSH_READINESS` no relatorio, nao so `exit 0` do passo mecanico; com `blocked`, diff e lista de arquivos do intervalo sao apenas diagnosticos
-- o script mecanico nao encerra a pre-push (nem `exit 0` mecanico); em seguida aplicar a busca semantica de coerencia cruzada descrita no `AGENTS.md` da raiz, incluindo a regra em camadas para `SKILL.md` longos (checklist final, captura de resultado e inventario de scripts no mesmo arquivo)
+- o script mecanico nao encerra a pre-push (nem `exit 0` mecanico); em seguida aplicar a busca semantica do `AGENTS.md`, incluindo regra em camadas: `SKILL.md` **e satelites** que ele referencia (ex. `xpz-builder/quality-checklist.md`), nao so o `SKILL.md`
+- com `SKILL.md` no diff, o orquestrador avisa para conferir satelites linkados no proprio SKILL
 - na pre-push, gaps exigem aprovacao explicita depois do relatorio; uma unica aprovacao pode cobrir o conjunto sugerido (ex.: «aplica os gaps do relatorio»), salvo pedido item a item; intencao inicial nao autoriza gravar automaticamente
 - com `commitsBehind > 0`, `PUSH_READINESS=blocked`: diff/arquivos do intervalo sao so diagnosticos; fetch origin se necessario; se persistir, integrar antes do push (sem push automatico)
 - na comparacao da pre-push, exemplos canonicos ficam em `*.example.ps1` dentro das skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`); nao ha pasta `examples/` na raiz
