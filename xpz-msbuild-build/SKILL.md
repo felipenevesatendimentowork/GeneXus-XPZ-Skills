@@ -182,6 +182,40 @@ WORKFLOW e nota de comportamento crítico abaixo.
 - `-WorkingDirectory` (obrigatório)
 - `-LogPath` (obrigatório)
 - `-VerboseLog` (opcional)
+- `-MonitorLogPath` (String, opcional — caminho do arquivo gravado pelo parâmetro
+  `-MonitorLog` de `Watch-GeneXusMsBuildLog.ps1`; quando fornecido e o arquivo existir
+  após a execução, o wrapper extrai os timestamps das fases internas
+  (`iniciado`/`terminado`) e popula `timing.phases` no JSON de resultado; sem este
+  parâmetro, `timing.phases` fica vazio mas os tempos totais da execução continuam
+  sendo gravados; obrigatório quando `-StartWatcher` for passado — bloqueado por
+  política com exit 46 se ausente)
+- `-StartWatcher` (switch — quando presente, o próprio wrapper dispara
+  `Watch-GeneXusMsBuildLog.ps1` em janela visível com `Start-Process pwsh` antes de
+  iniciar o MSBuild; requer `-MonitorLogPath`; o watcher recebe o PID do processo
+  wrapper como alvo de monitoramento; o resultado JSON inclui `watcherContext` com
+  `watcherLaunched`, `watcherPid`, `watcherScriptPath`, `watcherMonitorLogPath` e
+  `watcherLaunchError`; se o watcher falhar ao iniciar, a execução prossegue com
+  warning — não bloqueia a execução)
+- `-WatcherIntervalSeconds` (Int, default `5` — intervalo de polling em segundos
+  repassado ao watcher; usado apenas quando `-StartWatcher` está presente;
+  intervalo válido: 1-60)
+- `-WatcherSilenceThresholdSeconds` (Int, default `120` — segundos sem nova linha
+  no log antes de o watcher emitir alerta de silêncio; repassado ao watcher; usado
+  apenas quando `-StartWatcher` está presente; intervalo válido: 30-3600)
+
+O contrato de watcher acima vale para `Invoke-GeneXusKbSpecifyGenerate.ps1` e
+`Invoke-GeneXusKbBuildAll.ps1`. Ele é centralizado em
+`scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher, timing ou
+`watcherContext`, manter o helper comum como sede da regra e evitar lógica divergente
+dentro dos wrappers.
+
+> **Limitação conhecida de `timing.phases`:** somente fases com par completo
+> (`iniciado` + `terminado`) aparecem na lista. Fases cujo `terminado` nunca é
+> emitido — por erro ou abort — são silenciosamente omitidas (ex.: `Atualização
+> de configuração da web` quando o GeneXus falha antes de concluí-la). Pares com
+> grafia inconsistente entre `iniciado` e `terminado` (ex.: `Get Active Version`
+> vs `GetActiveVersion`) são normalizados e fechados corretamente; o campo `name`
+> no JSON usa a grafia do `terminado`.
 
 Se `-VersionName` ou `-EnvironmentName` for informado com valor inválido para a KB, o
 wrapper deve detectar a falha de `SetActiveVersion`/`SetActiveEnvironment`, emitir
@@ -294,38 +328,6 @@ e confirmação explícita** por frase exata.
 - `-Configuration` (String, opcional — valores válidos: `Release`, `Debug`,
   `Performance Test`; quando informado, emite `SetConfiguration` imediatamente antes
   do `BuildAll`; quando omitido, a configuração ativa da KB é mantida sem alteração)
-- `-MonitorLogPath` (String, opcional — caminho do arquivo gravado pelo parâmetro
-  `-MonitorLog` de `Watch-GeneXusMsBuildLog.ps1`; quando fornecido e o arquivo existir
-  após o build, o script extrai os timestamps das fases internas (`iniciado`/`terminado`)
-  e popula `timing.phases` no JSON de resultado; sem este parâmetro, `timing.phases`
-  fica vazio mas `timing.probeDurationSeconds`, `timing.msbuildDurationSeconds` e
-  `timing.totalDurationSeconds` são sempre gravados; obrigatório quando `-StartWatcher`
-  for passado — bloqueado por política com exit 46 se ausente)
-- `-StartWatcher` (switch — quando presente, o próprio wrapper dispara
-  `Watch-GeneXusMsBuildLog.ps1` em janela visível com `Start-Process pwsh` antes de
-  iniciar o MSBuild; requer `-MonitorLogPath`; o watcher recebe o PID do processo
-  wrapper como alvo de monitoramento; o resultado JSON inclui `watcherContext` com
-  `watcherLaunched`, `watcherPid`, `watcherScriptPath`, `watcherMonitorLogPath` e
-  `watcherLaunchError`; se o watcher falhar ao iniciar, o build prossegue com warning —
-  não bloqueia a execução)
-- `-WatcherIntervalSeconds` (Int, default `5` — intervalo de polling em segundos
-  repassado ao watcher; usado apenas quando `-StartWatcher` está presente;
-  intervalo válido: 1-60)
-- `-WatcherSilenceThresholdSeconds` (Int, default `120` — segundos sem nova linha
-  no log antes de o watcher emitir alerta de silêncio; repassado ao watcher; usado
-  apenas quando `-StartWatcher` está presente; intervalo válido: 30-3600)
-
-  O contrato acima é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`.
-  Ao evoluir watcher, timing ou `watcherContext`, manter o helper comum como sede
-  da regra e evitar lógica divergente dentro dos wrappers.
-
-  > **Limitação conhecida de `timing.phases`:** somente fases com par completo
-  > (`iniciado` + `terminado`) aparecem na lista. Fases cujo `terminado` nunca é
-  > emitido — por erro ou abort — são silenciosamente omitidas (ex.: `Atualização
-  > de configuração da web` quando o GeneXus falha antes de concluí-la). Pares com
-  > grafia inconsistente entre `iniciado` e `terminado` (ex.: `Get Active Version`
-  > vs `GetActiveVersion`) são normalizados e fechados corretamente; o campo `name`
-  > no JSON usa a grafia do `terminado`.
 
 **Categorias de resultado:**
 
