@@ -339,6 +339,10 @@ e confirmação explícita** por frase exata.
   executando; distinguir timeout do invocador de falha real do MSBuild antes de concluir;
   usar `Watch-GeneXusMsBuildLog.ps1` com o PID do processo e o caminho do log para
   acompanhar a execução em andamento sem depender do chat
+- `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
+- `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
+  detectada, mas stderr não vazio após filtro de ruído estrutural, ou marcador de
+  conclusão não detectado; validação funcional depende de inspeção na IDE
 
 > **Padrão de orquestração para builds longos com monitor em paralelo:**
 > Quando `Watch-GeneXusMsBuildLog.ps1` for usado em paralelo com um build de KB grande,
@@ -351,10 +355,6 @@ e confirmação explícita** por frase exata.
 > monitor e conecte os dois scripts: passe `-MonitorLog <caminho>` ao Watch e o mesmo
 > `<caminho>` como `-MonitorLogPath` ao build. O build parseia esse arquivo após
 > terminar e popula `timing.phases` com os timestamps de cada fase interna.
-- `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
-- `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
-  detectada, mas stderr não vazio após filtro de ruído estrutural, ou marcador de
-  conclusão não detectado; validação funcional depende de inspeção na IDE
 
 > **Padrão conhecido — ruído estrutural do `dotnet publish` em `GAM\Platforms\NetCore*` (stdout):**
 > O `BuildAll` em environments .NET Core (NETPostgreSQL, NETCoreSQLServer e similares)
