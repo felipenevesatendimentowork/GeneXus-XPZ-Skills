@@ -1690,6 +1690,49 @@ O repositório é público (já há `09-inventario-e-rastreabilidade-publica.md`
 - `README.md` (trilíngue — referência de tom)
 - `AGENTS.md` (regras a traduzir para CONTRIBUTING humano)
 
+## Pré-push: reduzir dependência de interpretação em `.md` (opções B e C)
+
+**Importância:** média
+**Maturidade:** ideia — **reavaliar** após a frente pré-push estabilizada em produção (orquestrador + regra em camadas + satélites) e mais um ciclo de testes com prompt mínimo («executar rotina pré-push»).
+
+**Origem:** conversa em 2026-05-22. Testes com Codex, Claude e Cursor no mesmo intervalo (22 commits): o orquestrador alinhou fatos (git, parse, `PUSH_READINESS`), mas gaps documentais divergiram (1 vs 5) conforme a profundidade da leitura semântica de `.md`. Conclusão: `Invoke-PrePushMechanicalChecks.ps1` resolveu risco **operacional**, não risco **editorial/semântico** completo.
+
+### Modelo vigente (opção A — adotado, não é pendência)
+
+- **Mecânico:** `scripts/Invoke-PrePushMechanicalChecks.ps1` + parse global (`Test-PsScriptsParse.ps1`).
+- **Semântico:** agente lê `AGENTS.md` / `08`, busca cruzada, relatório (gaps / flags descartados / não coberto), sem auto-gravação.
+- **Humano:** aprova correções e push; segundo agente ou segunda passagem em frentes grandes quando fizer sentido.
+
+Não substituir A por B ou C sem evidência de que o custo de manutenção compensa.
+
+### Opção B — lints mecânicos pontuais (scripts de coerência documental)
+
+Heurísticas em `.ps1` (ex.: `Test-DocContractCoherence.ps1` ou extensão do orquestrador) para casos recorrentes já vistos na pré-push, sem NLP:
+
+- satélite de checklist (`quality-checklist.md`) desalinhado de termos obrigatórios no `SKILL.md` da mesma skill;
+- skills que citam `Build-GeneXusImportFileEnvelope.ps1` sem mencionar `-AcervoPath` / `-ModifiedObjectNames` / `-ModifiedObjectGuids` no mesmo arquivo (handoff MSBuild);
+- scripts novos em `scripts/` no intervalo ausentes de `09-inventario-e-rastreabilidade-publica.md` (se a política do inventário for mantê-lo atualizado);
+- opcional: `README.md` trilíngue citando helper sem parâmetros que `02`/`08` já tornaram obrigatórios (alto risco de falso positivo por ser resumo).
+
+**Prós:** menos variância entre agentes nos mesmos gaps; falha/warning objetivo. **Contras:** cada regra vira dívida de manutenção; falsos positivos; não cobre nuances (ex.: cross-ref WWP em `02`).
+
+### Opção C — contrato machine-readable paralelo ao `.md`
+
+Schema (JSON/YAML) com parâmetros obrigatórios por script, satélites obrigatórios por skill, entradas de inventário — consumido por lint/CI e, no futuro, por agentes.
+
+**Prós:** verificação determinística de contrato. **Contras:** duplicação com prosa em `SKILL.md`/`02`; custo alto de adoção e sincronização; só vale se várias ferramentas consumirem o mesmo schema.
+
+### Gatilho sugerido para reavaliar B ou C
+
+- Repetição do mesmo gap semântico em duas pré-push seguidas **depois** de endurecer `AGENTS.md` (handoff, README, `09`).
+- Ou decisão explícita de fechar frente editorial (ex.: `quality-checklist` + `xpz-msbuild-import-export`) e medir se ainda há divergência entre agentes.
+
+### Relacionado
+
+- `scripts/Invoke-PrePushMechanicalChecks.ps1`, `AGENTS.md` (Revisão pré-push), `08-guia-para-agente-gpt.md`
+- Gap confirmado em testes: `xpz-builder/quality-checklist.md` vs `xpz-builder/SKILL.md` (lastUpdate / `-AcervoPath`)
+- Entrada CONTRIBUTING (onboarding humano) na seção «Documentos de governança na raiz» acima
+
 ## Ciclo de friction-report datado como motor de evolução das skills XPZ
 
 **Importância:** média
