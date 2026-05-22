@@ -279,6 +279,12 @@ Parâmetros transversais esperados:
 - `-WatcherIntervalSeconds` (default 5)
 - `-WatcherSilenceThresholdSeconds` (default 120)
 
+O contrato de watcher acima vale para `Test-GeneXusXpzImportPreview.ps1`,
+`Invoke-GeneXusXpzExport.ps1` e `Invoke-GeneXusXpzImport.ps1`. Ele é centralizado em
+`scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher, timing ou
+`watcherContext`, manter o helper comum como sede da regra e evitar lógica divergente
+dentro dos wrappers.
+
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
@@ -468,6 +474,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] O gate de envelope retornou `apto para prosseguir` ou `apto com ressalvas` com confirmação explícita do usuário
 - [ ] O gate de envelope não foi ignorado por presunção de que o arquivo já havia sido validado anteriormente
 - [ ] Importação real só ocorreu com autorização explícita
+- [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado quando `-StartWatcher` era esperado; se `false`, a ausência foi documentada e justificada explicitamente
 - [ ] `stdoutSignals`, `stderrContent`, `stderrFilteredNoise`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
 - [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
@@ -497,6 +504,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER assumir defaults internos de importação ou exportação como seguros sem validação prática
 - NEVER tratar importação real como comportamento implícito
+- NEVER executar importação real de pacote amplo ou com muitos `WorkWithForWeb` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` com `-MonitorLogPath` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER chamar MSBuild para preview ou import sem antes executar `Test-GeneXusImportFileEnvelope.ps1` no arquivo alvo
 - NEVER usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName`; para exportar da versão ativa, omitir `-VersionName`; se for necessário posicionar versão explicitamente, obter o identificador via `GetActiveVersion`, não via `GetVersionProperty`
