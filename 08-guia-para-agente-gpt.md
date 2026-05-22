@@ -93,6 +93,7 @@ Regras da escada:
 - ler `PUSH_READINESS` no relatorio, nao so `exit 0` do passo mecanico; com `blocked`, diff e lista de arquivos do intervalo sao apenas diagnosticos
 - o script mecanico nao encerra a pre-push (nem `exit 0` mecanico); em seguida aplicar a busca semantica do `AGENTS.md`, incluindo regra em camadas: `SKILL.md` **e satelites** que ele referencia (ex. `xpz-builder/quality-checklist.md`), nao so o `SKILL.md`
 - com `SKILL.md` no diff, o orquestrador avisa para conferir satelites linkados no proprio SKILL
+- na fase semantica (passo 4 do `AGENTS.md`), confirmar explicitamente se checklist em satelite (ex. `quality-checklist.md`) contradiz o `SKILL.md` da mesma frente
 - na pre-push, gaps exigem aprovacao explicita depois do relatorio; uma unica aprovacao pode cobrir o conjunto sugerido (ex.: «aplica os gaps do relatorio»), salvo pedido item a item; intencao inicial nao autoriza gravar automaticamente
 - com `commitsBehind > 0`, `PUSH_READINESS=blocked`: diff/arquivos do intervalo sao so diagnosticos; fetch origin se necessario; se persistir, integrar antes do push (sem push automatico)
 - na comparacao da pre-push, exemplos canonicos ficam em `*.example.ps1` dentro das skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`); nao ha pasta `examples/` na raiz
