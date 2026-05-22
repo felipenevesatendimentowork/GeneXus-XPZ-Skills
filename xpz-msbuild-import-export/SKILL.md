@@ -274,7 +274,7 @@ Parâmetros transversais esperados:
 - `-WorkingDirectory`
 - `-LogPath`
 - `-VerboseLog`
-- `-StartWatcher` (quando suportado pelo wrapper, dispara `Watch-GeneXusMsBuildLog.ps1` antes do MSBuild; requer `-MonitorLogPath`)
+- `-StartWatcher` (quando suportado pelo wrapper, dispara `Watch-GeneXusMsBuildLog.ps1` antes do MSBuild; requer `-MonitorLogPath`; ausência de `-MonitorLogPath` deve bloquear cedo por política com exit 46)
 - `-MonitorLogPath` (caminho do log próprio do watcher; quando existir, alimenta `timing.phases`)
 - `-WatcherIntervalSeconds` (default 5)
 - `-WatcherSilenceThresholdSeconds` (default 120)
