@@ -61,10 +61,11 @@ Switch. Quando presente, o próprio wrapper dispara Watch-GeneXusMsBuildLog.ps1 
 de iniciar o MSBuild. Requer -MonitorLogPath.
 
 .PARAMETER WatcherIntervalSeconds
-Intervalo de polling em segundos do watcher. Padrão: 5.
+Intervalo de polling em segundos do watcher. Padrão: 5. Intervalo válido: 1-60.
 
 .PARAMETER WatcherSilenceThresholdSeconds
 Segundos sem nova linha no log antes de o watcher emitir alerta de silêncio. Padrão: 120.
+Intervalo válido: 30-3600.
 #>
 
 param(

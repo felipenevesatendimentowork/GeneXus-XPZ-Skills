@@ -276,8 +276,8 @@ Parâmetros transversais esperados:
 - `-VerboseLog`
 - `-StartWatcher` (quando suportado pelo wrapper, dispara `Watch-GeneXusMsBuildLog.ps1` antes do MSBuild; requer `-MonitorLogPath`; ausência de `-MonitorLogPath` deve bloquear cedo por política com exit 46)
 - `-MonitorLogPath` (caminho do log próprio do watcher; quando existir, alimenta `timing.phases`)
-- `-WatcherIntervalSeconds` (default 5)
-- `-WatcherSilenceThresholdSeconds` (default 120)
+- `-WatcherIntervalSeconds` (default 5; intervalo válido: 1-60)
+- `-WatcherSilenceThresholdSeconds` (default 120; intervalo válido: 30-3600)
 
 O contrato de watcher acima vale para `Test-GeneXusXpzImportPreview.ps1`,
 `Invoke-GeneXusXpzExport.ps1` e `Invoke-GeneXusXpzImport.ps1`. Ele é centralizado em
