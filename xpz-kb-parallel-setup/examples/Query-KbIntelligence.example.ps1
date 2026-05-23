@@ -33,7 +33,7 @@ o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("object-info", "search-objects", "list-by-type", "who-uses", "what-uses", "show-evidence", "impact-basic", "functional-trace-basic", "index-metadata")]
+    [ValidateSet("object-info", "attribute-info", "search-objects", "list-by-type", "transaction-attributes", "transaction-writable-attributes", "who-uses", "what-uses", "show-evidence", "impact-basic", "functional-trace-basic", "index-metadata")]
     [string]$Query,
 
     [string]$IndexPath,

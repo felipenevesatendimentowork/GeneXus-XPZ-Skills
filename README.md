@@ -105,6 +105,7 @@ Se você quer entender a base rapidamente:
 - `XpzExportadosPelaIDE`: pasta onde o usuário grava tanto o `XPZ` completo da Carga Inicial quanto os `XPZ` incrementais do dia a dia
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus`: área de trabalho para XMLs gerados, ajustados ou preservados para importação manual na IDE
 - `PacotesGeradosParaImportacaoNaKbNoGenexus`: área de saída para `import_file.xml` e demais pacotes gerados localmente
+- `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus` são áreas gerenciadas por agente, não depósitos gerais do usuário; XML de referência, exemplo ou template deixado na frente ativa deve bloquear o empacotamento até ser removido ou tratado por caminho explícito fora da frente
 - em auditoria operacional da pasta paralela, declarar separadamente `sync/materializacao`, `indice/gate`, `indice/semantica` e `empacotamento local`; `GATE_OK` e estrutura OK nao bastam, sozinhos, para concluir genericamente que "esta tudo certo" quando a semantica do indice ou o fluxo de empacotamento local ainda nao foram auditados
 - `Temp`: destino preferencial de artefatos efêmeros de execução, como diretórios temporários de wrappers, logs auxiliares e saídas intermediárias que não sejam fonte normativa da base
 - `ArquivoMorto`: subpasta opcional de `ObjetosGeradosParaImportacaoNaKbNoGenexus` para preservar XMLs contaminados que nao devem ser importados mas precisam de rastreabilidade; nao apagar sem autorizacao explicita do usuario
@@ -165,6 +166,7 @@ Se você quer entender a base rapidamente:
 - cada frente ativa em `ObjetosGeradosParaImportacaoNaKbNoGenexus` deve ter sua propria subpasta `NomeCurto_GUID_YYYYMMDD`
 - essa subpasta da frente e a unidade ativa da frente de trabalho
 - ao retomar uma frente existente, reutilizar a mesma subpasta da frente em vez de criar outra
+- XML de referência, exemplo ou template não deve ser salvo na frente ativa em `ObjetosGeradosParaImportacaoNaKbNoGenexus`; se aparecer ali, o empacotamento deve bloquear em vez de tentar classificar ou importar esse arquivo
 - `PacotesGeradosParaImportacaoNaKbNoGenexus` guarda o pacote `.xml` e, quando necessário, também `.xpz`, que será importado pela IDE
 - `PacotesGeradosParaImportacaoNaKbNoGenexus` deve permanecer plano, sem subpastas por frente; o vinculo com a frente fica apenas no prefixo `NomeCurto_GUID_YYYYMMDD` somado ao `nn`
 - por padrao, `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus` nao precisam ser versionadas em Git; se houver duvida sobre rastrear ou ignorar seu conteudo, isso deve ser tratado como decisao de politica do repositorio
@@ -303,6 +305,7 @@ Si quieres entender la base rápidamente:
 - `XpzExportadosPelaIDE`: carpeta donde el usuario graba tanto el `XPZ` completo de la Carga Inicial como los `XPZ` incrementales del día a día
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus`: área de trabajo para XMLs generados, ajustados o preservados para importación manual en la IDE
 - `PacotesGeradosParaImportacaoNaKbNoGenexus`: área de salida para `import_file.xml` y demás paquetes generados localmente
+- `ObjetosGeradosParaImportacaoNaKbNoGenexus` y `PacotesGeradosParaImportacaoNaKbNoGenexus` son áreas gestionadas por agente, no depósitos generales del usuario; un XML de referencia, ejemplo o template dejado en la frente activa debe bloquear el empaquetado hasta que sea removido o tratado por un camino explícito fuera de la frente
 - en auditoría operativa de la carpeta paralela, declarar por separado `sync/materialización`, `índice/gate`, `índice/semántica` y `empaquetado local`; `GATE_OK` y estructura OK no bastan, por sí solos, para concluir genéricamente que "todo está bien" cuando la semántica del índice o el flujo de empaquetado local todavía no fueron auditados
 - `Temp`: destino preferente de artefactos efímeros de ejecución, como directorios temporales de wrappers, logs auxiliares y salidas intermedias que no sean fuente normativa de la base
 - `ArquivoMorto`: subcarpeta opcional de `ObjetosGeradosParaImportacaoNaKbNoGenexus` para preservar XML contaminados que no deben importarse pero necesitan trazabilidad; no borrar sin autorización explícita del usuario
@@ -363,6 +366,7 @@ Si quieres entender la base rápidamente:
 - cada frente activa en `ObjetosGeradosParaImportacaoNaKbNoGenexus` debe tener su propia subcarpeta `NomeCurto_GUID_YYYYMMDD`
 - esa subcarpeta de la frente es la unidad activa de la frente de trabajo
 - al retomar una frente existente, reutilizar la misma subcarpeta de la frente en vez de crear otra
+- Un XML de referencia, ejemplo o template no debe guardarse en la frente activa en `ObjetosGeradosParaImportacaoNaKbNoGenexus`; si aparece allí, el empaquetado debe bloquear en vez de intentar clasificar o importar ese archivo
 - `PacotesGeradosParaImportacaoNaKbNoGenexus` guarda el paquete `.xml` y, cuando sea necesario, también `.xpz`, que será importado por la IDE
 - `PacotesGeradosParaImportacaoNaKbNoGenexus` debe permanecer plano, sin subcarpetas por frente; el vínculo con la frente queda solo en el prefijo `NomeCurto_GUID_YYYYMMDD` sumado a `nn`
 - por defecto, `ObjetosGeradosParaImportacaoNaKbNoGenexus` y `PacotesGeradosParaImportacaoNaKbNoGenexus` no necesitan versionarse en Git; si hay duda sobre rastrear o ignorar su contenido, eso debe tratarse como decisión de política del repositorio
@@ -501,6 +505,7 @@ If you want to understand the repository quickly:
 - `XpzExportadosPelaIDE`: folder where the user stores both the full Initial Load `XPZ` and the day-to-day incremental `XPZ` files
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus`: working area for XMLs generated, adjusted, or preserved for manual IDE import
 - `PacotesGeradosParaImportacaoNaKbNoGenexus`: output area for `import_file.xml` and other locally generated packages
+- `ObjetosGeradosParaImportacaoNaKbNoGenexus` and `PacotesGeradosParaImportacaoNaKbNoGenexus` are agent-managed areas, not general user drop folders; a reference, example, or template XML left in the active front must block packaging until it is removed or handled through an explicit path outside the front
 - in operational audits of the KB parallel folder, declare `sync/materialization`, `index/gate`, `index/semantics`, and `local packaging` separately; `GATE_OK` and structure OK are not enough, by themselves, to conclude generically that "everything is fine" when the index semantics or the local packaging flow have not yet been audited
 - `Temp`: preferred destination for ephemeral execution artifacts, such as wrapper temporary directories, auxiliary logs, and intermediate outputs that are not normative source material for the base
 - `ArquivoMorto`: optional subfolder of `ObjetosGeradosParaImportacaoNaKbNoGenexus` used to preserve contaminated XMLs that must not be imported but require traceability; do not delete without explicit user authorization
@@ -561,6 +566,7 @@ If you want to understand the repository quickly:
 - each active front in `ObjetosGeradosParaImportacaoNaKbNoGenexus` must have its own `NomeCurto_GUID_YYYYMMDD` subfolder
 - that front subfolder is the active unit of the working front
 - when resuming an existing front, reuse the same front subfolder instead of creating another one
+- Reference, example, or template XML must not be saved in the active front under `ObjetosGeradosParaImportacaoNaKbNoGenexus`; if it appears there, packaging must block instead of trying to classify or import that file
 - `PacotesGeradosParaImportacaoNaKbNoGenexus` stores the `.xml` package and, when needed, also `.xpz`, which will be imported by the IDE
 - `PacotesGeradosParaImportacaoNaKbNoGenexus` must remain flat, without subfolders by front; the link to the front exists only in the `NomeCurto_GUID_YYYYMMDD` prefix plus `nn`
 - by default, `ObjetosGeradosParaImportacaoNaKbNoGenexus` and `PacotesGeradosParaImportacaoNaKbNoGenexus` do not need to be versioned in Git; if there is doubt about tracking or ignoring their contents, treat that as repository policy

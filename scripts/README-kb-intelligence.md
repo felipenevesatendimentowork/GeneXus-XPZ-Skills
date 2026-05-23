@@ -220,6 +220,8 @@ Para listar atributos de uma Transaction com sinais basicos de gravabilidade:
 
 Essa consulta usa o indice para localizar a `Transaction` e os `Attribute` pontuais. Ela cobre sinais leves (`key`, `isRedundant`, `Formula`, atributo ausente). Para classificacao completa de subtipo e FK recursiva antes de gerar atribuicoes, use `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`.
 
+As consultas `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` dependem do `source_root` gravado no `index-metadata` e leem no disco os XMLs apontados pelo indice. Se o snapshot materializado foi movido, apagado ou regenerado fora desse caminho, a consulta pode falhar com `Indexed XML file not found`; nesse caso, restaurar o snapshot no caminho esperado ou regenerar o indice a partir do `ObjetosDaKbEmXml` atual antes de repetir a consulta.
+
 ## Consultar quem usa um objeto
 
 ```powershell

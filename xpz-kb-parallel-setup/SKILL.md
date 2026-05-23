@@ -160,6 +160,7 @@ Do NOT use this skill for:
 - Explicar que, apos processamento bem-sucedido, um `.xpz` em `XpzExportadosPelaIDE` pode ser renomeado para `processado_<nome-original>.xpz`
 - Tratar `ObjetosGeradosParaImportacaoNaKbNoGenexus` como area de trabalho para XMLs temporarios destinados a importacao manual na IDE
 - Tratar `PacotesGeradosParaImportacaoNaKbNoGenexus` como area de saida para `import_file.xml` e, quando aplicavel, `XPZ`
+- Tratar `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus` como areas gerenciadas por agente, nao como deposito geral do usuario; XML de referencia, exemplo ou template deixado na frente ativa deve ser bloqueio de empacotamento ate ser removido ou tratado por caminho explicito fora da frente
 - Por padrao, `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus` nao precisam ser versionadas em Git; se houver duvida sobre rastrear ou ignorar seu conteudo, tratar isso como decisao de politica do repositorio e pedir aprovacao explicita
 - Exigir que cada frente ativa em `ObjetosGeradosParaImportacaoNaKbNoGenexus` use sua propria subpasta `NomeCurto_GUID_YYYYMMDD`
 - Explicar que `NomeCurto_GUID_YYYYMMDD` combina nome curto, GUID criado na abertura da frente e data de criacao da frente; `YYYYMMDD` representa a data de criacao da frente, nao a data do pacote
@@ -905,6 +906,7 @@ PastaParalelaDaKb/
 - NUNCA tratar `XpzExportadosPelaIDE` como area de saida de pacotes ou XMLs gerados
 - NUNCA aplicar o prefixo `processado_` antes de sucesso claro no processamento do `.xpz`
 - NUNCA manter o lote ativo diretamente na raiz de `ObjetosGeradosParaImportacaoNaKbNoGenexus`; usar a subpasta da frente `NomeCurto_GUID_YYYYMMDD`
+- NUNCA tratar XML de referencia, exemplo ou template salvo dentro da frente ativa como objeto importavel; esse arquivo indica uso indevido da area gerenciada e deve bloquear o empacotamento
 - NUNCA criar subpastas por frente em `PacotesGeradosParaImportacaoNaKbNoGenexus`; essa area deve permanecer plana
 - NUNCA materializar `XPZ` completo ou parcial da IDE dentro da pasta de geracao para importacao
 - NUNCA usar GUID como nome principal de pasta ou arquivo do acervo materializado

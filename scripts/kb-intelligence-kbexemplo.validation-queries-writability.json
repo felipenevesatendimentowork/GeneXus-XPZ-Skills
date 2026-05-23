@@ -1,0 +1,23 @@
+{
+  "description": "Casos minimos para validar dispatch e contrato de inexistencia das consultas leves de atributo e gravabilidade.",
+  "cases": [
+    {
+      "id": "attribute-info-missing",
+      "query": "attribute-info",
+      "object": "Attribute:AtributoInexistenteParaTesteKbIntelligence",
+      "should_exist": false
+    },
+    {
+      "id": "transaction-attributes-missing",
+      "query": "transaction-attributes",
+      "object": "Transaction:TransactionInexistenteParaTesteKbIntelligence",
+      "should_exist": false
+    },
+    {
+      "id": "transaction-writable-attributes-missing",
+      "query": "transaction-writable-attributes",
+      "object": "Transaction:TransactionInexistenteParaTesteKbIntelligence",
+      "should_exist": false
+    }
+  ]
+}

@@ -148,6 +148,100 @@ def validate_object_info(query_engine: Any, conn: sqlite3.Connection, raw_case: 
     return case_result
 
 
+def validate_attribute_info(query_engine: Any, conn: sqlite3.Connection, raw_case: dict[str, Any]) -> dict[str, Any]:
+    object_type, object_name = split_typed_name(raw_case["object"])
+    if object_type != "Attribute":
+        raise ValueError(f"attribute-info expects Attribute:Name object, got {raw_case['object']}")
+
+    result = query_engine.attribute_info(conn, object_name)
+    should_exist = bool(raw_case.get("should_exist", True))
+
+    failures: list[str] = []
+    if bool(result.get("found")) != should_exist:
+        failures.append(f"found={result.get('found')} expected {should_exist}")
+
+    if should_exist:
+        for key in ("isFormula", "formulaExpression", "basedOn"):
+            expected_key = f"expected_{key}"
+            if expected_key in raw_case and result.get(key) != raw_case[expected_key]:
+                failures.append(f"{key}={result.get(key)!r} expected {raw_case[expected_key]!r}")
+
+        expected_file_contains = raw_case.get("expected_file_contains")
+        obj = result.get("object", {})
+        if expected_file_contains and (
+            not isinstance(obj, dict) or expected_file_contains not in str(obj.get("file_path", ""))
+        ):
+            actual_file = obj.get("file_path") if isinstance(obj, dict) else None
+            failures.append(f"file_path={actual_file} does not contain {expected_file_contains}")
+
+    case_result = dict(raw_case)
+    case_result["status"] = "failed" if failures else "passed"
+    if failures:
+        case_result["failures"] = failures
+    return case_result
+
+
+def validate_transaction_attribute_query(
+    query_engine: Any,
+    conn: sqlite3.Connection,
+    raw_case: dict[str, Any],
+    *,
+    writable_only: bool,
+) -> dict[str, Any]:
+    object_type, object_name = split_typed_name(raw_case["object"])
+    if object_type != "Transaction":
+        raise ValueError(f"{raw_case.get('query')} expects Transaction:Name object, got {raw_case['object']}")
+
+    if writable_only:
+        result = query_engine.transaction_writable_attributes(conn, object_name)
+    else:
+        result = query_engine.transaction_attributes(conn, object_name)
+    should_exist = bool(raw_case.get("should_exist", True))
+
+    failures: list[str] = []
+    if bool(result.get("found")) != should_exist:
+        failures.append(f"found={result.get('found')} expected {should_exist}")
+
+    if should_exist:
+        rows = result.get("results", [])
+        if not isinstance(rows, list):
+            failures.append("results is not a list")
+            rows = []
+
+        by_attribute = {str(row.get("attribute")): row for row in rows if isinstance(row, dict)}
+        if len(rows) < int(raw_case.get("min_attributes", 0)):
+            failures.append(f"total attributes={len(rows)} below minimum {raw_case.get('min_attributes')}")
+
+        for expected in raw_case.get("expected_attributes", []):
+            if expected not in by_attribute:
+                failures.append(f"missing expected attribute {expected}")
+
+        for attribute, expected_classification in raw_case.get("expected_classifications", {}).items():
+            row = by_attribute.get(attribute)
+            if row is None:
+                failures.append(f"missing expected attribute {attribute}")
+            elif row.get("classification") != expected_classification:
+                failures.append(
+                    f"{attribute}.classification={row.get('classification')!r} "
+                    f"expected {expected_classification!r}"
+                )
+
+        for attribute, expected_writable in raw_case.get("expected_writable", {}).items():
+            row = by_attribute.get(attribute)
+            if row is None:
+                failures.append(f"missing expected attribute {attribute}")
+            elif row.get("writable") != expected_writable:
+                failures.append(
+                    f"{attribute}.writable={row.get('writable')!r} expected {expected_writable!r}"
+                )
+
+    case_result = dict(raw_case)
+    case_result["status"] = "failed" if failures else "passed"
+    if failures:
+        case_result["failures"] = failures
+    return case_result
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate KB Intelligence query behavior.")
     parser.add_argument("--index-path", required=True, type=Path)
@@ -179,6 +273,22 @@ def main() -> int:
                 case_result = validate_functional_trace_basic(query_engine, conn, raw_case)
             elif query == "object-info":
                 case_result = validate_object_info(query_engine, conn, raw_case)
+            elif query == "attribute-info":
+                case_result = validate_attribute_info(query_engine, conn, raw_case)
+            elif query == "transaction-attributes":
+                case_result = validate_transaction_attribute_query(
+                    query_engine,
+                    conn,
+                    raw_case,
+                    writable_only=False,
+                )
+            elif query == "transaction-writable-attributes":
+                case_result = validate_transaction_attribute_query(
+                    query_engine,
+                    conn,
+                    raw_case,
+                    writable_only=True,
+                )
             else:
                 case_result = dict(raw_case)
                 case_result["status"] = "failed"

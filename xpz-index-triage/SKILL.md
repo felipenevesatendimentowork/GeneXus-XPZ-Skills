@@ -74,8 +74,11 @@ Do NOT use this skill for:
 - Traduzir a pergunta do usuário para a consulta mais útil no índice
 - Escolher entre consultas como:
   - `object-info`
+  - `attribute-info`
   - `search-objects`
   - `list-by-type`
+  - `transaction-attributes`
+  - `transaction-writable-attributes`
   - `who-uses`
   - `what-uses`
   - `show-evidence`
@@ -88,9 +91,9 @@ Do NOT use this skill for:
   4. Quando houver mais de um alvo plausível, declarar a ambiguidade explicitamente e confirmar o alvo com o usuário antes de prosseguir
   5. Produzir o bloco de handoff auditável de resolução de alvo (ver COMMUNICATION) antes de liberar leitura ou edição
 - Executar a triagem inicial apropriada
-- Não executar consulta substantiva do índice antes de `GATE_OK`; `search-objects`, `list-by-type`, `object-info`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` e `functional-trace-basic` só podem rodar depois que o gate terminar liberado
-- Depois de `GATE_OK`, ir direto para a consulta substantiva mínima necessária; não abrir `scripts/README-kb-intelligence.md`, não listar `scripts` e não reinspecionar o wrapper local se a pergunta já puder ser atendida com consulta simples como `search-objects` ou `object-info`
-- Em pergunta simples de existência/localização nominal, considerar a própria skill suficiente para escolher a consulta mínima; usar os parâmetros documentados em **QUERY PARAMETER REFERENCE**; não abrir o wrapper só para "confirmar assinatura" antes de chamar `search-objects` ou `object-info`
+- Não executar consulta substantiva do índice antes de `GATE_OK`; `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` e `functional-trace-basic` só podem rodar depois que o gate terminar liberado
+- Depois de `GATE_OK`, ir direto para a consulta substantiva mínima necessária; não abrir `scripts/README-kb-intelligence.md`, não listar `scripts` e não reinspecionar o wrapper local se a pergunta já puder ser atendida com consulta simples como `search-objects`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
+- Em pergunta simples de existência/localização nominal, listagem por tipo ou consulta leve de atributo/gravabilidade, considerar a própria skill suficiente para escolher a consulta mínima; usar os parâmetros documentados em **QUERY PARAMETER REFERENCE**; não abrir o wrapper só para "confirmar assinatura" antes de chamar `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
 - Devolver leitura técnica curta, auditável e limitada ao recorte do índice
 - Orientar o chamador a reduzir a abertura de XML ao conjunto mínimo necessário
 - Indicar quais XMLs oficiais devem ser lidos depois, quando a triagem não bastar sozinha
@@ -202,7 +205,7 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negócio e oferecer `xpz-kb
 
 1. Identificar o repositório ativo e reler `README.md` e `AGENTS.md` locais; ao reler o `AGENTS.md`, verificar se contém a seção `## Triagem Por Indice` — se ausente em pasta que adota `KbIntelligence`, tratar como estrutura desatualizada e rotear para `xpz-kb-parallel-setup` antes de qualquer triagem
 2. Se a pasta paralela da KB ainda não estiver montada, validada ou mapeada para este repositório -> **ABORT** e usar `xpz-kb-parallel-setup`
-3. A PRIMEIRA ação substantiva desta skill em qualquer sessão deve ser executar o gate. Nenhuma consulta ao índice, leitura de XML, varredura de `ObjetosDaKbEmXml` ou comando `Query-*KbIntelligence.ps1` pode ocorrer antes de `Test-*KbIndexGate.ps1` retornar `GATE_OK`. Isso vale inclusive para perguntas simples de existência/localização nominal ou listagem por tipo — `search-objects`, `list-by-type` e `object-info` estão proibidos antes do gate.
+3. A PRIMEIRA ação substantiva desta skill em qualquer sessão deve ser executar o gate. Nenhuma consulta ao índice, leitura de XML, varredura de `ObjetosDaKbEmXml` ou comando `Query-*KbIntelligence.ps1` pode ocorrer antes de `Test-*KbIndexGate.ps1` retornar `GATE_OK`. Isso vale inclusive para perguntas simples de existência/localização nominal, listagem por tipo ou consulta leve de atributo/gravabilidade — `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` estão proibidos antes do gate.
 4. Executar o gate em ordem sequencial e parar no primeiro bloqueio; não investigar camadas internas até a camada externa estar válida
 5. Verificar se existe `Test-*KbIndexGate.ps1` em `scripts\`; se ausente, bloquear como defasagem da pasta paralela e oferecer atualização via `xpz-kb-parallel-setup`
 6. Executar `Test-*KbIndexGate.ps1`; o script verifica sequencialmente: estrutura da pasta paralela via `Test-*KbStructure.ps1`, pasta `KbIntelligence`, `kb-intelligence.sqlite`, wrapper local de consulta com `-Query index-metadata`, `inventory_validation_status`, `kb-source-metadata.md` e comparação de timestamps; qualquer `BLOCK:` encerra a pergunta de negócio
@@ -218,8 +221,8 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negócio e oferecer `xpz-kb
    - resolução de alvo de navegação (pergunta ou solicitação de edição ancorada em ação, botão, link ou evento: "qual popup esse botão abre?", "o objeto chamado pelo evento X", "nesta tela clico em Y")
 9a. Se a natureza for resolução de alvo de navegação, executar o sub-fluxo obrigatório de resolução de alvo (ver RESPONSIBILITIES) antes de prosseguir: identificar caller, localizar evento/ação no XML do caller, resolver objeto efetivamente aberto, confirmar alvo com o usuário se houver ambiguidade e produzir o bloco de handoff auditável; só então continuar para o step 10
 10. Escolher a consulta do índice mais adequada
-11. Só depois de `GATE_OK`, executar a consulta substantiva mínima necessária sem leitura lateral de `scripts`, `scripts/README-kb-intelligence.md` ou reinspeção do wrapper quando a pergunta já couber em `search-objects` ou `object-info`
-    - para pergunta simples de existência/localização nominal ou listagem por tipo, usar diretamente `search-objects`, `list-by-type` ou `object-info` conforme a pergunta, usando os parâmetros documentados em **QUERY PARAMETER REFERENCE**; não abrir o wrapper para confirmar assinatura
+11. Só depois de `GATE_OK`, executar a consulta substantiva mínima necessária sem leitura lateral de `scripts`, `scripts/README-kb-intelligence.md` ou reinspeção do wrapper quando a pergunta já couber em `search-objects`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
+    - para pergunta simples de existência/localização nominal, listagem por tipo ou consulta leve de atributo/gravabilidade, usar diretamente `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes` conforme a pergunta, usando os parâmetros documentados em **QUERY PARAMETER REFERENCE**; não abrir o wrapper para confirmar assinatura
 12. Resumir o resultado da triagem de forma curta e auditável
 13. Decidir se a triagem já basta para responder no nível técnico pedido
 14. Se não bastar, indicar ao chamador apenas o conjunto mínimo de XMLs oficiais a abrir
@@ -249,13 +252,13 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negócio e oferecer `xpz-kb
 - NUNCA testar, listar ou abrir caminho filho de uma camada do gate antes de confirmar a camada pai; por exemplo, não testar `KbIntelligence\kb-intelligence.sqlite` antes de `KbIntelligence`
 - NUNCA listar `scripts` ou procurar wrappers alternativos quando o wrapper local documentado estiver ausente; isso é defasagem da pasta paralela, não descoberta de fallback
 - NUNCA continuar a triagem substantiva quando `index-metadata` falhar, retornar vazio ou não trouxer timestamp de build do índice
-- NUNCA executar `search-objects`, `list-by-type`, `object-info`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` ou `functional-trace-basic` antes de `GATE_OK`
+- NUNCA executar `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` ou `functional-trace-basic` antes de `GATE_OK`
 - NUNCA procurar `last_xpz_materialization_run_at` antes de confirmar que `kb-source-metadata.md` existe como arquivo
 - NUNCA intercalar `Get-Date` entre etapas internas do gate; usar horário local apenas para updates/respostas ao usuário ou registro operacional necessário
 - NUNCA descrever bloqueio pós-`index-metadata` como proibição total de consultar o índice; `index-metadata` é consulta de gate, o bloqueio impede triagem substantiva
 - NUNCA acrescentar parsing, saídas auxiliares, impressão de timestamps ou comandos ao bloco de chamada do gate; toda lógica está encapsulada em `Test-*KbIndexGate.ps1`
-- NUNCA, depois de `GATE_OK`, abrir `scripts/README-kb-intelligence.md`, listar `scripts` ou reinspecionar o wrapper local quando a pergunta puder ser resolvida diretamente por `search-objects`, `list-by-type` ou `object-info`
-- NUNCA, em pergunta simples de existência/localização nominal ou listagem por tipo, abrir o wrapper local apenas para confirmar assinatura antes de chamar `search-objects`, `list-by-type` ou `object-info`; os parâmetros estão documentados em **QUERY PARAMETER REFERENCE**
+- NUNCA, depois de `GATE_OK`, abrir `scripts/README-kb-intelligence.md`, listar `scripts` ou reinspecionar o wrapper local quando a pergunta puder ser resolvida diretamente por `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
+- NUNCA, em pergunta simples de existência/localização nominal, listagem por tipo ou consulta leve de atributo/gravabilidade, abrir o wrapper local apenas para confirmar assinatura antes de chamar `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`; os parâmetros estão documentados em **QUERY PARAMETER REFERENCE**
 - NUNCA encurtar ou reescrever de forma inconsistente o caminho nominal do XML oficial retornado pelo índice
 - NUNCA reutilizar timestamp anterior em update ou resposta ao usuário; obter horário local imediatamente antes de cada mensagem
 - NUNCA acessar `kb-intelligence.sqlite` diretamente por qualquer linguagem ou ferramenta — Python, sqlite3 CLI, PowerShell inline, Bash, ou qualquer outro meio — sem passar pelo gate e pelo wrapper local; acesso direto ao SQLite é equivalente a bypass do gate independente do resultado obtido
