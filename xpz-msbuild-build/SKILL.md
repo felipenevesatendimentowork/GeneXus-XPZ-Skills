@@ -344,10 +344,13 @@ e confirmação explícita** por frase exata.
   detectada, mas stderr não vazio após filtro de ruído estrutural, ou marcador de
   conclusão não detectado; validação funcional depende de inspeção na IDE
 
-> **Padrão de orquestração para builds longos com monitor em paralelo:**
-> Quando `Watch-GeneXusMsBuildLog.ps1` for usado em paralelo com um build de KB grande,
-> o chamador deve iniciar `Invoke-GeneXusKbBuildAll.ps1` como processo desanexado via
-> `Start-Process pwsh`. Nesse caso, `Read-Host` não tem terminal disponível. Use
+> **Alternativa manual para processo já separado ou retomada após timeout:**
+> Em execução nova de `BuildAll` ou `SpecifyGenerate`, preferir `-StartWatcher` no
+> próprio wrapper. Usar `Watch-GeneXusMsBuildLog.ps1` externamente apenas quando o
+> processo já tiver sido iniciado em separado ou quando for necessário acompanhar
+> uma execução ainda ativa após timeout do invocador. Se o chamador iniciar
+> `Invoke-GeneXusKbBuildAll.ps1` como processo desanexado via `Start-Process pwsh`,
+> `Read-Host` não terá terminal disponível. Use
 > `-AllowReorg -ConfirmReorg` juntos — nunca redirecione stdin como workaround.
 > O chamador é responsável por confirmar com o usuário humano antes de lançar o processo.
 >
