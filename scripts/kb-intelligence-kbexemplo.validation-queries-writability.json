@@ -1,5 +1,5 @@
 {
-  "description": "Casos minimos para validar dispatch e contrato de inexistencia das consultas leves de atributo e gravabilidade.",
+  "description": "Casos para validar dispatch, inexistencia e leitura file-backed das consultas leves de atributo e gravabilidade na KBExemplo.",
   "cases": [
     {
       "id": "attribute-info-missing",
@@ -8,16 +8,51 @@
       "should_exist": false
     },
     {
+      "id": "attribute-info-ordem-de-producao-data",
+      "query": "attribute-info",
+      "object": "Attribute:OrdemDeProducaoData",
+      "should_exist": true,
+      "expected_file_contains": "Attribute/OrdemDeProducaoData.xml",
+      "expected_isFormula": false,
+      "expectation": "attribute-info must resolve a real Attribute from inventory and read its XML via source_root"
+    },
+    {
       "id": "transaction-attributes-missing",
       "query": "transaction-attributes",
       "object": "Transaction:TransactionInexistenteParaTesteKbIntelligence",
       "should_exist": false
     },
     {
+      "id": "transaction-attributes-ordem-de-producao",
+      "query": "transaction-attributes",
+      "object": "Transaction:OrdemDeProducao",
+      "should_exist": true,
+      "min_attributes": 2,
+      "expected_attributes": [
+        "OrdemDeProducaoData",
+        "OrdemDeProducaoEmpresaId"
+      ],
+      "expectation": "transaction-attributes must list Level attributes for a real Transaction and resolve Attribute XMLs on disk"
+    },
+    {
       "id": "transaction-writable-attributes-missing",
       "query": "transaction-writable-attributes",
       "object": "Transaction:TransactionInexistenteParaTesteKbIntelligence",
       "should_exist": false
+    },
+    {
+      "id": "transaction-writable-attributes-ordem-de-producao",
+      "query": "transaction-writable-attributes",
+      "object": "Transaction:OrdemDeProducao",
+      "should_exist": true,
+      "min_attributes": 2,
+      "expected_attributes": [
+        "OrdemDeProducaoData"
+      ],
+      "expected_writable": {
+        "OrdemDeProducaoData": true
+      },
+      "expectation": "transaction-writable-attributes must expose light writability signals for a real Transaction attribute"
     }
   ]
 }

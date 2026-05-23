@@ -222,6 +222,22 @@ Essa consulta usa o indice para localizar a `Transaction` e os `Attribute` pontu
 
 As consultas `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` dependem do `source_root` gravado no `index-metadata` e leem no disco os XMLs apontados pelo indice. Se o snapshot materializado foi movido, apagado ou regenerado fora desse caminho, a consulta pode falhar com `Indexed XML file not found`; nesse caso, restaurar o snapshot no caminho esperado ou regenerar o indice a partir do `ObjetosDaKbEmXml` atual antes de repetir a consulta.
 
+## Validar consultas leves de atributo e gravabilidade
+
+Depois de gerar ou localizar um indice SQLite com `source_root` valido e snapshot materializado no caminho esperado, valide `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` com:
+
+```powershell
+.\scripts\Test-KbIntelligenceQueries.ps1 `
+  -IndexPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence.sqlite" `
+  -ValidationCasesPath ".\scripts\kb-intelligence-kbexemplo.validation-queries-writability.json" `
+  -ValidationReportPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence-validation-queries-writability.json" `
+  -FailOnValidationFailure
+```
+
+Esses casos conferem dispatch, inexistencia e leitura file-backed pontual. Eles nao substituem `Test-GeneXusTransactionWritability.ps1` nem `Test-GeneXusNewWritableTargets.ps1` para classificacao completa antes de gerar atribuicoes.
+
+Como esses casos validam consultas e trazem `query`, eles pertencem ao executor `Test-KbIntelligenceQueries.ps1`, nao ao fluxo de regeneracao via `Build-KbIntelligenceIndex.ps1`.
+
 ## Consultar quem usa um objeto
 
 ```powershell

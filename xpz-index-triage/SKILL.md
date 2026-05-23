@@ -154,7 +154,7 @@ Reference files and when to load them:
 
 Para economizar contexto, não carregue referências longas da tabela acima antes do gate estrutural inicial (`KbIntelligence`, SQLite e wrapper local). Se o gate bloquear em uma dessas três checagens, responda com a primeira falha e ofereça `xpz-kb-parallel-setup` sem abrir referências adicionais.
 
-Mesmo com o gate liberado, continue econômico: para pergunta simples de existência/localização nominal de objeto, use primeiro `search-objects` ou `object-info` e só abra `scripts/README-kb-intelligence.md` ou releia o wrapper local quando a cobertura da consulta estiver realmente ambígua.
+Mesmo com o gate liberado, continue econômico: para pergunta simples de existência/localização nominal de objeto, use primeiro `search-objects` ou `object-info`; para consulta leve de atributo ou gravabilidade transacional, use `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`; só abra `scripts/README-kb-intelligence.md` ou releia o wrapper local quando a cobertura da consulta estiver realmente ambígua.
 
 ---
 
