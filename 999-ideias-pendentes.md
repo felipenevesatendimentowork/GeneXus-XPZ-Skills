@@ -11,6 +11,33 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Teste de integração para bloqueio de XML de referência no Build-GeneXusImportFileEnvelope
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** fechamento da frente de bloqueio de XML de referência/exemplo/template em empacotamento, discutida em 2026-05-23.
+
+### Problema concreto que motiva a ideia
+
+`Build-GeneXusImportFileEnvelope.ps1` passou a bloquear arquivos de entrada explícita em `-ObjectXmlPaths` e `-TopLevelAttributesXmlPaths` quando o nome indica XML de referência, exemplo, template ou molde. A validação atual está coberta por parse PowerShell e inspeção do diff, mas ainda não há teste automatizado de integração para esse comportamento.
+
+### Ideia de melhoria
+
+Criar uma fixture mínima que execute `Build-GeneXusImportFileEnvelope.ps1` com:
+
+- template `ExportFile` mínimo válido
+- XML de objeto com `lastUpdate`
+- acervo baseline suficiente para o gate de `lastUpdate`
+- `OutputPath` em diretório temporário
+- caso negativo com `Cliente_referencia.xml` em `-ObjectXmlPaths`
+- caso negativo equivalente em `-TopLevelAttributesXmlPaths`
+- caso de controle mostrando que `-TemplatePackagePath` pode conter template sem disparar esse bloqueio
+
+### Limiar para implementar
+
+Implementar quando houver nova frente de testes de integração dos motores de envelope ou quando outra mudança em `Build-GeneXusImportFileEnvelope.ps1` aumentar o risco de regressão nesse gate.
+
 ## Gravabilidade de atributos materializada no índice SQLite
 
 **Importância:** alta

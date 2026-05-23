@@ -89,6 +89,18 @@ function Assert-XmlWellFormed {
     return $doc
 }
 
+function Assert-NotReferenceLikePackageInput {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Role
+    )
+
+    $leafName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+    if ($leafName -match '(^|[-_.\s])(referencia|referência|reference|exemplo|example|template|molde)([-_.\s]|$)') {
+        throw "BLOCK: $Role nao pode ser XML de referencia/exemplo/template/molde: $Path"
+    }
+}
+
 function Format-GeneXusLastUpdate {
     param([Parameter(Mandatory = $true)][DateTime]$Value)
 
@@ -420,6 +432,7 @@ foreach ($required in @("KMW", "Source")) {
 # 2 - validacao previa dos XMLs de objeto (cada um deve carregar isoladamente)
 $objectDocs = @()
 foreach ($path in $ObjectXmlPaths) {
+    Assert-NotReferenceLikePackageInput -Path $path -Role "ObjectXml"
     $objectDocs += (Assert-XmlWellFormed -Path $path -Role "ObjectXml")
 }
 
@@ -431,6 +444,7 @@ if (@($lastUpdateFreshness.blockingReasons).Count -gt 0) {
 $attributeDocs = @()
 if ($TopLevelAttributesXmlPaths -and $TopLevelAttributesXmlPaths.Count -gt 0) {
     foreach ($path in $TopLevelAttributesXmlPaths) {
+        Assert-NotReferenceLikePackageInput -Path $path -Role "TopLevelAttributeXml"
         $attributeDocs += (Assert-XmlWellFormed -Path $path -Role "TopLevelAttributeXml")
     }
 }
