@@ -140,6 +140,9 @@ Do NOT use esta skill para:
   (`-AllowWideRebuild` + frase exata). Ver
   [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md),
   seção `Diagnostico de codigo gerado truncado por falha de generation`.
+- Quando o contexto vier de `xpz-msbuild-import-export` com import OK (`importação real efetiva provada` ou equivalente) mas o evento GeneXus não surtir efeito na UI, ou quando o usuário pedir inspeção pós-build do `.cs` por suspeita de **mecanismo (b)** (strip silencioso por DCE), tratar como frente de **conteúdo gerado**, não como falha do wrapper de build nem como reabertura do sub-estado de import. Após build ou `SpecifyGenerate` concluído com artefato gerado disponível, buscar no `.cs` referenciado pelo nome do evento; zero ocorrências ou handler com corpo vazio/sem efeito observável reforça hipótese (b). Ver [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md), seção `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`; para verificação estrutural de `oparms` e `ajax_rsp_assign_sdt_attri` em `WebPanel`, ver também subseção `WebPanel, Tab aninhada e re-bind de SDT em data attributes` no mesmo `02`.
+- **Mecanismo (a) — rejeição na importação:** se o sintoma for `Unknown function '<nome>'`, `src0294` (ou similar) ou `exitCode != 0` / `errors` no `import.json` de importação, **não** investigar o `.cs` gerado como causa primária nesta skill; classificar como frente de import/source e handoff para `xpz-msbuild-import-export` ou correção no XPZ antes de novo build.
+- **Mecanismo (b) — strip por DCE:** sucesso operacional de build **não** prova que o evento foi preservado no `.cs`; a correção típica é tornar o corpo do evento observável ao gerador (ex.: operação opaca via proc externa), conforme `02` — não ajustar parâmetros do wrapper de build nem presumir envelope/XML inválido.
 
 ---
 
@@ -152,6 +155,8 @@ Do NOT use esta skill para:
 - Quando houver timeout em KB grande, não interprete automaticamente como falha
 - Não use linguagem otimista para sugerir segurança que ainda não foi validada
 - Quando houver ambiguidade de contexto, interrompa e peça definição explícita
+- Quando receber handoff de `xpz-msbuild-import-export` com import OK e suspeita de **mecanismo (b)**, declarar explicitamente que o sub-estado de import **não** é reaberto pelo resultado do build; reportar separadamente categoria de resultado do build (WORKFLOW) e achado da inspeção do `.cs` (handler ausente, strip por DCE, ou handler presente com `oparms`/SDT conforme `02`)
+- Quando a inspeção do `.cs` confirmar strip por DCE, orientar correção no source/XPZ conforme [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md), seção `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`, e não tratar `compilou limpo` ou `specify e generate concluídos` como prova de que o evento GeneXus foi preservado
 
 ---
 
@@ -163,7 +168,7 @@ Arquivos de referência e quando carregar:
 |---|---|
 | [README.md](../README.md) | Sempre — regras editoriais e posicionamento da base |
 | [10-base-operacional-msbuild-headless.md](../10-base-operacional-msbuild-headless.md) | Sempre — base de infraestrutura MSBuild compartilhada |
-| [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) | Regras operacionais e restrições da trilha XPZ |
+| [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) | Regras operacionais e restrições da trilha XPZ; carregar também após handoff de import OK com evento ausente no `.cs`/UI (mecanismo b), para inspeção pós-build do handler e procedimento em `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`; e quando erros C# sugerirem `.cs` truncado (`CS1010`/`CS1513`) |
 
 Skills externas não listadas nesta tabela não devem ser carregadas durante a execução desta skill sem necessidade concreta derivada do contexto específico da tarefa.
 
@@ -804,6 +809,7 @@ Campos relevantes:
 - [ ] Sucesso operacional foi separado de confirmação funcional
 - [ ] Quando a frente foi descrita por fluxo funcional ("o objeto que X", "a tela que abre ao Y", "o objeto chamado quando Z") em vez de referência direta ao nome, foi confirmado que o objeto em `importedItems` é o alvo executado pelo fluxo descrito antes de declarar a frente encerrada — independente do tipo de objeto
 - [ ] Quando erros C# como `CS1010`/`CS1513` sugeriram truncamento de `.cs` gerado, o arquivo referenciado foi inspecionado antes de atribuir a falha ao XML, e qualquer regeneração ampla preservou o gate de `-ForceRebuild=true`
+- [ ] Quando o contexto for handoff de import OK com evento que não surte efeito, o `.cs` gerado foi inspecionado pelo nome do evento após build/`SpecifyGenerate`; foi distinguido **mecanismo (b)** (handler ausente/vazio — strip por DCE, correção no source conforme `02`) de falha de build e de **mecanismo (a)** (rejeição na importação — handoff para `xpz-msbuild-import-export`, sem tratar `.cs` como causa primária)
 - [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado; se `false`, a ausência foi documentada e justificada explicitamente
 
 ---
