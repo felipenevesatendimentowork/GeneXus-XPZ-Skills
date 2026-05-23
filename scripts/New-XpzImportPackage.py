@@ -17,6 +17,10 @@ from xml.sax.saxutils import quoteattr
 GUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 PLACEHOLDER_RE = re.compile(r"(YOUR[-_]GUID|GUID[-_]HERE|PLACEHOLDER|TODO[-_]GUID|INSERT[-_]HERE|OBJECT[-_]HERE)", re.I)
 PANEL_OBJECT_TYPE_GUID = "d82625fd-5892-40b0-99c9-5c8559c197fc"
+FRONT_REFERENCE_XML_RE = re.compile(
+    r"(^|[-_.\s])(referencia|referência|reference|exemplo|example|template|molde)([-_.\s]|$)",
+    re.I,
+)
 
 
 def block(message: str) -> None:
@@ -147,6 +151,12 @@ def xml_fragment(raw_xml: str) -> str:
     return re.sub(r"^\s*<\?xml\b[^?]*\?>\s*", "", raw_xml, count=1, flags=re.I).strip()
 
 
+def front_reference_xml_reason(path: Path) -> str | None:
+    if FRONT_REFERENCE_XML_RE.search(path.stem):
+        return "nome do arquivo indica XML de referencia/exemplo/template/molde"
+    return None
+
+
 def classify_front_xmls(front_dir: Path) -> tuple[list[tuple[Path, ET.Element, str]], list[tuple[Path, ET.Element, str]]]:
     xml_paths = sorted(front_dir.glob("*.xml"), key=lambda p: p.name.lower())
     if not xml_paths:
@@ -154,16 +164,26 @@ def classify_front_xmls(front_dir: Path) -> tuple[list[tuple[Path, ET.Element, s
     objects: list[tuple[Path, ET.Element, str]] = []
     attributes: list[tuple[Path, ET.Element, str]] = []
     unsupported: list[str] = []
+    reference_like: list[str] = []
     for path in xml_paths:
         raw_xml = read_xml_text(path)
         root = parse_xml(path, "XML da frente")
         root_name = local_name(root.tag)
+        reference_reason = front_reference_xml_reason(path)
+        if reference_reason:
+            reference_like.append(f"{path} ({reference_reason})")
+            continue
         if root_name == "Object":
             objects.append((path, root, xml_fragment(raw_xml)))
         elif root_name == "Attribute":
             attributes.append((path, root, xml_fragment(raw_xml)))
         else:
             unsupported.append(f"{path}={root_name}")
+    if reference_like:
+        block(
+            "XML de referencia/exemplo/template nao pode ficar na frente ativa de empacotamento: "
+            + "; ".join(reference_like)
+        )
     if unsupported:
         block("raiz XML nao suportada para empacotamento local: " + "; ".join(unsupported))
     if not objects:

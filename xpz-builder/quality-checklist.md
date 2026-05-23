@@ -29,6 +29,7 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] After listing the workspace, the round spec was verified against the workspace content, and any divergence (missing object or unexpected extra) was reconciled explicitly before proceeding to the collision gate
 - [ ] When the task was packaging, active XMLs were listed from the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus`
 - [ ] Candidate batch was isolated; no workspace contamination remained
+- [ ] No reference/example/template XML remained inside the active front folder; any such file blocked packaging until moved or handled outside the generated-objects area with explicit approval and traceability
 - [ ] When the front required a new unitary delta, the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus` was isolated explicitly before packaging
 - [ ] Current-front artifacts were distinguished explicitly from pre-existing parallel changes before packaging
 - [ ] Root type of every active XML was classified before package serialization
