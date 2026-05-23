@@ -454,6 +454,16 @@ Esse gate é **independente** do gate de reorg (`-AllowReorg`): autorizar um nã
 
 O workflow completo, parâmetros e interface estruturada estão documentados na skill `xpz-msbuild-build`; esta seção registra apenas a salvaguarda como parte da realidade operacional MSBuild headless.
 
+### Diagnóstico de `.cs` gerado truncado (erros `CS1010` / `CS1513`)
+
+Quando o build pós-geração falhar com erros C# como `CS1010` (newline em constante) e `CS1513` (`}` esperada) repetidos no mesmo `.cs`, tratar primeiro a hipótese de **truncamento do arquivo gerado** — o gerador GeneXus interrompeu a escrita no meio do `.cs` e o MSBuild compila o artefato incompleto — antes de atribuir a falha ao XML do objeto.
+
+Heurística mínima no `.cs` referenciado: linha final abrupta, string literal ou chamada de função não fechada, arquivo sem newline final, ou total de linhas inferior ao esperado para o tamanho do objeto.
+
+Regra operacional: inspecionar o `.cs` antes de editar o XML; se os sinais de truncamento aparecerem, tentar **regeneração controlada** do objeto ou do conjunto mínimo afetado (`BuildAll`/`SpecifyGenerate` **sem** `-ForceRebuild`). Regeneração ampla (`ForceRebuild=true`) continua sujeita ao gate de `-AllowWideRebuild` documentado acima.
+
+Procedimento completo, heurística estendida e distinção de erro real no XML: [02-regras-operacionais-e-runtime.md](02-regras-operacionais-e-runtime.md), seção `Diagnostico de codigo gerado truncado por falha de generation`. Checklist operacional da trilha de build: skill `xpz-msbuild-build`.
+
 ## Restrição De Escopo Sobre GeneXus Server
 
 O público-alvo destas skills de `XPZ` não dispõe de `GeneXus Server`, portanto a skill desta frente não deve assumir `GeneXus Server` como componente disponível nem como trilha operacional pretendida.
