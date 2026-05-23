@@ -6,6 +6,9 @@
 .DESCRIPTION
     Wrapper fino para scripts\New-XpzImportPackage.py. Mantem um ponto de entrada
     PowerShell curto para allowlist local, deixando a montagem XML no motor Python.
+    Para Panel, o resultado JSON inclui information quando o par level/layout e
+    confirmado pelo template comparavel e warnings quando o par nao e confirmado
+    ou nao ha template comparavel.
 
 .PARAMETER RepoRoot
     Raiz da pasta paralela da KB.
@@ -22,10 +25,10 @@
     de topo e a frente nao trouxer atributos explicitos, o motor preserva esses
     Attributes. Quando omitido, o motor usa envelope minimo derivado de
     kb-source-metadata.md. Para Panel, especialmente Panel SD, preferir template
-    real exportado pela IDE da mesma KB.
+    real exportado pela IDE da mesma KB; par confirmado e reportado em information.
 
 .PARAMETER AsJson
-    Retorna saída JSON estruturada.
+    Retorna saída JSON estruturada, incluindo warnings e information de Panel.
 #>
 
 [CmdletBinding()]

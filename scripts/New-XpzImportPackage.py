@@ -176,27 +176,69 @@ def is_panel_object(root: ET.Element) -> bool:
     return object_type.lower() == PANEL_OBJECT_TYPE_GUID
 
 
-def panel_package_warnings(
+def panel_level_layout_pairs(root: ET.Element) -> set[str]:
+    pairs: set[str] = set()
+    pattern = re.compile(
+        r'<(?:level|Level)\b[^>]*(?:id|guid)="(?P<level>[^"]+)"[\s\S]*?'
+        r'<(?:layout|Layout)\b[^>]*(?:id|guid)="(?P<layout>[^"]+)"',
+        re.I,
+    )
+    for node in root.iter():
+        if local_name(node.tag) not in {"Data", "Source"} or not node.text:
+            continue
+        for match in pattern.finditer(node.text):
+            pairs.add(f"{match.group('level')}|{match.group('layout')}")
+    return pairs
+
+
+def panel_package_findings(
     object_roots: list[tuple[Path, ET.Element, str]],
     envelope_source: str,
-) -> list[str]:
+    template_root: ET.Element,
+) -> tuple[list[str], list[str]]:
     panel_names = [
         root.attrib.get("name", path.stem)
         for path, root, _ in object_roots
         if is_panel_object(root)
     ]
     if not panel_names:
-        return []
+        return [], []
 
-    warnings = [
-        "panel-level-layout-coupling: Panel detectado; nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada."
-    ]
+    candidate_pairs: set[str] = set()
+    for _, root, _ in object_roots:
+        if is_panel_object(root):
+            candidate_pairs.update(panel_level_layout_pairs(root))
+    reference_pairs: set[str] = set()
+    for objects in (child for child in template_root if local_name(child.tag) == "Objects"):
+        for root in objects:
+            if is_panel_object(root):
+                reference_pairs.update(panel_level_layout_pairs(root))
+
+    warnings: list[str] = []
+    information: list[str] = []
+    if envelope_source != "metadata" and candidate_pairs.intersection(reference_pairs):
+        information.append(
+            "panel-level-layout-confirmed: Panel detectado; par level/layout confirmado "
+            "em template comparavel informado."
+        )
+    elif envelope_source != "metadata":
+        warnings.append(
+            "panel-level-layout-suspicious: Panel detectado; nenhum par level/layout "
+            "do pacote foi localizado no template comparavel informado. Revisar contra "
+            "Panel SD exportado pela IDE da mesma KB."
+        )
+    else:
+        warnings.append(
+            "panel-level-layout-unverified: Panel detectado sem template comparavel; "
+            "nao gerar level id e layout id como GUIDs independentes. Usar par coerente "
+            "vindo de Panel SD exportado pela IDE da mesma KB."
+        )
     if envelope_source == "metadata":
         warnings.append(
             "panel-envelope-minimo: Panel empacotado com envelope-minimo derivado de kb-source-metadata.md; preferir --template-package-path com XPZ/import_file real comparavel exportado pela IDE para clonar envelope completo."
         )
-    warnings.append("panel-objects: " + ", ".join(panel_names))
-    return warnings
+    information.append("panel-objects: " + ", ".join(panel_names))
+    return warnings, information
 
 
 def format_round(nn: str) -> str:
@@ -364,7 +406,7 @@ def main(argv: list[str]) -> int:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(package_text, encoding="utf-8", newline="\n")
         status, blocking, validation_warnings = validate_envelope(package_root)
-        panel_warnings = panel_package_warnings(object_roots, envelope_source)
+        panel_warnings, panel_information = panel_package_findings(object_roots, envelope_source, template_root)
         all_warnings = envelope_warnings + validation_warnings + panel_warnings
         if not blocking and all_warnings:
             status = "apto com ressalvas"
@@ -395,6 +437,7 @@ def main(argv: list[str]) -> int:
             "gateStatus": status,
             "blockingReasons": blocking,
             "warnings": all_warnings,
+            "information": panel_information,
             "includedFiles": [str(path) for path, _, _ in object_roots + attribute_roots],
         }
         print(json.dumps(result, ensure_ascii=False, indent=2 if args.as_json else None))

@@ -7,7 +7,8 @@ Resume um objeto GeneXus XML/XPZ sem despejar CDATA extenso.
 Aceita caminho para Object XML, ExportFile XML ou XPZ. Quando o insumo contem
 mais de um objeto, use -ObjectName e opcionalmente -ObjectType. Para Panel, o
 resumo inclui sinais compactos de level/layout, controles, gridData, actions e
-nomes de eventos extraidos de CDATA de layout/configuracao.
+eventos serializados em detail/@events, classificados em namedEventNames,
+standardEventNames, variableEventNames e tapEventNames, com actionEventCoverage.
 
 .PARAMETER InputPath
 Caminho do XML ou XPZ.
@@ -194,6 +195,43 @@ function Get-UniqueRegexMatches {
     return @($set)
 }
 
+function Get-PanelDetailEventTexts {
+    param([string[]]$Texts)
+
+    $eventTexts = [System.Collections.Generic.List[string]]::new()
+    foreach ($text in $Texts) {
+        if ($text -notmatch '<(?:instance|Root|GxMultiForm)\b') {
+            continue
+        }
+        $innerDoc = New-Object System.Xml.XmlDocument
+        try {
+            $innerDoc.LoadXml($text)
+        } catch {
+            continue
+        }
+        foreach ($detailNode in @($innerDoc.SelectNodes('//detail[@events]'))) {
+            $eventsText = $detailNode.GetAttribute('events')
+            if (-not [string]::IsNullOrWhiteSpace($eventsText)) {
+                [void]$eventTexts.Add($eventsText)
+            }
+        }
+    }
+    return @($eventTexts)
+}
+
+function Get-ListDifference {
+    param(
+        [string[]]$Left,
+        [string[]]$Right
+    )
+
+    $rightSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($value in @($Right)) {
+        [void]$rightSet.Add($value)
+    }
+    return @($Left | Where-Object { -not $rightSet.Contains($_) } | Sort-Object -Unique)
+}
+
 function Convert-AttributeTextToMap {
     param([string]$AttributeText)
 
@@ -227,6 +265,8 @@ function Get-PanelSummary {
     param([System.Xml.XmlElement]$ObjectNode)
 
     $texts = @(Get-CDataTexts -ObjectNode $ObjectNode)
+    $detailEventTexts = @(Get-PanelDetailEventTexts -Texts $texts)
+    $behaviorTexts = @($texts + $detailEventTexts)
     $combined = $texts -join "`n"
     $levelIds = @(Get-UniqueRegexMatches -Texts $texts -Pattern '<(?:level|Level)\b[^>]*(?:id|guid)="(?<id>[^"]+)"' -GroupName 'id')
     $layoutIds = @(Get-UniqueRegexMatches -Texts $texts -Pattern '<(?:layout|Layout)\b[^>]*(?:id|guid)="(?<id>[^"]+)"' -GroupName 'id')
@@ -235,7 +275,12 @@ function Get-PanelSummary {
     $gridDataNames = @(Get-UniqueRegexMatches -Texts $texts -Pattern '\bgridData(?:Name)?="(?<name>[^"]+)"' -GroupName 'name')
     $actionControls = @(Get-UniqueRegexMatches -Texts $texts -Pattern '<(?:action|Action)\b[^>]*(?:controlName|name)="(?<name>[^"]+)"' -GroupName 'name')
     $onClickEvents = @(Get-UniqueRegexMatches -Texts $texts -Pattern '\bonClickEvent="(?<name>[^"]+)"' -GroupName 'name')
-    $events = @(Get-UniqueRegexMatches -Texts $texts -Pattern "(?im)^\s*(?:Event|Sub)\s+'(?<name>[^']+)'" -GroupName 'name')
+    $normalizedOnClickEvents = @($onClickEvents | ForEach-Object { $_.Trim("'") } | Sort-Object -Unique)
+    $namedEvents = @(Get-UniqueRegexMatches -Texts $behaviorTexts -Pattern "(?im)^\s*Event\s+'(?<name>[^']+)'" -GroupName 'name')
+    $standardEvents = @(Get-UniqueRegexMatches -Texts $behaviorTexts -Pattern '(?im)^\s*Event\s+(?<name>Start|Refresh|Load|Enter|Back)\s*$' -GroupName 'name')
+    $variableEvents = @(Get-UniqueRegexMatches -Texts $behaviorTexts -Pattern '(?im)^\s*Event\s+(?<name>&[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*(?:\(\))?)\s*$' -GroupName 'name')
+    $tapEvents = @(Get-UniqueRegexMatches -Texts $behaviorTexts -Pattern '(?im)^\s*Event\s+(?<name>[A-Za-z_][A-Za-z0-9_]*\.Tap)\s*$' -GroupName 'name')
+    $events = @($namedEvents + $standardEvents + $variableEvents | Sort-Object -Unique)
     $patternGuids = @(Get-UniqueRegexMatches -Texts $texts -Pattern '\bPattern="(?<guid>[0-9a-fA-F-]{36})"' -GroupName 'guid')
     $dataVersions = @(Get-UniqueRegexMatches -Texts $texts -Pattern '\bversion="(?<version>[^"]+)"' -GroupName 'version')
     $layoutAttrs = Get-FirstTagAttributes -Texts $texts -TagName 'layout'
@@ -262,6 +307,17 @@ function Get-PanelSummary {
         actionControls = $actionControls
         onClickEvents = $onClickEvents
         eventNames = $events
+        namedEventNames = $namedEvents
+        standardEventNames = $standardEvents
+        variableEventNames = $variableEvents
+        tapEventNames = $tapEvents
+        actionEventCoverage = [ordered]@{
+            onClickEventsWithoutNamedEvent = @(Get-ListDifference -Left $normalizedOnClickEvents -Right $namedEvents)
+            namedEventsWithoutAction = @(Get-ListDifference -Left $namedEvents -Right $normalizedOnClickEvents)
+            variableEvents = $variableEvents
+            hasUnprovenTapEventSyntax = ($tapEvents.Count -gt 0 -and $onClickEvents.Count -gt 0)
+        }
+        detailEventTextCount = $detailEventTexts.Count
         cdataTextCount = $texts.Count
     }
 }

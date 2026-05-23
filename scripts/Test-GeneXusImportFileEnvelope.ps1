@@ -1,7 +1,10 @@
+#requires -Version 7.4
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$InputPath,
+
+    [string]$PanelReferencePath,
 
     [switch]$AsJson
 )
@@ -24,6 +27,77 @@ function New-Finding {
         code     = $Code
         message  = $Message
     }
+}
+
+function Get-PanelLevelLayoutPairs {
+    param([System.Xml.XmlElement]$ObjectNode)
+
+    $pairs = [System.Collections.Generic.List[string]]::new()
+    foreach ($payloadNode in @($ObjectNode.SelectNodes(".//Data|.//Source"))) {
+        $payload = $payloadNode.InnerText
+        foreach ($match in [regex]::Matches(
+            $payload,
+            '<(?:level|Level)\b[^>]*(?:id|guid)="(?<level>[^"]+)"[\s\S]*?<(?:layout|Layout)\b[^>]*(?:id|guid)="(?<layout>[^"]+)"',
+            [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+        )) {
+            [void]$pairs.Add(("{0}|{1}" -f $match.Groups["level"].Value, $match.Groups["layout"].Value))
+        }
+    }
+    return @($pairs | Sort-Object -Unique)
+}
+
+function Get-PanelReferencePairs {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return @()
+    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "PanelReferencePath not found: $Path"
+    }
+    $referenceDoc = $null
+    $extension = [System.IO.Path]::GetExtension($Path).ToLowerInvariant()
+    if ($extension -eq ".xpz" -or $extension -eq ".zip") {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $Path).Path)
+        try {
+            foreach ($entry in @($zip.Entries | Where-Object { $_.FullName -match '\.xml$' } | Sort-Object FullName)) {
+                $reader = [System.IO.StreamReader]::new($entry.Open(), [System.Text.Encoding]::UTF8, $true)
+                try { $referenceText = $reader.ReadToEnd() } finally { $reader.Dispose() }
+                $candidateDoc = New-Object System.Xml.XmlDocument
+                try { $candidateDoc.LoadXml($referenceText) } catch { continue }
+                if ($candidateDoc.DocumentElement.LocalName -eq "ExportFile") {
+                    $referenceDoc = $candidateDoc
+                    break
+                }
+            }
+        } finally {
+            $zip.Dispose()
+        }
+        if ($null -eq $referenceDoc) {
+            throw "PanelReferencePath XPZ does not contain an ExportFile XML: $Path"
+        }
+    } else {
+        $referenceText = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+        $referenceDoc = New-Object System.Xml.XmlDocument
+        $referenceDoc.PreserveWhitespace = $true
+        $referenceDoc.LoadXml($referenceText)
+    }
+    $referenceObjects = @()
+    if ($referenceDoc.DocumentElement.LocalName -eq "Object") {
+        $referenceObjects = @($referenceDoc.DocumentElement)
+    } elseif ($referenceDoc.DocumentElement.LocalName -eq "ExportFile") {
+        $referenceObjects = @($referenceDoc.DocumentElement.SelectNodes("./Objects/Object"))
+    }
+    $referencePairs = [System.Collections.Generic.List[string]]::new()
+    foreach ($referenceObject in $referenceObjects) {
+        if ($referenceObject.GetAttribute("type").ToLowerInvariant() -eq $PanelObjectTypeGuid) {
+            foreach ($pair in @(Get-PanelLevelLayoutPairs -ObjectNode $referenceObject)) {
+                [void]$referencePairs.Add($pair)
+            }
+        }
+    }
+    return @($referencePairs | Sort-Object -Unique)
 }
 
 if (-not (Test-Path -LiteralPath $InputPath)) {
@@ -51,11 +125,12 @@ $result = [ordered]@{
     objectCount     = 0
     blockingReasons = @()
     warnings        = @()
+    information     = @()
 }
 
 $allFindings = [System.Collections.Generic.List[object]]::new()
 
-# Camada 1 — XML bem-formado
+# Camada 1 - XML bem-formado
 try {
     $xmlDoc = New-Object System.Xml.XmlDocument
     $xmlDoc.PreserveWhitespace = $true
@@ -74,7 +149,7 @@ try {
 
 $root = $xmlDoc.DocumentElement
 
-# Camada 2 — raiz ExportFile
+# Camada 2 - raiz ExportFile
 if ($root.LocalName -ne "ExportFile") {
     $allFindings.Add((New-Finding -Severity "fail" -Code "root-not-export-file" `
         -Message "Raiz esperada 'ExportFile'; encontrada '$($root.LocalName)'.")) | Out-Null
@@ -82,7 +157,7 @@ if ($root.LocalName -ne "ExportFile") {
     $result.checks.rootIsExportFile = $true
 }
 
-# Camada 3 — blocos obrigatorios
+# Camada 3 - blocos obrigatorios
 $missingBlocks = [System.Collections.Generic.List[string]]::new()
 foreach ($block in @("KMW", "Source", "Objects", "Dependencies")) {
     if ($null -eq $root.SelectSingleNode("./$block")) {
@@ -100,7 +175,7 @@ if ($null -eq $root.SelectSingleNode("./ObjectsIdentityMapping")) {
         -Message "'<ObjectsIdentityMapping>' ausente — verificar se o padrao local da KB exige este bloco.")) | Out-Null
 }
 
-# Camada 4 — Source/@kb e Source/Version/@guid
+# Camada 4 - Source/@kb e Source/Version/@guid
 $sourceNode = $root.SelectSingleNode("./Source")
 if ($null -ne $sourceNode) {
     $kbGuid      = $sourceNode.GetAttribute("kb")
@@ -138,7 +213,7 @@ if ($null -ne $sourceNode) {
     }
 }
 
-# Camada 5 — conteudo de Objects
+# Camada 5 - conteudo de Objects
 $objectsNode = $root.SelectSingleNode("./Objects")
 if ($null -ne $objectsNode) {
 
@@ -148,7 +223,7 @@ if ($null -ne $objectsNode) {
     })
     $piNodes       = @($objectsNode.ChildNodes | Where-Object { $_ -is [System.Xml.XmlProcessingInstruction] })
 
-    # 5a — Objects nao vazio
+    # 5a - Objects nao vazio
     if ($childElements.Count -eq 0 -and $textNodes.Count -eq 0) {
         $allFindings.Add((New-Finding -Severity "fail" -Code "objects-empty" `
             -Message "'<Objects>' nao contem nenhum objeto; verificar se o XML do objeto foi embutido corretamente.")) | Out-Null
@@ -156,7 +231,7 @@ if ($null -ne $objectsNode) {
         $result.checks.objectsNotEmpty = $true
     }
 
-    # 5b — sem texto solto (objeto embutido como string em vez de XML)
+    # 5b - sem texto solto (objeto embutido como string em vez de XML)
     if ($textNodes.Count -gt 0) {
         $preview = $textNodes[0].Value.Trim()
         if ($preview.Length -gt 120) { $preview = $preview.Substring(0, 120) + "..." }
@@ -166,7 +241,7 @@ if ($null -ne $objectsNode) {
         $result.checks.noTextContentInObjects = $true
     }
 
-    # 5c — sem declaracao XML interna (PI <?xml ...?> dentro de Objects)
+    # 5c - sem processing instruction de declaracao XML dentro de Objects
     if ($piNodes.Count -gt 0) {
         foreach ($pi in $piNodes) {
             $allFindings.Add((New-Finding -Severity "fail" -Code "objects-xml-declaration" `
@@ -176,12 +251,13 @@ if ($null -ne $objectsNode) {
         $result.checks.noEmbeddedXmlDeclaration = $true
     }
 
-    # 5d — GUIDs e placeholders nos elementos de objeto.
+    # 5d - GUIDs e placeholders nos elementos de objeto.
     # Nomes de objetos GeneXus podem conter "PlaceHolder" legitimamente; apenas GUID placeholder bloqueia.
     $result.objectCount = $childElements.Count
     $allGuidsValid  = $true
     $noPlaceholder  = $true
     $panelNames      = [System.Collections.Generic.List[string]]::new()
+    $panelPairs      = [System.Collections.Generic.List[string]]::new()
 
     foreach ($objNode in $childElements) {
         $objGuid = $objNode.GetAttribute("guid")
@@ -222,12 +298,25 @@ if ($null -ne $objectsNode) {
 
         if ($objType.ToLowerInvariant() -eq $PanelObjectTypeGuid) {
             [void]$panelNames.Add($objName)
+            foreach ($pair in @(Get-PanelLevelLayoutPairs -ObjectNode $objNode)) {
+                [void]$panelPairs.Add($pair)
+            }
         }
     }
 
     if ($panelNames.Count -gt 0) {
-        $allFindings.Add((New-Finding -Severity "warn" -Code "panel-level-layout-coupling" `
-            -Message ("Panel detectado no pacote ({0}); para Panel SD, nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada." -f (($panelNames | Sort-Object -Unique) -join ", ")))) | Out-Null
+        $referencePairs = @(Get-PanelReferencePairs -Path $PanelReferencePath)
+        $confirmedPairs = @($panelPairs | Sort-Object -Unique | Where-Object { $referencePairs -contains $_ })
+        if ($confirmedPairs.Count -gt 0) {
+            $allFindings.Add((New-Finding -Severity "info" -Code "panel-level-layout-confirmed" `
+                -Message ("Panel detectado no pacote ({0}); par level/layout confirmado em referencia comparavel informada." -f (($panelNames | Sort-Object -Unique) -join ", ")))) | Out-Null
+        } elseif (-not [string]::IsNullOrWhiteSpace($PanelReferencePath)) {
+            $allFindings.Add((New-Finding -Severity "warn" -Code "panel-level-layout-suspicious" `
+                -Message ("Panel detectado no pacote ({0}); nenhum par level/layout do pacote foi localizado na referencia comparavel informada. Revisar contra Panel SD exportado pela IDE da mesma KB." -f (($panelNames | Sort-Object -Unique) -join ", ")))) | Out-Null
+        } else {
+            $allFindings.Add((New-Finding -Severity "warn" -Code "panel-level-layout-unverified" `
+                -Message ("Panel detectado no pacote ({0}); sem referencia comparavel para confirmar o par level/layout. Para Panel SD, nao gerar GUIDs independentes; preservar par de template real exportado pela IDE da mesma KB." -f (($panelNames | Sort-Object -Unique) -join ", ")))) | Out-Null
+        }
     }
 
     if ($allGuidsValid) {
@@ -241,9 +330,11 @@ if ($null -ne $objectsNode) {
 # Resultado final
 $failFindings = @($allFindings | Where-Object { $_.severity -eq "fail" })
 $warnFindings = @($allFindings | Where-Object { $_.severity -eq "warn" })
+$infoFindings = @($allFindings | Where-Object { $_.severity -eq "info" })
 
 $result.blockingReasons = @($failFindings | ForEach-Object { "$($_.code): $($_.message)" })
 $result.warnings        = @($warnFindings | ForEach-Object { "$($_.code): $($_.message)" })
+$result.information     = @($infoFindings | ForEach-Object { "$($_.code): $($_.message)" })
 
 if ($failFindings.Count -eq 0 -and $warnFindings.Count -eq 0) {
     $result.status = "apto para prosseguir"

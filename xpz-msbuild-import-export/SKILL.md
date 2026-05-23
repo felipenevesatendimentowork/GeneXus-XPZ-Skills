@@ -178,8 +178,8 @@ Estado atual da materialização:
 - `Invoke-GeneXusXpzImport.ps1`: implementado para importação real de XPZ com parâmetros explícitos e diagnóstico JSON
 - `Read-MsBuildImportSignals.ps1`: implementado para leitura compacta de `msbuild.stdout.log`/`msbuild.stderr.log`, com `importedItems`, warnings, erros, ruídos conhecidos de stdout, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
 - `Extract-XpzObject.ps1`: implementado para extrair um objeto específico de XML/XPZ ou retornar resumo JSON sem imprimir o pacote inteiro
-- `Get-GeneXusObjectSummary.ps1`: implementado para resumir objeto GeneXus e, para Panel, expor shape compacto de level/layout, controles, gridData, actions e eventos sem despejar CDATA
-- `Compare-GeneXusPanelShape.ps1`: implementado para comparar dois Panels por shape compacto, incluindo Object attrs, Pattern/Data version, level/layout e controles
+- `Get-GeneXusObjectSummary.ps1`: implementado para resumir objeto GeneXus e, para Panel, expor shape compacto de level/layout, controles, gridData, actions, eventos serializados em `detail/@events`, `actionEventCoverage`, `namedEventNames`, `standardEventNames`, `variableEventNames` e `tapEventNames` sem despejar CDATA
+- `Compare-GeneXusPanelShape.ps1`: implementado para comparar dois Panels por shape compacto, incluindo Object attrs, Pattern/Data version, level/layout, controles, eventos serializados classificados (`namedEventNames`, `standardEventNames`, `variableEventNames`, `tapEventNames`) e cobertura action/event
 - `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado para validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB
 - `Get-GeneXusImportPackageObjectInventory.ps1`: implementado para inventário determinístico de `import_file.xml`/XML com raiz `<ExportFile>`; lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>` e pode confrontar com delta declarado em texto `Tipo:Nome`; `.xpz` ainda não faz parte deste escopo inicial
@@ -219,11 +219,13 @@ Scripts nesta frente:
   - status atual: implementado; classifica KB consistente, inconsistências detectadas, check parcial por timeout da Etapa 3 e KB inacessível; `Fix="true"` exige confirmação interativa
 - `Test-GeneXusImportFileEnvelope.ps1`
   - status atual: implementado
+  - runtime: executar em `pwsh` 7.4 ou superior; o script declara `#requires -Version 7.4` e Windows PowerShell 5.1 não é runtime suportado
   - objetivo: validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB, não requer GeneXus instalado
   - parâmetros obrigatórios: `-InputPath` (caminho do `import_file.xml`)
-  - parâmetros opcionais: `-AsJson`
-  - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `não apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`
+  - parâmetros opcionais: `-PanelReferencePath` (objeto ou pacote XML/XPZ comparável usado para confirmar par `level id`/`layout id` em Panel), `-AsJson`
+  - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `não apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`, `information`
   - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
+  - regra Panel: sem `-PanelReferencePath`, Panel retorna `panel-level-layout-unverified` como ressalva; com referência que contenha o mesmo par, retorna `panel-level-layout-confirmed` apenas em `information`; referência informada sem par correspondente retorna `panel-level-layout-suspicious`
   - regra cross-KB: formato GUID valido nao basta para import headless; quando houver KB nativa local esperada, `Source/@kb` do pacote/template deve corresponder a essa KB. Divergencia indica pacote de outra KB e bloqueia automacao por agente; encaminhar para avaliacao/importacao manual pela IDE, conforme `02-regras-operacionais-e-runtime.md`.
 - `Get-GeneXusImportPackageObjectInventory.ps1`
   - status atual: implementado para `import_file.xml`/XML com raiz `<ExportFile>`
@@ -348,7 +350,7 @@ Parâmetros específicos de importação:
    O diagnóstico deve distinguir `WorkingDirectory` já existente de `WorkingDirectory` auto-criado no caminho explícito e seguro.
    Preferir `JSON` como formato canônico inicial.
 6b. Quando o objetivo for importação (preview ou real), executar o gate de validação do envelope **antes de qualquer chamada ao MSBuild**:
-   - Chamar `Test-GeneXusImportFileEnvelope.ps1 -InputPath <caminho> -AsJson`
+   - Chamar `Test-GeneXusImportFileEnvelope.ps1 -InputPath <caminho> -AsJson`; para Panel com molde/pacote comparável disponível, passar também `-PanelReferencePath <molde-ou-pacote>` para confirmar o par `level id`/`layout id`
    - Interpretar o resultado:
      - `não apto para prosseguir` → **ABORT**; apresentar `blockingReasons` ao usuário antes de prosseguir; não chamar MSBuild
      - `apto com ressalvas` → apresentar `warnings`; exigir confirmação explícita do usuário antes de prosseguir para preview ou import real

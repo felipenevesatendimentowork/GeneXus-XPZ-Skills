@@ -632,6 +632,9 @@ Regras da escada:
 - usar `Panel structure and layout` como bloco inicial para composicao visual, controles, shape da tela e estrutura funcional aparente
 - quando o sintoma for warning `Layout com identificador incorreto`, tratar `level id` e `layout id` como par acoplado; nao testar nem recomendar GUID avulso de layout como correcao suficiente
 - para Panel SD gerado ou clonado, preferir par `level id` + `layout id` vindo de Panel SD exportado pela IDE da mesma KB; se a regra exata de derivacao nao estiver provada, declarar risco e nao inventar GUIDs independentes
+- para Panel SD com actions, ler `detail/@events` antes de concluir quais eventos existem; `onClickEvent="'Nome'"` deve ser confrontado com `Event 'Nome'` no comportamento serializado
+- nao sintetizar `Event Controle.Tap` em Panel SD sem evidencia equivalente em molde real comparavel da mesma KB; quando o molde vincular action a evento nomeado, preservar a forma nomeada
+- ao executar `scripts\Test-GeneXusImportFileEnvelope.ps1`, passar `-PanelReferencePath <objeto-ou-pacote-comparavel>` quando houver referencia real disponivel; tratar `panel-level-layout-confirmed` somente no campo JSON `information`, quando o mesmo par for encontrado, e manter em `warnings` `panel-level-layout-unverified` sem referencia ou `panel-level-layout-suspicious` quando a referencia nao confirmar o par
 - usar `Serialized behavior and configuration` como bloco inicial para comportamento serializado, configuracao persistida e metadado funcional nao redutivel a decoracao visual
 - usar `Pattern and parent coupling` como bloco inicial para `parent`, `parentGuid`, `parentType`, `moduleGuid`, pattern de origem e acoplamento estrutural do painel
 - usar `External dependencies` como bloco inicial para objeto externo chamado, vinculo necessario e dependencia funcional fora do proprio painel
@@ -1048,14 +1051,14 @@ Regras da escada:
 - se o objeto nao mudou e entrou apenas para dependencia, preservar o `lastUpdate` oficial
 - nao concluir XML ou pacote enquanto o `lastUpdate` do arquivo final nao tiver sido relido e confirmado
 - nao concluir XML GeneXus grande apenas porque a escrita terminou; reler cabecalho, cauda e trecho funcional afetado, validar XML bem-formado, fechamento da raiz e `CDATA` antes de empacotar
-- para ler XML/XPZ grande sem despejar `CDATA` inteiro na conversa, preferir `scripts\Extract-XpzObject.ps1`, `scripts\Get-GeneXusObjectSummary.ps1` e, para `Panel`, `scripts\Compare-GeneXusPanelShape.ps1`
+- para ler XML/XPZ grande sem despejar `CDATA` inteiro na conversa, preferir `scripts\Extract-XpzObject.ps1`, `scripts\Get-GeneXusObjectSummary.ps1` e, para `Panel`, `scripts\Compare-GeneXusPanelShape.ps1`; ao comparar Panel SD, observar pelo menos `actionEventCoverage`, `namedEventNames`, `standardEventNames`, `variableEventNames` e `tapEventNames`, alem de `eventNames`
 - se heredoc, here-string ou mecanismo equivalente terminar por EOF antes do delimitador esperado, tratar o arquivo como truncado/corrompido e regenerar por metodo controlado
 - em PowerShell, se houver interpolacao com chamada de metodo dentro de here-string, usar subexpressao `$()` ou evitar here-string para essa composicao; `$variavel.Metodo()` pode sair literal
 - em clonagem conservadora de `WebPanel` que deveria preservar bindings, comparar antes do pacote os bindings serializados relevantes do original e do clone; no minimo, `fieldSpecifier` deve bater em contagem e nomes
 - se houver export real comparavel da IDE para a mesma composicao, preferir repetir o shape desse export em vez de improvisar `Dependencies` ou `ObjectsIdentityMapping`
 - para pacote misto com `Transaction`, `WorkWithForWeb` e `Procedure`, preferir objetos embutidos em `<Objects>` quando esse for o formato validado pelo molde real
 - quando o formato exigir UTC com `Z`, converter corretamente a partir do horario local real; nao reaproveitar timestamp antigo nem de rodada anterior
-- para empacotamento com `Build-GeneXusImportFileEnvelope.ps1`, informar obrigatoriamente `-AcervoPath <ObjetosDaKbEmXml>`; o script sempre executa o gate de `lastUpdate`, e o agente deve informar `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para que o script bloqueie `lastUpdate` velho, igual ao acervo em objeto modificado ou futuro demais antes de escrever o pacote
+- para empacotamento com `Build-GeneXusImportFileEnvelope.ps1`, informar obrigatoriamente `-AcervoPath <ObjetosDaKbEmXml>`; o script sempre executa o gate de `lastUpdate`, e o agente deve informar `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para que o script bloqueie `lastUpdate` velho, igual ao acervo em objeto modificado ou futuro demais antes de escrever o pacote; para `Panel`, o helper repassa automaticamente `-TemplatePackagePath` como `-PanelReferencePath` e propaga `information`/`warnings` do gate de par `level id`/`layout id`
 - o agente deve tratar `ObjectsIdentityMapping` como mapeamento de contexto; nao repetir ali cada objeto exportado nem inventar pares `Object` -> `ObjectIdentity` 1:1
 - quando o objeto depender de `parentGuid` ou `moduleGuid` externos relevantes, o agente deve preferir manter no `ObjectsIdentityMapping` a identidade correspondente com o mesmo `Guid`
 - o agente deve preservar sempre preenchidos, no formato normal, `Source/Version/@name`, `Object/@name` e `ObjectIdentity/@Name`

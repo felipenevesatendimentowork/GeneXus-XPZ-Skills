@@ -1,3 +1,22 @@
+<#
+.SYNOPSIS
+    Monta um import_file.xml a partir de XMLs de objeto e um pacote template.
+
+.DESCRIPTION
+    Monta o envelope de importacao a partir de XMLs declarados e de um template
+    comparavel. Executa o gate canonico de envelope por padrao; para Panel, usa
+    TemplatePackagePath como referencia comparavel e propaga no resultado
+    information para panel-level-layout-confirmed, ou warnings quando o par
+    level/layout nao puder ser confirmado.
+
+.PARAMETER TemplatePackagePath
+    Pacote XML ou XPZ comparavel usado como template do envelope e, para Panel,
+    como referencia do par level id/layout id no gate final.
+
+.PARAMETER AsJson
+    Retorna saida estruturada, incluindo information e warnings do gate final.
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
@@ -36,7 +55,6 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$PanelObjectTypeGuid = "d82625fd-5892-40b0-99c9-5c8559c197fc"
 
 function Resolve-NextRejectedPath {
     param(
@@ -410,12 +428,6 @@ if (@($lastUpdateFreshness.blockingReasons).Count -gt 0) {
     throw "BLOCK: lastUpdate invalido antes do empacotamento. $(@($lastUpdateFreshness.blockingReasons) -join ' | ')"
 }
 
-$panelObjectNames = @(
-    $objectDocs |
-        Where-Object { $_.DocumentElement.GetAttribute("type").ToLowerInvariant() -eq $PanelObjectTypeGuid } |
-        ForEach-Object { $_.DocumentElement.GetAttribute("name") }
-)
-
 $attributeDocs = @()
 if ($TopLevelAttributesXmlPaths -and $TopLevelAttributesXmlPaths.Count -gt 0) {
     foreach ($path in $TopLevelAttributesXmlPaths) {
@@ -515,10 +527,8 @@ $buildResult = [ordered]@{
     blockingReasons   = @()
     warnings          = @(
         @($lastUpdateFreshness.warnings)
-        if ($panelObjectNames.Count -gt 0) {
-            "panel-level-layout-coupling: Panel detectado no pacote ($((@($panelObjectNames) | Sort-Object -Unique) -join ', ')); para Panel SD, nao gerar level id e layout id como GUIDs independentes. Usar par coerente vindo de template real exportado pela IDE da mesma KB quando a regra de derivacao nao estiver provada."
-        }
     )
+    information       = @()
     rejectedPath      = $null
     status            = "apto para prosseguir"
 }
@@ -529,10 +539,11 @@ if (-not $SkipGate) {
     if (-not (Test-Path -LiteralPath $gateScript)) {
         throw "Gate nao encontrado em '$gateScript'. Use -SkipGate apenas se souber o que esta fazendo."
     }
-    $gateResult = & $gateScript -InputPath $OutputPath
+    $gateResult = & $gateScript -InputPath $OutputPath -PanelReferencePath $TemplatePackagePath
     $buildResult.gateStatus      = $gateResult.status
     $buildResult.blockingReasons = @($gateResult.blockingReasons)
     $buildResult.warnings        = @($buildResult.warnings + $gateResult.warnings | Sort-Object -Unique)
+    $buildResult.information     = @($gateResult.information)
     $buildResult.status          = $gateResult.status
 
     if ($gateResult.status -eq "não apto para prosseguir") {

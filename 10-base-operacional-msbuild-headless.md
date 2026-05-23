@@ -621,6 +621,12 @@ Scripts propostos:
   - objetivo: produzir JSON compacto de logs brutos de preview/import, com itens importados, warnings, erros, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
 - `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`
   - objetivo: extrair, resumir e comparar objetos GeneXus em XML/XPZ sem imprimir pacote completo nem CDATA extenso
+- `Test-GeneXusImportFileEnvelope.ps1`
+  - objetivo: validar estaticamente o envelope `import_file.xml` antes de preview/import; executado em `pwsh` 7.4+ e sem abrir a KB
+  - parâmetros obrigatórios: `-InputPath`
+  - parâmetros opcionais: `-PanelReferencePath` (objeto ou pacote XML/XPZ comparável usado para confirmar o par `level id`/`layout id` de Panel), `-AsJson`
+  - saída esperada: `status`, `checks`, `objectCount`, `blockingReasons`, `warnings` e `information`
+  - regra Panel: sem referência comparável retorna `panel-level-layout-unverified` como ressalva; com par confirmado retorna `panel-level-layout-confirmed` somente em `information`; com referência informada sem par correspondente retorna `panel-level-layout-suspicious`
 - `GeneXusMsBuildWatcherSupport.ps1`
   - objetivo: centralizar o contrato comum de watcher usado pelos wrappers MSBuild (`-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e delay curto para drenagem do log do monitor), evitando implementações divergentes por wrapper
 - `Watch-GeneXusMsBuildLog.ps1`
@@ -636,7 +642,8 @@ Estado atual da materialização adicional:
 
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de `XPZ` com parâmetros explícitos e diagnóstico em `JSON`
 - `Read-MsBuildImportSignals.ps1`: implementado para reduzir consumo de tokens na leitura de logs MSBuild; os wrappers de preview/import gravam `msbuild.import.signals.json` ao lado dos logs brutos quando a leitura compacta consegue executar
-- `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`: implementados para reduzir consumo de tokens em analise de XML/XPZ e diagnostico de Panel; devem ser preferidos a buscas que imprimam linhas grandes de `CDATA`
+- `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`: implementados para reduzir consumo de tokens em analise de XML/XPZ e diagnostico de Panel; o resumo de Panel le `detail/@events` e a comparacao confronta `actionEventCoverage`, `namedEventNames`, `standardEventNames`, `variableEventNames` e `tapEventNames`, devendo ser preferidos a buscas que imprimam linhas grandes de `CDATA`
+- `Test-GeneXusImportFileEnvelope.ps1`: implementado como validação estática prévia do `import_file.xml` em `pwsh` 7.4+; para Panel, aceita `-PanelReferencePath` e registra confirmação do par `level id`/`layout id` em `information` sem manter ressalva quando a referência comparável comprova o par
 - `GeneXusMsBuildWatcherSupport.ps1`: implementado como helper comum do contrato de watcher dos wrappers MSBuild; centraliza `-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e leitura do log do monitor
 - `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; destaca fases do GeneXus (Open, Specify, Generate, Compile, BuildAll, Reorg, Validating subtype group, Close), detecta silêncio prolongado e encerra sozinho quando o processo termina; exibe contador de silêncio in-place (sem gerar nova linha a cada poll); quando `-MonitorLog` é passado com o mesmo caminho de `-MonitorLogPath` em wrapper compatível, o JSON de resultado inclui `timing.phases` com duração de cada fase interna; iniciar com `-NoExit` quando a janela precisar permanecer aberta após a execução
 - `Test-GeneXusRuntimeFreshness.ps1`: implementado como diagnóstico somente leitura de frescor de runtime; verifica `nav_objs.xml` e timestamps dos artefatos gerados; saída JSON com `runtime-fresh`, `runtime-stale` ou `runtime-unknown`

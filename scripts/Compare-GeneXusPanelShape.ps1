@@ -5,7 +5,9 @@ Compara dois Panels GeneXus por shape compacto.
 
 .DESCRIPTION
 Usa Get-GeneXusObjectSummary.ps1 para comparar Object attrs, Pattern/Data
-version, level/layout, controles e flags estruturais sem imprimir CDATA.
+version, level/layout, controles, eventos serializados (nomeados, padrao,
+de variavel e Tap), cobertura action/event e flags estruturais sem imprimir
+CDATA.
 
 .PARAMETER LeftPath
 XML/XPZ do primeiro Panel.
@@ -136,7 +138,8 @@ $scalarComparisons = @(
     (Compare-Scalar -Name 'hasResponsiveSizes' -Left $left.panel.hasResponsiveSizes -Right $right.panel.hasResponsiveSizes),
     (Compare-Scalar -Name 'hasGridData' -Left $left.panel.hasGridData -Right $right.panel.hasGridData),
     (Compare-Scalar -Name 'hasActions' -Left $left.panel.hasActions -Right $right.panel.hasActions),
-    (Compare-Scalar -Name 'hasOnClickEvent' -Left $left.panel.hasOnClickEvent -Right $right.panel.hasOnClickEvent)
+    (Compare-Scalar -Name 'hasOnClickEvent' -Left $left.panel.hasOnClickEvent -Right $right.panel.hasOnClickEvent),
+    (Compare-Scalar -Name 'hasUnprovenTapEventSyntax' -Left $left.panel.actionEventCoverage.hasUnprovenTapEventSyntax -Right $right.panel.actionEventCoverage.hasUnprovenTapEventSyntax)
 )
 
 $listComparisons = @(
@@ -152,7 +155,13 @@ $listComparisons = @(
     (Compare-List -Name 'gridDataNames' -Left $left.panel.gridDataNames -Right $right.panel.gridDataNames),
     (Compare-List -Name 'actionControls' -Left $left.panel.actionControls -Right $right.panel.actionControls),
     (Compare-List -Name 'onClickEvents' -Left $left.panel.onClickEvents -Right $right.panel.onClickEvents),
-    (Compare-List -Name 'eventNames' -Left $left.panel.eventNames -Right $right.panel.eventNames)
+    (Compare-List -Name 'eventNames' -Left $left.panel.eventNames -Right $right.panel.eventNames),
+    (Compare-List -Name 'namedEventNames' -Left $left.panel.namedEventNames -Right $right.panel.namedEventNames),
+    (Compare-List -Name 'standardEventNames' -Left $left.panel.standardEventNames -Right $right.panel.standardEventNames),
+    (Compare-List -Name 'variableEventNames' -Left $left.panel.variableEventNames -Right $right.panel.variableEventNames),
+    (Compare-List -Name 'tapEventNames' -Left $left.panel.tapEventNames -Right $right.panel.tapEventNames),
+    (Compare-List -Name 'onClickEventsWithoutNamedEvent' -Left $left.panel.actionEventCoverage.onClickEventsWithoutNamedEvent -Right $right.panel.actionEventCoverage.onClickEventsWithoutNamedEvent),
+    (Compare-List -Name 'namedEventsWithoutAction' -Left $left.panel.actionEventCoverage.namedEventsWithoutAction -Right $right.panel.actionEventCoverage.namedEventsWithoutAction)
 )
 
 $all = @($scalarComparisons + $listComparisons)
