@@ -223,6 +223,7 @@ Regras da escada:
 - nomear a transicao de bloco no raciocinio e no handoff, por exemplo: `Rules/parm -> Variables` para validar contrato de parametros
 - parar a expansao quando a hipotese ja estiver sustentada; nao reabrir a `Procedure` inteira por reflexo
 - usar `Source` como bloco inicial para filtros, fluxo procedural, navegacao, atribuicoes, condicoes e chamadas feitas no corpo
+- se `Source` contiver `New`, executar `Test-GeneXusNewWritableTargets.ps1` antes de empacotar; bloquear atribuicao a `Formula`, atributo descritivo/extendido, subtipo derivado ou alvo cuja tabela base nao possa ser resolvida
 - usar `Rules/parm` como bloco inicial para assinatura, parametros, direcao do contrato e erro claramente ligado a regra
 - usar `Variables` como bloco inicial para existencia, tipo, helper novo, coerencia de nome e colecao vs simples
 - usar `Calls and dependencies` como bloco inicial para cadeia de chamadas, objeto chamado, dependencia externa e prova de call site

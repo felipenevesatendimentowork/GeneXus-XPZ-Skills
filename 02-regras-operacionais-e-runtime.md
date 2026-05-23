@@ -271,6 +271,7 @@ Regras de uso:
 - `Regra operacional`: abrir bloco adjacente apenas por dependencia funcional explicita; transicao sem motivo declarado reintroduz leitura difusa do objeto.
 - `Regra operacional`: em `Procedure`, as transicoes mais comuns e justificadas sao `Rules/parm -> Variables`, `Rules/parm -> Source`, `Source -> Variables`, `Source -> Calls and dependencies` e `Report layout -> Source`.
 - `Regra operacional`: parar a expansao quando a hipotese ja estiver sustentada; nao reabrir a `Procedure` inteira por reflexo.
+- `Regra operacional`: quando `Source` de `Procedure` contiver `New`, validar os alvos gravaveis antes de empacotar com `scripts\Test-GeneXusNewWritableTargets.ps1`; atributo visivel, formula, descritivo extendido ou derivado por subtipo nao e automaticamente gravavel no `New`.
 
 ### Revisao por blocos em `DataSelector`
 

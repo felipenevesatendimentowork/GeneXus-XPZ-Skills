@@ -44,11 +44,13 @@ When changing a `Procedure`, run a minimum semantic pre-packaging gate on the `P
 ### Type-specific gate triggers
 
 - **BC dependency preflight gate (9-BC)**: when the candidate batch contains a `Procedure` that declares a variable with `ATTCUSTOMTYPE = bc:<X>`, run `& ..\scripts\Test-GeneXusBCDependency.ps1` before packaging. The script locates Transaction `X` in the batch or in `ObjetosDaKbEmXml`, verifies `idISBUSINESSCOMPONENT=True`, and supports `bc:Pai.Filho` sublevel references. Treat absence of confirmation as a hard blocker (fail).
+- **Procedure New Writability gate (9-PNW)**: when the candidate batch contains a `Procedure` whose `Source` has `New`, run `& ..\scripts\Test-GeneXusNewWritableTargets.ps1` before packaging. The script checks direct left-side assignments inside each `New` against Transaction writability classification. Treat assignment to `formula`, descriptive/extended, subtype-derived descriptive, unclassified, or unresolved-base attributes as a hard blocker (fail); do not confuse readable attributes with attributes physically assignable in the `New` target.
 - **Sub-pattern Mirroring gate (9-PSM)**: when the candidate batch contains a `Procedure` whose `Source` delta introduces or materially expands a `Sub` block, run `& ..\scripts\Test-GeneXusProcedureSubPattern.ps1`. The script scans the procedure's pre-existing `Sub` delegation structure; if a dominant `iteration-sub → unit-sub` pattern exists and the new block is `mixed`, the script emits an `alert` finding. Treat as advisory, not as a hard packaging blocker — require user acknowledgment or restructuring.
 
 ## Quality Checklist
 
 - [ ] For `Procedure`, the primary edit block was declared before editing and any block transition was justified explicitly
+- [ ] If `Procedure` `Source` contains `New`, `Test-GeneXusNewWritableTargets.ps1` was run and no `fail` finding remained before packaging
 
 ## Related rules in main SKILL.md WORKFLOW
 

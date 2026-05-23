@@ -272,6 +272,13 @@ Reference files and when to load them:
    - Any attribute with `writable=false` must be excluded from assignments in the delta; assigning to a non-writable attribute requires an explicit **ABORT** of the assignment before packaging
    - `writable=null` (any `unclassified-*` classification) means the corpus lookup did not resolve and the writability cannot be decided; resolve the corpus gap or document the limitation before assigning that attribute
    - This gate never returns `fail` by itself — the ABORT comes from the assignment policy above
+9-PNW. Procedure New Writability gate — run before any packaging when the batch contains a `Procedure` whose `Source` contains `New`:
+   - Run `& ..\scripts\Test-GeneXusNewWritableTargets.ps1 -FrontFolder <pasta-da-frente> -CorpusFolder <ObjetosDaKbEmXml> -AsJson`
+   - The script extracts direct left-side assignments inside each `New`/`EndNew` block, infers candidate `Transaction` targets from the assigned attribute set, and applies the same writability classifications used by 9-TXW.
+   - `pass` (only `info` findings) → proceed normally
+   - `alert` (ambiguous target with all assigned attributes writable in more than one candidate) → confirm and record the intended base table before packaging
+   - `fail` (`new-assignment-non-writable`, `new-assignment-unclassified`, or `new-target-unresolved`) → **ABORT** packaging; remove the invalid assignment or prove the intended base table with a stronger local reference before re-running
+   - Never treat an attribute as writable in `New` only because it is visible, inferable, descriptive, formula-derived, or reachable through an extended table; the target must be physically assignable in the base table inferred for that `New`
 9-PSM. Procedure Sub-pattern Mirroring gate (advisory) — run before any packaging when the batch contains a `Procedure`:
    - Run `& ..\scripts\Test-GeneXusProcedureSubPattern.ps1 -FrontFolder <pasta-da-frente> -CorpusFolder <ObjetosDaKbEmXml> -AsJson`
    - `not-applicable` (no Procedure in the batch) → proceed normally
