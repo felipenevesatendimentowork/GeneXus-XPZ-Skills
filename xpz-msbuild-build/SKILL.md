@@ -169,8 +169,9 @@ Arquivos de referência e quando carregar:
 | [README.md](../README.md) | Sempre — regras editoriais e posicionamento da base |
 | [10-base-operacional-msbuild-headless.md](../10-base-operacional-msbuild-headless.md) | Sempre — base de infraestrutura MSBuild compartilhada |
 | [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) | Regras operacionais e restrições da trilha XPZ; carregar também após handoff de import OK com evento ausente no `.cs`/UI (mecanismo b), para inspeção pós-build do handler e procedimento em `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`; e quando erros C# sugerirem `.cs` truncado (`CS1010`/`CS1513`) |
+| [xpz-msbuild-import-export/SKILL.md](../xpz-msbuild-import-export/SKILL.md) | Handoff quando o sintoma for mecanismo (a) (`Unknown function`/`src0294`, `exitCode != 0` ou `errors` no `import.json`) ou quando faltar sub-estado/classificação de import antes de inspecionar `.cs` |
 
-Skills externas não listadas nesta tabela não devem ser carregadas durante a execução desta skill sem necessidade concreta derivada do contexto específico da tarefa.
+Skills externas não listadas nesta tabela não devem ser carregadas durante a execução desta skill sem necessidade concreta derivada do contexto específico da tarefa; `xpz-msbuild-import-export` na tabela acima é exceção documentada para handoff de importação e classificação (a)/(b).
 
 ---
 

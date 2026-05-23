@@ -166,6 +166,7 @@ Arquivos de referência e quando carregar:
 | [README.md](../README.md) | Sempre - regras editoriais e posicionamento da base |
 | [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) | Regras operacionais, precedência e restrições da trilha XPZ; carregar também quando import falhar em código de evento (`Unknown function`/`src0294`) ou quando import OK mas evento não aparecer no `.cs`/UI (mecanismos de descarte do gerador) |
 | [10-base-operacional-msbuild-headless.md](../10-base-operacional-msbuild-headless.md) | Sempre - base operacional, riscos conhecidos e interface vigente |
+| [xpz-msbuild-build/SKILL.md](../xpz-msbuild-build/SKILL.md) | Handoff quando import OK mas evento nao aparece no `.cs`/UI (mecanismo b), quando o usuario pedir build/specify como evidencia complementar, ou para checagem de frescor de runtime apos import — sem reabrir sub-estado de import |
 
 ---
 
