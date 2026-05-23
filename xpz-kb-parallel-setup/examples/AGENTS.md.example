@@ -34,7 +34,10 @@ GeneXus autorizadas pelo usuário.
 - `KbIntelligence`: indice derivado regeneravel.
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus`: area de trabalho para XMLs de
   importacao. Cada frente ativa deve usar subpasta
-  `NomeCurto_GUID_YYYYMMDD`.
+  `NomeCurto_GUID_YYYYMMDD`. Nao e deposito geral de usuario: XML de
+  referencia, exemplo, template ou molde deixado na frente ativa bloqueia o
+  empacotamento ate ser removido ou tratado por caminho explicito fora da
+  area gerenciada.
 - `PacotesGeradosParaImportacaoNaKbNoGenexus`: saida plana de pacotes finais.
 
 ## Estado operacional
@@ -177,6 +180,9 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
 - antes de gerar `import_file.xml` localmente a partir de
   `ObjetosGeradosParaImportacaoNaKbNoGenexus`, preferir passar o XML ou a
   subpasta ativa da frente por `Test-<NomeKb>KbSourceSanity.ps1`.
+- nunca tratar XML de referencia, exemplo, template ou molde salvo dentro da
+  frente ativa como objeto importavel; esse arquivo indica contaminacao da
+  area gerenciada e deve bloquear o empacotamento.
 - `last_xpz_materialization_run_at` deve existir em `kb-source-metadata.md`.
 - `last_index_build_run_at`, no SQLite, deve ser igual ou posterior a
   `last_xpz_materialization_run_at` antes de triagem ampla ou geracao de objetos.
