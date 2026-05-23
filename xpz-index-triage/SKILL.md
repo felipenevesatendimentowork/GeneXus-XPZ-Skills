@@ -149,8 +149,8 @@ Reference files and when to load them:
 |-----------|-----------|
 | [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) | Depois do gate estrutural inicial, quando for necessário interpretar frescor, metadados, limite operacional ou relação entre artefato derivado e fonte normativa |
 | [08-guia-para-agente-gpt.md](../08-guia-para-agente-gpt.md) | Depois do gate estrutural inicial, quando for necessário orientar uso do KB Intelligence, escalada para XML oficial ou decisão operacional |
-| [kb-intelligence-guia-metodologico-agente.md](../kb-intelligence-guia-metodologico-agente.md) | Quando a pergunta for funcional, exigir roteiro de investigação, checklist operacional, uso de `functional-trace-basic`, terminologia `via edição web`/`via BC` ou modelo de resposta funcional |
-| [scripts/README-kb-intelligence.md](../scripts/README-kb-intelligence.md) | Depois do gate estrutural inicial, quando a skill precisar escolher consulta, interpretar cobertura, executar comando do índice ou distinguir validadores |
+| [kb-intelligence-guia-metodologico-agente.md](../kb-intelligence-guia-metodologico-agente.md) | Quando a resposta precisar de roteiro de investigação funcional, modelo de resposta (evidência / leitura adicional / inferência / hipótese), `functional-trace-basic` como trilha narrativa, ou terminologia `via edição web` / `via BC` — não para escolher consulta do índice (`search-objects`, `attribute-info`, etc.); isso fica na skill e em **QUERY PARAMETER REFERENCE** |
+| [scripts/README-kb-intelligence.md](../scripts/README-kb-intelligence.md) | Depois do gate estrutural inicial, quando a **QUERY PARAMETER REFERENCE** da skill não bastar: cobertura ambígua do índice, comando não listado na skill, ou distinção entre validadores (`Test-KbIntelligenceQueries` vs gates de geração em `xpz-builder`) |
 
 Para economizar contexto, não carregue referências longas da tabela acima antes do gate estrutural inicial (`KbIntelligence`, SQLite e wrapper local). Se o gate bloquear em uma dessas três checagens, responda com a primeira falha e ofereça `xpz-kb-parallel-setup` sem abrir referências adicionais.
 
