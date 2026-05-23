@@ -351,6 +351,7 @@ XPZ/XML, não apenas a última mudança material detectada nos XMLs.
 - NUNCA selecionar por padrão um arquivo já marcado com prefixo `processado_`
 - NUNCA tratar XML local gerado para importação manual como se já fosse snapshot oficial da KB
 - NUNCA materializar `XPZ` completo ou parcial na pasta de geração para importação
+- NUNCA tratar XML local de referência, exemplo, template ou molde em `ObjetosGeradosParaImportacaoNaKbNoGenexus` como snapshot oficial ou como lote ativo de importação
 - NUNCA usar GUID como estrutura principal de saída da materialização
 - NUNCA organizar o acervo materializado com `guid`, `parentGuid`, `parentType` ou `moduleGuid` como eixo principal de navegação
 - NUNCA criar, alterar, mover, renomear ou sobrescrever arquivos em `ObjetosDaKbEmXml` fora do fluxo oficial do script `.ps1`
