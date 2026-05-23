@@ -283,6 +283,11 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 - Inferencia forte: clonar apenas quando o alvo realmente precisar abas e houver template interno muito proximo.
 - Hipotese: abortar se nao houver familia tabulada identificavel ou se o alvo pedir simplificacao radical da estrutura.
 
+### Padrao observado: tab aninhada com SDT em data attributes
+
+- `Evidência direta`: quando uma aba externa contem outra Tab interna cujas sub-abas exibem campos bindados em `&Sdt.<membro>` via data attributes, a sub-aba default da Tab interna pode aparecer vazia na primeira ativacao da aba externa; o re-bind so acontece apos `ajax_rsp_assign_sdt_attri` ser emitida pelo gerador, o que exige que o SDT entre no `oparms` do evento server-side.
+- `Referência cruzada`: ver `02-regras-operacionais-e-runtime.md`, secao `WebPanel, Tab aninhada e re-bind de SDT em data attributes`, para causa estrutural, solucao validada (`TabChanged` + touch em membro de SDT via proc helper identidade + `SelectTab(2);SelectTab(1)`), anti-padroes testados e sinais de verificacao no `.cs` gerado.
+
 ## Familia 9 - Lista com grid
 
 - Evidencia direta: 21 objetos nas assinaturas dominadas por `grid`, consolidadas aqui como familia unica de lista com grade.
