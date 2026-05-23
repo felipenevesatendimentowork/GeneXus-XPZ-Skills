@@ -11,6 +11,55 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Gravabilidade de atributos materializada no índice SQLite
+
+**Importância:** alta
+**Maturidade:** ideia
+
+**Origem:** validação pós-caso real de `Procedure` com `New` atribuindo atributo `Formula`, discutida em 2026-05-23.
+
+### Problema concreto que motiva a ideia
+
+Hoje a consulta leve `transaction-writable-attributes` reduz abertura ampla de XMLs, mas ainda não materializa no SQLite a classificação completa usada pelos gates de gravabilidade. A decisão final continua dependendo de `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`, que recalculam sinais a partir do acervo XML no momento da validação.
+
+Em KBs grandes, isso preserva segurança, mas ainda pode custar tempo e tokens quando o agente precisa explorar muitos atributos ou várias Transactions antes de decidir como gerar uma `Procedure`, `Transaction` ou lote de importação.
+
+### Ideia de melhoria
+
+Evoluir o `KbIntelligence` para gravar, durante `Build-KbIntelligenceIndex.py`, uma tabela derivada de gravabilidade por `Transaction`/`Level`/`Attribute`, com campos como:
+
+- `transaction_name`
+- `level_name`
+- `attribute_name`
+- `classification`
+- `writable`
+- `canAssignInNew`
+- `reason`
+- `evidence`
+- `source_rule_version`
+
+A classificação deveria cobrir o mesmo contrato hoje usado pelos gates: `key-attribute`, `extended-parent-fk`, `formula`, `extended-subtype-key`, `extended-subtype-descriptive`, `extended-fk-key`, `extended-fk-descriptive`, `own-physical` e estados `unclassified-*`.
+
+### Benefício esperado
+
+- reduzir abertura repetida de XMLs do acervo
+- reduzir consumo de tokens em triagem de atributos
+- permitir consultas amplas sobre risco de `New`, `Formula`, atributos descritivos e campos não graváveis
+- tornar mais barato responder perguntas como "quais atributos desta Transaction posso atribuir em `New`?"
+- apoiar auditorias e relatórios sem depender de varredura completa em tempo de pergunta
+
+### Riscos e decisões em aberto
+
+- a mudança provavelmente exige nova versão de schema do índice e rebuild das pastas paralelas
+- duplicar algoritmo entre gates e indexador pode gerar divergência; a implementação deve extrair lógica comum ou declarar claramente qual é a fonte canônica
+- é preciso decidir se a tabela será puramente derivada do snapshot oficial ou se pode considerar também XMLs de uma frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- a classificação de subtipo e FK recursiva precisa ser validada em KB real grande antes de virar gate de índice
+- o wrapper local `Query-*KbIntelligence.ps1` e os testes `Test-KbIntelligenceQueries.ps1` precisarão de novos casos de validação
+
+### Limiar para implementar
+
+Implementar quando houver uma frente dedicada de evolução do índice com rebuild planejado, validação em pelo menos uma KB real grande e comparação explícita entre a saída do índice e os gates `Test-GeneXusTransactionWritability.ps1` / `Test-GeneXusNewWritableTargets.ps1`.
+
 ## LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual
 
 **Importância:** FALTA AVALIAR
