@@ -4,12 +4,24 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
+import re
 import sqlite3
 from pathlib import Path
 
 
 EXPECTED_SCHEMA_VERSION = "1"
+LEVEL_RE = re.compile(r"<Level\b(?P<attrs>[^>]*)>(?P<body>.*?)</Level>", re.IGNORECASE | re.DOTALL)
+LEVEL_ATTRIBUTE_RE = re.compile(
+    r"<Attribute\b(?P<attrs>[^>]*)>(?P<name>.*?)</Attribute>",
+    re.IGNORECASE | re.DOTALL,
+)
+XML_ATTR_RE = re.compile(r'(?P<name>[A-Za-z_][A-Za-z0-9_]*)="(?P<value>[^"]*)"')
+PROPERTY_RE = re.compile(
+    r"<Property>\s*<Name>(?P<name>.*?)</Name>\s*<Value>(?P<value>.*?)</Value>\s*</Property>",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def validate_schema_version(conn: sqlite3.Connection) -> None:
@@ -55,6 +67,54 @@ def fetch_one(conn: sqlite3.Connection, sql: str, params: tuple[object, ...]) ->
     return row_to_dict(cursor, row)
 
 
+def metadata_map(conn: sqlite3.Connection) -> dict[str, str]:
+    rows = fetch_all(conn, "SELECT key, value FROM metadata", ())
+    return {str(row["key"]): str(row["value"]) for row in rows}
+
+
+def resolve_index_file(conn: sqlite3.Connection, file_path: object) -> Path:
+    path = Path(str(file_path))
+    if path.is_absolute():
+        return path
+    source_root = metadata_map(conn).get("source_root")
+    if not source_root:
+        raise SystemExit("Index metadata does not expose source_root; rebuild index before file-backed queries.")
+    return Path(source_root) / path
+
+
+def read_indexed_text(conn: sqlite3.Connection, file_path: object) -> str:
+    resolved = resolve_index_file(conn, file_path)
+    if not resolved.is_file():
+        raise SystemExit(f"Indexed XML file not found on disk: {resolved}")
+    return resolved.read_text(encoding="utf-8-sig")
+
+
+def parse_xml_attrs(raw_attrs: str) -> dict[str, str]:
+    return {match.group("name"): html.unescape(match.group("value")) for match in XML_ATTR_RE.finditer(raw_attrs)}
+
+
+def parse_properties(xml_text: str) -> dict[str, str]:
+    properties: dict[str, str] = {}
+    for match in PROPERTY_RE.finditer(xml_text):
+        name = html.unescape(match.group("name")).strip()
+        value = html.unescape(match.group("value")).strip()
+        if name:
+            properties[name] = value
+    return properties
+
+
+def fetch_object(conn: sqlite3.Connection, object_type: str, object_name: str) -> dict[str, object] | None:
+    return fetch_one(
+        conn,
+        """
+        SELECT object_id, type, name, guid, file_path, last_update, file_hash
+        FROM objects
+        WHERE type = ? AND LOWER(name) = LOWER(?)
+        """,
+        (object_type, object_name),
+    )
+
+
 def limit_rows(rows: list[dict[str, object]], limit: int | None) -> list[dict[str, object]]:
     if limit is None or limit <= 0:
         return rows
@@ -86,15 +146,7 @@ def index_metadata(conn: sqlite3.Connection) -> dict[str, object]:
 
 
 def object_info(conn: sqlite3.Connection, object_type: str, object_name: str) -> dict[str, object]:
-    obj = fetch_one(
-        conn,
-        """
-        SELECT object_id, type, name, guid, file_path, last_update, file_hash
-        FROM objects
-        WHERE type = ? AND LOWER(name) = LOWER(?)
-        """,
-        (object_type, object_name),
-    )
+    obj = fetch_object(conn, object_type, object_name)
     if obj is None:
         return {
             "query": "object-info",
@@ -118,6 +170,124 @@ def object_info(conn: sqlite3.Connection, object_type: str, object_name: str) ->
         "found": True,
         "outgoing_relations": outgoing["count"] if outgoing else 0,
         "incoming_relations": incoming["count"] if incoming else 0,
+    }
+
+
+def attribute_info(conn: sqlite3.Connection, attribute_name: str) -> dict[str, object]:
+    obj = fetch_object(conn, "Attribute", attribute_name)
+    if obj is None:
+        return {
+            "query": "attribute-info",
+            "attribute": attribute_name,
+            "found": False,
+        }
+    xml_text = read_indexed_text(conn, obj["file_path"])
+    properties = parse_properties(xml_text)
+    formula_expression = properties.get("Formula")
+    based_on = properties.get("idBasedOn")
+    return {
+        "query": "attribute-info",
+        "attribute": obj["name"],
+        "found": True,
+        "object": obj,
+        "isFormula": formula_expression is not None,
+        "formulaExpression": formula_expression,
+        "basedOn": based_on,
+        "properties": properties,
+    }
+
+
+def transaction_attribute_rows(conn: sqlite3.Connection, transaction_name: str) -> tuple[dict[str, object] | None, list[dict[str, object]]]:
+    obj = fetch_object(conn, "Transaction", transaction_name)
+    if obj is None:
+        return None, []
+    xml_text = read_indexed_text(conn, obj["file_path"])
+    rows: list[dict[str, object]] = []
+    for level_match in LEVEL_RE.finditer(xml_text):
+        level_attrs = parse_xml_attrs(level_match.group("attrs"))
+        level_name = level_attrs.get("name") or level_attrs.get("Name") or ""
+        for attr_match in LEVEL_ATTRIBUTE_RE.finditer(level_match.group("body")):
+            attr_name = html.unescape(attr_match.group("name")).strip()
+            if not attr_name:
+                continue
+            attr_attrs = parse_xml_attrs(attr_match.group("attrs"))
+            key = attr_attrs.get("key", attr_attrs.get("Key", "")).lower() == "true"
+            is_redundant = attr_attrs.get("isRedundant", attr_attrs.get("IsRedundant", "")).lower() == "true"
+            attr_payload = attribute_info(conn, attr_name)
+            is_formula = bool(attr_payload.get("isFormula")) if attr_payload.get("found") else None
+            classification = "own-physical"
+            writable: bool | None = True
+            reason = "own-physical"
+            if key:
+                classification = "key-attribute"
+                reason = "key"
+            elif is_redundant:
+                classification = "extended-parent-fk"
+                writable = False
+                reason = "isRedundant"
+            elif is_formula:
+                classification = "formula"
+                writable = False
+                reason = "formula"
+            elif attr_payload.get("found") is False:
+                classification = "unclassified-attribute-not-found"
+                writable = None
+                reason = "attribute-not-found"
+            rows.append(
+                {
+                    "transaction": obj["name"],
+                    "levelName": level_name,
+                    "attribute": attr_name,
+                    "key": key,
+                    "isRedundant": is_redundant,
+                    "isFormula": is_formula,
+                    "formulaExpression": attr_payload.get("formulaExpression"),
+                    "classification": classification,
+                    "writable": writable,
+                    "canAssignInNew": writable,
+                    "reason": reason,
+                    "attributeFile": (
+                        attr_payload.get("object", {}).get("file_path")
+                        if isinstance(attr_payload.get("object"), dict)
+                        else None
+                    ),
+                }
+            )
+    return obj, rows
+
+
+def transaction_attributes(conn: sqlite3.Connection, transaction_name: str) -> dict[str, object]:
+    obj, rows = transaction_attribute_rows(conn, transaction_name)
+    if obj is None:
+        return {
+            "query": "transaction-attributes",
+            "transaction": transaction_name,
+            "found": False,
+        }
+    return {
+        "query": "transaction-attributes",
+        "transaction": obj,
+        "found": True,
+        "total": len(rows),
+        "results": rows,
+    }
+
+
+def transaction_writable_attributes(conn: sqlite3.Connection, transaction_name: str) -> dict[str, object]:
+    obj, rows = transaction_attribute_rows(conn, transaction_name)
+    if obj is None:
+        return {
+            "query": "transaction-writable-attributes",
+            "transaction": transaction_name,
+            "found": False,
+        }
+    return {
+        "query": "transaction-writable-attributes",
+        "transaction": obj,
+        "found": True,
+        "total": len(rows),
+        "results": rows,
+        "notice": "Consulta leve baseada no indice e nos XMLs pontuais da Transaction/Attribute. Para classificacao completa de subtipo e FK recursiva, use Test-GeneXusTransactionWritability.ps1.",
     }
 
 
@@ -493,6 +663,44 @@ def format_text(result: dict[str, object]) -> str:
         lines.append(f"outgoing_relations: {result.get('outgoing_relations', 0)}")
         return "\n".join(lines)
 
+    if query == "attribute-info":
+        if result.get("found") is False:
+            lines.append(f"attribute-info: {result.get('attribute')} not found")
+            return "\n".join(lines)
+        lines.append(f"attribute-info: {result.get('attribute')}")
+        obj_payload = result.get("object")
+        if isinstance(obj_payload, dict):
+            lines.append(f"file: {obj_payload.get('file_path')}")
+        lines.append(f"isFormula: {result.get('isFormula')}")
+        if result.get("formulaExpression") is not None:
+            lines.append(f"formulaExpression: {result.get('formulaExpression')}")
+        if result.get("basedOn") is not None:
+            lines.append(f"basedOn: {result.get('basedOn')}")
+        return "\n".join(lines)
+
+    if query in ("transaction-attributes", "transaction-writable-attributes"):
+        tx = result.get("transaction")
+        if result.get("found") is False:
+            lines.append(f"{query}: {tx} not found")
+            return "\n".join(lines)
+        if isinstance(tx, dict):
+            lines.append(f"{query}: {tx.get('name')}")
+            lines.append(f"file: {tx.get('file_path')}")
+        notice = result.get("notice")
+        if notice:
+            lines.append(str(notice))
+        rows = result.get("results", [])
+        lines.append(f"results: {len(rows) if isinstance(rows, list) else 0}/{result.get('total', 0)}")
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                lines.append(
+                    f"- [{row.get('levelName')}] {row.get('attribute')} "
+                    f"classification={row.get('classification')} writable={row.get('writable')} reason={row.get('reason')}"
+                )
+        return "\n".join(lines)
+
     if query == "impact-basic" and isinstance(obj, dict):
         lines.append(f"guid: {obj.get('guid')}")
         lines.append(f"file: {obj.get('file_path')}")
@@ -600,8 +808,11 @@ def parse_args() -> argparse.Namespace:
         required=True,
         choices=[
             "object-info",
+            "attribute-info",
             "search-objects",
             "list-by-type",
+            "transaction-attributes",
+            "transaction-writable-attributes",
             "who-uses",
             "what-uses",
             "show-evidence",
@@ -636,6 +847,10 @@ def main() -> int:
             if not args.object_type or not args.object_name:
                 raise SystemExit("object-info requires --object-type and --object-name.")
             result = object_info(conn, args.object_type, args.object_name)
+        elif args.query == "attribute-info":
+            if not args.object_name:
+                raise SystemExit("attribute-info requires --object-name.")
+            result = attribute_info(conn, args.object_name)
         elif args.query == "search-objects":
             if not args.object_name:
                 raise SystemExit("search-objects requires --object-name.")
@@ -644,6 +859,14 @@ def main() -> int:
             if not args.object_type:
                 raise SystemExit("list-by-type requires --object-type.")
             result = list_by_type(conn, args.object_type, args.limit)
+        elif args.query == "transaction-attributes":
+            if not args.object_name:
+                raise SystemExit("transaction-attributes requires --object-name.")
+            result = transaction_attributes(conn, args.object_name)
+        elif args.query == "transaction-writable-attributes":
+            if not args.object_name:
+                raise SystemExit("transaction-writable-attributes requires --object-name.")
+            result = transaction_writable_attributes(conn, args.object_name)
         elif args.query == "who-uses":
             if not args.object_type or not args.object_name:
                 raise SystemExit("who-uses requires --object-type and --object-name.")

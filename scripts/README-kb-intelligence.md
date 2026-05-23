@@ -196,6 +196,30 @@ Evitar:
   -Format text
 ```
 
+## Consultar atributo e gravabilidade transacional
+
+Para consulta leve de atributo, sem varrer XMLs em massa:
+
+```powershell
+.\scripts\Query-KbIntelligenceIndex.ps1 `
+  -IndexPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence.sqlite" `
+  -Query attribute-info `
+  -ObjectName ClienteTotal `
+  -Format text
+```
+
+Para listar atributos de uma Transaction com sinais basicos de gravabilidade:
+
+```powershell
+.\scripts\Query-KbIntelligenceIndex.ps1 `
+  -IndexPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence.sqlite" `
+  -Query transaction-writable-attributes `
+  -ObjectName Cliente `
+  -Format text
+```
+
+Essa consulta usa o indice para localizar a `Transaction` e os `Attribute` pontuais. Ela cobre sinais leves (`key`, `isRedundant`, `Formula`, atributo ausente). Para classificacao completa de subtipo e FK recursiva antes de gerar atribuicoes, use `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`.
+
 ## Consultar quem usa um objeto
 
 ```powershell

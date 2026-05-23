@@ -217,6 +217,7 @@ Regras de uso:
 - `Regra operacional`: XML gerado, clonado ou ajustado localmente nunca deve ser tratado como se ja fosse snapshot oficial da KB.
 - `Regra operacional`: `ObjetosGeradosParaImportacaoNaKbNoGenexus` e a area de trabalho para XMLs gerados, clonados, ajustados ou preservados para importacao manual na IDE.
 - `Regra operacional`: `PacotesGeradosParaImportacaoNaKbNoGenexus` e a area de saida para `import_file.xml` e demais pacotes gerados localmente.
+- `Regra operacional`: `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus` sao areas gerenciadas por agente, nao pastas de deposito do usuario; XML de exemplo, referencia ou template colocado ali fora do fluxo controlado deve bloquear o empacotamento ate ser tratado explicitamente.
 - `Regra operacional`: na area ativa de `ObjetosGeradosParaImportacaoNaKbNoGenexus`, os XMLs candidatos do lote devem ficar juntos na raiz da subpasta ativa da frente, sem subpastas por tipo, salvo regra local explicita do repositorio.
 - `Regra operacional`: agente nunca deve criar subpastas por tipo automaticamente em `ObjetosGeradosParaImportacaoNaKbNoGenexus`.
 - `Regra operacional`: agente nunca deve mover XMLs para `ArquivoMorto` sem pedido explicito do usuario.

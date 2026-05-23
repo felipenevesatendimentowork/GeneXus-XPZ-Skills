@@ -396,9 +396,9 @@ def main(argv: list[str]) -> int:
             block(f"pasta da frente nao encontrada: {front_dir}")
         if not metadata_path.is_file():
             block(f"kb-source-metadata.md nao encontrado: {metadata_path}")
+        template_path = Path(args.template_package_path).resolve() if args.template_package_path else None
         object_roots, attribute_roots = classify_front_xmls(front_dir)
         check_collision(output_path, args.front_name, round_text)
-        template_path = Path(args.template_package_path).resolve() if args.template_package_path else None
         template_root, envelope_source, envelope_warnings = load_template(template_path, metadata_path)
         validate_template(template_root)
         package_text = build_package_text(template_root, object_roots, attribute_roots)
