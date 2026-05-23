@@ -4,13 +4,14 @@
     Monitor incremental de execucao headless de MSBuild/GeneXus.
 
 .DESCRIPTION
-    Acompanha um processo MSBuild em execucao: le o log incrementalmente,
+    Acompanha o processo informado durante uma execucao MSBuild/GeneXus:
+    le o log incrementalmente,
     destaca fases relevantes do GeneXus, detecta silencio prolongado e
     encerra automaticamente quando o processo termina.
 
     Nao depende do chat para polling — roda como processo independente no
     terminal do Windows. Recomenda-se iniciar com -NoExit para que a janela
-    permita ao usuario ler o output apos o build e fecha-la manualmente.
+    permita ao usuario ler o output apos a execucao e fecha-la manualmente.
 
     Fases destacadas: Open, Specify, Generate, Compile, BuildAll, Reorgan/Reorg,
     Validating subtype group, Close.
@@ -20,12 +21,17 @@
     linha a cada poll. Apenas fases, alertas e mensagens de estado geram linhas
     novas. O arquivo -MonitorLog nao recebe o contador de silencio.
 
-    Quando usado com Invoke-GeneXusKbBuildAll.ps1, passar o mesmo caminho como
-    -MonitorLog aqui e -MonitorLogPath no build permite que o JSON de resultado
-    inclua timing.phases com duracao de cada fase interna.
+    Quando usado por um wrapper MSBuild compativel, passar o mesmo caminho como
+    -MonitorLog aqui e -MonitorLogPath no wrapper permite que o JSON de resultado
+    inclua timing.phases com duracao de cada fase interna. Esse contrato vale para
+    Invoke-GeneXusKbBuildAll.ps1, Invoke-GeneXusKbSpecifyGenerate.ps1,
+    Test-GeneXusXpzImportPreview.ps1, Invoke-GeneXusXpzExport.ps1 e
+    Invoke-GeneXusXpzImport.ps1.
 
 .PARAMETER ProcessId
-    PID do processo MSBuild a monitorar. Alias: -Pid.
+    PID do processo cuja vida delimita o monitoramento. Quando iniciado por um
+    wrapper compativel, e o PID do proprio wrapper que conduz a execucao MSBuild.
+    Alias: -Pid.
 
 .PARAMETER LogPath
     Caminho do arquivo de log a ler incrementalmente (ex: msbuild.stdout.log).
@@ -46,7 +52,7 @@
     .\Watch-GeneXusMsBuildLog.ps1 -Pid 12345 -LogPath "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-exemplo\msbuild.stdout.log"
 
 .EXAMPLE
-    # Iniciado pelo agente com -NoExit para janela ficar aberta apos o build:
+    # Iniciado pelo agente com -NoExit para janela ficar aberta apos a execucao:
     Start-Process pwsh -ArgumentList @(
         '-NoExit', '-NoProfile', '-File', '.\Watch-GeneXusMsBuildLog.ps1',
         '-Pid', '12345',
