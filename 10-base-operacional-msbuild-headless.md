@@ -660,6 +660,7 @@ O contrato de watcher acima aplica-se aos wrappers MSBuild que o suportam:
 `Invoke-GeneXusKbBuildAll.ps1`, `Invoke-GeneXusKbSpecifyGenerate.ps1`,
 `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1` e
 `Invoke-GeneXusXpzImport.ps1` (lista canônica também em `02-regras-operacionais-e-runtime.md`).
+Em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`, watcher e fluxo padrao; em preview/export/import, e padrao para execucao longa. Em importacao real de pacote amplo ou com muitos `WorkWithForWeb`, a ausencia de watcher exige justificativa operacional explicita.
 Não se aplica a wrappers sem `-StartWatcher`, como `Open-GeneXusKbHeadless.ps1`.
 O contrato é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher,
 timing ou `watcherContext`, manter o helper comum como sede da regra e evitar lógica

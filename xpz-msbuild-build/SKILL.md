@@ -40,8 +40,8 @@ grande; só pode ser habilitado via `-AllowWideRebuild` com confirmação explí
 usuário por frase exata. Nunca execute reorg sem autorização explícita do usuário.
 Quando houver evidência de alteração estrutural de atributo no import recente, exigir
 confirmação explícita do usuário antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`.
-`BuildAll` sem watcher visível não é fluxo válido. Use `-StartWatcher` ao chamar
-`Invoke-GeneXusKbBuildAll.ps1` — o wrapper garante o lançamento automático em janela
+`BuildAll` ou `SpecifyGenerate` sem watcher visível não é fluxo válido. Use `-StartWatcher`
+ao chamar `Invoke-GeneXusKbBuildAll.ps1` ou `Invoke-GeneXusKbSpecifyGenerate.ps1` — o wrapper garante o lançamento automático em janela
 visível e registra evidência auditável no JSON (`watcherContext.watcherLaunched`). A
 única exceção permitida é quando há justificativa operacional explícita e documentada
 (ex.: ambiente sem `pwsh` no PATH, CI headless sem terminal) — nesse caso declarar
@@ -798,7 +798,7 @@ Campos relevantes:
 ## CONSTRAINTS
 
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
-- NEVER executar `BuildAll` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
+- NEVER executar `BuildAll` ou `SpecifyGenerate` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
 - NEVER executar reorg sem autorização explícita do usuário
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê
 - NEVER passar `-ConfirmReorg` sem `-AllowReorg` — combinação bloqueada por política (exit 46)

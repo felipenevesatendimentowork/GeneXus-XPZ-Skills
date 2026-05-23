@@ -586,6 +586,8 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            watcherContext   = $script:WatcherContext
+            timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             blockingReasons  = @($script:BlockingReasons)
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
@@ -642,6 +644,8 @@ try {
                 StdErrPath       = $null
                 ExecutionLogPath = $resolvedLogPath
             }
+            watcherContext   = $script:WatcherContext
+            timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             blockingReasons  = @($script:BlockingReasons)
             warnings         = @($script:Warnings)
             strategyTrace    = @($script:StrategyTrace)
@@ -708,6 +712,8 @@ try {
                 StdErrPath        = $null
                 ExecutionLogPath  = $resolvedLogPath
             }
+            watcherContext   = $script:WatcherContext
+            timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
             blockingReasons  = @($probeDiagnostic.blockingReasons + $script:BlockingReasons)
             warnings         = @($probeDiagnostic.warnings)
             strategyTrace    = @($probeDiagnostic.strategyTrace + $script:StrategyTrace)
@@ -812,6 +818,8 @@ try {
                         StdErrPath       = $null
                         ExecutionLogPath = $resolvedLogPath
                     }
+                    watcherContext   = $script:WatcherContext
+                    timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
                     blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
                     warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
                     strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
