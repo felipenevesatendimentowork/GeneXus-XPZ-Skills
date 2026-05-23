@@ -54,6 +54,12 @@ function Add-GeneXusMsBuildWatcherTrace {
     }
 }
 
+function ConvertTo-GeneXusMsBuildWatcherProcessArgument {
+    param([string]$Value)
+
+    return '"{0}"' -f ($Value -replace '"', '\"')
+}
+
 function Start-GeneXusMsBuildWatcherProcess {
     param(
         [System.Collections.Specialized.OrderedDictionary]$WatcherContext,
@@ -77,10 +83,10 @@ function Start-GeneXusMsBuildWatcherProcess {
     try {
         $watchArgs = @(
             '-NoExit', '-NoProfile',
-            '-File', $watcherScript,
+            '-File', (ConvertTo-GeneXusMsBuildWatcherProcessArgument -Value $watcherScript),
             '-ProcessId', $PID,
-            '-LogPath', $LogFilePath,
-            '-MonitorLog', $MonitorLogFilePath,
+            '-LogPath', (ConvertTo-GeneXusMsBuildWatcherProcessArgument -Value $LogFilePath),
+            '-MonitorLog', (ConvertTo-GeneXusMsBuildWatcherProcessArgument -Value $MonitorLogFilePath),
             '-IntervalSeconds', $IntervalSeconds,
             '-SilenceThresholdSeconds', $SilenceThresholdSeconds
         )

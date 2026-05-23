@@ -448,6 +448,7 @@ Verificacoes a executar quando acionada:
    - `Test-GeneXusImportFileEnvelope.ps1` (gate de envelope)
    - `Test-GeneXusXpzImportPreview.ps1` (preview headless)
    - `Invoke-GeneXusXpzImport.ps1` (import real headless)
+   - `GeneXusMsBuildWatcherSupport.ps1` (helper carregado obrigatoriamente por preview/import para o contrato de watcher e `timing`)
 2. Acessibilidade da skill `xpz-msbuild-import-export` na sessao atual, pelo caminho publicado pela propria sessao quando houver — sem inferir caminho por heuristica.
 3. Coerencia documental do `SKILL.md` de `xpz-msbuild-import-export`: o documento deve continuar declarando, em texto, ambas as regras abaixo, que sao o contrato que a verificacao da pasta paralela precisa pressupor:
    - `-XpzPath` aceita `.xpz`, `.xml` e `.import_file.xml` com raiz `<ExportFile>` validada por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada
