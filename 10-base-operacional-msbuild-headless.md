@@ -454,6 +454,15 @@ Esse gate é **independente** do gate de reorg (`-AllowReorg`): autorizar um nã
 
 O workflow completo, parâmetros e interface estruturada estão documentados na skill `xpz-msbuild-build`; esta seção registra apenas a salvaguarda como parte da realidade operacional MSBuild headless.
 
+### Diagnóstico: código de evento que não surte efeito (mecanismos a e b)
+
+Quando o sintoma for evento GeneXus que parece não executar ou não refletir na UI após import/build headless, distinguir **antes de editar o XML** dois mecanismos documentados em [02-regras-operacionais-e-runtime.md](02-regras-operacionais-e-runtime.md), seção `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`:
+
+- **Mecanismo (a) — rejeição na importação:** `exitCode != 0`, `errors` no `import.json` de `Invoke-GeneXusXpzImport.ps1`, ou mensagem `Unknown function '<nome>'` / `src0294` (ou similar) no log apontando o source do evento. O objeto **não** foi atualizado na KB; a correção é no source/XPZ, não em reimport idêntico nem em inspeção primária do `.cs` gerado. Trilha: skill `xpz-msbuild-import-export`.
+- **Mecanismo (b) — strip silencioso por DCE:** import OK (`importação real efetiva provada` ou equivalente) e build/specify podem concluir sem erro; o handler pode estar ausente ou vazio no `.cs` gerado. **Não** reclassificar como falha de import nem como falha do wrapper de build; inspecionar o `.cs` pelo nome do evento após artefato gerado disponível. Trilha: skill `xpz-msbuild-build` (lado receptor do handoff) + seção canônica em `02`.
+
+Regra operacional mínima: identificar **(a)** vs **(b)** antes de mexer no source; a ação corretiva é diferente em cada caso. Para `WebPanel` com Tab aninhada e SDT em data attributes (sinais em `oparms` / `ajax_rsp_assign_sdt_attri`), ver também subseção `WebPanel, Tab aninhada e re-bind de SDT em data attributes` no mesmo `02` e padrão em [04-webpanel-familias-e-templates.md](04-webpanel-familias-e-templates.md).
+
 ### Diagnóstico de `.cs` gerado truncado (erros `CS1010` / `CS1513`)
 
 Quando o build pós-geração falhar com erros C# como `CS1010` (newline em constante) e `CS1513` (`}` esperada) repetidos no mesmo `.cs`, tratar primeiro a hipótese de **truncamento do arquivo gerado** — o gerador GeneXus interrompeu a escrita no meio do `.cs` e o MSBuild compila o artefato incompleto — antes de atribuir a falha ao XML do objeto.
