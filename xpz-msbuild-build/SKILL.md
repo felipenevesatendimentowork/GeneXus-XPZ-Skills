@@ -131,6 +131,15 @@ Do NOT use esta skill para:
   operacional explícito: a versão ou o `Environment` solicitado não existe na KB. O
   diagnóstico deve orientar omitir `-VersionName` ou `-EnvironmentName` para usar o
   contexto ativo, quando esse for o objetivo.
+- Quando o build falhar com erros C# compatíveis com arquivo gerado truncado, como
+  `CS1010` (newline em constante) e `CS1513` (`}` esperada) repetidos no mesmo `.cs`,
+  verificar primeiro se o artefato gerado termina abruptamente, sem string/funcao
+  fechada ou sem newline final. Se esses sinais aparecerem, classificar como suspeita
+  de falha de geração truncada e tentar regeneração controlada antes de investigar o
+  XML; `-ForceRebuild=true` continua proibido sem o gate de regeneração ampla
+  (`-AllowWideRebuild` + frase exata). Ver
+  [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md),
+  seção `Diagnostico de codigo gerado truncado por falha de generation`.
 
 ---
 
@@ -794,6 +803,7 @@ Campos relevantes:
 - [ ] O resultado foi classificado em categoria explícita
 - [ ] Sucesso operacional foi separado de confirmação funcional
 - [ ] Quando a frente foi descrita por fluxo funcional ("o objeto que X", "a tela que abre ao Y", "o objeto chamado quando Z") em vez de referência direta ao nome, foi confirmado que o objeto em `importedItems` é o alvo executado pelo fluxo descrito antes de declarar a frente encerrada — independente do tipo de objeto
+- [ ] Quando erros C# como `CS1010`/`CS1513` sugeriram truncamento de `.cs` gerado, o arquivo referenciado foi inspecionado antes de atribuir a falha ao XML, e qualquer regeneração ampla preservou o gate de `-ForceRebuild=true`
 - [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado; se `false`, a ausência foi documentada e justificada explicitamente
 
 ---

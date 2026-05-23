@@ -32,5 +32,5 @@ The following WebPanel-specific rules live inside WORKFLOW step 11 (Locate templ
 
 ## Related references
 
-- [04-webpanel-familias-e-templates.md](../../04-webpanel-familias-e-templates.md) — WebPanel families F1–F6 (used in WORKFLOW step 11 for template location).
+- [04-webpanel-familias-e-templates.md](../../04-webpanel-familias-e-templates.md) — documented WebPanel families and observed runtime/layout patterns (used in WORKFLOW step 11 for template location).
 - [04b-ucw-gxcontroltype-reference.md](../../04b-ucw-gxcontroltype-reference.md) — UCW catalog (mandatory load when WebPanel contains UCW).
