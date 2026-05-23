@@ -656,6 +656,15 @@ Parâmetros transversais esperados:
 - `-WatcherIntervalSeconds` (default 5; intervalo válido: 1-60)
 - `-WatcherSilenceThresholdSeconds` (default 120; intervalo válido: 30-3600)
 
+O contrato de watcher acima aplica-se aos wrappers MSBuild que o suportam:
+`Invoke-GeneXusKbBuildAll.ps1`, `Invoke-GeneXusKbSpecifyGenerate.ps1`,
+`Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1` e
+`Invoke-GeneXusXpzImport.ps1` (lista canônica também em `02-regras-operacionais-e-runtime.md`).
+Não se aplica a wrappers sem `-StartWatcher`, como `Open-GeneXusKbHeadless.ps1`.
+O contrato é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher,
+timing ou `watcherContext`, manter o helper comum como sede da regra e evitar lógica
+divergente dentro dos wrappers.
+
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
