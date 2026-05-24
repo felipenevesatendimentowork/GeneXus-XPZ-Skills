@@ -42,17 +42,24 @@ GeneXus autorizadas pelo usuário.
 
 ## Estado operacional
 
-Estado atual: `<estado>`.
-<!-- PREENCHER: um de: estrutura_criada | bootstrap_incompleto |
-     pronto_para_primeira_materializacao | materializado_e_indice_validado |
-     wrappers_atualizados -->
+Estado operacional desta pasta paralela e os timestamps de materializacao e
+indice nao sao gravados nesta secao. Espelho declarativo de timestamp envelhece
+silenciosamente porque nada o mantem coerente com a fonte autoritativa. Para
+conhecer o estado atual, usar:
 
-`last_xpz_materialization_run_at`: `<YYYY-MM-DDTHH:MM:SS.0000000Z>`.
+- `estado_operacional_sugerido` e demais dimensoes: saida de
+  `Test-<NomeKb>KbSetupAudit.ps1` (executar a cada auditoria).
+- `last_xpz_materialization_run_at`: frontmatter de `kb-source-metadata.md`,
+  mantido pelo fluxo `xpz-sync`.
+- `last_index_build_run_at`: tabela `metadata` do SQLite em
+  `KbIntelligence\kb-intelligence.sqlite`, exposto por
+  `Query-<NomeKb>KbIntelligence.ps1 -Query index-metadata`.
+- Gate operacional de frescor do indice:
+  `Test-<NomeKb>KbIndexGate.ps1` — retorna `GATE_OK` ou `BLOCK: <motivo>`.
 
-`last_index_build_run_at`: `<YYYY-MM-DDTHH:MM:SS.000000+00:00>`.
-
-Como o indice esta posterior a materializacao, triagem ampla e consultas por
-`KbIntelligence` estao liberadas.
+Nao registrar timestamps literais (`last_xpz_materialization_run_at`,
+`last_index_build_run_at`) nesta secao nem em outras secoes deste `AGENTS.md`
+ou do `README.md` local.
 
 ## Wrappers locais
 

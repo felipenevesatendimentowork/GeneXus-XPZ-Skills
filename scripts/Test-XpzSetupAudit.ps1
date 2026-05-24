@@ -228,6 +228,28 @@ $packageEvidenceParts += ('source_sanity_wrapper={0}' -f $(if ($hasSourceSanityW
 $packageEvidenceParts += ('package_collision_wrapper={0}' -f $(if ($hasPackageCollisionWrapper) { 'presente' } else { 'ausente' }))
 $packageEvidence = $packageEvidenceParts -join '; '
 
+$declarativeFiles = @('AGENTS.md', 'README.md') | ForEach-Object { Join-Path $KbRoot $_ }
+$declarativeDriftEntries = @()
+$declarativeIgnoreCase = [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+$declarativeDriftPattern = [regex]::new('\blast_(xpz_materialization|index_build)_run_at\b[^\r\n]*?[:=][^\r\n]*?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}', $declarativeIgnoreCase)
+foreach ($declarativePath in $declarativeFiles) {
+    if (-not (Test-Path -LiteralPath $declarativePath -PathType Leaf)) { continue }
+    $declarativeText = [System.IO.File]::ReadAllText($declarativePath)
+    $driftMatches = $declarativeDriftPattern.Matches($declarativeText)
+    if ($driftMatches.Count -gt 0) {
+        $driftFields = @($driftMatches | ForEach-Object { (@($_.Value -split '[:=]', 2))[0].Trim().Trim('`').Trim() } | Sort-Object -Unique)
+        $declarativeDriftEntries += ('{0}:{1}' -f (Split-Path -Leaf $declarativePath), ($driftFields -join ','))
+    }
+}
+if ($declarativeDriftEntries.Count -gt 0) {
+    $declarativeStatus = 'DRIFT_TIMESTAMPS_LITERAIS'
+    $declarativeEvidence = $declarativeDriftEntries -join '; '
+} else {
+    $declarativeStatus = 'OK'
+    $declarativeEvidence = 'sem timestamps literais de last_xpz_materialization_run_at ou last_index_build_run_at em AGENTS.md/README.md locais'
+}
+$hasDeclarativeDrift = $declarativeStatus -ne 'OK'
+
 $inventoryScriptPath = Join-Path $scriptDir 'Test-XpzWrapperInventory.ps1'
 $examplesPath = Join-Path (Split-Path -Parent $scriptDir) 'xpz-kb-parallel-setup\examples'
 $inventoryStatus = 'INVENTORY_UNKNOWN'
@@ -252,6 +274,7 @@ $suggestedState = switch ($true) {
     ($namingStatus -eq 'DIVERGENT') { 'naming_objetos_da_kb_pendente'; break }
     ($hasMetadataWrapperPendencies) { 'atualizacao_metodologica_pendente'; break }
     ($hasInventoryMethodologyPendencies) { 'atualizacao_metodologica_pendente'; break }
+    ($hasDeclarativeDrift) { 'atualizacao_metodologica_pendente'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'NAO_ADOTADO') { 'materializado_e_indice_validado'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'PENDENTE') { 'auditoria_de_empacotamento_pendente'; break }
@@ -272,6 +295,8 @@ Emit-Line -Key 'metadata wrapper' -Value $metadataWrapperStatus
 Emit-Line -Key 'metadata wrapper.evidencia' -Value $(if ($metadataWrapperRaw) { $metadataWrapperRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'empacotamento local' -Value $packageAuditStatus
 Emit-Line -Key 'empacotamento local.evidencia' -Value $packageEvidence
+Emit-Line -Key 'declarativo/timestamps' -Value $declarativeStatus
+Emit-Line -Key 'declarativo/timestamps.evidencia' -Value $declarativeEvidence
 if ($inventoryStatus -match '\|') {
     foreach ($inventoryPart in @($inventoryStatus -split '\|')) {
         $trimmedInventoryPart = $inventoryPart.Trim()
