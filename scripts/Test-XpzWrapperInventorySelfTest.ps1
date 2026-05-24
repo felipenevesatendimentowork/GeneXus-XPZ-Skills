@@ -6,7 +6,9 @@
 .DESCRIPTION
     Cria uma pasta paralela temporaria e uma pasta temporaria de exemplos para validar
     que divergencia de #requires -Version classifica wrapper como CUSTOMIZADO, sem
-    tratar Test-*KbPowerShellRuntime.ps1 como falso positivo.
+    tratar Test-*KbPowerShellRuntime.ps1 como falso positivo. Tambem valida os sinais
+    consultivos de wrappers recomendados ausentes e os sinais bloqueantes de scripts
+    legados orfaos.
 #>
 
 [CmdletBinding()]
@@ -94,6 +96,47 @@ Write-Output "runtime"
     Assert-Contains -Text $output -Pattern 'Get-DemoKbMetadata\.ps1\(reason=requires_version_mismatch: local=5\.1 canonical=7\.4\)' -Message 'diagnostico deve identificar wrapper e versoes'
     Assert-NotContains -Text $output -Pattern '\bINVENTORY_OK\b' -Message 'inventario com CUSTOMIZADO nao pode retornar OK'
     Assert-NotContains -Text $output -Pattern 'Test-DemoKbPowerShellRuntime\.ps1\(reason=requires_version_mismatch' -Message 'wrapper de runtime e excecao intencional'
+
+    foreach ($optionalExample in @('New-KbFront', 'Get-KbLastUpdate', 'New-KbImportPackage', 'Resolve-KbIdentity')) {
+        @'
+#requires -Version 7.4
+Write-Output "optional"
+'@ | Set-Content -LiteralPath (Join-Path $examplesPath "$optionalExample.example.ps1") -Encoding utf8NoBOM
+    }
+
+    $frontPath = Join-Path $kbRoot 'ObjetosGeradosParaImportacaoNaKbNoGenexus\MinhaFrente_11111111-1111-1111-1111-111111111111_20260524'
+    $packagesPath = Join-Path $kbRoot 'PacotesGeradosParaImportacaoNaKbNoGenexus'
+    [void](New-Item -ItemType Directory -Path $frontPath -Force)
+    [void](New-Item -ItemType Directory -Path $packagesPath -Force)
+    '<Object lastUpdate="2026-05-24T00:00:00.0000000Z" />' |
+        Set-Content -LiteralPath (Join-Path $frontPath 'Objeto.xml') -Encoding utf8NoBOM
+    '<ExportFile />' |
+        Set-Content -LiteralPath (Join-Path $packagesPath 'MinhaFrente_11111111-1111-1111-1111-111111111111_20260524_01.import_file.xml') -Encoding utf8NoBOM
+    '| kb (GUID) | 11111111-1111-1111-1111-111111111111 |' |
+        Add-Content -LiteralPath (Join-Path $kbRoot 'kb-source-metadata.md') -Encoding utf8NoBOM
+
+    foreach ($scriptName in @(
+        'Test-DemoKbFullSnapshot.ps1',
+        'Test-DemoFullSnapshot.ps1',
+        'Update-DemoKbFromXpz.ps1',
+        'Update-DemoFromXpz.ps1',
+        'Test-DemoKbIndexGate.ps1',
+        'Test-DemoKbGate.ps1'
+    )) {
+        '#requires -Version 7.4' |
+            Set-Content -LiteralPath (Join-Path $scriptsPath $scriptName) -Encoding utf8NoBOM
+    }
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern '\bINVENTORY_LEGACY_ORPHANS\b' -Message 'scripts legados lado a lado devem ser reportados'
+    Assert-Contains -Text $output -Pattern 'Test-DemoKbIndexGate\.ps1\(legacy=Test-DemoKbGate\.ps1\)' -Message 'gate legado deve apontar para canonico atual'
+    Assert-Contains -Text $output -Pattern '\bINVENTORY_RECOMMENDED_MISSING\b' -Message 'wrappers recomendados ausentes devem ser reportados'
+    Assert-Contains -Text $output -Pattern 'New-DemoKbFront\.ps1' -Message 'historico de frente deve recomendar wrapper de abertura'
+    Assert-Contains -Text $output -Pattern 'Get-DemoKbLastUpdate\.ps1' -Message 'lastUpdate em XML gerado deve recomendar wrapper de timestamp'
+    Assert-Contains -Text $output -Pattern 'New-DemoKbImportPackage\.ps1' -Message 'pacote import_file deve recomendar wrapper de pacote'
+    Assert-Contains -Text $output -Pattern 'Resolve-DemoKbIdentity\.ps1' -Message 'metadata de identidade deve recomendar wrapper de identidade'
 
     Write-Output 'WRAPPER_INVENTORY_SELFTEST_OK'
 } finally {

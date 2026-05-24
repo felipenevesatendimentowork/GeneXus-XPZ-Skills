@@ -13,6 +13,8 @@
       INVENTORY_GAPS: <nomes ausentes>    - wrappers ausentes (nem padrao nem curto encontrado)
       INVENTORY_SHORT_NAMING: <lista>     - wrappers existem no padrao curto; renomear para padrao
       INVENTORY_CUSTOMIZED: <lista>        - wrappers presentes com divergencia metodologica objetiva
+      INVENTORY_RECOMMENDED_MISSING: <lista> - wrappers recomendados ausentes por sinais objetivos
+      INVENTORY_LEGACY_ORPHANS: <lista>    - scripts legados lado a lado com canonicos atuais
       INVENTORY_UNKNOWN: <motivo>         - nao foi possivel determinar o estado
 
 .PARAMETER KbParallelRoot
@@ -25,7 +27,9 @@
 .OUTPUTS
     String: "INVENTORY_OK", "INVENTORY_GAPS: <nomes ausentes>",
     "INVENTORY_SHORT_NAMING: <nomes esperados>",
-    "INVENTORY_CUSTOMIZED: <nomes e motivos>", ou
+    "INVENTORY_CUSTOMIZED: <nomes e motivos>",
+    "INVENTORY_LEGACY_ORPHANS: <canonico(legacy=antigo)>",
+    "INVENTORY_RECOMMENDED_MISSING: <nomes recomendados>", ou
     "INVENTORY_UNKNOWN: <motivo>"
 
 .EXAMPLE
@@ -125,10 +129,76 @@ if ([string]::IsNullOrWhiteSpace($kbPrefix)) {
     exit 0
 }
 
+$scriptNames = @(Get-ChildItem -LiteralPath $scriptsPath -Filter '*.ps1' -Name | Sort-Object)
+
+function Test-FrontHistory {
+    param([string]$RootPath)
+
+    $generatedPath = Join-Path $RootPath 'ObjetosGeradosParaImportacaoNaKbNoGenexus'
+    if (-not (Test-Path -LiteralPath $generatedPath -PathType Container)) {
+        return $false
+    }
+
+    $frontDirs = @(Get-ChildItem -LiteralPath $generatedPath -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ne 'ArquivoMorto' })
+    return $frontDirs.Count -gt 0
+}
+
+function Test-GeneratedLastUpdateHistory {
+    param([string]$RootPath)
+
+    $generatedPath = Join-Path $RootPath 'ObjetosGeradosParaImportacaoNaKbNoGenexus'
+    if (-not (Test-Path -LiteralPath $generatedPath -PathType Container)) {
+        return $false
+    }
+
+    foreach ($xmlFile in Get-ChildItem -LiteralPath $generatedPath -Recurse -File -Filter '*.xml' -ErrorAction SilentlyContinue) {
+        $content = [System.IO.File]::ReadAllText($xmlFile.FullName)
+        if ($content -match '\blastUpdate\b') {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Test-ImportPackageHistory {
+    param([string]$RootPath)
+
+    $packagesPath = Join-Path $RootPath 'PacotesGeradosParaImportacaoNaKbNoGenexus'
+    if (-not (Test-Path -LiteralPath $packagesPath -PathType Container)) {
+        return $false
+    }
+
+    $packages = @(Get-ChildItem -LiteralPath $packagesPath -File -Filter '*.import_file.xml' -ErrorAction SilentlyContinue)
+    return $packages.Count -gt 0
+}
+
+function Test-KbIdentityMetadata {
+    param([string]$RootPath)
+
+    $metadataPath = Join-Path $RootPath 'kb-source-metadata.md'
+    if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) {
+        return $false
+    }
+
+    $metadataText = [System.IO.File]::ReadAllText($metadataPath)
+    return $metadataText -match '(?i)(\bkb\s*\(GUID\)|\bsource_guid\b|\bUNCPath\b|\busername\b|\bversionGuid\b|\bVersion/guid\b)'
+}
+
+$recommendedEvidenceByBaseName = @{
+    'New-KbFront' = (Test-FrontHistory -RootPath $KbParallelRoot)
+    'Get-KbLastUpdate' = (Test-GeneratedLastUpdateHistory -RootPath $KbParallelRoot)
+    'New-KbImportPackage' = (Test-ImportPackageHistory -RootPath $KbParallelRoot)
+    'Resolve-KbIdentity' = (Test-KbIdentityMetadata -RootPath $KbParallelRoot)
+}
+
 # Mapear cada exemplo para o nome local esperado e verificar presenca
 $absent      = [System.Collections.Generic.List[string]]::new()
 $shortNaming = [System.Collections.Generic.List[string]]::new()
 $customized  = [System.Collections.Generic.List[string]]::new()
+$recommendedMissing = [System.Collections.Generic.List[string]]::new()
+$legacyOrphans = [System.Collections.Generic.List[string]]::new()
 $optionalBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 [void]$optionalBaseNames.Add('New-KbImportPackage')
 [void]$optionalBaseNames.Add('New-KbFront')
@@ -155,6 +225,17 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
     $shortExists    = $shortLocalName -and (Test-Path -LiteralPath (Join-Path $scriptsPath $shortLocalName) -PathType Leaf)
 
     if ($standardExists) {
+        if ($shortExists) {
+            $legacyOrphans.Add(('{0}(legacy={1})' -f $standardLocalName, $shortLocalName))
+        }
+
+        if ($standardLocalName -match '^([A-Za-z]+-)(' + [regex]::Escape($kbPrefix) + ')Kb(.+\.ps1)$') {
+            $legacyLocalName = "$($Matches[1])$($Matches[2])$($Matches[3])"
+            if ($scriptNames -contains $legacyLocalName) {
+                $legacyOrphans.Add(('{0}(legacy={1})' -f $standardLocalName, $legacyLocalName))
+            }
+        }
+
         if (-not $requiresVersionExemptBaseNames.Contains($baseName)) {
             $canonicalRequiresVersion = Get-RequiresVersion -Path $examplePath
             $localRequiresVersion = Get-RequiresVersion -Path $standardPath
@@ -166,9 +247,34 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
     } elseif ($shortExists) {
         $shortNaming.Add($standardLocalName)
     } elseif ($optionalBaseNames.Contains($baseName)) {
-        # Wrapper recomendado, mas ainda nao obrigatorio no inventario canonico.
+        if ($recommendedEvidenceByBaseName.ContainsKey($baseName) -and $recommendedEvidenceByBaseName[$baseName]) {
+            $recommendedMissing.Add($standardLocalName)
+        }
     } else {
         $absent.Add($standardLocalName)
+    }
+}
+
+$knownLegacyPairs = @(
+    @{
+        Canonical = ('Test-{0}KbFullSnapshot.ps1' -f $kbPrefix)
+        Legacy = ('Test-{0}FullSnapshot.ps1' -f $kbPrefix)
+    },
+    @{
+        Canonical = ('Update-{0}KbFromXpz.ps1' -f $kbPrefix)
+        Legacy = ('Update-{0}FromXpz.ps1' -f $kbPrefix)
+    },
+    @{
+        Canonical = ('Test-{0}KbIndexGate.ps1' -f $kbPrefix)
+        Legacy = ('Test-{0}KbGate.ps1' -f $kbPrefix)
+    }
+)
+foreach ($knownLegacyPair in $knownLegacyPairs) {
+    if (($scriptNames -contains $knownLegacyPair.Canonical) -and ($scriptNames -contains $knownLegacyPair.Legacy)) {
+        $entry = '{0}(legacy={1})' -f $knownLegacyPair.Canonical, $knownLegacyPair.Legacy
+        if (-not $legacyOrphans.Contains($entry)) {
+            $legacyOrphans.Add($entry)
+        }
     }
 }
 
@@ -179,8 +285,14 @@ if ($shortNaming.Count -gt 0) {
 if ($customized.Count -gt 0) {
     $statusParts.Add("INVENTORY_CUSTOMIZED: $($customized -join ', ')")
 }
+if ($legacyOrphans.Count -gt 0) {
+    $statusParts.Add("INVENTORY_LEGACY_ORPHANS: $($legacyOrphans -join ', ')")
+}
 if ($absent.Count -gt 0) {
     $statusParts.Add("INVENTORY_GAPS: $($absent -join ', ')")
+}
+if ($recommendedMissing.Count -gt 0) {
+    $statusParts.Add("INVENTORY_RECOMMENDED_MISSING: $($recommendedMissing -join ', ')")
 }
 
 if ($statusParts.Count -eq 0) {

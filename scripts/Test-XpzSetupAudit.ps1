@@ -329,7 +329,7 @@ if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
     $inventoryStatus = 'INVENTORY_UNKNOWN: motor Test-XpzWrapperInventory.ps1 ausente'
 }
 
-$hasInventoryMethodologyPendencies = $inventoryStatus -match '\b(INVENTORY_GAPS|INVENTORY_SHORT_NAMING|INVENTORY_CUSTOMIZED)\b'
+$hasInventoryMethodologyPendencies = $inventoryStatus -match '\b(INVENTORY_GAPS|INVENTORY_SHORT_NAMING|INVENTORY_CUSTOMIZED|INVENTORY_LEGACY_ORPHANS)\b'
 $hasMetadataWrapperPendencies = $metadataWrapperStatus -ne 'OK'
 
 $suggestedState = switch ($true) {
