@@ -34,12 +34,12 @@
       "expectation": "comment-only procedure reference must not create a direct relation"
     },
     {
-      "id": "case-4-visual-layout-does-not-create-relation",
+      "id": "case-4-visual-layout-structured-source-creates-relation",
       "source": "WebPanel:promptCadastroPessoa",
       "target": "Procedure:procEmpresaPermitidaParaUsuario",
       "expected_rule": "procedure_direct_call",
-      "should_exist": false,
-      "expectation": "visual-layout Source reference must not create a direct relation"
+      "should_exist": true,
+      "expectation": "structured XML Source reference in visual layout must create a direct relation when the target is resolvable"
     },
     {
       "id": "case-5-procedure-direct-call-where",
