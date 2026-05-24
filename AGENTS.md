@@ -77,6 +77,7 @@ Para cada frente alterada:
    - `README.md`
    - `02-regras-operacionais-e-runtime.md`
    - `08-guia-para-agente-gpt.md`
+   - `09-inventario-e-rastreabilidade-publica.md`, quando a frente alterar script compartilhado, contrato metodológico, skill, checklist, nomenclatura operacional, estado, parâmetro, wrapper ou evidência pública rastreável
    - exemplos canônicos `*.example.ps1` nas skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`; não há `examples/` na raiz)
    - scripts compartilhados em `scripts/`
 4. Confirmar se há:
@@ -86,6 +87,7 @@ Para cada frente alterada:
    - checklist que promete validação que o script não executa
    - checklist em **satélite** referenciado pelo `SKILL.md` (ex.: `xpz-builder/quality-checklist.md`) com regra de fechamento fraca ou antiga frente ao `SKILL.md`, `02` ou scripts da mesma frente
    - nova ferramenta, caminho ou parâmetro documentado em uma skill, mas ausente nas skills correlatas
+   - rastreabilidade pública desatualizada em `09-inventario-e-rastreabilidade-publica.md`; encontrar o termo no `09` não basta, é preciso comparar se a descrição ainda reflete a abrangência atual do contrato, script ou regra
 5. Reportar separadamente:
    - gaps confirmados
    - flags descartados, com justificativa

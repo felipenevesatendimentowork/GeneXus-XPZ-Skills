@@ -373,6 +373,27 @@ if ($skillMdInDiff.Count -gt 0) {
         ("SKILL.md alterado no intervalo ({0}): verificar satelites referenciados no proprio arquivo (ex. quality-checklist.md, wwp-packaging.md, responsibilities-by-type/) para regra em camadas." -f $skillSummary)
     )
 }
+$publicTraceabilityTriggers = [System.Collections.Generic.List[string]]::new()
+foreach ($changedPath in @($changedFiles)) {
+    $normalizedChangedPath = ($changedPath -replace '\\', '/').Trim()
+    if ($normalizedChangedPath -match '^scripts/.+\.(ps1|py|json)$' -or
+        $normalizedChangedPath -match '^xpz-[^/]+/SKILL\.md$' -or
+        $normalizedChangedPath -match '^xpz-[^/]+/(quality-checklist|wwp-packaging)\.md$' -or
+        $normalizedChangedPath -match '^xpz-[^/]+/responsibilities-by-type/.+\.md$' -or
+        $normalizedChangedPath -in @('README.md', '02-regras-operacionais-e-runtime.md', '08-guia-para-agente-gpt.md', '10-base-operacional-msbuild-headless.md')) {
+        $publicTraceabilityTriggers.Add($normalizedChangedPath)
+    }
+}
+if ($publicTraceabilityTriggers.Count -gt 0) {
+    $traceabilitySummary = if ($publicTraceabilityTriggers.Count -le 4) {
+        ($publicTraceabilityTriggers -join ', ')
+    } else {
+        ('{0}, {1}, {2}, {3} (+{4} mais)' -f $publicTraceabilityTriggers[0], $publicTraceabilityTriggers[1], $publicTraceabilityTriggers[2], $publicTraceabilityTriggers[3], ($publicTraceabilityTriggers.Count - 4))
+    }
+    [void]$agentWarnings.Add(
+        ("Mudanca metodologica ou de motor compartilhado detectada ({0}): avaliar explicitamente se 09-inventario-e-rastreabilidade-publica.md precisa registrar a evolucao; presenca de termo no 09 nao basta, comparar se a descricao reflete a abrangencia atual." -f $traceabilitySummary)
+    )
+}
 if (-not $onExpectedBranch) {
     [void]$agentWarnings.Add(
         ("Branch atual e '{0}'; este repositorio espera trabalho direto em {1}." -f $currentBranch, $expectedBranch)
