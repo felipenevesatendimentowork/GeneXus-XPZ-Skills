@@ -6,9 +6,10 @@ Wrapper local sanitizado para auditoria agregada da pasta paralela da KB.
 .DESCRIPTION
 Executa o script compartilhado `Test-XpzSetupAudit.ps1` para consolidar, em
 saida deterministica, as evidencias principais de auditoria operacional da
-pasta paralela: `sync/materializacao`, `indice/gate`, `indice/semantica`,
-`metadata wrapper`, `empacotamento local` e `estado_operacional_sugerido`.
-Tambem consolida `naming/objetos-da-kb`, delegando a verificacao para o
+pasta paralela: `powershell/runtime`, `sync/materializacao`,
+`naming/objetos-da-kb`, `indice/gate`, `indice/semantica`, `metadata wrapper`,
+`empacotamento local`, `declarativo/timestamps`, `wrappers/inventario` e
+`estado_operacional_sugerido`. A dimensao `naming/objetos-da-kb` delega ao
 wrapper local `Test-KbObjetosDaKbNaming.ps1` quando disponivel.
 
 Este wrapper nao substitui os gates especificos. Ele apenas centraliza a
