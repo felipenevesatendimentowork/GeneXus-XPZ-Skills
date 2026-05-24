@@ -16,7 +16,7 @@ Também já existe uma implementação inicial de `scripts/Invoke-GeneXusXpzExpo
 
 Também já existe uma implementação inicial de `scripts/Invoke-GeneXusXpzImport.ps1`, restrita à importação real de `XPZ` com parâmetros explícitos, diagnóstico em `JSON` e validação da task carregada.
 
-Também já existe uma implementação inicial de `scripts/Read-MsBuildImportSignals.ps1`, restrita à leitura compacta de `msbuild.stdout.log`/`msbuild.stderr.log`, sem abrir KB e sem depender de GeneXus instalado.
+Também já existe uma implementação inicial de `scripts/Read-MsBuildImportSignals.ps1`, restrita à leitura compacta de `msbuild.stdout.log`/`msbuild.stderr.log`, sem abrir KB e sem depender de GeneXus instalado. O leitor também emite campos canônicos para comparação de itens esperados versus importados (`expectedItemsCanonical`, `importedItemsCanonical`, `itemAliasMatches`) e sinaliza leitura degradada de `GxImport.log` por `gxImportLogReadStatus`/`gxImportLogReadError`.
 
 Também já existem utilitários compactos de leitura de pacote/objeto (`scripts/Extract-XpzObject.ps1`, `scripts/Get-GeneXusObjectSummary.ps1`, `scripts/Compare-GeneXusPanelShape.ps1`), restritos a extração e comparação sem despejar XML/CDATA inteiro.
 
@@ -660,7 +660,7 @@ Scripts propostos:
 Estado atual da materialização adicional:
 
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de `XPZ` com parâmetros explícitos e diagnóstico em `JSON`
-- `Read-MsBuildImportSignals.ps1`: implementado para reduzir consumo de tokens na leitura de logs MSBuild; os wrappers de preview/import gravam `msbuild.import.signals.json` ao lado dos logs brutos quando a leitura compacta consegue executar
+- `Read-MsBuildImportSignals.ps1`: implementado para reduzir consumo de tokens na leitura de logs MSBuild; os wrappers de preview/import gravam `msbuild.import.signals.json` ao lado dos logs brutos quando a leitura compacta consegue executar; o JSON preserva `expectedItemsRaw`/`importedItemsRaw`, calcula `expectedItemsCanonical`/`importedItemsCanonical`, registra `itemAliasMatches` para equivalências como `Panel:Nome` versus `SDPanel:Nome` e expõe `gxImportLogReadStatus`/`gxImportLogReadError` quando a leitura de `GxImport.log` fica degradada
 - `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`: implementados para reduzir consumo de tokens em analise de XML/XPZ e diagnostico de Panel; o resumo de Panel le `detail/@events` e a comparacao confronta `actionEventCoverage`, `namedEventNames`, `standardEventNames`, `variableEventNames` e `tapEventNames`, devendo ser preferidos a buscas que imprimam linhas grandes de `CDATA`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado como validação estática prévia do `import_file.xml` em `pwsh` 7.4+; para Panel, aceita `-PanelReferencePath` e registra confirmação do par `level id`/`layout id` em `information` sem manter ressalva quando a referência comparável comprova o par
 - `GeneXusMsBuildWatcherSupport.ps1`: implementado como helper comum do contrato de watcher dos wrappers MSBuild; centraliza `-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e leitura do log do monitor
@@ -751,6 +751,12 @@ Este contrato aplica-se aos wrappers que já chamaram `MSBuild` ou processaram s
   - `diagnosticDegraded=true` pode coexistir com `postProcessingFailed=false`, por exemplo quando a task concluiu e o diagnóstico principal foi montado, mas a leitura compacta de `msbuild.import.signals.json` falhou ou ficou parcial
   - semântica: **não** reclassifica a task `MSBuild` — a evidência primária de conclusão da task permanece em `executionEvidence` e nos marcadores do log bruto (`__IMPORTED_ITEM__`, `__EXPORTED_FILE__`)
   - quando `diagnosticDegraded=true` coexistir com `executionEvidence.msBuildExitCode=0` e evidência de marca no log bruto, o sub-estado correto é `concluído com diagnóstico degradado` ou o sub-estado mais específico definido pela skill consumidora; não é `falha operacional` por si só
+- `gxImportLogReadStatus` / `gxImportLogReadError`
+  - `gxImportLogReadStatus` vem do leitor compacto de sinais de importação e indica `ok`, `locked` ou `error` para a leitura de `GxImport.log`
+  - `locked` e `error` degradam o diagnóstico (`diagnosticDegraded=true`) quando stdout/stderr e `executionEvidence.msBuildExitCode=0` sustentam a conclusão da task; não viram causa principal de falha operacional por si só
+- `expectedItemsCanonical` / `importedItemsCanonical` / `itemAliasMatches`
+  - esses campos pertencem ao diagnóstico compacto de importação e permitem comparar `IncludeItems` esperado com itens importados preservando também as formas cruas em `expectedItemsRaw`/`importedItemsRaw`
+  - `Panel:Nome` e `SDPanel:Nome` são equivalentes para matching quando aparecem em `itemAliasMatches`; a resposta ao usuário ainda deve citar a forma crua quando ela for relevante para auditar o log GeneXus
 - `observedContext`
   - registra contexto técnico observado pelo wrapper, como versão ativa, `Environment` ativo, `OpenOutput`, `pathEnrichment` e, em wrappers de build, campos legados como `MsBuildExitCode`
   - `observedContext.pathEnrichment` registra o enriquecimento preventivo de `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`) quando o wrapper aplica essa política
