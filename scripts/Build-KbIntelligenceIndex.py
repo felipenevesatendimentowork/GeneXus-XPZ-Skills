@@ -12,6 +12,7 @@ Current scope:
 - WorkWithForWeb explicit link tags to WebPanel
 - WorkWithForWeb explicit prompt attributes to WebPanel
 - WorkWithForWeb explicit transaction binding
+- Source WebComponent Create calls to WebPanel
 - literal ATTCUSTOMTYPE CustomType values
 - explicit Source for each table references in Procedure and WebPanel
 - qualified Source for each table-prefix references in Procedure and WebPanel
@@ -43,6 +44,7 @@ GUID_RE = re.compile(r'\bguid="([^"]+)"')
 PROCEDURE_DIRECT_RE = re.compile(r"\b(?P<name>proc[A-Za-z_][A-Za-z0-9_]*)\s*\(", re.IGNORECASE)
 PROCEDURE_DOT_CALL_RE = re.compile(r"\b(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*Call\s*\(", re.IGNORECASE)
 WEBPANEL_DOT_LINK_RE = re.compile(r"\b(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*Link\s*\(", re.IGNORECASE)
+WEBPANEL_DOT_CREATE_RE = re.compile(r"(?<![&.])\b(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*Create\s*\(", re.IGNORECASE)
 FOR_EACH_EXPLICIT_TABLE_RE = re.compile(
     r"\bfor\s+each\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\.)",
     re.IGNORECASE,
@@ -505,6 +507,22 @@ def extract_evidence(
                             column=match.start("name") + 1,
                             snippet=cleaned,
                             extractor_rule="webpanel_dot_link",
+                        )
+
+                for match in WEBPANEL_DOT_CREATE_RE.finditer(cleaned):
+                    matched_name = match.group("name")
+                    target_name = webpanel_lookup.get(matched_name.lower())
+                    if target_name:
+                        add_evidence(
+                            evidences,
+                            source=source,
+                            target_type="WebPanel",
+                            target_name=target_name,
+                            relation_kind="creates_webcomponent",
+                            line=line_no,
+                            column=match.start("name") + 1,
+                            snippet=cleaned,
+                            extractor_rule="webpanel_dot_create",
                         )
 
                 if data_provider_direct_re:
