@@ -244,9 +244,11 @@ foreach ($declarativePath in $declarativeFiles) {
 if ($declarativeDriftEntries.Count -gt 0) {
     $declarativeStatus = 'DRIFT_TIMESTAMPS_LITERAIS'
     $declarativeEvidence = $declarativeDriftEntries -join '; '
+    $declarativeRecommendedAction = 'remover timestamps literais de AGENTS.md/README.md e substituir por ponteiros as fontes autoritativas; nao atualizar os valores literais'
 } else {
     $declarativeStatus = 'OK'
     $declarativeEvidence = 'sem timestamps literais de last_xpz_materialization_run_at ou last_index_build_run_at em AGENTS.md/README.md locais'
+    $declarativeRecommendedAction = $null
 }
 $hasDeclarativeDrift = $declarativeStatus -ne 'OK'
 
@@ -297,6 +299,9 @@ Emit-Line -Key 'empacotamento local' -Value $packageAuditStatus
 Emit-Line -Key 'empacotamento local.evidencia' -Value $packageEvidence
 Emit-Line -Key 'declarativo/timestamps' -Value $declarativeStatus
 Emit-Line -Key 'declarativo/timestamps.evidencia' -Value $declarativeEvidence
+if (-not [string]::IsNullOrWhiteSpace($declarativeRecommendedAction)) {
+    Emit-Line -Key 'declarativo/timestamps.acao_recomendada' -Value $declarativeRecommendedAction
+}
 if ($inventoryStatus -match '\|') {
     foreach ($inventoryPart in @($inventoryStatus -split '\|')) {
         $trimmedInventoryPart = $inventoryPart.Trim()
