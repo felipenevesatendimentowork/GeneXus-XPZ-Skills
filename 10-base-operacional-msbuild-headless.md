@@ -638,6 +638,8 @@ Scripts propostos:
   - objetivo: executar importação real apenas em fase já autorizada de teste controlado
 - `Read-MsBuildImportSignals.ps1`
   - objetivo: produzir JSON compacto de logs brutos de preview/import, com itens importados, warnings, erros, versão/Environment ativos, sucesso da task Import e warnings de layout agrupados por Panel
+- `Test-MsBuildImportSignalsClassifier.ps1`
+  - objetivo: bateria mínima de validação do leitor compacto de sinais de importação (ruído `CssProperties.json`, lock de `GxImport.log`, equivalência `Panel`/`SDPanel` em `itemAliasMatches`)
 - `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`
   - objetivo: extrair, resumir e comparar objetos GeneXus em XML/XPZ sem imprimir pacote completo nem CDATA extenso
 - `Test-GeneXusImportFileEnvelope.ps1`
@@ -661,6 +663,7 @@ Estado atual da materialização adicional:
 
 - `Invoke-GeneXusXpzExport.ps1`: implementado para exportação headless de `XPZ` com parâmetros explícitos e diagnóstico em `JSON`
 - `Read-MsBuildImportSignals.ps1`: implementado para reduzir consumo de tokens na leitura de logs MSBuild; os wrappers de preview/import gravam `msbuild.import.signals.json` ao lado dos logs brutos quando a leitura compacta consegue executar; o JSON preserva `expectedItemsRaw`/`importedItemsRaw`, calcula `expectedItemsCanonical`/`importedItemsCanonical`, registra `itemAliasMatches` para equivalências como `Panel:Nome` versus `SDPanel:Nome` e expõe `gxImportLogReadStatus`/`gxImportLogReadError` quando a leitura de `GxImport.log` fica degradada
+- `Test-MsBuildImportSignalsClassifier.ps1`: implementado como bateria mínima de validação de `Read-MsBuildImportSignals.ps1`; cobre ruído conhecido de `CssProperties.json`, lock de `GxImport.log` e equivalência `Panel`/`SDPanel` em `itemAliasMatches`
 - `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`, `Compare-GeneXusPanelShape.ps1`: implementados para reduzir consumo de tokens em analise de XML/XPZ e diagnostico de Panel; o resumo de Panel le `detail/@events` e a comparacao confronta `actionEventCoverage`, `namedEventNames`, `standardEventNames`, `variableEventNames` e `tapEventNames`, devendo ser preferidos a buscas que imprimam linhas grandes de `CDATA`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado como validação estática prévia do `import_file.xml` em `pwsh` 7.4+; para Panel, aceita `-PanelReferencePath` e registra confirmação do par `level id`/`layout id` em `information` sem manter ressalva quando a referência comparável comprova o par
 - `GeneXusMsBuildWatcherSupport.ps1`: implementado como helper comum do contrato de watcher dos wrappers MSBuild; centraliza `-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e leitura do log do monitor
