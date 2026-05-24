@@ -377,6 +377,19 @@ Depois de regenerar o indice, valide a resolucao semantica aprovada com:
 
 Esses casos conferem relacoes semanticas. Eles devem ser executados junto com as baterias de extracao quando houver rodada oficial.
 
+Para validar especificamente a extracao de criacao de WebComponent por `<WebPanel>.Create(...)`, use a bateria dedicada da KB paralela que tiver esse caso real. Exemplo em FabricaBrasil:
+
+```powershell
+.\scripts\Build-KbIntelligenceIndex.ps1 `
+  -SourceRoot "C:\Dev\Prod\Gx_FabricaBrasil\ObjetosDaKbEmXml" `
+  -OutputPath ".\Temp\kb-intelligence-fabricabrasil-webcomponent-create.sqlite" `
+  -ValidationReportPath ".\Temp\kb-intelligence-fabricabrasil-webcomponent-create-validation.json" `
+  -ValidationCasesPath ".\scripts\kb-intelligence-fabricabrasil.validation-extraction-webcomponent-create.json" `
+  -FailOnValidationFailure
+```
+
+Essa bateria cobre `webpanel_dot_create` e deve ser tratada como validacao de extracao/geracao, nao como validacao de consulta.
+
 Esses casos usam `source`, `target` e `expected_rule`, entao devem rodar no gerador/indexador. Se forem enviados por engano para `Test-KbIntelligenceQueries.ps1`, o resultado deve ser tratado primeiro como executor incompativel, nao como regressao real da regra.
 
 ## Validar triagem funcional basica

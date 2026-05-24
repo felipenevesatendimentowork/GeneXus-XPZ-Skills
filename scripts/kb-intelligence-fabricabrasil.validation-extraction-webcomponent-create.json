@@ -1,0 +1,13 @@
+{
+  "description": "Validation cases for KB Intelligence WebComponent Create extraction using the FabricaBrasil parallel KB as laboratory.",
+  "cases": [
+    {
+      "id": "fabricabrasil-webcomponent-create-1-webpanel-to-webpanel",
+      "source": "WebPanel:wpAbateOrdemAnimal",
+      "target": "WebPanel:WCAbateOrdemAnimal",
+      "expected_rule": "webpanel_dot_create",
+      "should_exist": true,
+      "expectation": "WebPanel effective Source with wcAbateOrdemAnimal.Create(...) must create a direct relation to the created WebPanel using its canonical name"
+    }
+  ]
+}
