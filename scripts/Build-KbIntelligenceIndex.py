@@ -5,7 +5,7 @@ Build a minimal GeneXus KB intelligence SQLite index.
 Current scope:
 - object inventory for every immediate SourceRoot type folder with XML files
 - object identity via guid extracted from XML
-- Source relations among Procedure, WebPanel and DataProvider
+- Source relations among Procedure, WebPanel, DataProvider, Transaction, API and DataSelector
 - WorkWithForWeb action gxobject links to Procedure and WebPanel
 - WorkWithForWeb condition expressions to Procedure
 - WorkWithForWeb condition attributes to Procedure
@@ -59,7 +59,7 @@ BC_SIMPLE_INSERT_UPDATE_RE = re.compile(
     r"(?P<receiver>&[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*(?P<method>Insert|Update)\s*\(",
     re.IGNORECASE,
 )
-INDEXED_SOURCE_TYPES = ("Procedure", "WebPanel", "DataProvider")
+INDEXED_SOURCE_TYPES = ("Procedure", "WebPanel", "DataProvider", "Transaction", "API", "DataSelector")
 FOR_EACH_SOURCE_TYPES = ("Procedure", "WebPanel")
 BC_LOAD_SOURCE_TYPES = ("Procedure", "WebPanel", "DataProvider")
 ACTION_RE = re.compile(r"<action\b(?P<attrs>[^>]*)>", re.IGNORECASE | re.DOTALL)
@@ -370,8 +370,6 @@ def source_blocks(xml_text: str) -> Iterable[SourceBlock]:
             body_start += cdata_prefix.end()
         body = unwrap_source_body(raw_body)
         if not body.strip():
-            continue
-        if body.lstrip().startswith("<"):
             continue
         yield SourceBlock(text=body, start_line=line_number_at(xml_text, body_start))
 

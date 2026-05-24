@@ -21,8 +21,9 @@ Escopo de inventario atual:
 
 Escopo de extracao de relacoes atual:
 
-- origens por `Source` efetivo: `Procedure`, `WebPanel` e `DataProvider`
+- origens por `Source` efetivo: `Procedure`, `WebPanel`, `DataProvider`, `Transaction`, `API` e `DataSelector`
 - destinos por `Source` efetivo: `Procedure`, `WebPanel` e `DataProvider`
+- a varredura de `Source` cobre tambem `Source` serializado em XML estruturado (ex: `<Property><Name>ControlWhere</Name><Value>procXxx(...)</Value></Property>` em layouts de WebPanel), nao apenas `Source` em CDATA com codigo GeneXus livre
 - origem por action: `WorkWithForWeb`
 - destino por action: `Procedure` ou `WebPanel`
 - vinculacao explicita: `WorkWithForWeb` para `Transaction`
