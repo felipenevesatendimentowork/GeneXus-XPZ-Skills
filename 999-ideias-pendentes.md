@@ -2139,3 +2139,43 @@ Para `xpz-builder`, isso significaria expor um vocabulário de operações de al
 - `xpz-builder/SKILL.md` e `xpz-builder/responsibilities-by-type/`
 - `01a-catalogo-e-padroes-empiricos.md` (fonte de validação dos padrões)
 - `01e-moldes-sanitizados-core.md` a `01h-moldes-sanitizados-metadados-e-artefatos.md` (insumo)
+
+## Detecção de defasagem do extrator KbIntelligence vs índice gerado
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** investigação do Achado 4 em 2026-05-23 — `INDEXED_SOURCE_TYPES` ampliada e filtro de Source XML-estruturado removido em `Build-KbIntelligenceIndex.py` (commit 122a171). Após o patch, índices SQLite gerados pelo extrator antigo continuam parecendo frescos (`last_index_build_run_at >= last_xpz_materialization_run_at`, `inventory_validation_status=OK`) mas estão incompletos — `who-uses` retorna menos resultados do que existem na realidade. Não há detector automático dessa defasagem.
+
+### Problema concreto que motiva a ideia
+
+O gate atual de frescor do índice compara timestamps de materialização vs índice. Isso detecta defasagem causada por sync XPZ sem rebuild posterior. Mas não detecta defasagem causada por evolução do próprio extrator: índice gerado pelo motor antigo passa o gate, fica silenciosamente incompleto, e o agente confia em respostas parciais.
+
+Exemplo concreto observado: após commit 122a171, `who-uses procIcmsAntecipadoAliquotas` em FabricaBrasil passou de 0 para 1 chamador real (Transaction PedidoCompraProdutoItem). O índice oficial em `C:/Dev/Prod/Gx_FabricaBrasil/KbIntelligence/kb-intelligence.sqlite` continua retornando 0 até alguém rodar `Rebuild-FabricaBrasilKbIntelligenceIndex.ps1`. Sem detector, ninguém sabe que precisa.
+
+### Ideia de melhoria
+
+Gravar uma `extractor_signature` na tabela `metadata` do SQLite, durante `Build-KbIntelligenceIndex.py`, e fazer o gate de frescor da skill `xpz-kb-parallel-setup` comparar essa assinatura com a assinatura do motor compartilhado atual. Quando divergir, emitir aviso "índice gerado por motor antigo — regenerar" e oferecer rebuild.
+
+Candidatos para a assinatura:
+
+- hash SHA-256 do próprio `Build-KbIntelligenceIndex.py` (simples, sensível a qualquer mudança incluindo refator inerte)
+- versão semântica explícita gravada no script (decisão de design: quando incrementar? só em mudança de cobertura ou também em refator?)
+- assinatura composta: versão semântica + hash dos arquivos auxiliares relevantes (`gx-object-type-catalog.json`)
+
+### Decisões em aberto
+
+- Qual forma de assinatura (hash bruto vs versão semântica vs composta)
+- Onde fica o detector — extensão de `Test-XpzSetupAudit.ps1` no motor compartilhado, gate dedicado, ou parte do `Test-*KbIndexGate.ps1` local em cada pasta paralela
+- Como tratar índices antigos sem o campo (provavelmente: ausência do campo equivale a "extrator desconhecido", trata como defasagem)
+
+### Limiar para implementar
+
+Quando aparecer segundo episódio de evolução não-trivial do extrator (mudança de cobertura, novo tipo de relação, mudança de filtro como o `body.lstrip().startswith("<")` removido em 122a171) sem detecção automática nas pastas paralelas. O caso atual (122a171) está sendo resolvido por pedido manual aos agentes das pastas paralelas para rodar Rebuild.
+
+### Relacionado
+
+- `scripts/Build-KbIntelligenceIndex.py` (onde gravar a assinatura)
+- `xpz-kb-parallel-setup/SKILL.md` (gate de frescor que precisaria do detector)
+- `scripts/Test-XpzSetupAudit.ps1` (consumidor potencial)
+- `scripts/README-kb-intelligence.md` (doc de cobertura — referência do que muda quando o extrator evolui)
