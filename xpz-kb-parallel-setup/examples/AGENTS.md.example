@@ -172,6 +172,11 @@ dependencias ou investigacao funcional curta sobre objetos desta KB, usar
 - `diagnosticDegraded=true` pode aparecer sem `postProcessingFailed=true`; nesse caso,
   tratar a rodada como diagnostico parcial/degradado, nao como sucesso limpo nem como
   falha operacional automatica.
+- Em diagnostico JSON de preview/import MSBuild, preferir `compactSignals` para leitura
+  compacta de itens, warnings, erros e campos canonicos; se ausente, nulo ou insuficiente,
+  usar `msbuild.import.signals.json` ao lado dos logs como fallback auditavel; reparsear
+  `msbuild.stdout.log`/`msbuild.stderr.log` inteiros apenas quando ambos estiverem ausentes
+  ou insuficientes.
 - Em exportacao headless via MSBuild (`Invoke-GeneXusXpzExport.ps1` do motor
   compartilhado) e em qualquer diagnostico de sub-estado de export — incluindo
   classificacao apos exception interna do wrapper, leitura de
