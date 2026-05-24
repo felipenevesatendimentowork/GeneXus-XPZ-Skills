@@ -757,6 +757,8 @@ Este contrato aplica-se aos wrappers que já chamaram `MSBuild` ou processaram s
 - `expectedItemsCanonical` / `importedItemsCanonical` / `itemAliasMatches`
   - esses campos pertencem ao diagnóstico compacto de importação e permitem comparar `IncludeItems` esperado com itens importados preservando também as formas cruas em `expectedItemsRaw`/`importedItemsRaw`
   - `Panel:Nome` e `SDPanel:Nome` são equivalentes para matching quando aparecem em `itemAliasMatches`; a resposta ao usuário ainda deve citar a forma crua quando ela for relevante para auditar o log GeneXus
+- `compactSignals`
+  - espelha no diagnóstico JSON de preview/import o objeto parseado de `msbuild.import.signals.json` quando `Read-MsBuildImportSignals.ps1` consegue executar; quando a leitura compacta falha ou fica indisponível, o campo pode vir nulo e o diagnóstico deve usar `diagnosticDegraded`/`diagnosticDegradedReason`
 - `observedContext`
   - registra contexto técnico observado pelo wrapper, como versão ativa, `Environment` ativo, `OpenOutput`, `pathEnrichment` e, em wrappers de build, campos legados como `MsBuildExitCode`
   - `observedContext.pathEnrichment` registra o enriquecimento preventivo de `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`) quando o wrapper aplica essa política
