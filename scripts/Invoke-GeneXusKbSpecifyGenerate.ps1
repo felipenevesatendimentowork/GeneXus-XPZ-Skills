@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Executa verificação leve pós-import via MSBuild: SpecifyAll seguido de GenerateOnly.

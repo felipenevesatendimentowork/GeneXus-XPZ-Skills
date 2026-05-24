@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Executa importação real de pacote (.xpz, .xml ou .import_file.xml) via MSBuild com parâmetros explícitos.
@@ -912,6 +914,8 @@ try {
     $importWarningLines = @()
     $signalsPath        = Join-Path $artifactDirectory 'msbuild.import.signals.json'
     $importSignals      = $null
+    $gxImportLogReadStatus = 'ok'
+    $gxImportLogReadError = $null
 
     try {
         $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
@@ -936,12 +940,23 @@ try {
     $signalsScript = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
     try {
         if (Test-Path -LiteralPath $signalsScript -PathType Leaf) {
-            $signalsJson = & $signalsScript -StdOutPath $stdOutPath -StdErrPath $stdErrPath -Stage 'import-real' -OutputPath $signalsPath -AsJson
+            $signalsJson = & $signalsScript -StdOutPath $stdOutPath -StdErrPath $stdErrPath -ExpectedItems ($includeItemsArray -join ';') -Stage 'import-real' -OutputPath $signalsPath -AsJson
             $signalsJsonText = $signalsJson | Out-String
             if (-not [string]::IsNullOrWhiteSpace($signalsJsonText)) {
                 $importSignals = $signalsJsonText | ConvertFrom-Json
                 if (($importedItems.Count -eq 0) -and ($null -ne $importSignals.importedItems)) {
                     $importedItems = @($importSignals.importedItems)
+                }
+                if ($null -ne $importSignals.PSObject.Properties['gxImportLogReadStatus']) {
+                    $gxImportLogReadStatus = [string]$importSignals.gxImportLogReadStatus
+                }
+                if ($null -ne $importSignals.PSObject.Properties['gxImportLogReadError']) {
+                    $gxImportLogReadError = $importSignals.gxImportLogReadError
+                }
+                if ($gxImportLogReadStatus -in @('locked', 'error')) {
+                    $diagnosticDegraded = $true
+                    $diagnosticDegradedReason = ('Leitura de GxImport.log degradada: {0}' -f $gxImportLogReadStatus)
+                    Add-StrategyTrace -Message $diagnosticDegradedReason
                 }
             }
         } else {
@@ -1011,6 +1026,8 @@ try {
         postProcessingError  = $postProcessingError
         diagnosticDegraded   = $diagnosticDegraded
         diagnosticDegradedReason = $diagnosticDegradedReason
+        gxImportLogReadStatus = $gxImportLogReadStatus
+        gxImportLogReadError = $gxImportLogReadError
         stage = 'import-real'
         requestedContext = [ordered]@{
             VersionName = $VersionName

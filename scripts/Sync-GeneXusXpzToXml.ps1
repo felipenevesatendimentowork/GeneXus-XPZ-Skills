@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Extrai e verifica objetos exportados de um pacote GeneXus XPZ/XML.

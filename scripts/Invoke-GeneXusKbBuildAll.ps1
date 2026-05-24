@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Executa build completo pós-import via MSBuild: BuildAll (specify + generate + compile).

@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Abre uma Knowledge Base do GeneXus via MSBuild em modo headless controlado.

@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
@@ -84,15 +86,72 @@ function Emit-Line {
     '{0}: {1}' -f $Key, $Value
 }
 
+function Get-SuggestedPowerShellRuntimeWrapperPath {
+    param([string]$RootPath)
+
+    $fullRootPath = [System.IO.Path]::GetFullPath($RootPath)
+    $kbName = Split-Path -Leaf $fullRootPath
+    $safeName = $kbName -replace '[^A-Za-z0-9]', ''
+    if ([string]::IsNullOrWhiteSpace($safeName)) {
+        $safeName = 'Kb'
+    }
+
+    return (Join-Path (Join-Path $fullRootPath 'scripts') ('Test-{0}KbPowerShellRuntime.ps1' -f $safeName))
+}
+
+function Resolve-PowerShellRuntimeTestPath {
+    param(
+        [string]$RootPath,
+        [string]$ExplicitPath
+    )
+
+    $suggestedPath = Get-SuggestedPowerShellRuntimeWrapperPath -RootPath $RootPath
+    $examplePath = Join-Path (Split-Path -Parent $scriptDir) 'xpz-kb-parallel-setup\examples\Test-KbPowerShellRuntime.example.ps1'
+
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitPath)) {
+        return [ordered]@{
+            path = $ExplicitPath
+            source = 'explicit'
+            suggestedPath = $suggestedPath
+            examplePath = $examplePath
+        }
+    }
+
+    $scriptsPath = Join-Path $RootPath 'scripts'
+    $detected = @()
+    if (Test-Path -LiteralPath $scriptsPath -PathType Container) {
+        $detected = @(Get-ChildItem -LiteralPath $scriptsPath -File -Filter 'Test-*KbPowerShellRuntime.ps1' | Sort-Object Name)
+    }
+
+    if ($detected.Count -gt 0) {
+        return [ordered]@{
+            path = $detected[0].FullName
+            source = if ($detected.Count -eq 1) { 'autodetected' } else { 'autodetected-first-of-many' }
+            candidates = @($detected | ForEach-Object { $_.FullName })
+            suggestedPath = $suggestedPath
+            examplePath = $examplePath
+        }
+    }
+
+    return [ordered]@{
+        path = $null
+        source = 'missing'
+        candidates = @()
+        suggestedPath = $suggestedPath
+        examplePath = $examplePath
+    }
+}
+
 $scriptDir = Split-Path -Parent $PSCommandPath
 
 $powerShellRuntimeRaw = $null
 $powerShellRuntimeStatus = $null
+$powerShellRuntimeDetection = Resolve-PowerShellRuntimeTestPath -RootPath $KbRoot -ExplicitPath $PowerShellRuntimeTestPath
 try {
-    if (-not $PowerShellRuntimeTestPath) {
-        throw "BLOCK: wrapper de runtime PowerShell nao informado"
+    if (-not $powerShellRuntimeDetection['path']) {
+        throw ("BLOCK: wrapper de runtime PowerShell nao informado nem detectado em scripts/Test-*KbPowerShellRuntime.ps1; criar wrapper local sugerido em {0} a partir de {1}" -f $powerShellRuntimeDetection['suggestedPath'], $powerShellRuntimeDetection['examplePath'])
     }
-    $powerShellRuntimeRaw = Invoke-WrapperText -Path $PowerShellRuntimeTestPath
+    $powerShellRuntimeRaw = Invoke-WrapperText -Path $powerShellRuntimeDetection['path']
     if ($powerShellRuntimeRaw -match '\bPOWERSHELL_RUNTIME_OK\b') {
         $powerShellRuntimeStatus = 'OK'
     } else {
@@ -106,6 +165,9 @@ try {
 if ($powerShellRuntimeStatus -ne 'OK') {
     Emit-Line -Key 'powershell/runtime' -Value $powerShellRuntimeStatus
     Emit-Line -Key 'powershell/runtime.evidencia' -Value $(if ($powerShellRuntimeRaw) { $powerShellRuntimeRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
+    Emit-Line -Key 'powershell/runtime.detecao' -Value $powerShellRuntimeDetection['source']
+    Emit-Line -Key 'powershell/runtime.wrapper_sugerido' -Value $powerShellRuntimeDetection['suggestedPath']
+    Emit-Line -Key 'powershell/runtime.molde' -Value $powerShellRuntimeDetection['examplePath']
     Emit-Line -Key 'estado_operacional_sugerido' -Value 'runtime_powershell_bloqueado'
     exit 1
 }
@@ -285,6 +347,7 @@ $suggestedState = switch ($true) {
 
 Emit-Line -Key 'powershell/runtime' -Value $powerShellRuntimeStatus
 Emit-Line -Key 'powershell/runtime.evidencia' -Value $(if ($powerShellRuntimeRaw) { $powerShellRuntimeRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
+Emit-Line -Key 'powershell/runtime.detecao' -Value $powerShellRuntimeDetection['source']
 Emit-Line -Key 'sync/materializacao' -Value $syncStatus
 Emit-Line -Key 'sync/materializacao.evidencia' -Value $syncEvidence
 Emit-Line -Key 'naming/objetos-da-kb' -Value $namingStatus

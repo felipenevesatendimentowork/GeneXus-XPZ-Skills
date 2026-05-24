@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Lê uma propriedade da Knowledge Base do GeneXus via MSBuild em modo headless.

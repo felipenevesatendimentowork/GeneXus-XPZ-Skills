@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 [CmdletBinding(DefaultParameterSetName = 'ByFront')]
 param(
     [Parameter(Mandatory = $true, ParameterSetName = 'ByPath')]

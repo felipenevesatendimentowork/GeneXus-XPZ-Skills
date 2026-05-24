@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Verifica a consistência interna de uma KB GeneXus via task CheckKnowledgeBase do MSBuild.

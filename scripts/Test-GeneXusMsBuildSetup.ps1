@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Valida o ambiente mínimo para operações headless de GeneXus via MSBuild.

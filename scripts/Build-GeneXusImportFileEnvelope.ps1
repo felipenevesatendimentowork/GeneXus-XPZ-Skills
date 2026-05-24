@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
     Monta um import_file.xml a partir de XMLs de objeto e um pacote template.

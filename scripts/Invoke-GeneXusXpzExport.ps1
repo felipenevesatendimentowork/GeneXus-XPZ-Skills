@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 <#
 .SYNOPSIS
 Executa exportação de XPZ via MSBuild com parâmetros explícitos.

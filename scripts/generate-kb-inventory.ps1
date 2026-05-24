@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 param(
     [Parameter(Mandatory = $true)]
     [string]$SourceRoot,
