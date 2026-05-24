@@ -1,3 +1,5 @@
+#requires -Version 7.4
+
 function Get-FullPathSafe {
     param([string]$PathValue)
 
