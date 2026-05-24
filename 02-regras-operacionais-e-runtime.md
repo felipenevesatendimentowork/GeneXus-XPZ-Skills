@@ -971,7 +971,7 @@ Regras de uso:
 - `Regra operacional`: se houver mais de um lote plausivel na pasta de geracao, o agente deve bloquear o empacotamento por contaminacao de workspace.
 - `Regra operacional`: o agente nao deve inferir o lote correto apenas por recencia se houver risco de mistura de frentes.
 - `Regra operacional`: o agente nao deve fechar pacote por inferencia quando houver mais de um lote plausivel no workspace.
-- `Regra operacional`: a ordem obrigatoria antes de empacotar e: isolar lote, classificar raizes, validar `lastUpdate`, validar BOM, validar manifesto e so entao serializar o pacote.
+- `Regra operacional`: a ordem obrigatoria antes de empacotar e: isolar lote, classificar raizes, validar fidelidade textual do delta, validar `lastUpdate`, validar BOM, validar manifesto e so entao serializar o pacote.
 - `Regra operacional`: manifesto deve ser tratado primeiro como saida estruturada na propria conversa, e nao como arquivo fisico por padrao.
 - `Regra operacional`: nome de pacote local gerado para importacao na IDE deve priorizar clareza humana e separacao de frentes paralelas, preferindo o padrao `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`.
 - `Regra operacional`: nesse padrao, `NomeCurto` e uma descricao curta, legivel e semanticamente forte da frente; `GUID` e o identificador aberto para aquela frente; `YYYYMMDD` e a data de abertura da frente; `nn` e apenas o contador curto e incremental da rodada daquela frente.
@@ -1002,6 +1002,9 @@ Regras de uso:
 ## Checklist obrigatorio antes do empacotamento
 
 - `Regra operacional`: antes de empacotar, classificar cada XML ativo como `alterado na rodada` ou `reenviado sem mudanca por dependencia obrigatoria`.
+- `Regra operacional`: ao criar uma copia alterada de XML GeneXus em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, preservar fielmente o XML de origem fora do delta funcional aprovado; a operacao padrao e edicao cirurgica, nao reconstrucao nem reserializacao ampla.
+- `Regra operacional`: fora do delta funcional, preservar comentarios, `CDATA`, indentacao, linhas em branco, ordem de nos, quebras de linha e whitespace herdado; nao introduzir espacos ou tabs finais em linhas novas ou modificadas.
+- `Regra operacional`: antes de empacotar, comparar a copia alterada contra o XML de origem e confirmar que o diff contem apenas o delta pretendido; mudancas apenas de whitespace, indentacao, quebra de linha, comentarios removidos ou reserializacao devem bloquear a entrega ate a copia ser refeita de forma mais cirurgica ou ate aprovacao explicita do usuario.
 - `Regra operacional`: se o objeto foi realmente modificado nesta rodada, o `lastUpdate` deve seguir `max(UtcNow + 60s, lastUpdate do acervo oficial + 60s)` quando houver baseline oficial, ou `UtcNow + 60s` para objeto novo sem baseline.
 - `Regra operacional`: se o objeto nao foi modificado e entrou apenas para dependencia obrigatoria ou composicao minima do pacote, o `lastUpdate` oficial anterior deve ser preservado.
 - `Regra operacional`: o empacotamento deve abortar quando houver divergencia entre a classificacao do item e o `lastUpdate` materializado.

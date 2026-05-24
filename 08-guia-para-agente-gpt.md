@@ -768,7 +768,10 @@ Regras da escada:
 - quando houver contexto esperado da frente, o agente pode comparar opcionalmente `foco esperado` versus `retorno oficial`, classificando `esperados que voltaram`, `esperados que nao voltaram` e `retorno oficial adicional da KB`, sem transformar a ausencia desse contexto em erro
 - frente validada tecnicamente nao implica publicacao Git; a conclusao tecnica e apenas `validado_tecnicamente` ate o usuario autorizar o fechamento
 - enquanto nao houver autorizacao explicita, o agente pode sugerir os proximos passos de Git e publicacao, mas nao pode executar `git add`, `commit` ou `push`
-- a ordem obrigatoria e: isolar lote, classificar raizes, validar `lastUpdate`, validar BOM, validar manifesto, validar `XML bem-formado`, validar sanidade minima do `Source` quando aplicavel, e so entao empacotar
+- a ordem obrigatoria e: isolar lote, classificar raizes, validar fidelidade textual do delta, validar `lastUpdate`, validar BOM, validar manifesto, validar `XML bem-formado`, validar sanidade minima do `Source` quando aplicavel, e so entao empacotar
+- ao gerar copia alterada de XML GeneXus em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, preservar o XML de origem fora do delta funcional aprovado: comentarios, `CDATA`, indentacao, linhas em branco, ordem de nos, quebras de linha e whitespace herdado nao devem mudar por reserializacao ou reconstrucao ampla
+- nao introduzir espacos ou tabs finais em linhas novas ou modificadas; a verificacao posterior serve para confirmar que o agente nao criou ruido, nao para limpar retrospectivamente o snapshot oficial
+- antes de empacotar, comparar a copia alterada com o XML de origem e bloquear se o diff trouxer apenas whitespace, indentacao, quebra de linha, comentario removido ou outra mudanca textual nao funcional fora do delta aprovado
 - manifesto nao implica automaticamente arquivo fisico; por padrao, ele deve ser apresentado na propria conversa
 - para `WorkWithWeb` com ruído comprovado de `Load Code` em `Selection` e/ou tabs de `View`, registrar isso como nao funcional no manifesto e nao generalizar para todo caso de `WorkWithWeb`
 - ao gerar pacote local para importacao na IDE, preferir nome no formato `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`

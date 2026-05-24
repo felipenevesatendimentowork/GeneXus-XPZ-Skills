@@ -71,6 +71,9 @@ If the main need is to prepare or validate the initial folder structure around t
 - Treat `ObjetosDaKbEmXml` as official snapshot and read-only for agents
 - Treat any detected or intended edit in `ObjetosDaKbEmXml` for a delta that has not yet returned by official KB re-export as an explicit process error, not as a mere operational detail
 - If the object has not yet returned from the KB by official export, perform the work only in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- When creating an altered copy of GeneXus XML in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, preserve the source XML outside the approved functional delta; the default operation is surgical editing, not broad reconstruction or full-file reserialization
+- Outside the approved delta, preserve comments, `CDATA`, indentation, blank lines, node order, line endings, and inherited whitespace; do not introduce trailing spaces or tabs on new or modified lines
+- Before packaging, compare the altered copy against the source XML and confirm that the diff contains only the intended delta; whitespace-only changes, indentation churn, line-ending churn, removed comments, or serialization churn outside the delta are process noise and must be corrected or explicitly approved before delivery
 - The set of standard KB parallel-folder subfolders (`ObjetosDaKbEmXml`, `XpzExportadosPelaIDE`, `scripts`, `Temp`, `KbIntelligence`, `ObjetosGeradosParaImportacaoNaKbNoGenexus`, `PacotesGeradosParaImportacaoNaKbNoGenexus`) and their recommended creation order are normative in the `xpz-kb-parallel-setup` skill — see [xpz-kb-parallel-setup/SKILL.md](../xpz-kb-parallel-setup/SKILL.md). This builder assumes those names by default and falls back to `xpz-kb-parallel-setup` when alternative naming, structural ambiguity, or missing setup is detected.
 - If `XpzExportadosPelaIDE` does not exist yet, ask where the user wants to store exported `.xpz` files
 - If `ObjetosDaKbEmXml` does not exist yet, stop and treat the KB as not yet materialized
@@ -111,6 +114,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - Keep `PacotesGeradosParaImportacaoNaKbNoGenexus` flat, without subfolders by front
 - Classify each active XML root as `Object`, `Attribute`, or unsupported before serializing the package
 - Validate UTF-8 without BOM hygiene on active XMLs before packaging
+- Validate textual delta fidelity on active XMLs before packaging: only the approved functional delta should appear in comparison against the source XML
 - Reread and apply local repository documentation (`AGENTS.md`, `README.md`, and equivalent project docs) before packaging whenever the target KB/repository defines specific functional review rules, contracts, or operational flow
 - Use local repository documentation as the mandatory specialization layer for KB-specific contracts and review chains, without promoting those local rules to the shared XPZ methodology
 - Keep general XPZ methodology separate from KB-specific architecture; flows such as `WorkWithWeb -> action -> parm(...) -> For each` may be mandatory in a given repository but are not universal GeneXus or XPZ rules
@@ -530,6 +534,9 @@ The end-to-end Quality Checklist for any packaging round lives in the satellite 
 - NEVER create, alter, move, rename, or overwrite files in `ObjetosDaKbEmXml`
 - NEVER treat an intended edit in `ObjetosDaKbEmXml` for a delta not yet returned by official KB export as acceptable; it is an explicit process error
 - NEVER treat locally generated XML as if it were the official KB snapshot
+- NEVER reserialize, reconstruct, or normalize a whole GeneXus XML object when the task is a surgical change and the source XML can be edited locally; preserve text outside the approved delta
+- NEVER remove existing comments, alter unrelated `CDATA`, or introduce whitespace-only changes outside the approved delta without explicit user approval
+- NEVER deliver locally generated object XML with trailing spaces or tabs introduced on new or modified lines
 - NEVER keep the active front batch directly in the root of `ObjetosGeradosParaImportacaoNaKbNoGenexus`; use the front folder `NomeCurto_GUID_YYYYMMDD`
 - NEVER create automatic subfolders by type under the active front folder in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
 - NEVER treat a contaminated active front folder as acceptable for a new isolated single-object delta
