@@ -275,6 +275,18 @@ function Get-ObjectsByTypeMap {
     return $map
 }
 
+function Test-IsPlatformModuleInventoryItem {
+    param($Item)
+
+    if ($Item.sourceBlock -ne 'Objects' -or [string]::IsNullOrWhiteSpace($Item.name)) {
+        return $false
+    }
+
+    # Export real GeneXus 18 traz SDK/plataforma como PackagedModule (GUID c88fffcd-...).
+    # Module (GUID 00000000-...-000006) e container de KB do usuario.
+    return $Item.typeName -eq 'Module' -or $Item.typeName -eq 'PackagedModule'
+}
+
 function Get-SystemModulesPresent {
     param(
         $InventoryItems,
@@ -282,7 +294,7 @@ function Get-SystemModulesPresent {
     )
 
     $found = [System.Collections.Generic.List[string]]::new()
-    foreach ($item in @($InventoryItems | Where-Object { $_.sourceBlock -eq 'Objects' -and $_.typeName -eq 'Module' -and -not [string]::IsNullOrWhiteSpace($_.name) })) {
+    foreach ($item in @($InventoryItems | Where-Object { Test-IsPlatformModuleInventoryItem -Item $_ })) {
         if ($SystemModuleNames.Contains($item.name)) {
             if (-not $found.Contains($item.name)) {
                 $found.Add($item.name) | Out-Null

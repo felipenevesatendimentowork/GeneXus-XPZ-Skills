@@ -262,6 +262,7 @@ function New-ExportPackageInventoryBlock {
             } else {
                 $summary.extrasSample = @()
                 $summary.extrasSampleTruncated = $true
+                $summary.extrasFullListAt = $packageInventoryPath
             }
         }
 

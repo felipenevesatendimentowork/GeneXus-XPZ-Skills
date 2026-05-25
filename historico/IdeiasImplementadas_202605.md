@@ -306,7 +306,7 @@ Incidente operacional em KB FabricaBrasil (2026-05-25): export com 28 entradas e
 
 ### Implementação
 
-- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: aceita `.xpz` (ZIP em memória, um único `ExportFile` interno), `-DeclaredDeltaItems` inline (`Tipo:Nome`, separador `;` ou linha), agrega `objectsByType`, detecta `systemModulesPresent` via `scripts/gx-system-modules.txt`; confronto de extras em export seletiva considera somente bloco `<Objects>`.
+- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: aceita `.xpz` (ZIP em memória, um único `ExportFile` interno), `-DeclaredDeltaItems` inline (`Tipo:Nome`, separador `;` ou linha), agrega `objectsByType`, detecta `systemModulesPresent` via `scripts/gx-system-modules.txt` em objetos `PackagedModule` (export real GeneXus 18) ou `Module`; confronto de extras em export seletiva considera somente bloco `<Objects>`.
 - `scripts/Invoke-GeneXusXpzExport.ps1`: após XPZ gerado, preenche `packageInventory` resumido no diagnóstico, grava sempre `package-inventory.json` no diretório de artefatos, expõe `operationalSubState` e `inventoryDegraded` sem rebaixar exit da task MSBuild.
 - `scripts/Test-GeneXusImportPackageObjectInventorySelfTest.ps1`: bateria mínima XML + `.xpz` sintético.
 - Governança: `xpz-msbuild-import-export/SKILL.md` (secção inventário após export, sub-estados, CONSTRAINT, checklist), `10-base-operacional-msbuild-headless.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, handoff em `xpz-kb-parallel-setup/SKILL.md`.

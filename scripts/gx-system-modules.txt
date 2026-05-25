@@ -1,4 +1,5 @@
-# Modulos de plataforma/SDK GeneXus (nome do objeto Module).
+# Modulos de plataforma/SDK GeneXus (nome do objeto, independente do tipo no pacote).
+# Em export real GeneXus 18 o tipo costuma ser PackagedModule (GUID c88fffcd-...), nao Module.
 # Uma entrada por linha; linhas vazias e comentarios (#) sao ignorados.
 GeneXus
 Client
