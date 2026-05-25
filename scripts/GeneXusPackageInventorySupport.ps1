@@ -5,7 +5,10 @@
 
 .DESCRIPTION
     Produz packageInventory resumido e sidecar JSON a partir de
-    Get-GeneXusImportPackageObjectInventory.ps1. Consumido por
+    Get-GeneXusImportPackageObjectInventory.ps1. O resumo expoe
+    nominalInventoryAt (lista nominal completa no sidecar), extrasSample
+    (extras de Objects quando extrasCount <= 50), extrasSampleTruncated e
+    extrasFullListAt quando a lista de extras excede 50. Consumido por
     Build-GeneXusImportFileEnvelope.ps1, New-XpzImportPackage.ps1 e pelo export
     MSBuild via GeneXusXpzExportInventoryGovernance.ps1 (governanca de sub-estado
     permanece no modulo de export, nao neste arquivo).
@@ -256,8 +259,14 @@ function New-PackageInventoryResult {
             } else {
                 $summary.extrasSample = @()
                 $summary.extrasSampleTruncated = $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($result.packageInventoryPath)) {
                 $summary.extrasFullListAt = $result.packageInventoryPath
             }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($result.packageInventoryPath)) {
+            $summary.nominalInventoryAt = $result.packageInventoryPath
         }
 
         $result.inventoryDegraded = $false
