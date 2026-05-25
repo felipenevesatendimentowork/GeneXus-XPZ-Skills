@@ -166,6 +166,133 @@ function ConvertTo-JsonText {
     return ($InputObject | ConvertTo-Json -Depth 8)
 }
 
+function New-ExportPackageInventoryBlock {
+    param(
+        [string]$XpzPath,
+        [string]$ArtifactDirectory,
+        [string]$ObjectList,
+        [string]$ExportAll,
+        [bool]$FullExportRequested
+    )
+
+    $inventoryScriptPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Get-GeneXusImportPackageObjectInventory.ps1'
+    $packageInventoryPath = Join-Path $ArtifactDirectory 'package-inventory.json'
+    $block = [ordered]@{
+        inventoryDegraded   = $true
+        inventoryError      = $null
+        packageInventory    = $null
+        operationalSubState = 'exportação concluída sem inventário (degradado)'
+    }
+
+    if (-not (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf)) {
+        $block.inventoryError = "Script de inventario nao encontrado: $inventoryScriptPath"
+        $block.packageInventoryPath = $packageInventoryPath
+        return [pscustomobject]$block
+    }
+
+    try {
+        $isSelective = (-not $FullExportRequested) -and ($ExportAll -ne 'true') -and (-not [string]::IsNullOrWhiteSpace($ObjectList))
+        $invokeParams = @{
+            InputPath = $XpzPath
+            AsJson    = $true
+        }
+        if ($isSelective) {
+            $invokeParams['DeclaredDeltaItems'] = $ObjectList
+        }
+
+        $inventoryJsonText = & $inventoryScriptPath @invokeParams
+        $inventory = $inventoryJsonText | ConvertFrom-Json
+        $namedItems = [System.Collections.Generic.List[pscustomobject]]::new()
+        foreach ($item in @($inventory.inventory)) {
+            $namedItems.Add([pscustomobject]@{
+                sourceBlock = $item.sourceBlock
+                typeName    = $item.typeName
+                name        = $item.name
+                guid        = $item.guid
+            }) | Out-Null
+        }
+
+        $fullInventoryDoc = [ordered]@{
+            inputPath      = $inventory.inputPath
+            inputKind      = $inventory.inputKind
+            innerXmlEntry  = $inventory.innerXmlEntry
+            objectCount    = $inventory.objectCount
+            attributeCount = $inventory.attributeCount
+            items          = @($namedItems)
+        }
+        $fullInventoryJson = $fullInventoryDoc | ConvertTo-Json -Depth 6
+        [System.IO.File]::WriteAllText($packageInventoryPath, $fullInventoryJson + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
+
+        $objectsByType = @{}
+        if ($null -ne $inventory.objectsByType) {
+            foreach ($prop in $inventory.objectsByType.PSObject.Properties) {
+                $objectsByType[$prop.Name] = [int]$prop.Value
+            }
+        }
+
+        $summary = [ordered]@{
+            inventoryStatus        = $inventory.status
+            selectiveExport        = [bool]$inventory.selectiveExport
+            totalObjects           = [int]$inventory.objectCount
+            totalAttributes        = [int]$inventory.attributeCount
+            objectsByType          = $objectsByType
+            systemModulesPresent   = @($inventory.systemModulesPresent)
+            packageInventoryPath   = $packageInventoryPath
+        }
+
+        if ($isSelective -and $null -ne $inventory.deltaComparison) {
+            $delta = $inventory.deltaComparison
+            $requestedFound = @($delta.requestedItemsFound | ForEach-Object {
+                if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
+            })
+            $requestedMissing = @($delta.requestedItemsMissing | ForEach-Object {
+                if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
+            })
+            $extrasCount = [int]$delta.extraCount
+            $summary.requestedItemsFound = @($requestedFound)
+            $summary.requestedItemsMissing = @($requestedMissing)
+            $summary.extrasCount = $extrasCount
+            $summary.deltaStatus = [string]$delta.status
+
+            $extrasLines = @($delta.extraObjects | ForEach-Object {
+                if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
+            })
+            if ($extrasCount -le 50) {
+                $summary.extrasSample = @($extrasLines)
+            } else {
+                $summary.extrasSample = @()
+                $summary.extrasSampleTruncated = $true
+            }
+        }
+
+        $operationalSubState = 'exportação concluída e inventário consolidado'
+        if ($isSelective) {
+            $hasSystemModules = @($inventory.systemModulesPresent).Count -gt 0
+            $hasExtras = $false
+            $hasMissing = $false
+            if ($null -ne $inventory.deltaComparison) {
+                $hasExtras = [int]$inventory.deltaComparison.extraCount -gt 0
+                $hasMissing = [int]$inventory.deltaComparison.missingCount -gt 0
+            }
+            if ($hasSystemModules -or $hasExtras -or $hasMissing) {
+                $operationalSubState = 'exportação concluída, inventário com extras não conciliados'
+            }
+        }
+
+        $block.inventoryDegraded = $false
+        $block.inventoryError = $null
+        $block.packageInventory = $summary
+        $block.packageInventoryPath = $packageInventoryPath
+        $block.operationalSubState = $operationalSubState
+        return [pscustomobject]$block
+    }
+    catch {
+        $block.inventoryError = $_.Exception.Message
+        $block.packageInventoryPath = $packageInventoryPath
+        return [pscustomobject]$block
+    }
+}
+
 function Write-JsonLog {
     param(
         [string]$TargetLogPath,
@@ -972,6 +1099,22 @@ try {
         Add-StrategyTrace -Message ('XPZ gerado em: {0}' -f $resolvedXpzPath)
     }
 
+    $inventoryBlock = $null
+    if ($fileExists -and $exportExitCode -eq 0) {
+        $inventoryBlock = New-ExportPackageInventoryBlock `
+            -XpzPath $resolvedXpzPath `
+            -ArtifactDirectory $artifactDirectory `
+            -ObjectList $ObjectList `
+            -ExportAll $ExportAll `
+            -FullExportRequested $FullExport.IsPresent
+        if ($inventoryBlock.inventoryDegraded) {
+            Add-WarningMessage -Message ('Inventario do pacote degradado: {0}' -f $inventoryBlock.inventoryError)
+            Add-StrategyTrace -Message ('Inventario degradado: {0}' -f $inventoryBlock.inventoryError)
+        } else {
+            Add-StrategyTrace -Message ('Inventario consolidado: {0} objetos, {1} atributos; sub-estado={2}' -f $inventoryBlock.packageInventory.totalObjects, $inventoryBlock.packageInventory.totalAttributes, $inventoryBlock.operationalSubState)
+        }
+    }
+
     $diagnostic = [ordered]@{
         status = $status
         summary = $summary
@@ -1020,7 +1163,12 @@ try {
             ExecutionLogPath = $resolvedLogPath
             XpzPath = $resolvedXpzPath
             XpzSizeBytes = $fileSizeBytes
+            PackageInventoryPath = if ($null -ne $inventoryBlock) { $inventoryBlock.packageInventoryPath } else { $null }
         }
+        inventoryDegraded = if ($null -ne $inventoryBlock) { [bool]$inventoryBlock.inventoryDegraded } else { $null }
+        inventoryError = if ($null -ne $inventoryBlock) { $inventoryBlock.inventoryError } else { $null }
+        packageInventory = if ($null -ne $inventoryBlock) { $inventoryBlock.packageInventory } else { $null }
+        operationalSubState = if ($null -ne $inventoryBlock) { $inventoryBlock.operationalSubState } else { $null }
         watcherContext = $script:WatcherContext
         timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         stdoutSignals = [ordered]@{

@@ -291,9 +291,30 @@ Incidente operacional documentado em 2026-05-13: export MSBuild com `-ObjectList
 - O script aceita delta declarado em arquivo texto no formato `Tipo:Nome` e pode falhar com `-FailOnDeltaMismatch` quando há extras, ausentes ou itens incomparáveis.
 - `xpz-msbuild-import-export/SKILL.md`, `xpz-builder/SKILL.md`, `10-base-operacional-msbuild-headless.md` e `08-guia-para-agente-gpt.md` passaram a tratar o inventário como verificação determinística para `import_file.xml` antes de importação real.
 
-### Limite preservado como pendência
+### Limite preservado como pendência (superado em 2026-05-25)
 
-Suporte direto a `.xpz` não foi implementado nesta subfrente. O script bloqueia `.xpz` explicitamente e orienta informar o `import_file.xml`/XML com raiz `<ExportFile>`. Essa pendência permanece em `999-ideias-pendentes.md` como parte da ideia maior de inventário de pacote importável.
+Suporte direto a `.xpz` não foi implementado nesta subfrente inicial. A extensão foi entregue na frente «Inventário de pacote em `.xpz` e export embutido» abaixo.
+
+## Inventário de pacote em `.xpz` e export embutido
+
+**Importância original:** média
+**Status:** concluída em 2026-05-25
+
+### Origem
+
+Incidente operacional em KB FabricaBrasil (2026-05-25): export com 28 entradas em `-ObjectList` gerou `.xpz` com 467 `<Object>` e 1045 `<Attribute>` top-level, incluindo módulos de plataforma; `exitCode=0` não revelava o gap. Comportamento textual já existia na skill, mas faltava automação, sub-estado de export e regra de comunicação ao usuário.
+
+### Implementação
+
+- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: aceita `.xpz` (ZIP em memória, um único `ExportFile` interno), `-DeclaredDeltaItems` inline (`Tipo:Nome`, separador `;` ou linha), agrega `objectsByType`, detecta `systemModulesPresent` via `scripts/gx-system-modules.txt`; confronto de extras em export seletiva considera somente bloco `<Objects>`.
+- `scripts/Invoke-GeneXusXpzExport.ps1`: após XPZ gerado, preenche `packageInventory` resumido no diagnóstico, grava sempre `package-inventory.json` no diretório de artefatos, expõe `operationalSubState` e `inventoryDegraded` sem rebaixar exit da task MSBuild.
+- `scripts/Test-GeneXusImportPackageObjectInventorySelfTest.ps1`: bateria mínima XML + `.xpz` sintético.
+- Governança: `xpz-msbuild-import-export/SKILL.md` (secção inventário após export, sub-estados, CONSTRAINT, checklist), `10-base-operacional-msbuild-headless.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, handoff em `xpz-kb-parallel-setup/SKILL.md`.
+
+### Pendências remanescentes
+
+- Encadeamento local envelope + inventário + import num único wrapper da pasta paralela (permanece em `999-ideias-pendentes.md`).
+- Catálogo de módulos de sistema por KB/versão além de `gx-system-modules.txt` compartilhado.
 
 ## Regras conceituais para provider/item desconhecido fora do XPZ/XML
 

@@ -1,31 +1,33 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Inventaria objetos efetivamente presentes em um import_file.xml GeneXus.
+Inventaria objetos efetivamente presentes em import_file.xml ou pacote .xpz GeneXus.
 
 .DESCRIPTION
-Le um envelope GeneXus com raiz <ExportFile>, lista os objetos sob <Objects>
-e atributos top-level sob <Attributes>, mapeia GUIDs de tipo pelo catalogo
-compartilhado quando possivel e, opcionalmente, confronta o inventario com um
-delta declarado em arquivo texto.
-
-Escopo inicial: import_file.xml/XML com raiz <ExportFile>. Pacotes .xpz ficam
-fora desta primeira implementacao para preservar o fluxo cotidiano focado em
-import_file.xml.
+Le um envelope GeneXus com raiz <ExportFile> (XML direto ou XML interno em .xpz),
+lista os objetos sob <Objects> e atributos top-level sob <Attributes>, mapeia GUIDs
+de tipo pelo catalogo compartilhado quando possivel e, opcionalmente, confronta o
+inventario de objetos com um delta declarado em texto Tipo:Nome.
 
 .PARAMETER InputPath
-Caminho do import_file.xml ou XML equivalente com raiz <ExportFile>.
+Caminho do import_file.xml, XML equivalente com raiz <ExportFile> ou pacote .xpz.
 
 .PARAMETER DeclaredDeltaPath
-Arquivo texto opcional com o delta esperado, uma entrada por linha no formato
-Tipo:Nome. Linhas vazias e iniciadas por # sao ignoradas.
+Arquivo texto opcional com o delta esperado, uma entrada por linha no formato Tipo:Nome.
+
+.PARAMETER DeclaredDeltaItems
+Lista inline opcional no formato Tipo:Nome separada por ponto-e-virgula (;) ou quebra
+de linha. Ignorada quando DeclaredDeltaPath estiver informado.
 
 .PARAMETER CatalogPath
 Caminho opcional para gx-object-type-catalog.json.
 
+.PARAMETER SystemModulesCatalogPath
+Caminho opcional para gx-system-modules.txt (modulos de plataforma/SDK).
+
 .PARAMETER FailOnDeltaMismatch
-Quando informado junto com DeclaredDeltaPath, retorna exit code 2 se houver
-objetos extras ou ausentes.
+Quando informado junto com delta declarado, retorna exit code 2 se houver objetos
+extras ou ausentes na comparacao seletiva (somente bloco Objects).
 
 .PARAMETER AsJson
 Emite JSON estruturado.
@@ -38,7 +40,11 @@ param(
 
     [string]$DeclaredDeltaPath,
 
+    [string]$DeclaredDeltaItems,
+
     [string]$CatalogPath,
+
+    [string]$SystemModulesCatalogPath,
 
     [switch]$FailOnDeltaMismatch,
 
@@ -74,6 +80,20 @@ function Get-CatalogMap {
     return $map
 }
 
+function Get-SystemModuleNameSet {
+    param([string]$Path)
+
+    $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        $trimmed = $line.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith('#')) {
+            continue
+        }
+        [void]$set.Add($trimmed)
+    }
+    return $set
+}
+
 function Get-IdentityKey {
     param(
         [string]$TypeName,
@@ -87,12 +107,12 @@ function Get-IdentityKey {
     return ('{0}:{1}' -f $TypeName.Trim(), $Name.Trim()).ToLowerInvariant()
 }
 
-function Read-DeclaredDelta {
-    param([string]$Path)
+function Read-DeclaredDeltaLines {
+    param([string[]]$Lines)
 
     $items = [System.Collections.Generic.List[pscustomobject]]::new()
     $lineNumber = 0
-    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+    foreach ($line in $Lines) {
         $lineNumber += 1
         $trimmed = $line.Trim()
         if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith('#')) {
@@ -101,7 +121,7 @@ function Read-DeclaredDelta {
 
         $parts = @($trimmed -split '[:|	]', 2)
         if ($parts.Count -ne 2 -or [string]::IsNullOrWhiteSpace($parts[0]) -or [string]::IsNullOrWhiteSpace($parts[1])) {
-            throw ("BLOCK: linha {0} de DeclaredDeltaPath fora do formato Tipo:Nome: {1}" -f $lineNumber, $line)
+            throw ("BLOCK: entrada fora do formato Tipo:Nome (linha {0}): {1}" -f $lineNumber, $trimmed)
         }
 
         $typeName = $parts[0].Trim()
@@ -115,6 +135,87 @@ function Read-DeclaredDelta {
     }
 
     return @($items)
+}
+
+function Read-DeclaredDeltaFromPath {
+    param([string]$Path)
+    return @(Read-DeclaredDeltaLines -Lines @(Get-Content -LiteralPath $Path -Encoding UTF8))
+}
+
+function Read-DeclaredDeltaFromItems {
+    param([string]$Text)
+
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return @()
+    }
+
+    $normalized = $Text -replace ';', "`n"
+    $lines = @($normalized -split "`r?`n")
+    return @(Read-DeclaredDeltaLines -Lines $lines)
+}
+
+function Get-ExportFileXmlDocument {
+    param([string]$Path)
+
+    $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+    $extension = [System.IO.Path]::GetExtension($resolvedPath).ToLowerInvariant()
+
+    if ($extension -eq '.xpz' -or $extension -eq '.zip') {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $candidates = [System.Collections.Generic.List[System.Xml.XmlDocument]]::new()
+        $candidateNames = [System.Collections.Generic.List[string]]::new()
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($resolvedPath)
+        try {
+            foreach ($entry in @($zip.Entries | Where-Object { $_.FullName -match '\.xml$' } | Sort-Object FullName)) {
+                $reader = [System.IO.StreamReader]::new($entry.Open(), [System.Text.Encoding]::UTF8, $true)
+                try {
+                    $entryText = $reader.ReadToEnd()
+                } finally {
+                    $reader.Dispose()
+                }
+
+                $candidateDoc = New-Object System.Xml.XmlDocument
+                try {
+                    $candidateDoc.PreserveWhitespace = $true
+                    $candidateDoc.LoadXml($entryText)
+                } catch {
+                    continue
+                }
+
+                if ($candidateDoc.DocumentElement.LocalName -eq 'ExportFile') {
+                    $candidates.Add($candidateDoc) | Out-Null
+                    $candidateNames.Add($entry.FullName) | Out-Null
+                }
+            }
+        } finally {
+            $zip.Dispose()
+        }
+
+        if ($candidates.Count -eq 0) {
+            throw "BLOCK: pacote .xpz nao contem XML com raiz ExportFile: $resolvedPath"
+        }
+        if ($candidates.Count -gt 1) {
+            $names = ($candidateNames -join ', ')
+            throw ("BLOCK: pacote .xpz contem {0} candidatos ExportFile ambiguos ({1}); informe XML descompactado." -f $candidates.Count, $names)
+        }
+
+        return [pscustomobject]@{
+            Document     = $candidates[0]
+            ResolvedPath = $resolvedPath
+            InputKind    = 'xpz'
+            InnerXmlName = $candidateNames[0]
+        }
+    }
+
+    $document = New-Object System.Xml.XmlDocument
+    $document.PreserveWhitespace = $true
+    $document.Load($resolvedPath)
+    return [pscustomobject]@{
+        Document     = $document
+        ResolvedPath = $resolvedPath
+        InputKind    = 'xml'
+        InnerXmlName = $null
+    }
 }
 
 function New-InventoryItem {
@@ -159,13 +260,40 @@ function New-InventoryItem {
     }
 }
 
-if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
-    throw "BLOCK: InputPath nao encontrado: $InputPath"
+function Get-ObjectsByTypeMap {
+    param($InventoryItems)
+
+    $map = [ordered]@{}
+    foreach ($item in @($InventoryItems | Where-Object { $_.sourceBlock -eq 'Objects' -and -not [string]::IsNullOrWhiteSpace($_.typeName) })) {
+        $key = [string]$item.typeName
+        if ($map.Contains($key)) {
+            $map[$key] = [int]$map[$key] + 1
+        } else {
+            $map[$key] = 1
+        }
+    }
+    return $map
 }
 
-$resolvedInputPath = (Resolve-Path -LiteralPath $InputPath).Path
-if ([System.IO.Path]::GetExtension($resolvedInputPath).Equals('.xpz', [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "BLOCK: .xpz ainda nao e suportado por este inventario inicial; informe o import_file.xml/XML com raiz <ExportFile>."
+function Get-SystemModulesPresent {
+    param(
+        $InventoryItems,
+        [System.Collections.Generic.HashSet[string]]$SystemModuleNames
+    )
+
+    $found = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in @($InventoryItems | Where-Object { $_.sourceBlock -eq 'Objects' -and $_.typeName -eq 'Module' -and -not [string]::IsNullOrWhiteSpace($_.name) })) {
+        if ($SystemModuleNames.Contains($item.name)) {
+            if (-not $found.Contains($item.name)) {
+                $found.Add($item.name) | Out-Null
+            }
+        }
+    }
+    return @($found | Sort-Object)
+}
+
+if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
+    throw "BLOCK: InputPath nao encontrado: $InputPath"
 }
 
 if (-not $CatalogPath) {
@@ -175,12 +303,18 @@ if (-not (Test-Path -LiteralPath $CatalogPath -PathType Leaf)) {
     throw "BLOCK: CatalogPath nao encontrado: $CatalogPath"
 }
 
-$guidMap = Get-CatalogMap -Path $CatalogPath
+if (-not $SystemModulesCatalogPath) {
+    $SystemModulesCatalogPath = Join-Path $PSScriptRoot 'gx-system-modules.txt'
+}
+if (-not (Test-Path -LiteralPath $SystemModulesCatalogPath -PathType Leaf)) {
+    throw "BLOCK: SystemModulesCatalogPath nao encontrado: $SystemModulesCatalogPath"
+}
 
-$document = New-Object System.Xml.XmlDocument
-$document.PreserveWhitespace = $true
-$document.Load($resolvedInputPath)
-$root = $document.DocumentElement
+$guidMap = Get-CatalogMap -Path $CatalogPath
+$systemModuleNames = Get-SystemModuleNameSet -Path $SystemModulesCatalogPath
+
+$package = Get-ExportFileXmlDocument -Path $InputPath
+$root = $package.Document.DocumentElement
 if ($null -eq $root -or $root.LocalName -ne 'ExportFile') {
     $found = if ($null -eq $root) { '<null>' } else { $root.LocalName }
     throw ("BLOCK: raiz esperada 'ExportFile'; encontrada '{0}'." -f $found)
@@ -205,22 +339,36 @@ if ($null -ne $attributesNode) {
     }
 }
 
+$inventoryArray = @($inventory)
+$objectItems = @($inventoryArray | Where-Object { $_.sourceBlock -eq 'Objects' })
+$attributeItems = @($inventoryArray | Where-Object { $_.sourceBlock -eq 'Attributes' })
+
 $warnings = [System.Collections.Generic.List[string]]::new()
-$unknownTypeItems = @($inventory | Where-Object { $_.typeStatus -eq 'unknown' })
+$unknownTypeItems = @($inventoryArray | Where-Object { $_.typeStatus -eq 'unknown' })
 foreach ($item in $unknownTypeItems) {
     $warnings.Add(("tipo nao mapeado no item {0}[{1}] name='{2}' typeGuid='{3}'" -f $item.sourceBlock, $item.index, $item.name, $item.typeGuid)) | Out-Null
 }
 
+$objectsByType = Get-ObjectsByTypeMap -InventoryItems $inventoryArray
+$systemModulesPresent = Get-SystemModulesPresent -InventoryItems $inventoryArray -SystemModuleNames $systemModuleNames
+
 $deltaComparison = $null
+$selectiveExport = $false
 $status = 'INVENTORY_OK'
 $exitCode = 0
 
+$declaredItems = @()
 if (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaPath)) {
     if (-not (Test-Path -LiteralPath $DeclaredDeltaPath -PathType Leaf)) {
         throw "BLOCK: DeclaredDeltaPath nao encontrado: $DeclaredDeltaPath"
     }
+    $declaredItems = @(Read-DeclaredDeltaFromPath -Path $DeclaredDeltaPath)
+} elseif (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaItems)) {
+    $declaredItems = @(Read-DeclaredDeltaFromItems -Text $DeclaredDeltaItems)
+}
 
-    $declaredItems = @(Read-DeclaredDelta -Path $DeclaredDeltaPath)
+if ($declaredItems.Count -gt 0) {
+    $selectiveExport = $true
     $declaredKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($item in $declaredItems) {
         if (-not [string]::IsNullOrWhiteSpace($item.key)) {
@@ -229,7 +377,7 @@ if (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaPath)) {
     }
 
     $inventoryKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($item in $inventory) {
+    foreach ($item in $objectItems) {
         if (-not [string]::IsNullOrWhiteSpace($item.identityKey)) {
             [void]$inventoryKeys.Add($item.identityKey)
         }
@@ -237,9 +385,10 @@ if (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaPath)) {
 
     $extraKeys = @($inventoryKeys | Where-Object { -not $declaredKeys.Contains($_) } | Sort-Object)
     $missingKeys = @($declaredKeys | Where-Object { -not $inventoryKeys.Contains($_) } | Sort-Object)
-    $extraObjects = @($inventory | Where-Object { -not [string]::IsNullOrWhiteSpace($_.identityKey) -and $extraKeys -contains $_.identityKey })
-    $uncomparableObjects = @($inventory | Where-Object { [string]::IsNullOrWhiteSpace($_.identityKey) })
+    $extraObjects = @($objectItems | Where-Object { -not [string]::IsNullOrWhiteSpace($_.identityKey) -and $extraKeys -contains $_.identityKey })
+    $uncomparableObjects = @($objectItems | Where-Object { [string]::IsNullOrWhiteSpace($_.identityKey) })
     $missingObjects = @($declaredItems | Where-Object { $missingKeys -contains $_.key })
+    $requestedItemsFound = @($declaredItems | Where-Object { -not [string]::IsNullOrWhiteSpace($_.key) -and $inventoryKeys.Contains($_.key) })
 
     $deltaStatus = if ($extraKeys.Count -eq 0 -and $missingKeys.Count -eq 0 -and $uncomparableObjects.Count -eq 0) { 'MATCH' } else { 'MISMATCH' }
     if ($deltaStatus -eq 'MISMATCH') {
@@ -250,34 +399,43 @@ if (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaPath)) {
     }
 
     $deltaComparison = [ordered]@{
-        status         = $deltaStatus
-        declaredCount  = $declaredItems.Count
-        matchedCount   = $declaredKeys.Count - $missingKeys.Count
-        extraCount     = $extraKeys.Count
-        missingCount   = $missingKeys.Count
-        uncomparableCount = $uncomparableObjects.Count
-        extraObjects   = @($extraObjects)
-        missingObjects = @($missingObjects)
+        status              = $deltaStatus
+        selectiveExport     = $true
+        declaredCount       = $declaredItems.Count
+        requestedItemsFound = @($requestedItemsFound)
+        requestedItemsMissing = @($missingObjects)
+        matchedCount        = $requestedItemsFound.Count
+        extraCount          = $extraKeys.Count
+        missingCount        = $missingKeys.Count
+        uncomparableCount   = $uncomparableObjects.Count
+        extraObjects        = @($extraObjects)
+        missingObjects      = @($missingObjects)
         uncomparableObjects = @($uncomparableObjects)
+        systemModulesPresent = @($systemModulesPresent)
     }
 }
 
 $result = [ordered]@{
-    status            = $status
-    exitCode          = $exitCode
-    inputPath         = $resolvedInputPath
-    rootElement       = $root.LocalName
-    totalItemCount    = $inventory.Count
-    objectCount       = @($inventory | Where-Object { $_.sourceBlock -eq 'Objects' }).Count
-    attributeCount    = @($inventory | Where-Object { $_.sourceBlock -eq 'Attributes' }).Count
-    unknownTypeCount  = $unknownTypeItems.Count
-    inventory         = @($inventory)
-    deltaComparison   = $deltaComparison
-    warnings          = @($warnings)
+    status               = $status
+    exitCode             = $exitCode
+    inputPath            = $package.ResolvedPath
+    inputKind            = $package.InputKind
+    innerXmlEntry        = $package.InnerXmlName
+    rootElement          = $root.LocalName
+    selectiveExport      = $selectiveExport
+    totalItemCount       = $inventoryArray.Count
+    objectCount          = $objectItems.Count
+    attributeCount       = $attributeItems.Count
+    objectsByType        = $objectsByType
+    systemModulesPresent = @($systemModulesPresent)
+    unknownTypeCount     = $unknownTypeItems.Count
+    inventory            = $inventoryArray
+    deltaComparison      = $deltaComparison
+    warnings             = @($warnings)
 }
 
 if ($AsJson) {
-    [pscustomobject]$result | ConvertTo-Json -Depth 8
+    [pscustomobject]$result | ConvertTo-Json -Depth 10
 } else {
     [pscustomobject]$result
 }

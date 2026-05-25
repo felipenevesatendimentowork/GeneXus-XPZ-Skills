@@ -154,6 +154,8 @@ Do NOT use esta skill para:
 - Quando a exportação headless gerar um `.xpz` para alimentar a pasta paralela da KB, declarar explicitamente o marco `XPZ gerado`
 - Se a geração do `.xpz` fizer parte do caminho `B` do setup inicial, diferenciar explicitamente a fase `exportação headless concluída` da fase posterior `materialização em ObjetosDaKbEmXml`
 - Se o pedido do usuário for apenas gerar o `.xpz`, parar no artefato gerado; só prosseguir para materialização quando o pedido for seguir com o setup ou com a materialização
+- Em exportação seletiva com `-ObjectList`, a presença de `-ObjectList` classifica a rodada como **seletiva/cirúrgica** para fins de sub-estado e de confronto de extras; **nunca** reportar ao usuário a contagem de entradas de `-ObjectList` como se fosse a contagem do pacote — a contagem comunicada é sempre a **real** do `.xpz` (`packageInventory.totalObjects` / `totalAttributes` e `objectsByType`, ou inspeção manual equivalente)
+- Quando `export.json` trouxer `packageInventory`, reproduzir no relatório ao usuário **antes** de declarar o XPZ como conclusão limpa: totais reais, `objectsByType`, `systemModulesPresent` e, em export seletiva, `extrasCount` / amostra de extras — não basta o campo existir só no JSON
 
 ---
 
@@ -188,7 +190,8 @@ Estado atual da materialização:
 - `Compare-GeneXusPanelShape.ps1`: implementado para comparar dois Panels por shape compacto, incluindo Object attrs, Pattern/Data version, level/layout, controles, eventos serializados classificados (`namedEventNames`, `standardEventNames`, `variableEventNames`, `tapEventNames`) e cobertura action/event
 - `Test-GeneXusKbConsistency.ps1`: implementado como wrapper de `CheckKnowledgeBase` com diagnóstico JSON, classificação das categorias empíricas documentadas e confirmação interativa obrigatória para `Fix="true"`
 - `Test-GeneXusImportFileEnvelope.ps1`: implementado para validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB
-- `Get-GeneXusImportPackageObjectInventory.ps1`: implementado para inventário determinístico de `import_file.xml`/XML com raiz `<ExportFile>`; lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>` e pode confrontar com delta declarado em texto `Tipo:Nome`; `.xpz` ainda não faz parte deste escopo inicial
+- `Get-GeneXusImportPackageObjectInventory.ps1`: inventário determinístico de `import_file.xml`, XML com raiz `<ExportFile>` ou `.xpz` (XML interno único); lista `<Object>` sob `<Objects>`, `Attribute` top-level sob `<Attributes>`, agrega `objectsByType`, detecta módulos de plataforma via `scripts/gx-system-modules.txt` e confronta delta declarado (`-DeclaredDeltaPath` ou `-DeclaredDeltaItems` no formato `Tipo:Nome`, separador `;` ou linha)
+- `Invoke-GeneXusXpzExport.ps1`: após exportação com XPZ gerado, embute `packageInventory` resumido no diagnóstico e grava sempre `package-inventory.json` completo no diretório de artefatos da rodada; falha de inventário marca `inventoryDegraded=true` sem rebaixar `exitCode` da task MSBuild
 - `GeneXusMsBuildWatcherSupport.ps1`: implementado como helper comum do contrato de watcher dos wrappers MSBuild; centraliza `-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e leitura do log do monitor
 - `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; usar em preview/import/export grandes para acompanhar o MSBuild sem depender do chat; em importação real de pacote amplo ou com muitos `WorkWithForWeb`, usar watcher como padrão operacional recomendado
 - `Test-GeneXusRuntimeFreshness.ps1`: implementado como diagnóstico somente leitura de frescor de runtime; usar quando o sub-estado for `importação real efetiva provada, geração de runtime pendente` para confirmar se artefatos de runtime já refletem a versão importada
@@ -306,7 +309,7 @@ dentro dos wrappers.
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
-- `-ObjectList` — lista de objetos para exportação seletiva; para múltiplos objetos, separar entradas com ponto-e-vírgula (`;`) no formato `Tipo:Nome`; exemplo: `Procedure:ProcA;WebPanel:WPB;Transaction:TrC`; após a exportação, **inspecionar o `.xpz` por completo**: (1) confirmar que todos os objetos solicitados estão presentes; (2) **listar todos os objetos** que o pacote efetivamente contém e confrontar com a intenção da rodada — a exportação parcial pode incluir **dependências, referências ou objetos ligados** consoante `DependencyType`, `ReferenceType` e defaults da task; **nunca** assumir que o pacote tem só os itens da lista sem ler o artefato; quando exportar um único objeto, o formato `Tipo:Nome` continua válido sem separador
+- `-ObjectList` — lista de objetos para exportação seletiva; para múltiplos objetos, separar entradas com ponto-e-vírgula (`;`) no formato `Tipo:Nome`; exemplo: `Procedure:ProcA;WebPanel:WPB;Transaction:TrC`; a presença de `-ObjectList` classifica a rodada como **exportação seletiva/cirúrgica** para confronto de extras; após a exportação, seguir a secção **Inventário do pacote após export seletivo** (`packageInventory` no `export.json` + `package-inventory.json`); **nunca** reportar ao usuário a contagem de entradas da lista como contagem do pacote; quando exportar um único objeto, o formato `Tipo:Nome` continua válido sem separador
 - `-DependencyType`
 - `-ReferenceType`
 - `-ExportKbInfo`
@@ -335,6 +338,22 @@ Parâmetros específicos de importação:
   - Se aparecer **módulo de sistema / plataforma** GeneXus (por exemplo `Module:GeneXus`, ou outro `Module` claramente de plataforma segundo o catálogo operacional em `xpz-builder` / `06-padroes-de-objeto-e-nomenclatura.md`) num pacote tratado como delta mínimo → **ABORT** salvo pedido explícito desse conteúdo.
 - **Recomendado** executar o mesmo inventário antes de `PreviewMode` quando o pacote veio de **export MSBuild**, **reempacotamento manual** ou qualquer fluxo em que o agente não controlou fecho do lote na conversa.
 - **Exportação com lista explícita (`-ObjectList` / `Objects`) não garante** pacote com um único objeto nem equivalência “lista nominal = conteúdo do zip”. **Nunca** tratar tudo o que veio no pacote como intencional sem esse confronto.
+
+---
+
+## INVENTÁRIO DO PACOTE APÓS EXPORT SELETIVO
+
+- Aplicar **sempre** que a exportação headless concluir com XPZ gerado (`exitCode` classificado pelo wrapper = 0 e arquivo existente), **antes** de declarar ao usuário que a exportação está concluída de forma limpa ou de seguir para materialização/import/sync.
+- **Motor preferido:** `Invoke-GeneXusXpzExport.ps1` já chama o inventário e preenche `packageInventory` no `export.json` + `package-inventory.json` no diretório de artefatos. Quando o inventário automático falhar (`inventoryDegraded=true`), abrir o `.xpz` manualmente ou chamar `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <xpz> -AsJson` antes de fechar a rodada.
+- **Classificação da rodada:** quando `-ObjectList` foi informado (e não houve `-ExportAll`/`-FullExport`), a rodada é **exportação seletiva/cirúrgica** — o confronto de extras usa **somente** objetos do bloco `<Objects>` cujo par `Tipo:Nome` (case-insensitive) não está na lista. Quando `-ExportAll` ou `-FullExport`, não há conceito de “extra” face à lista; `packageInventory` reporta apenas contagens reais.
+- **Critério de extra (seletiva):** objeto presente no pacote com `Tipo:Nome` normalizado ausente de `-ObjectList`. Atributos top-level entram em `totalAttributes` e na lista completa, mas **não** entram na conta de extras da lista nominal.
+- **Módulos de sistema:** `Module` cujo `name` consta de `scripts/gx-system-modules.txt` (catálogo nominal do SDK/plataforma) aparece em `systemModulesPresent`. Num pacote tratado como cirúrgico, presença de módulo de sistema não pedido exige declaração explícita ao usuário antes de preview/import/sync — mesmo que o MSBuild tenha concluído com `exitCode=0`.
+- **Anti-padrão (nomeado): contagem da lista no lugar do pacote** — relatar “28 objetos exportados” contando entradas de `-ObjectList` enquanto o `.xpz` contém centenas de `<Object>`/`<Attribute>`. A contagem no relatório ao usuário vem de `packageInventory` (ou inventário manual equivalente), não da lista solicitada.
+- **Sub-estados de export (operacionais, após inventário):**
+  - `exportação concluída e inventário consolidado` — XPZ existe, inventário obtido, e (em seletiva) sem extras não conciliados nem itens pedidos ausentes nem módulos de sistema não declarados
+  - `exportação concluída, inventário com extras não conciliados` — XPZ existe e inventário obtido, mas em export seletiva há extras, itens pedidos ausentes e/ou `systemModulesPresent` num pacote tratado como cirúrgico; declarar ao usuário antes de materializar/importar
+  - `exportação concluída sem inventário (degradado)` — XPZ existe, mas `inventoryDegraded=true`; inspeção manual obrigatória antes de fechar
+  - Manter também `exportação headless concluída e XPZ gerado (falha no pós-processamento do wrapper)` quando `postProcessingFailed=true` e evidência primária do log/arquivo sustentarem o XPZ
 
 ### Anti-padrão (nomeado): export MSBuild como “casca” + patch + import
 
@@ -382,6 +401,7 @@ Parâmetros específicos de importação:
 9. Se o objetivo for exportação, executar com parâmetros explícitos e conferir o artefato gerado
    Antes de emitir parâmetro sensível de exportação, validar a assinatura efetiva do wrapper e da task carregada para evitar sintaxe presumida incorreta.
    Em exportação full, preferir `-FullExport` quando o wrapper expuser esse atalho.
+   Após exportação com XPZ gerado: ler `packageInventory` e `operationalSubState` no `export.json` (e `package-inventory.json` quando precisar da lista nomeada completa), conforme a secção **Inventário do pacote após export seletivo**; só então declarar conclusão limpa ou seguir para materialização/import
 10. Se o objetivo for importação real, exigir autorização explícita e ambiente controlado
 11. Capturar e relatar:
    - `exitCode` — valor classificado pelo wrapper (0/32/41/42/...) combinando o código bruto do MSBuild com presença de artefato gerado, `UpdateFile` ou outros sinais; é também o exit code do processo
@@ -417,6 +437,7 @@ Parâmetros específicos de importação:
    - `preview apenas` — preview concluído sem evidência de reconhecimento do objeto esperado
    - `preview apenas com falha no pos-processamento` — preview concluído sem alterar a KB (`executionEvidence.msBuildExitCode=0`) e evidência primária do log bruto preservada, mas o pós-processamento local do wrapper falhou e o JSON saiu com `postProcessingFailed=true`; não é `falha operacional`
    - `operação concluída, porém pendente de confirmação funcional`
+   - em exportação com XPZ gerado, declarar também o sub-estado de export quando `operationalSubState` estiver presente no diagnóstico: `exportação concluída e inventário consolidado`, `exportação concluída, inventário com extras não conciliados` ou `exportação concluída sem inventário (degradado)` — nunca fechar export seletiva relatando só a contagem de `-ObjectList`
    - quando aplicável, acumular também o marcador narrativo `ensaio metodológico/experimental`, sem substituir a classificação operacional principal
 13. Recomendar o próximo passo seguro; quando o sub-estado for `importação real efetiva provada` e o usuário quiser evidência complementar, apresentar as duas opções em paralelo:
    - acionar `xpz-msbuild-build` (headless) — `compilou limpo` ou `specify e generate concluídos` reforçam o handoff sem alterar o sub-estado de import declarado
@@ -511,7 +532,9 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] Quando o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito na IDE, o diagnóstico de IDE desatualizada foi tratado como camada separada — não como revisão do sub-estado de import
 - [ ] Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado e o usuário reportar que o comportamento ainda não mudou, a `checagem de frescor de runtime` foi oferecida como próximo passo nomeado antes de sugerir nova edição
 - [ ] O sub-estado `importação real efetiva provada, geração de runtime pendente` foi aplicado quando artefatos de runtime (`nav_objs.xml` com `ObjStatus=genreq` ou timestamps de artefatos gerados anteriores ao import) ainda refletiam versão anterior após build confirmado; NVG pode ser consultado manualmente como indicador complementar, mas não integra a checagem somente leitura automatizada
-- [ ] Quando `-ObjectList` foi usado (um ou mais objetos), o formato `Tipo:Nome` e separadores foram validados; o `.xpz` foi inspecionado para confirmar presença dos solicitados **e** listar **todos** os objetos do pacote (extras por dependência não são intencionais por defeito)
+- [ ] Quando `-ObjectList` foi usado (um ou mais objetos), o formato `Tipo:Nome` e separadores foram validados; o inventário real do `.xpz` foi obtido (`packageInventory` no `export.json` ou `Get-GeneXusImportPackageObjectInventory.ps1`) e o relatório ao usuário reproduziu **totais reais** (`totalObjects`, `totalAttributes`, `objectsByType`, `systemModulesPresent`) — não a contagem de entradas de `-ObjectList`
+- [ ] Em export seletiva, extras e módulos de sistema foram confrontados com a intenção da rodada; sub-estado `exportação concluída, inventário com extras não conciliados` foi declarado quando aplicável, antes de materializar/importar
+- [ ] `package-inventory.json` foi localizado no diretório de artefatos da rodada ou o inventário manual equivalente foi preservado quando a lista nomeada completa era necessária
 - [ ] Quando `-VersionName` ou `-EnvironmentName` foram informados explicitamente, confirmar que o valor veio de `GetActiveVersion`/`GetActiveEnvironment` ou de fonte comprovadamente compatível com `SetActiveVersion`/`SetActiveEnvironment` — nunca de `GetVersionProperty -Name Name` nem de `GetEnvironmentProperty -Name Name`
 - [ ] Quando a frente foi descrita por fluxo funcional e o usuário reportar "não mudou no navegador" após import confirmado, foi verificado primeiro (1) se o objeto importado é o alvo executado pelo fluxo real, antes de (2) checar frescor de runtime ou (3) propor nova edição
 - [ ] Antes de importação real, o inventário completo de objetos no pacote foi confrontado com o delta declarado (ou o pacote veio da mesma rodada `xpz-builder` com manifesto que fecha o lote)
@@ -536,5 +559,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - ABORT se `Test-GeneXusImportFileEnvelope.ps1` retornar `não apto para prosseguir`
 - NEVER prosseguir para **importação real** com pacote montado como export MSBuild + substituição manual de conteúdo + reempacotamento **sem** inventário completo dos objetos no pacote e conciliação explícita com o delta
 - NEVER assumir que `-ObjectList` (ou lista equivalente) com uma única entrada produz `.xpz` contendo **apenas** esse objeto
+- NEVER reportar a contagem de entradas de `-ObjectList` como se fosse a contagem do pacote gerado; a contagem comunicada ao usuário é sempre a real do `.xpz` (`packageInventory` ou inspeção manual equivalente)
+- NEVER declarar export seletiva como conclusão limpa sem `packageInventory` (ou inventário manual) e sem reproduzir no texto ao usuário os totais reais e `systemModulesPresent` quando existirem
 - NEVER invocar exportação headless da KB quando o utilizador pediu **somente** importar alterações já existentes na pasta paralela, salvo pedido explícito de exportação ou confirmação explícita de que a exportação é indispensável para obter envelope/metadata utilizável
 - NEVER incluir em pacote tratado como **delta cirúrgico** objetos de módulo de sistema ou plataforma GeneXus (por exemplo `Module:GeneXus`) salvo pedido explícito do utilizador

@@ -1306,50 +1306,7 @@ Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 de
 
 ## Suporte direto a `.xpz` no inventário de pacote importável
 
-**Importância:** média
-**Maturidade:** ideia
-
-**Origem:** incidente operacional documentado em 2026-05-13 (export MSBuild com `-ObjectList` gerou `.xpz` com dependências e módulo de plataforma; import headless sem inventário completo do conteúdo real do pacote). A camada comportamental já foi incorporada em `xpz-msbuild-import-export`, `xpz-builder`, `10-base-operacional-msbuild-headless.md` e `08-guia-para-agente-gpt.md`; esta entrada cobre apenas **automação determinística** opcional.
-
-**Status em 2026-05-20:** a subfrente de inventário determinístico para `import_file.xml` foi movida para `historico/IdeiasImplementadas_202605.md`. Permanece pendente apenas o suporte direto a `.xpz` e decisões de integração que extrapolam o fluxo cotidiano com `import_file.xml`.
-
-**Filiação editorial:** complementa o **Manifesto semântico de pacote** (intenção e narrativa na fase de empacotamento em `xpz-builder`). O inventário por script foca no **conteúdo efetivo** do artefato logo antes do import MSBuild — especialmente quando o pacote veio de export, reempacotamento manual ou patch, onde o manifesto da frente de empacotamento pode não existir ou não bater com o zip.
-
-### Problema concreto que motiva a ideia
-
-O gate `Test-GeneXusImportFileEnvelope.ps1` valida envelope (`ExportFile`, `KMW`, `Source`, GUIDs, etc.), mas **não** substitui a lista explícita de **todos** os objetos que seriam aplicados à KB. Para `import_file.xml`, a primitiva determinística já existe em `scripts/Get-GeneXusImportPackageObjectInventory.ps1`.
-
-O gap restante é `.xpz`: quando o pacote vem de export IDE/MSBuild ou envio a terceiros, o agente ainda precisa expandir o zip, localizar o XML interno correto e só então aplicar o inventário. Agentes que saltam esse passo ou assumem “lista nominal do export = conteúdo do pacote” reintroduzem risco de importar extras (módulos de sistema, SDTs não alterados, dependências não pedidas) e de custo operacional alto (ex.: rebuild amplo), mesmo sem corrupção estrutural da KB.
-
-### Direção técnica proposta
-
-Evoluir `scripts/Get-GeneXusImportPackageObjectInventory.ps1` para aceitar `.xpz` diretamente:
-
-- detectar que `InputPath` é `.xpz`
-- abrir o pacote como ZIP sem extrair para local instável
-- localizar o `ExportFile`/XML interno real em pacotes GeneXus 18
-- abortar se houver zero ou mais de um candidato inequívoco
-- aplicar o mesmo contrato de saída já usado para `import_file.xml`
-- **Ordem na trilha:** após `Test-GeneXusImportFileEnvelope.ps1` com sucesso, **antes** de `Invoke-GeneXusXpzImport.ps1` (ou equivalente local).
-
-Integração futura em wrappers locais da pasta paralela: um único comando que encadeia envelope + inventário + import, com falha cedo quando houver extras não justificados.
-
-### Decisões em aberto
-
-- Suporte direto a `.xpz`: localizar o `ExportFile`/XML interno em ZIPs reais GeneXus 18 sem ampliar risco do fluxo cotidiano.
-- Contrato JSON para “delta declarado”, se surgir necessidade além do formato texto linha a linha `Tipo:Nome`.
-- Lista de nomes/GUIDs de módulos de plataforma: configurável por `.json` na pasta paralela vs hardcoded mínimo + expansão documental.
-
-### Pendências restantes antes de implementar
-
-- Testar estrutura interna de pelo menos alguns `.xpz` reais GeneXus 18 para fechar a regra de localização do XML interno.
-- Definir se o script deve extrair para `Temp/` auditável ou processar em memória.
-- Integração com evidência de CI/revisão humana pode ser adicionada quando uma frente pedir inventário automático de pacote como artefato de fechamento.
-
-### Relação com outras entradas em 999
-
-- **Manifesto semântico de pacote:** o manifesto captura intenção na **saída** de `xpz-builder`; o inventário por script valida **fato** no artefato imediatamente antes do import quando a origem do pacote não é só essa saída.
-- **Gate de dependências GeneXus no empacotamento de delta:** aquele gate age **antes** de gravar o pacote; este inventário age **depois**, como última linha de defesa contra pacotes vindos de export IDE/MSBuild ou edição manual.
+**Status em 2026-05-25:** implementado — ver `historico/IdeiasImplementadas_202605.md` (entrada «Inventário de pacote em `.xpz` e export embutido»). Permanecem como ideias separadas: encadeamento local envelope+inventário+import num único wrapper da pasta paralela; catálogo de módulos de sistema configurável por KB (hoje `scripts/gx-system-modules.txt`).
 
 ## Expansão do índice SQLite para fingerprint de call site
 

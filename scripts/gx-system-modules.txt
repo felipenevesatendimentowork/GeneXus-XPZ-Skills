@@ -1,0 +1,18 @@
+# Modulos de plataforma/SDK GeneXus (nome do objeto Module).
+# Uma entrada por linha; linhas vazias e comentarios (#) sao ignorados.
+GeneXus
+Client
+Common
+Configuration
+iOS
+Media
+Notifications
+OAuth
+Offline
+SD
+Server
+Social
+Store
+Synchronization
+UI
+v2
