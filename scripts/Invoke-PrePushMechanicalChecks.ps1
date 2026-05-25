@@ -310,6 +310,12 @@ $parseGate = [ordered]@{
     findings   = @()
 }
 
+$traceabilityCoverageGate = [ordered]@{
+    script   = 'scripts/Test-PrePushTraceabilityCoverage.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -345,6 +351,30 @@ if (-not $SkipParse) {
 
 if ($whitespaceStatus -ne 'clean') {
     [void]$mechanicalFailures.Add('whitespace')
+}
+
+$traceabilityCoverageScript = Join-Path $PSScriptRoot 'Test-PrePushTraceabilityCoverage.ps1'
+if (Test-Path -LiteralPath $traceabilityCoverageScript -PathType Leaf) {
+    $traceabilityOutput = & $traceabilityCoverageScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $traceabilityExitCode = $LASTEXITCODE
+    $traceabilityJsonText = ($traceabilityOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $traceabilityObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($traceabilityJsonText)) {
+        $traceabilityObject = $traceabilityJsonText | ConvertFrom-Json
+    }
+
+    if ($traceabilityExitCode -eq 0 -and $null -ne $traceabilityObject) {
+        $traceabilityCoverageGate.status = $traceabilityObject.status
+        $traceabilityCoverageGate.findings = @($traceabilityObject.findings)
+    } else {
+        $traceabilityCoverageGate.status = 'warn'
+        $traceabilityCoverageGate.findings = @([pscustomobject][ordered]@{
+            code     = 'TRACEABILITY_COVERAGE_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-PrePushTraceabilityCoverage.ps1'
+            message  = "Falha consultiva ao executar Test-PrePushTraceabilityCoverage.ps1: $traceabilityJsonText"
+        })
+    }
 }
 
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
@@ -409,6 +439,11 @@ if ($commitsBehind -gt 0) {
         ("Remoto ({0}) esta {1} commit(s) a frente de HEAD: intervalo {2} e arquivos listados sao apenas diagnosticos; push bloqueado ate integrar. Se ainda nao houve fetch, git fetch origin; se commitsBehind persistir, integrar (ex.: git pull --rebase origin main) antes do push." -f $effectiveBaseRef, $commitsBehind, $range)
     )
 }
+foreach ($traceabilityFinding in @($traceabilityCoverageGate.findings)) {
+    [void]$agentWarnings.Add(
+        ("Cobertura de rastreabilidade consultiva ({0}): {1}" -f $traceabilityFinding.code, $traceabilityFinding.message)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente a secao Revisao pre-push do AGENTS.md na raiz do repositorio (fonte autoritativa).',
@@ -448,6 +483,7 @@ $result = [ordered]@{
     }
     gates                  = [ordered]@{
         parse = $parseGate
+        traceabilityCoverage = $traceabilityCoverageGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -500,6 +536,11 @@ if ($AsJson) {
         foreach ($finding in @($parseGate.findings)) {
             Write-Output ("PARSE_ERROR: {0}:{1}:{2}: {3}" -f $finding.file, $finding.line, $finding.column, $finding.message)
         }
+    }
+
+    Write-Output ("TRACEABILITY_COVERAGE={0}" -f $traceabilityCoverageGate.status)
+    foreach ($finding in @($traceabilityCoverageGate.findings)) {
+        Write-Output ("TRACEABILITY_FINDING: {0}: {1}" -f $finding.code, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {
