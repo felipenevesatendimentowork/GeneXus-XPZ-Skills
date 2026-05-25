@@ -63,4 +63,4 @@ if ($full.selectiveExport) { throw 'selectiveExport deve ser false sem delta' }
 if ($null -ne $full.deltaComparison) { throw 'deltaComparison deve ser nulo sem delta' }
 
 Remove-Item -LiteralPath $tempRoot -Recurse -Force
-Write-Output 'IMPORT_PACKAGE_INVENTORY_SELFTEST_OK'
+Write-Output 'GENEXUS_PKG_INVENTORY_SELFTEST_OK'

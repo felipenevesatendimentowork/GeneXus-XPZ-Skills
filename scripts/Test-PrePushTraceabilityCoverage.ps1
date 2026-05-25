@@ -144,9 +144,29 @@ foreach ($scriptPath in $changedScriptPaths) {
 $selfTestChangedPaths = @($changedScriptPaths | Where-Object { $_ -match 'SelfTest\.ps1$' })
 foreach ($selfTestPath in $selfTestChangedPaths) {
     $selfTestBaseName = Split-Path -Leaf $selfTestPath
-    $motorBaseName = $selfTestBaseName -replace 'SelfTest\.ps1$', '.ps1'
-    if ($motorBaseName -ne $selfTestBaseName -and $publicTraceabilityText -match [regex]::Escape($selfTestBaseName) -and $publicTraceabilityText -notmatch [regex]::Escape($motorBaseName)) {
-        Add-Finding -Target $findings -Code 'PUBLIC_TRACEABILITY_AGGREGATED_ROLE_RISK' -Path $selfTestPath -Message ("09 menciona a bateria {0}, mas nao menciona o motor correspondente {1}; avaliar rastreabilidade agregada demais." -f $selfTestBaseName, $motorBaseName)
+    $motorCandidates = [System.Collections.Generic.List[string]]::new()
+    $suffixMotor = $selfTestBaseName -replace 'SelfTest\.ps1$', '.ps1'
+    if ($suffixMotor -ne $selfTestBaseName) {
+        $motorCandidates.Add($suffixMotor) | Out-Null
+    }
+    if ($selfTestBaseName -match '^Test-(.+)SelfTest\.ps1$') {
+        $getMotor = ('Get-{0}.ps1' -f $Matches[1])
+        if (-not $motorCandidates.Contains($getMotor)) {
+            $motorCandidates.Add($getMotor) | Out-Null
+        }
+    }
+
+    $motorMentioned = $false
+    foreach ($motorCandidate in $motorCandidates) {
+        if ($publicTraceabilityText -match [regex]::Escape($motorCandidate)) {
+            $motorMentioned = $true
+            break
+        }
+    }
+
+    if ($publicTraceabilityText -match [regex]::Escape($selfTestBaseName) -and -not $motorMentioned) {
+        $motorList = ($motorCandidates -join ', ')
+        Add-Finding -Target $findings -Code 'PUBLIC_TRACEABILITY_AGGREGATED_ROLE_RISK' -Path $selfTestPath -Message ("09 menciona a bateria {0}, mas nao menciona o motor correspondente ({1}); avaliar rastreabilidade agregada demais." -f $selfTestBaseName, $motorList)
     }
 }
 
