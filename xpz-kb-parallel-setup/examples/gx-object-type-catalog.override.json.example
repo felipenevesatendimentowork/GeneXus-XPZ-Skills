@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "upstreamPending": true,
+  "lastLocalRegistrationAt": "2026-05-25T12:00:00-03:00",
+  "registrationRequiresUpstreamSync": true,
+  "types": {
+    "ExemploTipoNovo": {
+      "objectTypeGuid": "00000000-0000-0000-0000-000000000099",
+      "rootKind": "Object",
+      "folderName": "ExemploTipoNovo",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "evidenceSummary": "Substituir por evidencia real do XPZ/XML apos aprovacao do usuario.",
+      "wikiLinks": [],
+      "nexaFindings": null,
+      "notes": "Paliativo local — registrar tambem em GeneXus-XPZ-Skills."
+    }
+  }
+}

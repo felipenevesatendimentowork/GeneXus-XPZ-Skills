@@ -22,6 +22,15 @@ de linha. Ignorada quando DeclaredDeltaPath estiver informado.
 .PARAMETER CatalogPath
 Caminho opcional para gx-object-type-catalog.json.
 
+.PARAMETER CatalogOverridePath
+Caminho opcional para gx-object-type-catalog.override.json na pasta paralela.
+
+.PARAMETER ParallelKbRoot
+Raiz da pasta paralela; resolve override em scripts/ quando CatalogOverridePath omitido.
+
+.PARAMETER FailOnUnknownTypes
+Retorna exit code 3 quando houver tipo nao mapeado no catalogo efetivo (pre-varredura de sync).
+
 .PARAMETER SystemModulesCatalogPath
 Caminho opcional para gx-system-modules.txt (modulos de plataforma/SDK).
 
@@ -47,6 +56,12 @@ param(
 
     [string]$CatalogPath,
 
+    [string]$CatalogOverridePath,
+
+    [string]$ParallelKbRoot,
+
+    [switch]$FailOnUnknownTypes,
+
     [string]$SystemModulesCatalogPath,
 
     [string]$SystemExternalObjectsCatalogPath,
@@ -59,31 +74,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Get-CatalogMap {
-    param([string]$Path)
-
-    $rawCatalog = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
-    $catalog = $rawCatalog | ConvertFrom-Json
-    $map = @{}
-
-    foreach ($property in $catalog.types.PSObject.Properties) {
-        $entry = $property.Value
-        if ($null -eq $entry.objectTypeGuid -or [string]::IsNullOrWhiteSpace([string]$entry.objectTypeGuid)) {
-            continue
-        }
-
-        $map[[string]$entry.objectTypeGuid.ToLowerInvariant()] = [pscustomobject]@{
-            typeName   = [string]$property.Name
-            folderName = if ($null -ne $entry.PSObject.Properties['folderName'] -and -not [string]::IsNullOrWhiteSpace([string]$entry.folderName)) {
-                [string]$entry.folderName
-            } else {
-                [string]$property.Name
-            }
-        }
-    }
-
-    return $map
+$supportScript = Join-Path $PSScriptRoot 'GeneXusObjectTypeCatalogSupport.ps1'
+if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {
+    throw "BLOCK: support script not found: $supportScript"
 }
+. $supportScript
 
 function Get-SystemModuleNameSet {
     param([string]$Path)
@@ -251,6 +246,15 @@ function New-InventoryItem {
 
     $identityKey = Get-IdentityKey -TypeName $typeName -Name $name
 
+    $parent = $null
+    $parentType = $null
+    if ($rootKind -eq 'Object') {
+        $parent = $Node.GetAttribute('parent')
+        if ([string]::IsNullOrWhiteSpace($parent)) { $parent = $null }
+        $parentType = $Node.GetAttribute('parentType')
+        if ([string]::IsNullOrWhiteSpace($parentType)) { $parentType = $null }
+    }
+
     return [pscustomobject]@{
         index       = $Index
         sourceBlock = $SourceBlock
@@ -261,6 +265,8 @@ function New-InventoryItem {
         typeStatus  = $typeStatus
         name        = if ([string]::IsNullOrWhiteSpace($name)) { $null } else { $name }
         guid        = if ([string]::IsNullOrWhiteSpace($guid)) { $null } else { $guid }
+        parent      = $parent
+        parentType  = $parentType
         identityKey = $identityKey
     }
 }
@@ -334,12 +340,10 @@ if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
     throw "BLOCK: InputPath nao encontrado: $InputPath"
 }
 
-if (-not $CatalogPath) {
-    $CatalogPath = Join-Path $PSScriptRoot 'gx-object-type-catalog.json'
-}
-if (-not (Test-Path -LiteralPath $CatalogPath -PathType Leaf)) {
-    throw "BLOCK: CatalogPath nao encontrado: $CatalogPath"
-}
+$catalogResolution = Resolve-GeneXusObjectTypeCatalogPaths -BaseCatalogPath $CatalogPath -CatalogOverridePath $CatalogOverridePath -ParallelKbRoot $ParallelKbRoot
+$CatalogPath = $catalogResolution.BaseCatalogPath
+$guidMap = Get-GeneXusCatalogGuidToTypeMap -MergedCatalog $catalogResolution.MergedCatalog
+$catalogFolderMap = Get-GeneXusCatalogGuidToFolderMap -MergedCatalog $catalogResolution.MergedCatalog
 
 if (-not $SystemModulesCatalogPath) {
     $SystemModulesCatalogPath = Join-Path $PSScriptRoot 'gx-system-modules.txt'
@@ -355,7 +359,6 @@ if (-not (Test-Path -LiteralPath $SystemExternalObjectsCatalogPath -PathType Lea
     throw "BLOCK: SystemExternalObjectsCatalogPath nao encontrado: $SystemExternalObjectsCatalogPath"
 }
 
-$guidMap = Get-CatalogMap -Path $CatalogPath
 $systemModuleNames = Get-SystemModuleNameSet -Path $SystemModulesCatalogPath
 $systemExternalObjectNames = Get-SystemModuleNameSet -Path $SystemExternalObjectsCatalogPath
 
@@ -392,8 +395,12 @@ $attributeItems = @($inventoryArray | Where-Object { $_.sourceBlock -eq 'Attribu
 $warnings = [System.Collections.Generic.List[string]]::new()
 $unknownTypeItems = @($inventoryArray | Where-Object { $_.typeStatus -eq 'unknown' })
 foreach ($item in $unknownTypeItems) {
-    $warnings.Add(("tipo nao mapeado no item {0}[{1}] name='{2}' typeGuid='{3}'" -f $item.sourceBlock, $item.index, $item.name, $item.typeGuid)) | Out-Null
+    $parentHint = if (-not [string]::IsNullOrWhiteSpace($item.parent)) { " parent='$($item.parent)'" } else { '' }
+    $parentTypeHint = if (-not [string]::IsNullOrWhiteSpace($item.parentType)) { " parentType='$($item.parentType)'" } else { '' }
+    $warnings.Add(("tipo nao mapeado no item {0}[{1}] name='{2}' typeGuid='{3}'{4}{5}" -f $item.sourceBlock, $item.index, $item.name, $item.typeGuid, $parentHint, $parentTypeHint)) | Out-Null
 }
+
+$unknownTypesDiscovery = @(Get-GeneXusUnknownObjectTypesFromExportFile -XmlDocument $package.Document -GuidToFolderMap $catalogFolderMap)
 
 $objectsByType = Get-ObjectsByTypeMap -InventoryItems $inventoryArray
 $systemModulesPresent = Get-SystemModulesPresent -InventoryItems $inventoryArray -SystemModuleNames $systemModuleNames
@@ -477,6 +484,20 @@ if ($selectiveExport -and $attributeItems.Count -gt 0 -and -not $declaredInclude
     $attributesTopLevelUnreconciled = $true
 }
 
+if ($unknownTypesDiscovery.Count -gt 0 -and $FailOnUnknownTypes) {
+    $status = 'UNKNOWN_TYPES_BLOCKED'
+    $exitCode = 3
+    $warnings.Add('pre-varredura bloqueada: tipos nao mapeados no catalogo efetivo; resolva antes de Sync-GeneXusXpzToXml.ps1') | Out-Null
+}
+
+$overrideReminder = $null
+if (-not [string]::IsNullOrWhiteSpace($ParallelKbRoot)) {
+    $overrideReminder = Get-GeneXusCatalogOverrideSessionReminder -ParallelKbRoot $ParallelKbRoot -CatalogOverridePath $CatalogOverridePath
+    if ($overrideReminder.reminderRequired) {
+        $warnings.Add($overrideReminder.message) | Out-Null
+    }
+}
+
 $result = [ordered]@{
     status               = $status
     exitCode             = $exitCode
@@ -494,6 +515,11 @@ $result = [ordered]@{
     declaredIncludesTransaction   = $declaredIncludesTransaction
     attributesTopLevelUnreconciled = $attributesTopLevelUnreconciled
     unknownTypeCount              = $unknownTypeItems.Count
+    unknownTypesDiscovery         = $unknownTypesDiscovery
+    catalogOverrideActive         = $catalogResolution.OverrideActive
+    catalogOverridePath           = $catalogResolution.OverridePath
+    catalogUpstreamPending        = $catalogResolution.UpstreamPending
+    catalogOverrideReminder       = $overrideReminder
     inventory            = $inventoryArray
     deltaComparison      = $deltaComparison
     warnings             = @($warnings)

@@ -106,6 +106,23 @@ Regras da escada:
 - em `xpz-kb-parallel-setup`, validar `Test-*KbPowerShellRuntime.ps1` antes de qualquer outro wrapper local; se `pwsh` 7.4 LTS ou superior estiver ausente, tratar como bloqueio operacional da pasta paralela, nao como aviso informativo
 - quando a sessao ja publicar o caminho de uma skill ou de seus exemplos, usar esse caminho publicado como referencia autoritativa; nao inferir caminho alternativo por heuristica
 
+## Tipo desconhecido no catálogo XPZ (agente)
+
+Quando sync ou pre-varredura bloquearem por GUID de `Object/@type` ausente do catálogo efetivo:
+
+1. Parar materializacao; nao tratar como defeito do XPZ da KB.
+2. Coletar evidencia (relatorio JSON: `-DiscoveryReportPath` no sync ou inventario com `unknownTypesDiscovery`).
+3. Perguntar ao usuario, em tom educado, se **recomenda** autorizar consulta a `nexa` e wiki/docs oficiais GeneXus — nao consultar sem consentimento.
+4. Se houver identificacao segura do tipo exportavel, oferecer em passos separados:
+   - registro local paliativo (`Register-GeneXusObjectTypeCatalogOverride.ps1` com `-UserApproved`);
+   - prompt copiavel para o mantenedor (`New-GeneXusUnknownTypeMaintainerPrompt.ps1`).
+5. Em **cada nova sessao** na pasta paralela com override ativo, executar `Test-XpzCatalogOverrideSessionReminder.ps1` e lembrar que falta alinhar GeneXus-XPZ-Skills.
+6. NUNCA registrar no catálogo compartilhado a partir da pasta paralela sem troca de contexto; NUNCA materializar parcialmente.
+
+Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
+
+`Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <xpz> -ParallelKbRoot <raiz> -FailOnUnknownTypes -AsJson`
+
 ## Regra de leitura para runtime
 
 - quando a pergunta envolver `Base Table`, `Extended Table`, navegacao, `For each`, `Load`, `Refresh`, `Refresh Grid` ou risco de performance, consultar primeiro `02-regras-operacionais-e-runtime.md`

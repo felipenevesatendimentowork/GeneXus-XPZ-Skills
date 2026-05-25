@@ -33,6 +33,22 @@ Mantem o relatorio JSON mesmo quando a execucao termina sem erro.
 .PARAMETER ExpectedItems
 Lista opcional de itens esperados para comparacao com o retorno oficial do XPZ,
 no formato `Tipo:Nome`.
+
+.PARAMETER KbMetadataPath
+Caminho opcional para kb-source-metadata.md da pasta paralela.
+
+.PARAMETER CatalogPath
+Caminho opcional para gx-object-type-catalog.json (padrao: scripts/ da base compartilhada).
+
+.PARAMETER CatalogOverridePath
+Caminho opcional para gx-object-type-catalog.override.json (paliativo local; nao silencioso).
+
+.PARAMETER ParallelKbRoot
+Raiz da pasta paralela; quando informada, resolve override em scripts/gx-object-type-catalog.override.json.
+
+.PARAMETER DiscoveryReportPath
+Quando o pacote contiver GUID de tipo desconhecido, grava relatorio JSON de triagem antes de falhar.
+
 .EXAMPLE
 .\Sync-GeneXusXpzToXml.ps1 -InputPath C:\Exports\MeuPacote.xpz -DestinationRoot C:\Acervo\ObjetosDaKbEmXml
 
@@ -57,31 +73,24 @@ param(
 
     [string[]]$ExpectedItems = @(),
 
-    [string]$KbMetadataPath = ""
+    [string]$KbMetadataPath = "",
+
+    [string]$CatalogPath = "",
+
+    [string]$CatalogOverridePath = "",
+
+    [string]$ParallelKbRoot = "",
+
+    [string]$DiscoveryReportPath = ""
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Get-KnownTypeMap {
-    $catalogPath = Join-Path $PSScriptRoot "gx-object-type-catalog.json"
-    if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
-        throw "Object type catalog not found: $catalogPath"
-    }
-
-    $rawCatalog = Get-Content -LiteralPath $catalogPath -Raw
-    $catalog = $rawCatalog | ConvertFrom-Json
-    $map = [ordered]@{}
-    foreach ($property in $catalog.types.PSObject.Properties) {
-        $entry = $property.Value
-        if ($null -eq $entry.objectTypeGuid -or [string]::IsNullOrWhiteSpace([string]$entry.objectTypeGuid)) {
-            continue
-        }
-        $map[[string]$entry.objectTypeGuid.ToLowerInvariant()] = [string]$property.Name
-    }
-
-    return $map
+$supportScript = Join-Path $PSScriptRoot 'GeneXusObjectTypeCatalogSupport.ps1'
+if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {
+    throw "Required support script not found: $supportScript"
 }
-$KnownTypeMap = Get-KnownTypeMap
+. $supportScript
 
 function New-TempDirectory {
     $tempBase = [System.IO.Path]::GetTempPath()
@@ -147,45 +156,6 @@ function Normalize-FileBaseName {
     }
 
     return $builder.ToString().TrimEnd('.')
-}
-
-function Get-DestinationTypeMap {
-    param([string]$Root)
-
-    $map = @{}
-    foreach ($entry in $KnownTypeMap.GetEnumerator()) {
-        $map[$entry.Key] = $entry.Value
-    }
-
-    if (-not (Test-Path -LiteralPath $Root)) {
-        return $map
-    }
-
-    $dirs = Get-ChildItem -LiteralPath $Root -Directory
-    foreach ($dir in $dirs) {
-        if ($dir.Name -eq "Attribute") {
-            continue
-        }
-
-        $sample = Get-ChildItem -LiteralPath $dir.FullName -Filter *.xml -File | Select-Object -First 1
-        if ($null -eq $sample) {
-            continue
-        }
-
-        try {
-            [xml]$sampleXml = Get-Content -LiteralPath $sample.FullName -Raw
-            $rootNode = $sampleXml.SelectSingleNode("/Object")
-            if ($null -ne $rootNode) {
-                $typeGuid = $rootNode.GetAttribute("type")
-                if ($typeGuid) {
-                    $map[$typeGuid.ToLowerInvariant()] = $dir.Name
-                }
-            }
-        } catch {
-        }
-    }
-
-    return $map
 }
 
 function Convert-ExpectedItemsToComparison {
@@ -407,26 +377,21 @@ function Get-KbSourceMetadataSnapshot {
 function Convert-PackageToItems {
     param(
         [xml]$XmlDocument,
-        [hashtable]$TypeMap
+        [hashtable]$CatalogGuidToFolderMap
     )
 
     $items = New-Object System.Collections.Generic.List[object]
-    $unknownTypeCounts = @{}
 
     $objectsNode = $XmlDocument.SelectSingleNode("/ExportFile/Objects")
     if ($null -ne $objectsNode) {
         foreach ($node in $objectsNode.SelectNodes("./Object")) {
             $typeGuid = $node.GetAttribute("type").ToLowerInvariant()
-            if (-not $TypeMap.ContainsKey($typeGuid)) {
-                if (-not $unknownTypeCounts.ContainsKey($typeGuid)) {
-                    $unknownTypeCounts[$typeGuid] = 0
-                }
-                $unknownTypeCounts[$typeGuid] += 1
+            if (-not $CatalogGuidToFolderMap.ContainsKey($typeGuid)) {
                 continue
             }
 
             $logicalName = $node.GetAttribute("name")
-            $folderType = $TypeMap[$typeGuid]
+            $folderType = $CatalogGuidToFolderMap[$typeGuid]
             $normalizedName = Normalize-FileBaseName -LogicalName $logicalName
             $items.Add([pscustomobject]@{
                 PackageSection = "Objects"
@@ -455,14 +420,6 @@ function Convert-PackageToItems {
                 Node = $node
             }) | Out-Null
         }
-    }
-
-    if ($unknownTypeCounts.Count -gt 0) {
-        $unknownList = $unknownTypeCounts.GetEnumerator() |
-            Sort-Object Name |
-            ForEach-Object { "$($_.Name) [$($_.Value)]" }
-
-        throw "Package contains object type GUIDs not mapped to destination folders: $($unknownList -join ', '). Update scripts\gx-object-type-catalog.json and reflect the new type in 01a-catalogo-e-padroes-empiricos.md before retrying."
     }
 
     $collisions = @(
@@ -853,8 +810,18 @@ try {
         }
     }
 
-    $typeMap = Get-DestinationTypeMap -Root $DestinationRoot
-    $items = Convert-PackageToItems -XmlDocument $packageXml -TypeMap $typeMap
+    $catalogResolution = Resolve-GeneXusObjectTypeCatalogPaths -BaseCatalogPath $CatalogPath -CatalogOverridePath $CatalogOverridePath -ParallelKbRoot $ParallelKbRoot
+    $catalogGuidMap = Get-GeneXusCatalogGuidToFolderMap -MergedCatalog $catalogResolution.MergedCatalog
+    $unknownTypes = @(Get-GeneXusUnknownObjectTypesFromExportFile -XmlDocument $packageXml -GuidToFolderMap $catalogGuidMap)
+    if ($unknownTypes.Count -gt 0) {
+        if ($DiscoveryReportPath) {
+            Write-GeneXusUnknownTypeDiscoveryReport -Path $DiscoveryReportPath -UnknownTypes $unknownTypes -CatalogResolution $catalogResolution -InputPath $InputPath
+        }
+        $errorMessage = Format-GeneXusUnknownObjectTypesErrorMessage -UnknownTypes $unknownTypes -OverrideActive $catalogResolution.OverrideActive
+        throw $errorMessage
+    }
+
+    $items = Convert-PackageToItems -XmlDocument $packageXml -CatalogGuidToFolderMap $catalogGuidMap
     $expectedComparison = Convert-ExpectedItemsToComparison -ExpectedItems $ExpectedItems -ActualItems $items
 
     $objectsBlockCount = @($items | Where-Object { $_.PackageSection -eq "Objects" }).Count
@@ -922,6 +889,14 @@ try {
         AdditionalOfficialCount = if ($null -ne $expectedComparison) { $expectedComparison.AdditionalOfficial.Count } else { $null }
     }
 
+    $overrideReminder = $null
+    if (-not [string]::IsNullOrWhiteSpace($ParallelKbRoot)) {
+        $overrideReminder = Get-GeneXusCatalogOverrideSessionReminder -ParallelKbRoot $ParallelKbRoot -CatalogOverridePath $CatalogOverridePath
+        if ($overrideReminder.reminderRequired -and -not [string]::IsNullOrWhiteSpace($overrideReminder.message)) {
+            $warnings.Add($overrideReminder.message) | Out-Null
+        }
+    }
+
     $report = [pscustomobject]@{
         Summary = $summary
         Missing = $verification.Missing
@@ -932,6 +907,10 @@ try {
         Warnings = @($warnings)
         KbMetadataStatus = if ($null -ne $metadataResult) { $metadataResult.MetadataStatus } else { "not-requested" }
         KbMetadataSourceComplete = if ($null -ne $metadataResult) { [bool]$metadataResult.SourceComplete } else { $null }
+        CatalogOverrideActive = $catalogResolution.OverrideActive
+        CatalogOverridePath = $catalogResolution.OverridePath
+        CatalogUpstreamPending = $catalogResolution.UpstreamPending
+        CatalogOverrideReminder = $overrideReminder
     }
 
     if ($ReportPath) {

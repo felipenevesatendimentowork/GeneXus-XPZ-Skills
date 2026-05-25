@@ -179,6 +179,8 @@ Os wrappers seguem esta convenção de parâmetros:
   contrato principal do wrapper, refresh obrigatório do índice ou outro impacto
   central no fluxo oficial, continuar tratando o caso como bloqueio real
 - `-KbMetadataPath` *(opcional)* — salva metadados da KB em formato Markdown
+- `-ParallelKbRoot` *(opcional)* — raiz da pasta paralela; resolve `scripts/gx-object-type-catalog.override.json`
+- `-CatalogOverridePath` / `-DiscoveryReportPath` *(opcionais)* — override local e relatório JSON quando o pacote tiver GUID não mapeado
 - se esse parâmetro estiver ativo no wrapper local, `kb-source-metadata.md` faz parte normal do fluxo e pode ser reescrito a cada processamento
 - quando `kb-source-metadata.md` for reescrito, ele deve registrar `last_xpz_materialization_run_at` como horário do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudança material
 - se o `XPZ` vier com `Source` vazio, incompleto ou ausente, o wrapper deve preservar valores estáveis conhecidos e emitir warning de refresh parcial; isso não invalida o sync de objetos
@@ -218,6 +220,9 @@ Os wrappers seguem esta convenção de parâmetros:
    - Abortar imediatamente o fluxo normal até a restauração do snapshot oficial e a abertura do incidente de processo
    - Não tratar esse caso como detalhe operacional; ele bloqueia o fluxo até saneamento explícito do snapshot oficial
    - Se o usuário estiver em frente de delta ainda não reexportado pela KB, orientar explicitamente que o trabalho continue em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, não no acervo oficial
+7b. **Lembrete de override de catálogo (cada sessão):** se a pasta paralela tiver `scripts/gx-object-type-catalog.override.json`, executar `Test-XpzCatalogOverrideSessionReminder.ps1 -ParallelKbRoot <raiz> -AsJson` e repetir ao usuário a mensagem quando `reminderRequired=true` (falta alinhar GeneXus-XPZ-Skills).
+7c. **Pré-varredura antes de materialização longa:** para `XPZ` full ou primeira carga, rodar `Get-GeneXusImportPackageObjectInventory.ps1` com `-FailOnUnknownTypes`, `-ParallelKbRoot` e `-AsJson`. Se bloquear (`exit 3` / `UNKNOWN_TYPES_BLOCKED`), não chamar sync até resolver o tipo.
+7d. **Tipo desconhecido detectado:** seguir `02` / `08` (seção tipo desconhecido): parar; perguntar se o usuário autoriza consulta **recomendável** a `nexa` + wiki oficial; oferecer registro local com `-UserApproved` (`Register-GeneXusObjectTypeCatalogOverride.ps1`) e prompt ao mantenedor (`New-GeneXusUnknownTypeMaintainerPrompt.ps1`). Usar `-DiscoveryReportPath` no sync para JSON de triagem em `Temp`.
 8. Confirmar o `InputPath` com o usuário se não foi fornecido
 9. Quando o fluxo envolver materialização de `XPZ` completo:
    - quebrar o `full.xml` em XMLs individuais por objeto
@@ -376,5 +381,9 @@ XPZ/XML, não apenas a última mudança material detectada nos XMLs.
 - NUNCA deixar `kb-source-metadata.md` perder valores estáveis conhecidos porque o `XPZ` veio com `Source` vazio ou incompleto
 - NUNCA reformatar ou normalizar `ObjetosDaKbEmXml` durante sync para remover whitespace herdado de export oficial; se o ruído tiver sido introduzido por XML/pacote local gerado pelo agente, a correção deve acontecer na etapa de geração em `ObjetosGeradosParaImportacaoNaKbNoGenexus` antes da importação, não como limpeza posterior do snapshot oficial
 - NUNCA classificar automaticamente como erro de processo, contaminação indevida ou violação da trilha o simples fato de um `XPZ` oficial vindo da KB trazer objetos adicionais além do foco da frente
+- NUNCA materializar `XPZ` com tipo desconhecido no catálogo efetivo (compartilhado + override aprovado)
+- NUNCA registrar override local ou consultar `nexa`/wiki sem consentimento explícito do usuário
+- NUNCA omitir lembrete de override pendente upstream quando `Test-XpzCatalogOverrideSessionReminder.ps1` exigir
+- NUNCA editar `GeneXus-XPZ-Skills` a partir da pasta paralela para “fechar” tipo novo sem troca de contexto
 - NUNCA misturar no mesmo commit da frente atual mudanças paralelas sem decisão explícita só porque aparecem no mesmo workspace
 - NUNCA omitir a estrutura de três partes (`objetos-foco que voltaram`, `objetos-foco que não voltaram`, `retorno oficial adicional da KB`) no handoff quando o contexto da conversa identificar uma frente ativa com objetos-foco conhecidos — isso é obrigatório independentemente de `-ExpectedItems` estar disponível no wrapper
