@@ -570,6 +570,24 @@ if (-not $SkipGate) {
     }
 }
 
+if (-not [string]::IsNullOrWhiteSpace([string]$buildResult.outputPath)) {
+    . (Join-Path $PSScriptRoot 'GeneXusPackageInventorySupport.ps1')
+    $declaredDelta = ConvertTo-DeclaredDeltaItemsFromObjectDocuments `
+        -ObjectDocuments $objectDocs `
+        -ModifiedObjectNames $ModifiedObjectNames `
+        -ModifiedObjectGuids $ModifiedObjectGuids
+    $sidecarInventoryPath = Join-Path (Split-Path -Parent $buildResult.outputPath) (
+        ([System.IO.Path]::GetFileName($buildResult.outputPath)) + '.package-inventory.json'
+    )
+    $inventoryBlock = New-PackageInventoryResult `
+        -InputPath $buildResult.outputPath `
+        -DeclaredDeltaItems $declaredDelta `
+        -SidecarInventoryPath $sidecarInventoryPath
+    $buildResult.packageInventory = $inventoryBlock.packageInventory
+    $buildResult.inventoryDegraded = $inventoryBlock.inventoryDegraded
+    $buildResult.inventoryError = $inventoryBlock.inventoryError
+}
+
 if ($AsJson) {
     $buildResult | ConvertTo-Json -Depth 6
 } else {

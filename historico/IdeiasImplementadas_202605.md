@@ -334,12 +334,32 @@ Melhoria contínua após fechamento do inventário automático pós-export (comm
 
 ### Limite preservado (fora desta frente; sem entrada em `999-ideias-pendentes.md`)
 
-- `packageInventory` automático em `Build-GeneXusImportFileEnvelope.ps1` / `xpz-builder` (frente 4 do prompt de melhoria contínua).
 - Catálogo unificado `gx-platform-objects.json` / `systemObjectsPresent` estruturado (hoje listas `gx-system-modules.txt` + `gx-system-external-objects.txt`).
 
 ### Rastreabilidade
 
 - Commit: `8bdeb3e` (`Inventário: sinais de atributos top-level e ExternalObject de plataforma`)
+
+## Inventário pós-build em motores xpz-builder
+
+**Importância original:** média
+**Status:** concluída em 2026-05-25
+
+### Origem
+
+A frente de inventário automático pós-export MSBuild (`packageInventory` em `Invoke-GeneXusXpzExport.ps1`) não cobria pacotes montados localmente; o agente podia relatar a contagem nominal de `-ModifiedObjectNames` em vez do conteúdo real do envelope.
+
+### Implementação
+
+- `scripts/GeneXusPackageInventorySupport.ps1`: funções compartilhadas para resumo `packageInventory` e delta declarado.
+- `scripts/Build-GeneXusImportFileEnvelope.ps1`: inventário após gravar `import_file.xml` com confronto via `-ModifiedObjectNames`/`-ModifiedObjectGuids`.
+- `scripts/New-XpzImportPackage.ps1`: inventário após o motor Python, confrontando objetos `Object` da frente.
+- `scripts/Test-XpzBuilderPackageInventorySelfTest.ps1`: bateria mínima do suporte compartilhado.
+- `xpz-builder/SKILL.md` (secção inventário pós-build, CONSTRAINT) e `xpz-builder/quality-checklist.md`.
+
+### Rastreabilidade
+
+- Commit: `6cd4f95` — Inventário pós-build em motores xpz-builder (ponto 4).
 
 ## Regras conceituais para provider/item desconhecido fora do XPZ/XML
 

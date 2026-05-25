@@ -425,7 +425,7 @@ Reference files and when to load them:
    - Treat manual text-level assembly of `import_file.xml` (string concatenation of object XMLs into the envelope) as a discouraged fallback subject to the NEVER constraint above (CONSTRAINTS): allowed only when both shared engines are demonstrably unusable AND the user has explicitly acknowledged the exception
    - When the helper rejects the package, the candidate file is preserved as `<OutputPath>.rejected.<A..Z>` for forensic inspection; do NOT rename it back to the canonical `*.import_file.xml` to retry — fix the input and rerun
    - Run `scripts\Test-GeneXusImportFileEnvelope.ps1 -InputPath <package> -AsJson` after writing the final `import_file.xml`; for Panel with a comparable package/object available, also pass `-PanelReferencePath <template-or-object>` so a confirmed `level id`/`layout id` pair is information rather than an unresolved warning. Treat `não apto para prosseguir` as a hard stop before delivery. `Build-GeneXusImportFileEnvelope.ps1` already calls this canonical gate and passes its `-TemplatePackagePath` as the Panel reference; `New-XpzImportPackage.ps1`/`.py` performs its own internal envelope validation, so the canonical gate must still be run explicitly before delivery unless it has already been run after package assembly.
-   - For deterministic package-content inventory of the final `import_file.xml`, run `scripts\Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <package> -AsJson` and use the resulting `inventory`, `objectCount` and `attributeCount` to support the manifest. If a declared delta file exists in `Tipo:Nome` format, pass `-DeclaredDeltaPath`; use `-FailOnDeltaMismatch` only when mismatch should block automatically.
+   - After `Build-GeneXusImportFileEnvelope.ps1` or `New-XpzImportPackage.ps1` returns, read embedded `packageInventory` from the JSON (and the sidecar `*.package-inventory.json` when the full named list is needed) before closing the packaging round; for manual-only paths, run `scripts\Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <import_file.xml ou .xpz> -AsJson` with `-DeclaredDeltaPath` or `-DeclaredDeltaItems` as needed.
    - If an object is embedded under `<Objects>`, it must appear as XML element content only; embedded XML declaration such as `<?xml version="1.0" ...?>` inside `<Objects>` is a blocking envelope error
    - Verify that `<Objects>` contains no text nodes or placeholder literals (strings such as `YOUR-GUID-HERE`, `PLACEHOLDER`, `TODO`) — these indicate the object XML was not properly embedded
    - If the current flow is manual IDE import and `import_file.xml` is still missing, do NOT treat the packaging task as complete
@@ -507,6 +507,16 @@ Reference files and when to load them:
 
 ---
 
+## INVENTÁRIO PÓS-BUILD DO PACOTE
+
+- Após gravar `import_file.xml` (ou `.xpz` equivalente), os motores `scripts/Build-GeneXusImportFileEnvelope.ps1` e `scripts/New-XpzImportPackage.ps1` embutem `packageInventory` no JSON de retorno quando o pacote foi materializado com sucesso (`outputPath` presente).
+- O inventário usa `scripts/Get-GeneXusImportPackageObjectInventory.ps1` sobre o arquivo gerado e confronta o conteúdo real com o delta declarado (`-ModifiedObjectNames`/`-ModifiedObjectGuids` no build direto; objetos `Object` da frente no wrapper por pasta).
+- Reproduzir no relatório ao usuário **antes** de fechar a rodada de empacotamento: `totalObjects`, `totalAttributes`, `objectsByType`, `systemModulesPresent`, `systemExternalObjectsPresent`, `attributesTopLevelUnreconciled` e `inventoryWarnings` quando existirem; em confronto seletivo, `extrasCount` / amostra de extras.
+- Sidecar opcional: `<pacote>.package-inventory.json` ao lado do `import_file.xml` gerado (lista nomeada completa).
+- **Anti-padrão (nomeado): contagem nominal no lugar do pacote** — relatar «empacotei N objetos» usando só a contagem de `-ModifiedObjectNames`, entradas da frente ou XMLs listados na conversa, sem ler `packageInventory` do retorno do motor ou inventário manual equivalente sobre o arquivo final.
+
+---
+
 ## WWP PACKAGING
 
 WWP packaging guidance lives in the satellite [wwp-packaging.md](wwp-packaging.md). **Load it when the package contains WorkWithPlus objects** (PatternInstance `WorkWithPlus*`, derived `*WW`/`*WWDS`/`*LoadDVCombo`/`*WWGetFilterData`, or custom screens `wc*`/`wp*`). The satellite consolidates: regra central (3 elementos), decision tree, estratégia de pacotes faseada, regras de clonagem de instância customizada, and WWP-specific Quality Checklist items. CONSTRAINTS about WWP remain in this `SKILL.md`.
@@ -548,6 +558,8 @@ The end-to-end Quality Checklist for any packaging round lives in the satellite 
 - NEVER postpone generation of `import_file.xml` after the user has already signaled manual IDE import/testing and the delta is materially ready
 - NEVER generate `.xpz` by default when manual IDE import is the target flow and `import_file.xml` is sufficient
 - NEVER initiate MSBuild export from the KB solely to obtain an XPZ envelope for importing XML that already exists in the parallel folder, unless the user explicitly requests it or confirms that valid `KMW`/`Source`/envelope context cannot be assembled otherwise (see `xpz-msbuild-import-export` for inventory rules on any imported `.xpz`)
+- NEVER declare packaging complete without reading `packageInventory` from `Build-GeneXusImportFileEnvelope.ps1` / `New-XpzImportPackage.ps1` when those motors were used, or without equivalent manual inventory on the final `import_file.xml` or `.xpz`
+- NEVER report the count of `-ModifiedObjectNames`, front XML files, or conversation-listed objects as the package object count when `packageInventory.totalObjects` differs
 - NEVER assemble `import_file.xml` inline (string concatenation of object XMLs into the envelope, in PowerShell, Bash, or any other shell) when one of the shared engines is available. The shared engines are `scripts/Build-GeneXusImportFileEnvelope.ps1` (for direct object XML inputs with validated template) and `scripts/New-XpzImportPackage.ps1`/`.py` (for front-based assembly). Inline assembly diverges from envelope contracts the engines validate (KMW, Source, Dependencies, ObjectsIdentityMapping ordering) and skips the embedded collision gate. The textual fallback path described in WORKFLOW step 15 is allowed only when both engines are demonstrably unusable for the case AND the user has explicitly acknowledged the exception
 - NEVER create subfolders by front under `PacotesGeradosParaImportacaoNaKbNoGenexus`; that package area must remain flat
 - NEVER ignore `Cannot convert Domain to Attribute`, `Attribute 'X' in 'Transaction Y' does not exist`, or `DescriptionAttribute ... could not be found in level attributes`; these are blocking package-construction errors for this trail

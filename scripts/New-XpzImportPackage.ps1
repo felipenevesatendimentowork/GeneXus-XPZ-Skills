@@ -71,13 +71,27 @@ if (-not [string]::IsNullOrWhiteSpace($TemplatePackagePath)) {
     $engineArgs += @('--template-package-path', $TemplatePackagePath)
 }
 
-$output = & $pythonCommand.Source @engineArgs
+$outputText = (& $pythonCommand.Source @engineArgs | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
 if ($LASTEXITCODE -ne 0) {
-    throw (($output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine)
+    throw $outputText
+}
+
+$result = $outputText | ConvertFrom-Json
+if (-not [string]::IsNullOrWhiteSpace([string]$result.outputPath)) {
+    . (Join-Path $PSScriptRoot 'GeneXusPackageInventorySupport.ps1')
+    $declaredDelta = Get-DeclaredDeltaItemsFromFrontObjectXmls -FrontDir $result.sourceFolder
+    $sidecarInventoryPath = ([string]$result.outputPath) + '.package-inventory.json'
+    $inventoryBlock = New-PackageInventoryResult `
+        -InputPath $result.outputPath `
+        -DeclaredDeltaItems $declaredDelta `
+        -SidecarInventoryPath $sidecarInventoryPath
+    $result | Add-Member -NotePropertyName packageInventory -NotePropertyValue $inventoryBlock.packageInventory -Force
+    $result | Add-Member -NotePropertyName inventoryDegraded -NotePropertyValue $inventoryBlock.inventoryDegraded -Force
+    $result | Add-Member -NotePropertyName inventoryError -NotePropertyValue $inventoryBlock.inventoryError -Force
 }
 
 if ($AsJson) {
-    $output
+    $result | ConvertTo-Json -Depth 8
 } else {
-    ($output | Out-String | ConvertFrom-Json)
+    $result
 }
