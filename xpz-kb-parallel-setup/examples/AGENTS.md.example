@@ -76,7 +76,9 @@ Wrappers esperados:
   skills e retorna `GATE_ONLY` ou `AUDIT_REQUIRED: <motivo>`.
 - `Update-<NomeKb>KbFromXpz.ps1`: materializa XPZ/XML em `ObjetosDaKbEmXml`,
   grava `kb-source-metadata.md` e chama o refresh do indice quando nao estiver
-  em `VerifyOnly`.
+  em `VerifyOnly`. Deve repassar `-ParallelKbRoot` ao motor `Sync-GeneXusXpzToXml.ps1`
+  (catalogo efetivo com override local), executar lembrete de override por sessao
+  e pre-varredura com `-FailOnUnknownTypes` antes de materializar (ver secao abaixo).
 - `Test-<NomeKb>KbFullSnapshot.ps1`: conferencia full em modo somente verificacao.
 - `Rebuild-<NomeKb>KbIntelligenceIndex.ps1`: regenera e valida
   `KbIntelligence\kb-intelligence.sqlite`.
@@ -127,6 +129,28 @@ Scripts do motor com parâmetros totalmente dinâmicos por execução (ex:
 `Watch-GeneXusMsBuildLog.ps1`, cujo `-Pid` e `-LogPath` variam a cada build)
 nao requerem wrapper local — sao chamados diretamente pelo caminho absoluto
 do motor.
+
+## Catalogo XPZ (tipos desconhecidos e override local)
+
+- Catalogo efetivo = `GeneXus-XPZ-Skills/scripts/gx-object-type-catalog.json` +
+  `scripts/gx-object-type-catalog.override.json` nesta pasta paralela quando existir.
+- Override local e paliativo (`upstreamPending`); nao e silencioso.
+- Em cada nova sessao, antes de sync ou materializacao longa, executar
+  `GeneXus-XPZ-Skills/scripts/Test-XpzCatalogOverrideSessionReminder.ps1` com
+  `-ParallelKbRoot` apontando para esta pasta (wrapper local fino opcional).
+  Se `reminderRequired=true`, avisar o usuario que ainda falta alinhar
+  GeneXus-XPZ-Skills.
+- Antes de materializar XPZ full ou primeira carga, pre-varredura obrigatoria:
+  `Get-GeneXusImportPackageObjectInventory.ps1` com `-FailOnUnknownTypes` e
+  `-ParallelKbRoot`. Se bloquear, nao chamar sync ate resolver o tipo.
+- Tipo desconhecido no pacote = lacuna de catalogo, nao defeito do XPZ da KB.
+  Perguntar ao usuario se autoriza consulta recomendavel a `nexa` e wiki/docs
+  oficiais GeneXus antes de registrar override ou pedir atualizacao upstream.
+- Registro local somente com consentimento explicito via
+  `Register-GeneXusObjectTypeCatalogOverride.ps1` (`-UserApproved`). Molde JSON:
+  `examples/gx-object-type-catalog.override.json.example`.
+- Prompt copiavel para o mantenedor da base XPZ:
+  `New-GeneXusUnknownTypeMaintainerPrompt.ps1`.
 
 ## Triagem Por Indice
 

@@ -97,6 +97,24 @@ if (-not (Test-Path -LiteralPath $enginePath)) {
     throw "Engine script not found: $enginePath"
 }
 
+$reminderScriptPath = Join-Path $SharedSkillsRoot 'scripts\Test-XpzCatalogOverrideSessionReminder.ps1'
+if (Test-Path -LiteralPath $reminderScriptPath -PathType Leaf) {
+    $reminderResult = & $reminderScriptPath -ParallelKbRoot $repoRoot -AsJson | ConvertFrom-Json
+    if ($reminderResult.reminderRequired -and -not [string]::IsNullOrWhiteSpace($reminderResult.message)) {
+        Write-Warning $reminderResult.message
+    }
+}
+
+if (-not $VerifyOnly) {
+    $inventoryScriptPath = Join-Path $SharedSkillsRoot 'scripts\Get-GeneXusImportPackageObjectInventory.ps1'
+    if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
+        $null = & $inventoryScriptPath -InputPath $InputPath -ParallelKbRoot $repoRoot -FailOnUnknownTypes -AsJson 2>&1
+        if ($LASTEXITCODE -eq 3) {
+            throw 'Pre-varredura bloqueada: tipos nao mapeados no catalogo efetivo (base + override). Resolver antes de materializar; ver xpz-sync e 08-guia-para-agente-gpt.md.'
+        }
+    }
+}
+
 function Invoke-IndexRefresh {
     param(
         [Parameter(Mandatory = $true)]
@@ -295,9 +313,10 @@ if (-not $IndexUpdateScriptPath) {
 }
 
 $params = @{
-    InputPath       = $InputPath
-    DestinationRoot = $destinationRoot
-    KbMetadataPath  = $KbMetadataPath
+    InputPath        = $InputPath
+    DestinationRoot  = $destinationRoot
+    KbMetadataPath   = $KbMetadataPath
+    ParallelKbRoot   = $repoRoot
 }
 
 if ($VerifyOnly) {
