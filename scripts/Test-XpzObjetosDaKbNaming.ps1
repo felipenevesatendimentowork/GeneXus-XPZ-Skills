@@ -6,13 +6,18 @@ Audita o naming dos diretorios imediatos de ObjetosDaKbEmXml.
 .DESCRIPTION
 Para cada diretorio imediato em ObjetosDaKbEmXml, le o primeiro XML classificavel,
 extrai o tipo canonico pelo elemento raiz Attribute ou por Object/@type, compara
-com o nome do diretorio e emite resultado estruturado. O script e somente leitura.
+com o nome do diretorio e emite resultado estruturado. Usa o catalogo efetivo
+(base compartilhada + override local em scripts/ da pasta paralela quando existir).
+O script e somente leitura.
 
 .PARAMETER ParallelKbRoot
 Raiz da pasta paralela da KB.
 
 .PARAMETER CatalogPath
-Caminho opcional para gx-object-type-catalog.json.
+Caminho opcional para gx-object-type-catalog.json (base compartilhada).
+
+.PARAMETER CatalogOverridePath
+Caminho opcional para gx-object-type-catalog.override.json na pasta paralela.
 
 .PARAMETER AsJson
 Emite JSON estruturado em vez da tabela textual.
@@ -25,11 +30,19 @@ param(
 
     [string]$CatalogPath,
 
+    [string]$CatalogOverridePath,
+
     [switch]$AsJson
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+$supportScript = Join-Path $PSScriptRoot 'GeneXusObjectTypeCatalogSupport.ps1'
+if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {
+    throw "Support script not found: $supportScript"
+}
+. $supportScript
 
 function Write-StructuredError {
     param([string]$Message)
@@ -44,34 +57,6 @@ function Write-StructuredError {
     } else {
         Write-Output "STRUCTURAL_ERROR: $Message"
     }
-}
-
-function Get-CatalogMap {
-    param([string]$Path)
-
-    $rawCatalog = Get-Content -LiteralPath $Path -Raw
-    $catalog = $rawCatalog | ConvertFrom-Json
-    $map = @{}
-
-    foreach ($property in $catalog.types.PSObject.Properties) {
-        $entry = $property.Value
-        if ($null -eq $entry.objectTypeGuid -or [string]::IsNullOrWhiteSpace([string]$entry.objectTypeGuid)) {
-            continue
-        }
-
-        $folderName = if ($null -ne $entry.PSObject.Properties['folderName'] -and -not [string]::IsNullOrWhiteSpace([string]$entry.folderName)) {
-            [string]$entry.folderName
-        } else {
-            [string]$property.Name
-        }
-
-        $map[[string]$entry.objectTypeGuid.ToLowerInvariant()] = [pscustomobject]@{
-            TypeName   = [string]$property.Name
-            FolderName = $folderName
-        }
-    }
-
-    return $map
 }
 
 function Try-ClassifyXml {
@@ -151,14 +136,12 @@ try {
         throw "ObjetosDaKbEmXml nao encontrado: $objetosPath"
     }
 
-    if (-not $CatalogPath) {
-        $CatalogPath = Join-Path $PSScriptRoot 'gx-object-type-catalog.json'
+    $catalogResolution = Resolve-GeneXusObjectTypeCatalogPaths -BaseCatalogPath $CatalogPath -CatalogOverridePath $CatalogOverridePath -ParallelKbRoot $resolvedKbRoot
+    $typeMap = Get-GeneXusCatalogGuidToTypeMap -MergedCatalog $catalogResolution.MergedCatalog
+    $guidMap = @{}
+    foreach ($entry in $typeMap.GetEnumerator()) {
+        $guidMap[$entry.Key] = $entry.Value
     }
-    if (-not (Test-Path -LiteralPath $CatalogPath -PathType Leaf)) {
-        throw "Catalogo de tipos nao encontrado: $CatalogPath"
-    }
-
-    $guidMap = Get-CatalogMap -Path $CatalogPath
     $rows = [System.Collections.Generic.List[pscustomobject]]::new()
 
     foreach ($dir in Get-ChildItem -LiteralPath $objetosPath -Directory | Sort-Object Name) {
@@ -215,7 +198,13 @@ try {
             StatusNaming          = $status
             NomeCanonicoEsperado  = if ($status -eq 'DIVERGENTE') { $classified.NomeCanonicoEsperado } else { $null }
             SourceFile            = $classified.SourceFile
-            Observacao            = if ($status -eq 'TIPO_DESCONHECIDO') { 'GUID nao mapeado; atualizar scripts/gx-object-type-catalog.json' } else { $null }
+            Observacao            = if ($status -eq 'TIPO_DESCONHECIDO') {
+                if ($catalogResolution.OverrideActive) {
+                    'GUID nao mapeado no catalogo efetivo (base + override); atualizar gx-object-type-catalog.override.json ou GeneXus-XPZ-Skills (gx-object-type-catalog.json + 01a)'
+                } else {
+                    'GUID nao mapeado no catalogo efetivo; atualizar GeneXus-XPZ-Skills (gx-object-type-catalog.json + 01a) ou registrar override local aprovado'
+                }
+            } else { $null }
         })
     }
 
@@ -231,9 +220,13 @@ try {
 
     if ($AsJson) {
         [pscustomobject]@{
-            status    = $statusText
-            divergent = @($divergentRows | ForEach-Object { $_.Diretorio })
-            all       = @($rows)
+            status                 = $statusText
+            divergent              = @($divergentRows | ForEach-Object { $_.Diretorio })
+            all                    = @($rows)
+            catalogBasePath        = $catalogResolution.BaseCatalogPath
+            catalogOverridePath    = $catalogResolution.OverridePath
+            catalogOverrideActive  = $catalogResolution.OverrideActive
+            catalogUpstreamPending = $catalogResolution.UpstreamPending
         } | ConvertTo-Json -Depth 8
     } else {
         $rows |

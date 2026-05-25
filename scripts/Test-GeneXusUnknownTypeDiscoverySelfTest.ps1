@@ -95,5 +95,21 @@ if ($invBlocked.unknownTypeCount -ne 0) {
     throw 'com override, unknownTypeCount deveria ser 0'
 }
 
+$objetosPath = Join-Path $parallelRoot 'ObjetosDaKbEmXml'
+$tipoDir = Join-Path $objetosPath 'TipoTeste'
+[void](New-Item -ItemType Directory -Path $tipoDir -Force)
+$sampleObjectXml = @"
+<Object type="$unknownGuid" name="ObjNovo" guid="11111111-1111-1111-1111-111111111199">
+  <Source />
+</Object>
+"@
+[System.IO.File]::WriteAllText((Join-Path $tipoDir 'ObjNovo.xml'), $sampleObjectXml, (New-Object System.Text.UTF8Encoding($false)))
+
+$namingScript = Join-Path $scriptDir 'Test-XpzObjetosDaKbNaming.ps1'
+$namingJson = & $namingScript -ParallelKbRoot $parallelRoot -AsJson | ConvertFrom-Json
+if ($namingJson.status -ne 'NAMING_OK') {
+    throw "naming esperado NAMING_OK com override; obtido $($namingJson.status)"
+}
+
 Write-Output 'OK: Test-GeneXusUnknownTypeDiscoverySelfTest.ps1'
 exit 0
