@@ -25,8 +25,9 @@ Caminho explícito da instalação do GeneXus. Quando omitido, o script tenta
 fallback em caminhos conhecidos.
 
 .PARAMETER MsBuildPath
-Caminho explícito do MSBuild.exe. Quando omitido, o script tenta fallback em
-caminhos conhecidos do Visual Studio ou Build Tools.
+Caminho explícito do MSBuild.exe. Quando omitido, o script consulta vswhere.exe
+(-all -sort, componente MSBuild) e, em seguida, catálogo estático VS 18/2022/2019
+em scripts/GeneXusMsBuildPathContract.ps1; registra msBuildProbe no JSON.
 
 .PARAMETER KbPath
 Caminho opcional de KB para validação de existência. Quando omitido, o probe

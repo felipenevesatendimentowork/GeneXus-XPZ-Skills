@@ -915,6 +915,7 @@ Regras adicionais para `MsBuildPath`:
 - registrar no `strategyTrace` a origem da seleção (`explicit`, `vswhere`, `static`) e candidatos descartados
 - expor no JSON do probe o objeto `msBuildProbe` com `resolutionSource`, bloco `vsWhere` (`executablePath`, `invoked`, `exitCode`, `errorMessage`, `discovered`) e `candidates[]` (`path`, `source`, `exists`, `selected`) para cada entrada do catálogo unificado
 - regressão mínima do catálogo: `scripts/Test-GeneXusMsBuildDiscoveryContract.ps1` (não substitui probe real em máquina com GeneXus/VS instalados)
+- paridade editorial pre-push (frente MSBuild no diff): `scripts/Test-PrePushMsBuildProbeDocParity.ps1` via `scripts/Invoke-PrePushMechanicalChecks.ps1` — falha mecânica se exemplos JSON ou superfícies doc (`10-base`, skill) ficarem desalinhados após mudança no motor/probe
 
 Exemplo canônico inicial em `JSON`:
 
@@ -941,7 +942,7 @@ Exemplo canônico inicial em `JSON`:
     {
       "name": "MSBuild host",
       "result": "ok",
-      "detail": "MSBuild localizado por fallback em Visual Studio Build Tools."
+      "detail": "MSBuild localizado por fallback (vswhere)."
     },
     {
       "name": "Genexus.Tasks.targets",
@@ -1026,7 +1027,7 @@ Exemplo canônico inicial em caso bloqueado:
     {
       "name": "MSBuild host",
       "result": "fail",
-      "detail": "Nenhum caminho conhecido de MSBuild foi encontrado."
+      "detail": "Nenhum executável MSBuild válido no catálogo unificado (vswhere + caminhos estáticos)."
     },
     {
       "name": "LogPath outside Program Files x86",
@@ -1041,8 +1042,37 @@ Exemplo canônico inicial em caso bloqueado:
   "warnings": [],
   "strategyTrace": [
     "GeneXusDir usado conforme parâmetro explícito.",
-    "MsBuildPath não informado; fallback aplicado em caminhos conhecidos do Visual Studio sem sucesso."
-  ]
+    "MsBuildPath não informado; catálogo vswhere + caminhos estáticos esgotado sem executável válido.",
+    "vswhere executado (exit 0); nenhum MSBuild.exe existente no catálogo unificado."
+  ],
+  "msBuildProbe": {
+    "resolutionSource": "none",
+    "vsWhere": {
+      "executablePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe",
+      "invoked": true,
+      "exitCode": 0,
+      "errorMessage": null,
+      "findPatterns": [
+        "MSBuild\\Current\\Bin\\MSBuild.exe",
+        "MSBuild\\Current\\Bin\\amd64\\MSBuild.exe"
+      ],
+      "discovered": []
+    },
+    "candidates": [
+      {
+        "path": "C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
+        "source": "static",
+        "exists": false,
+        "selected": false
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
+        "source": "static",
+        "exists": false,
+        "selected": false
+      }
+    ]
+  }
 }
 ```
 

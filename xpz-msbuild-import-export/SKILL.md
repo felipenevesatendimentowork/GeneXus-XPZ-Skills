@@ -197,6 +197,9 @@ Scripts nesta frente:
 
 - `Test-GeneXusMsBuildSetup.ps1`
   - status atual: implementado como probe (sondagem técnica inicial) não invasivo
+  - descoberta de `MsBuildPath` quando omitido: `vswhere.exe` e catálogo estático em `scripts/GeneXusMsBuildPathContract.ps1`; JSON inclui `msBuildProbe` (`resolutionSource`, `vsWhere`, `candidates[]`)
+- `Test-GeneXusMsBuildDiscoveryContract.ps1`
+  - status atual: implementado; regressão mínima do catálogo de candidatos MSBuild (não substitui probe real com GeneXus/VS instalados)
 - `Open-GeneXusKbHeadless.ps1`
   - status atual: implementado para abertura e fechamento controlados da KB
   - saída esperada: `status`, `summary`, `exitCode`, `executionEvidence`, `stage`, `requestedContext`, `observedContext`, `artifacts`, `stderrContent`, `blockingReasons`, `warnings`, `strategyTrace`, `msBuildExitCode` top-level como compatibilidade transitória quando existir, e caminhos dos logs

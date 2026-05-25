@@ -316,6 +316,12 @@ $traceabilityCoverageGate = [ordered]@{
     findings = @()
 }
 
+$msBuildProbeDocParityGate = [ordered]@{
+    script   = 'scripts/Test-PrePushMsBuildProbeDocParity.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -373,6 +379,33 @@ if (Test-Path -LiteralPath $traceabilityCoverageScript -PathType Leaf) {
             severity = 'warn'
             path     = 'scripts/Test-PrePushTraceabilityCoverage.ps1'
             message  = "Falha consultiva ao executar Test-PrePushTraceabilityCoverage.ps1: $traceabilityJsonText"
+        })
+    }
+}
+
+$msBuildProbeDocParityScript = Join-Path $PSScriptRoot 'Test-PrePushMsBuildProbeDocParity.ps1'
+if (Test-Path -LiteralPath $msBuildProbeDocParityScript -PathType Leaf) {
+    $msBuildParityOutput = & $msBuildProbeDocParityScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $msBuildParityExitCode = $LASTEXITCODE
+    $msBuildParityJsonText = ($msBuildParityOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $msBuildParityObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($msBuildParityJsonText)) {
+        $msBuildParityObject = $msBuildParityJsonText | ConvertFrom-Json
+    }
+
+    if ($msBuildParityExitCode -eq 0 -and $null -ne $msBuildParityObject) {
+        $msBuildProbeDocParityGate.status = $msBuildParityObject.status
+        $msBuildProbeDocParityGate.findings = @($msBuildParityObject.findings)
+        if ($msBuildParityObject.status -eq 'fail') {
+            [void]$mechanicalFailures.Add('msBuildProbeDocParity')
+        }
+    } else {
+        $msBuildProbeDocParityGate.status = 'warn'
+        $msBuildProbeDocParityGate.findings = @([pscustomobject][ordered]@{
+            code     = 'MSBUILD_PROBE_DOC_PARITY_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-PrePushMsBuildProbeDocParity.ps1'
+            message  = "Falha ao executar Test-PrePushMsBuildProbeDocParity.ps1: $msBuildParityJsonText"
         })
     }
 }
@@ -444,6 +477,12 @@ foreach ($traceabilityFinding in @($traceabilityCoverageGate.findings)) {
         ("Cobertura de rastreabilidade consultiva ({0}): {1}" -f $traceabilityFinding.code, $traceabilityFinding.message)
     )
 }
+foreach ($msBuildParityFinding in @($msBuildProbeDocParityGate.findings)) {
+    $prefix = if ($msBuildParityFinding.severity -eq 'fail') { 'Paridade MSBuild probe (bloqueio mecanico)' } else { 'Paridade MSBuild probe (aviso)' }
+    [void]$agentWarnings.Add(
+        ("{0} ({1}): {2}" -f $prefix, $msBuildParityFinding.code, $msBuildParityFinding.message)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente a secao Revisao pre-push do AGENTS.md na raiz do repositorio (fonte autoritativa).',
@@ -482,8 +521,9 @@ $result = [ordered]@{
         whitespaceIssues    = @($whitespaceIssues)
     }
     gates                  = [ordered]@{
-        parse = $parseGate
+        parse                = $parseGate
         traceabilityCoverage = $traceabilityCoverageGate
+        msBuildProbeDocParity = $msBuildProbeDocParityGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -541,6 +581,11 @@ if ($AsJson) {
     Write-Output ("TRACEABILITY_COVERAGE={0}" -f $traceabilityCoverageGate.status)
     foreach ($finding in @($traceabilityCoverageGate.findings)) {
         Write-Output ("TRACEABILITY_FINDING: {0}: {1}" -f $finding.code, $finding.message)
+    }
+
+    Write-Output ("MSBUILD_PROBE_DOC_PARITY_GATE={0}" -f $msBuildProbeDocParityGate.status)
+    foreach ($finding in @($msBuildProbeDocParityGate.findings)) {
+        Write-Output ("MSBUILD_PROBE_DOC_PARITY_FINDING: {0} [{1}]: {2}" -f $finding.code, $finding.severity, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {
