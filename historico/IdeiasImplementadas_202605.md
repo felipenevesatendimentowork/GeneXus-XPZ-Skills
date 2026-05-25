@@ -311,10 +311,35 @@ Incidente operacional em KB FabricaBrasil (2026-05-25): export com 28 entradas e
 - `scripts/Test-GeneXusImportPackageObjectInventorySelfTest.ps1`: bateria mínima XML + `.xpz` sintético.
 - Governança: `xpz-msbuild-import-export/SKILL.md` (secção inventário após export, sub-estados, CONSTRAINT, checklist), `10-base-operacional-msbuild-headless.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, handoff em `xpz-kb-parallel-setup/SKILL.md`.
 
-### Pendências remanescentes
+### Limite preservado (fora desta frente; sem entrada em `999-ideias-pendentes.md`)
 
-- Encadeamento local envelope + inventário + import num único wrapper da pasta paralela (permanece em `999-ideias-pendentes.md`).
-- Catálogo de módulos de sistema por KB/versão além de `gx-system-modules.txt` compartilhado.
+- Encadeamento local envelope + inventário + import num único wrapper da pasta paralela.
+- Catálogo de módulos de sistema por KB/versão além de `scripts/gx-system-modules.txt` compartilhado.
+
+## Inventário: atributos top-level e ExternalObject de plataforma no pacote
+
+**Importância original:** média
+**Status:** concluída em 2026-05-25
+
+### Origem
+
+Melhoria contínua após fechamento do inventário automático pós-export (commit `47842aa` e correções correlatas). Evidência em KB FabricaBrasil: export seletivo com centenas de `<Attribute>` top-level sem `Transaction` na lista nominal não alterava `operationalSubState`; ExternalObjects SDK (ex.: Camera) diluíam-se em extras genéricos.
+
+### Implementação
+
+- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: warning `attributes-top-level-em-export-cirurgico` e `attributesTopLevelUnreconciled` em export seletiva sem `Transaction` declarada; `systemExternalObjectsPresent` via `scripts/gx-system-external-objects.txt`.
+- `scripts/Invoke-GeneXusXpzExport.ps1`: repassa sinais no `packageInventory` e promove sub-estado quando aplicável (sem competir com `exportErrors`).
+- `scripts/Test-GeneXusImportPackageObjectInventorySelfTest.ps1`: controle negativo com `Transaction` na lista; fixture `ExternalObject:Camera`.
+- Governança: `xpz-msbuild-import-export/SKILL.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `10-base-operacional-msbuild-headless.md`, handoff em `xpz-kb-parallel-setup/SKILL.md` (redação unificada `import_file.xml` / `.xpz`).
+
+### Limite preservado (fora desta frente; sem entrada em `999-ideias-pendentes.md`)
+
+- `packageInventory` automático em `Build-GeneXusImportFileEnvelope.ps1` / `xpz-builder` (frente 4 do prompt de melhoria contínua).
+- Catálogo unificado `gx-platform-objects.json` / `systemObjectsPresent` estruturado (hoje listas `gx-system-modules.txt` + `gx-system-external-objects.txt`).
+
+### Rastreabilidade
+
+- Commit: `8bdeb3e` (`Inventário: sinais de atributos top-level e ExternalObject de plataforma`)
 
 ## Regras conceituais para provider/item desconhecido fora do XPZ/XML
 

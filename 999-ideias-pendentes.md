@@ -1304,10 +1304,6 @@ Camada de julgamento (regra textual em `xpz-builder`): consolidar os resultados 
 
 Implementar quando houver: (a) pelo menos um gate upstream (1.1 mojibake, 1.2 dependências ou 1.3 drift de tipagem) implementado e em uso real, gerando saída estruturada que sirva de conteúdo para uma das seções do manifesto; e (b) decisão editorial fechada sobre formato, posição, nomenclatura e política de versionamento Git.
 
-## Suporte direto a `.xpz` no inventário de pacote importável
-
-**Status em 2026-05-25:** implementado — ver `historico/IdeiasImplementadas_202605.md` (entrada «Inventário de pacote em `.xpz` e export embutido»). Permanecem como ideias separadas: encadeamento local envelope+inventário+import num único wrapper da pasta paralela; catálogo de módulos de sistema configurável por KB (hoje `scripts/gx-system-modules.txt`).
-
 ## Expansão do índice SQLite para fingerprint de call site
 
 **Importância:** média
