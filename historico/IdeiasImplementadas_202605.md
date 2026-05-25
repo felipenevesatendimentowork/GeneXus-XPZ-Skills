@@ -359,7 +359,7 @@ A frente de inventário automático pós-export MSBuild (`packageInventory` em `
 
 ### Rastreabilidade
 
-- Commit: `6cd4f95` — Inventário pós-build em motores xpz-builder (ponto 4).
+- Commit: `3b0c85a` — Inventário pós-build em motores xpz-builder (ponto 4).
 
 ## Regras conceituais para provider/item desconhecido fora do XPZ/XML
 
