@@ -93,6 +93,7 @@ Para cada frente alterada:
    - gaps confirmados
    - flags descartados, com justificativa
    - áreas não cobertas pela busca
+6. Encerrar o relatório com uma linha de veredicto explícita, em formato fixo: `VEREDICTO: nenhum gap confirmado` ou `VEREDICTO: N gap(s) confirmado(s)` (com `N` igual à contagem da lista acima). Avisos descartados com justificativa e áreas não cobertas **não** contam como gap. A linha de veredicto é obrigatória mesmo quando o mecânico passou e a busca semântica não achou nada; sua ausência significa pré-push não concluída.
 
 A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse (`scripts/Test-PsScriptsParse.ps1`, também invocado por `scripts/Invoke-PrePushMechanicalChecks.ps1`) e testes locais estejam limpos. **Não** tratar `exit 0` do passo mecânico como pré-push concluída **nem** como autorização de push quando `PUSH_READINESS=blocked`.
 
