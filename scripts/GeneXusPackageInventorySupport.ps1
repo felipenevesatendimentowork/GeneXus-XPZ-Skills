@@ -4,9 +4,11 @@
     Funcoes compartilhadas para inventario de pacote import_file.xml / .xpz.
 
 .DESCRIPTION
-    Usado por Invoke-GeneXusXpzExport.ps1, Build-GeneXusImportFileEnvelope.ps1 e
-    New-XpzImportPackage.ps1 para produzir packageInventory resumido a partir de
-    Get-GeneXusImportPackageObjectInventory.ps1.
+    Produz packageInventory resumido e sidecar JSON a partir de
+    Get-GeneXusImportPackageObjectInventory.ps1. Consumido por
+    Build-GeneXusImportFileEnvelope.ps1, New-XpzImportPackage.ps1 e pelo export
+    MSBuild via GeneXusXpzExportInventoryGovernance.ps1 (governanca de sub-estado
+    permanece no modulo de export, nao neste arquivo).
 #>
 
 Set-StrictMode -Version Latest
@@ -259,7 +261,7 @@ function New-PackageInventoryResult {
 
         $result.inventoryDegraded = $false
         $result.inventoryError = $null
-        $result.packageInventory = $summary
+        $result.packageInventory = [pscustomobject]$summary
         return [pscustomobject]$result
     } catch {
         $result.inventoryError = $_.Exception.Message

@@ -127,6 +127,12 @@ if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
 }
 . $watcherSupportPath
 
+$exportInventoryGovernancePath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusXpzExportInventoryGovernance.ps1'
+if (-not (Test-Path -LiteralPath $exportInventoryGovernancePath -PathType Leaf)) {
+    throw "Export inventory governance script not found: $exportInventoryGovernancePath"
+}
+. $exportInventoryGovernancePath
+
 if ($FullExport) {
     $ExportAll = 'true'
 }
@@ -164,163 +170,6 @@ function ConvertTo-JsonText {
     param([object]$InputObject)
 
     return ($InputObject | ConvertTo-Json -Depth 8)
-}
-
-function Resolve-ExportOperationalSubState {
-    param(
-        $InventoryBlock,
-        [string[]]$ExportErrors
-    )
-
-    if ($null -ne $InventoryBlock -and $InventoryBlock.inventoryDegraded) {
-        return [string]$InventoryBlock.operationalSubState
-    }
-    if (@($ExportErrors).Count -gt 0) {
-        return 'exportação concluída com erros parciais ignorados pela task'
-    }
-    if ($null -ne $InventoryBlock) {
-        return [string]$InventoryBlock.operationalSubState
-    }
-    return $null
-}
-
-function New-ExportPackageInventoryBlock {
-    param(
-        [string]$XpzPath,
-        [string]$ArtifactDirectory,
-        [string]$ObjectList,
-        [string]$ExportAll,
-        [bool]$FullExportRequested
-    )
-
-    $inventoryScriptPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Get-GeneXusImportPackageObjectInventory.ps1'
-    $packageInventoryPath = Join-Path $ArtifactDirectory 'package-inventory.json'
-    $block = [ordered]@{
-        inventoryDegraded   = $true
-        inventoryError      = $null
-        packageInventory    = $null
-        operationalSubState = 'exportação concluída sem inventário (degradado)'
-    }
-
-    if (-not (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf)) {
-        $block.inventoryError = "Script de inventario nao encontrado: $inventoryScriptPath"
-        $block.packageInventoryPath = $packageInventoryPath
-        return [pscustomobject]$block
-    }
-
-    try {
-        $isSelective = (-not $FullExportRequested) -and ($ExportAll -ne 'true') -and (-not [string]::IsNullOrWhiteSpace($ObjectList))
-        $invokeParams = @{
-            InputPath = $XpzPath
-            AsJson    = $true
-        }
-        if ($isSelective) {
-            $invokeParams['DeclaredDeltaItems'] = $ObjectList
-        }
-
-        $inventoryJsonText = & $inventoryScriptPath @invokeParams
-        $inventory = $inventoryJsonText | ConvertFrom-Json
-        $namedItems = [System.Collections.Generic.List[pscustomobject]]::new()
-        foreach ($item in @($inventory.inventory)) {
-            $namedItems.Add([pscustomobject]@{
-                sourceBlock = $item.sourceBlock
-                typeName    = $item.typeName
-                name        = $item.name
-                guid        = $item.guid
-            }) | Out-Null
-        }
-
-        $fullInventoryDoc = [ordered]@{
-            inputPath      = $inventory.inputPath
-            inputKind      = $inventory.inputKind
-            innerXmlEntry  = $inventory.innerXmlEntry
-            objectCount    = $inventory.objectCount
-            attributeCount = $inventory.attributeCount
-            items          = @($namedItems)
-        }
-        $fullInventoryJson = $fullInventoryDoc | ConvertTo-Json -Depth 6
-        [System.IO.File]::WriteAllText($packageInventoryPath, $fullInventoryJson + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
-
-        $objectsByType = @{}
-        if ($null -ne $inventory.objectsByType) {
-            foreach ($prop in $inventory.objectsByType.PSObject.Properties) {
-                $objectsByType[$prop.Name] = [int]$prop.Value
-            }
-        }
-
-        $summary = [ordered]@{
-            inventoryStatus        = $inventory.status
-            selectiveExport        = [bool]$inventory.selectiveExport
-            totalObjects           = [int]$inventory.objectCount
-            totalAttributes        = [int]$inventory.attributeCount
-            objectsByType          = $objectsByType
-            systemModulesPresent          = @($inventory.systemModulesPresent)
-            systemExternalObjectsPresent  = @($inventory.systemExternalObjectsPresent)
-            declaredIncludesTransaction   = [bool]$inventory.declaredIncludesTransaction
-            attributesTopLevelUnreconciled = [bool]$inventory.attributesTopLevelUnreconciled
-            packageInventoryPath          = $packageInventoryPath
-        }
-        if (@($inventory.warnings).Count -gt 0) {
-            $summary.inventoryWarnings = @($inventory.warnings)
-        }
-
-        if ($isSelective -and $null -ne $inventory.deltaComparison) {
-            $delta = $inventory.deltaComparison
-            $requestedFound = @($delta.requestedItemsFound | ForEach-Object {
-                if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
-            })
-            $requestedMissing = @($delta.requestedItemsMissing | ForEach-Object {
-                if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
-            })
-            $extrasCount = [int]$delta.extraCount
-            $summary.requestedItemsFound = @($requestedFound)
-            $summary.requestedItemsMissing = @($requestedMissing)
-            $summary.extrasCount = $extrasCount
-            $summary.deltaStatus = [string]$delta.status
-
-            $extrasLines = @($delta.extraObjects | ForEach-Object {
-                if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
-            })
-            if ($extrasCount -le 50) {
-                $summary.extrasSample = @($extrasLines)
-            } else {
-                $summary.extrasSample = @()
-                $summary.extrasSampleTruncated = $true
-                $summary.extrasFullListAt = $packageInventoryPath
-            }
-        }
-
-        $operationalSubState = 'exportação concluída e inventário consolidado'
-        if ($isSelective) {
-            $hasSystemModules = @($inventory.systemModulesPresent).Count -gt 0
-            $hasSystemExternalObjects = @($inventory.systemExternalObjectsPresent).Count -gt 0
-            $hasAttributesUnreconciled = $false
-            if ($null -ne $inventory.PSObject.Properties['attributesTopLevelUnreconciled']) {
-                $hasAttributesUnreconciled = [bool]$inventory.attributesTopLevelUnreconciled
-            }
-            $hasExtras = $false
-            $hasMissing = $false
-            if ($null -ne $inventory.deltaComparison) {
-                $hasExtras = [int]$inventory.deltaComparison.extraCount -gt 0
-                $hasMissing = [int]$inventory.deltaComparison.missingCount -gt 0
-            }
-            if ($hasSystemModules -or $hasSystemExternalObjects -or $hasAttributesUnreconciled -or $hasExtras -or $hasMissing) {
-                $operationalSubState = 'exportação concluída, inventário com extras não conciliados'
-            }
-        }
-
-        $block.inventoryDegraded = $false
-        $block.inventoryError = $null
-        $block.packageInventory = $summary
-        $block.packageInventoryPath = $packageInventoryPath
-        $block.operationalSubState = $operationalSubState
-        return [pscustomobject]$block
-    }
-    catch {
-        $block.inventoryError = $_.Exception.Message
-        $block.packageInventoryPath = $packageInventoryPath
-        return [pscustomobject]$block
-    }
 }
 
 function Write-JsonLog {
