@@ -11,6 +11,44 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Unificar `Get-Utf8NoBomEncoding` repo-wide (fora da frente de inventário export)
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** frente combinada 2026-05-25 (Parte C); escopo conservador da frente atual limitou-se ao sidecar `package-inventory.json` (já via `GeneXusPackageInventorySupport.ps1`).
+
+### Problema concreto
+
+A mesma codificação UTF-8 sem BOM aparece como função local `Get-Utf8NoBomEncoding` em ~12 scripts MSBuild e como `New-Object System.Text.UTF8Encoding($false)` no suporte de inventário.
+
+### Ideia de melhoria
+
+Padronizar em um único padrão (inline ou helper compartilhado) em todos os wrappers que gravam JSON/proj/logs.
+
+### Limiar para implementar
+
+Quando uma frente tocar vários desses scripts por outro motivo, ou em sessão dedicada de higiene.
+
+## Consolidar catálogos de plataforma SDK em `gx-platform-objects.json`
+
+**Importância:** média
+**Maturidade:** pronta para implementar
+
+**Origem:** frente combinada 2026-05-25 (Parte D); hoje `gx-system-modules.txt` e `gx-system-external-objects.txt` alimentam funções e campos JSON separados.
+
+### Problema concreto
+
+Cada novo tipo de objeto de plataforma SDK exigiria novo `.txt`, nova função e novo campo de saída.
+
+### Ideia de melhoria
+
+JSON único `scripts/gx-platform-objects.json`, função `Get-SystemObjectsPresent`, transição opção (b): emitir `systemObjectsPresent` mantendo `systemModulesPresent` / `systemExternalObjectsPresent` por uma versão; atualizar `xpz-kb-parallel-setup/SKILL.md` L210, self-test existente e `09`.
+
+### Limiar para implementar
+
+Onda 3 (PR separada após Onda 1/2). Ao fechar, mover para `historico/IdeiasImplementadas_202605.md`.
+
 ## Teste de integração para bloqueio de XML de referência no Build-GeneXusImportFileEnvelope
 
 **Importância:** baixa

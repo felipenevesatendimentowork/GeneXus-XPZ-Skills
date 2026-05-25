@@ -206,7 +206,8 @@ function New-PackageInventoryResult {
                 attributeCount = $inventory.attributeCount
                 items          = @($namedItems)
             }
-            $encoding = New-Object System.Text.UTF8Encoding($false)
+            # Sidecar package-inventory.json: UTF-8 sem BOM (mesmo contrato que wrappers MSBuild usam via Get-Utf8NoBomEncoding).
+            $encoding = [System.Text.UTF8Encoding]::new($false)
             [System.IO.File]::WriteAllText(
                 $SidecarInventoryPath,
                 (($fullInventoryDoc | ConvertTo-Json -Depth 6) + [Environment]::NewLine),

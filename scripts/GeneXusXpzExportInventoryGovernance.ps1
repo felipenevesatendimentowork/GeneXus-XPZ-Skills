@@ -31,9 +31,6 @@ function Resolve-ExportOperationalSubState {
     if (@($ExportErrors).Count -gt 0) {
         return 'exportação concluída com erros parciais ignorados pela task'
     }
-    if ($null -ne $InventoryBlock -and $InventoryBlock.inventoryDegraded) {
-        return [string]$InventoryBlock.operationalSubState
-    }
     if ($null -ne $InventoryBlock) {
         return [string]$InventoryBlock.operationalSubState
     }

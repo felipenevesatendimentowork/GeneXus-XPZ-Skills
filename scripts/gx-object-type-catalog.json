@@ -329,10 +329,11 @@
       "objectTypeGuid": "78cecefe-be7d-4980-86ce-8d6e91fba04b",
       "rootKind": "Object",
       "folderName": "WorkWithForWeb",
+      "exportTaskLabel": "WorkWith",
       "inventoryEligible": true,
       "queryableByKbIntelligence": true,
       "containerType": false,
-      "notes": "Pattern web por transacao."
+      "notes": "Pattern web por transacao. Task Export aceita WorkWith em -ObjectList; ver 10a-gx-export-task-labels.md."
     },
     "WorkWithPlusInstance": {
       "objectTypeGuid": "07135890-56fc-489b-b408-063722fa9f7d",
