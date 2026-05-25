@@ -515,7 +515,7 @@ Frente combinada (Parte A): export seletiva com `-ObjectList "WorkWithForWeb:...
 
 ### Rastreabilidade
 
-- Commit: `341225d` (`Documenta exportTaskLabel WorkWith e limpa governança de export.`)
+- Commit: `7df2c73` (`Documenta exportTaskLabel WorkWith e limpa governança de export.`)
 
 ## Dead code em `Resolve-ExportOperationalSubState` e escopo C do sidecar inventário
 
@@ -534,4 +534,4 @@ Frente combinada (Partes B e C conservador).
 
 ### Rastreabilidade
 
-- Commit: `341225d` (`Documenta exportTaskLabel WorkWith e limpa governança de export.`)
+- Commit: `7df2c73` (`Documenta exportTaskLabel WorkWith e limpa governança de export.`)
