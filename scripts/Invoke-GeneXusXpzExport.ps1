@@ -254,8 +254,14 @@ function New-ExportPackageInventoryBlock {
             totalObjects           = [int]$inventory.objectCount
             totalAttributes        = [int]$inventory.attributeCount
             objectsByType          = $objectsByType
-            systemModulesPresent   = @($inventory.systemModulesPresent)
-            packageInventoryPath   = $packageInventoryPath
+            systemModulesPresent          = @($inventory.systemModulesPresent)
+            systemExternalObjectsPresent  = @($inventory.systemExternalObjectsPresent)
+            declaredIncludesTransaction   = [bool]$inventory.declaredIncludesTransaction
+            attributesTopLevelUnreconciled = [bool]$inventory.attributesTopLevelUnreconciled
+            packageInventoryPath          = $packageInventoryPath
+        }
+        if (@($inventory.warnings).Count -gt 0) {
+            $summary.inventoryWarnings = @($inventory.warnings)
         }
 
         if ($isSelective -and $null -ne $inventory.deltaComparison) {
@@ -287,13 +293,18 @@ function New-ExportPackageInventoryBlock {
         $operationalSubState = 'exportação concluída e inventário consolidado'
         if ($isSelective) {
             $hasSystemModules = @($inventory.systemModulesPresent).Count -gt 0
+            $hasSystemExternalObjects = @($inventory.systemExternalObjectsPresent).Count -gt 0
+            $hasAttributesUnreconciled = $false
+            if ($null -ne $inventory.PSObject.Properties['attributesTopLevelUnreconciled']) {
+                $hasAttributesUnreconciled = [bool]$inventory.attributesTopLevelUnreconciled
+            }
             $hasExtras = $false
             $hasMissing = $false
             if ($null -ne $inventory.deltaComparison) {
                 $hasExtras = [int]$inventory.deltaComparison.extraCount -gt 0
                 $hasMissing = [int]$inventory.deltaComparison.missingCount -gt 0
             }
-            if ($hasSystemModules -or $hasExtras -or $hasMissing) {
+            if ($hasSystemModules -or $hasSystemExternalObjects -or $hasAttributesUnreconciled -or $hasExtras -or $hasMissing) {
                 $operationalSubState = 'exportação concluída, inventário com extras não conciliados'
             }
         }

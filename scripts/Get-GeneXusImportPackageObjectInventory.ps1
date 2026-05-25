@@ -25,6 +25,9 @@ Caminho opcional para gx-object-type-catalog.json.
 .PARAMETER SystemModulesCatalogPath
 Caminho opcional para gx-system-modules.txt (modulos de plataforma/SDK).
 
+.PARAMETER SystemExternalObjectsCatalogPath
+Caminho opcional para gx-system-external-objects.txt (ExternalObjects de plataforma/SDK).
+
 .PARAMETER FailOnDeltaMismatch
 Quando informado junto com delta declarado, retorna exit code 2 se houver objetos
 extras ou ausentes na comparacao seletiva (somente bloco Objects).
@@ -45,6 +48,8 @@ param(
     [string]$CatalogPath,
 
     [string]$SystemModulesCatalogPath,
+
+    [string]$SystemExternalObjectsCatalogPath,
 
     [switch]$FailOnDeltaMismatch,
 
@@ -304,6 +309,27 @@ function Get-SystemModulesPresent {
     return @($found | Sort-Object)
 }
 
+function Get-SystemExternalObjectsPresent {
+    param(
+        $InventoryItems,
+        [System.Collections.Generic.HashSet[string]]$SystemExternalObjectNames
+    )
+
+    $found = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in @($InventoryItems | Where-Object {
+            $_.sourceBlock -eq 'Objects' -and
+            $_.typeName -eq 'ExternalObject' -and
+            -not [string]::IsNullOrWhiteSpace($_.name)
+        })) {
+        if ($SystemExternalObjectNames.Contains($item.name)) {
+            if (-not $found.Contains($item.name)) {
+                $found.Add($item.name) | Out-Null
+            }
+        }
+    }
+    return @($found | Sort-Object)
+}
+
 if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
     throw "BLOCK: InputPath nao encontrado: $InputPath"
 }
@@ -322,8 +348,16 @@ if (-not (Test-Path -LiteralPath $SystemModulesCatalogPath -PathType Leaf)) {
     throw "BLOCK: SystemModulesCatalogPath nao encontrado: $SystemModulesCatalogPath"
 }
 
+if (-not $SystemExternalObjectsCatalogPath) {
+    $SystemExternalObjectsCatalogPath = Join-Path $PSScriptRoot 'gx-system-external-objects.txt'
+}
+if (-not (Test-Path -LiteralPath $SystemExternalObjectsCatalogPath -PathType Leaf)) {
+    throw "BLOCK: SystemExternalObjectsCatalogPath nao encontrado: $SystemExternalObjectsCatalogPath"
+}
+
 $guidMap = Get-CatalogMap -Path $CatalogPath
 $systemModuleNames = Get-SystemModuleNameSet -Path $SystemModulesCatalogPath
+$systemExternalObjectNames = Get-SystemModuleNameSet -Path $SystemExternalObjectsCatalogPath
 
 $package = Get-ExportFileXmlDocument -Path $InputPath
 $root = $package.Document.DocumentElement
@@ -363,11 +397,14 @@ foreach ($item in $unknownTypeItems) {
 
 $objectsByType = Get-ObjectsByTypeMap -InventoryItems $inventoryArray
 $systemModulesPresent = Get-SystemModulesPresent -InventoryItems $inventoryArray -SystemModuleNames $systemModuleNames
+$systemExternalObjectsPresent = Get-SystemExternalObjectsPresent -InventoryItems $inventoryArray -SystemExternalObjectNames $systemExternalObjectNames
 
 $deltaComparison = $null
 $selectiveExport = $false
 $status = 'INVENTORY_OK'
 $exitCode = 0
+$declaredIncludesTransaction = $false
+$attributesTopLevelUnreconciled = $false
 
 $declaredItems = @()
 if (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaPath)) {
@@ -424,7 +461,20 @@ if ($declaredItems.Count -gt 0) {
         missingObjects      = @($missingObjects)
         uncomparableObjects = @($uncomparableObjects)
         systemModulesPresent = @($systemModulesPresent)
+        systemExternalObjectsPresent = @($systemExternalObjectsPresent)
     }
+}
+
+if ($declaredItems.Count -gt 0) {
+    $declaredIncludesTransaction = @($declaredItems | Where-Object {
+            -not [string]::IsNullOrWhiteSpace($_.typeName) -and
+            $_.typeName.Equals('Transaction', [System.StringComparison]::OrdinalIgnoreCase)
+        }).Count -gt 0
+}
+
+if ($selectiveExport -and $attributeItems.Count -gt 0 -and -not $declaredIncludesTransaction) {
+    $warnings.Add(('attributes-top-level-em-export-cirurgico: {0} atributo(s) top-level em export seletiva sem Transaction na lista declarada' -f $attributeItems.Count)) | Out-Null
+    $attributesTopLevelUnreconciled = $true
 }
 
 $result = [ordered]@{
@@ -438,9 +488,12 @@ $result = [ordered]@{
     totalItemCount       = $inventoryArray.Count
     objectCount          = $objectItems.Count
     attributeCount       = $attributeItems.Count
-    objectsByType        = $objectsByType
-    systemModulesPresent = @($systemModulesPresent)
-    unknownTypeCount     = $unknownTypeItems.Count
+    objectsByType                 = $objectsByType
+    systemModulesPresent          = @($systemModulesPresent)
+    systemExternalObjectsPresent  = @($systemExternalObjectsPresent)
+    declaredIncludesTransaction   = $declaredIncludesTransaction
+    attributesTopLevelUnreconciled = $attributesTopLevelUnreconciled
+    unknownTypeCount              = $unknownTypeItems.Count
     inventory            = $inventoryArray
     deltaComparison      = $deltaComparison
     warnings             = @($warnings)

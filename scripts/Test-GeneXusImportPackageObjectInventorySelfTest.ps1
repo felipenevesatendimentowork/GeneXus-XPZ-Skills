@@ -12,6 +12,8 @@ $inventoryScript = Join-Path $scriptDir 'Get-GeneXusImportPackageObjectInventory
 # Export real GeneXus 18: modulos SDK/plataforma entram como PackagedModule, nao Module.
 $packagedModuleGuid = 'c88fffcd-b6f8-0000-8fec-00b5497e2117'
 $procedureGuid = '84a12160-f59b-4ad7-a683-ea4481ac23e9'
+$externalObjectGuid = 'c163e562-42c6-4158-ad83-5b21a14cf30e'
+$transactionGuid = '1db606f2-af09-4cf9-a3b5-b481519d28f6'
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('gx-import-inventory-selftest-{0}' -f ([guid]::NewGuid().ToString('N')))
 [void](New-Item -ItemType Directory -Path $tempRoot -Force)
@@ -22,6 +24,7 @@ $exportXml = @"
     <Object type="$packagedModuleGuid" name="GeneXus" guid="11111111-1111-1111-1111-111111111101" />
     <Object type="$procedureGuid" name="ProcPedida" guid="11111111-1111-1111-1111-111111111102" />
     <Object type="$procedureGuid" name="ProcExtra" guid="11111111-1111-1111-1111-111111111103" />
+    <Object type="$externalObjectGuid" name="Camera" guid="11111111-1111-1111-1111-111111111104" />
   </Objects>
   <Attributes>
     <Attribute name="AttrA" guid="22222222-2222-2222-2222-222222222201" />
@@ -34,29 +37,66 @@ $xmlPath = Join-Path $tempRoot 'package.import_file.xml'
 [System.IO.File]::WriteAllText($xmlPath, $exportXml, [System.Text.UTF8Encoding]::new($false))
 
 $result = (& $inventoryScript -InputPath $xmlPath -DeclaredDeltaItems 'Procedure:ProcPedida' -AsJson | ConvertFrom-Json)
-if ($result.objectCount -ne 3) { throw "objectCount esperado 3; obtido $($result.objectCount)" }
+if ($result.objectCount -ne 4) { throw "objectCount esperado 4; obtido $($result.objectCount)" }
 if ($result.attributeCount -ne 2) { throw 'attributeCount esperado 2' }
 if (-not $result.selectiveExport) { throw 'selectiveExport esperado true' }
 if ($result.status -ne 'DELTA_MISMATCH') { throw "status esperado DELTA_MISMATCH; obtido $($result.status)" }
-if ($result.deltaComparison.extraCount -ne 2) {
-    throw "extraCount esperado 2 (PackagedModule:GeneXus + ProcExtra); obtido $($result.deltaComparison.extraCount)"
+if ($result.deltaComparison.extraCount -ne 3) {
+    throw "extraCount esperado 3 (PackagedModule:GeneXus + ProcExtra + Camera); obtido $($result.deltaComparison.extraCount)"
 }
 if (@($result.systemModulesPresent).Count -ne 1) {
     throw "systemModulesPresent esperado 1 (PackagedModule:GeneXus); obtido $(@($result.systemModulesPresent).Count)"
 }
 if ($result.systemModulesPresent[0] -ne 'GeneXus') { throw 'modulo sistema esperado GeneXus' }
+if (@($result.systemExternalObjectsPresent).Count -ne 1) {
+    throw "systemExternalObjectsPresent esperado 1 (Camera); obtido $(@($result.systemExternalObjectsPresent).Count)"
+}
+if ($result.systemExternalObjectsPresent[0] -ne 'Camera') { throw 'external object plataforma esperado Camera' }
 $genexusItem = @($result.inventory | Where-Object { $_.name -eq 'GeneXus' } | Select-Object -First 1)
 if ($genexusItem.typeName -ne 'PackagedModule') {
     throw "tipo esperado PackagedModule para GeneXus; obtido $($genexusItem.typeName)"
 }
+if (-not $result.attributesTopLevelUnreconciled) {
+    throw 'attributesTopLevelUnreconciled esperado true sem Transaction na lista'
+}
+if ($result.declaredIncludesTransaction) {
+    throw 'declaredIncludesTransaction esperado false'
+}
+$attrWarning = @($result.warnings | Where-Object { $_ -match 'attributes-top-level-em-export-cirurgico' })
+if ($attrWarning.Count -ne 1) {
+    throw 'warning attributes-top-level-em-export-cirurgico esperado 1'
+}
 if ($result.inputKind -ne 'xml') { throw 'inputKind xml esperado' }
+
+$selectiveWithTransactionXml = @"
+<ExportFile>
+  <Objects>
+    <Object type="$transactionGuid" name="TrPedida" guid="33333333-3333-3333-3333-333333333301" />
+  </Objects>
+  <Attributes>
+    <Attribute name="AttrC" guid="44444444-4444-4444-4444-444444444401" />
+  </Attributes>
+</ExportFile>
+"@
+$trnXmlPath = Join-Path $tempRoot 'package-trn.import_file.xml'
+[System.IO.File]::WriteAllText($trnXmlPath, $selectiveWithTransactionXml, [System.Text.UTF8Encoding]::new($false))
+$resultTrn = (& $inventoryScript -InputPath $trnXmlPath -DeclaredDeltaItems 'Transaction:TrPedida' -AsJson | ConvertFrom-Json)
+if (-not $resultTrn.declaredIncludesTransaction) { throw 'declaredIncludesTransaction esperado true com Transaction na lista' }
+if ($resultTrn.attributesTopLevelUnreconciled) {
+    throw 'attributesTopLevelUnreconciled deve ser false quando Transaction esta na lista (controle negativo)'
+}
+$trnAttrWarning = @($resultTrn.warnings | Where-Object { $_ -match 'attributes-top-level-em-export-cirurgico' })
+if ($trnAttrWarning.Count -gt 0) {
+    throw 'nao deve haver warning de atributos top-level com Transaction na lista declarada'
+}
 
 $xpzPath = Join-Path $tempRoot 'package.xpz'
 Compress-Archive -LiteralPath $xmlPath -DestinationPath $xpzPath -Force
 $resultXpz = (& $inventoryScript -InputPath $xpzPath -DeclaredDeltaItems 'Procedure:ProcPedida' -AsJson | ConvertFrom-Json)
 if ($resultXpz.inputKind -ne 'xpz') { throw 'inputKind xpz esperado' }
-if ($resultXpz.objectCount -ne 3) { throw 'objectCount xpz esperado 3' }
+if ($resultXpz.objectCount -ne 4) { throw 'objectCount xpz esperado 4' }
 if (@($resultXpz.systemModulesPresent).Count -ne 1) { throw 'systemModulesPresent xpz esperado 1' }
+if (@($resultXpz.systemExternalObjectsPresent).Count -ne 1) { throw 'systemExternalObjectsPresent xpz esperado 1' }
 
 $full = (& $inventoryScript -InputPath $xmlPath -AsJson | ConvertFrom-Json)
 if ($full.selectiveExport) { throw 'selectiveExport deve ser false sem delta' }
