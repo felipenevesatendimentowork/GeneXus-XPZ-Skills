@@ -100,6 +100,7 @@ Regras da escada:
 - com `SKILL.md` no diff, o orquestrador avisa para conferir satelites linkados no proprio SKILL
 - na fase semantica (passo 4 do `AGENTS.md`), confirmar explicitamente se checklist em satelite (ex. `quality-checklist.md`) contradiz o `SKILL.md` da mesma frente
 - na pre-push, gaps exigem aprovacao explicita depois do relatorio; uma unica aprovacao pode cobrir o conjunto sugerido (ex.: «aplica os gaps do relatorio»), salvo pedido item a item; intencao inicial nao autoriza gravar automaticamente
+- encerrar o relatorio pre-push com linha fixa `VEREDICTO: nenhum gap confirmado` ou `VEREDICTO: N gap(s) confirmado(s)` (`N` = contagem de gaps confirmados); avisos descartados e areas nao cobertas nao contam como gap; ausencia da linha significa pre-push nao concluida, mesmo com passo mecanico ok
 - com `commitsBehind > 0`, `PUSH_READINESS=blocked`: diff/arquivos do intervalo sao so diagnosticos; fetch origin se necessario; se persistir, integrar antes do push (sem push automatico)
 - na comparacao da pre-push, exemplos canonicos ficam em `*.example.ps1` dentro das skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`); nao ha pasta `examples/` na raiz
 - em `xpz-kb-parallel-setup`, validar `Test-*KbPowerShellRuntime.ps1` antes de qualquer outro wrapper local; se `pwsh` 7.4 LTS ou superior estiver ausente, tratar como bloqueio operacional da pasta paralela, nao como aviso informativo
