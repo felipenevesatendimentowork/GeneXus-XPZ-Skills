@@ -88,6 +88,7 @@ Para cada frente alterada:
    - checklist em **satélite** referenciado pelo `SKILL.md` (ex.: `xpz-builder/quality-checklist.md`) com regra de fechamento fraca ou antiga frente ao `SKILL.md`, `02` ou scripts da mesma frente
    - nova ferramenta, caminho ou parâmetro documentado em uma skill, mas ausente nas skills correlatas
    - rastreabilidade pública desatualizada em `09-inventario-e-rastreabilidade-publica.md`; encontrar o termo no `09` não basta, é preciso comparar se a descrição ainda reflete a abrangência atual do contrato, script ou regra
+   - rastreabilidade agregada demais em `09-inventario-e-rastreabilidade-publica.md`; quando a frente envolver motor, orquestrador, wrapper e bateria de teste com papéis distintos, cada papel relevante deve ter evidência própria ou justificativa explícita para não registrar separadamente
 5. Reportar separadamente:
    - gaps confirmados
    - flags descartados, com justificativa
