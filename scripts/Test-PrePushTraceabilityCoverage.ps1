@@ -158,6 +158,23 @@ if (($normalizedChangedFiles -contains 'AGENTS.md') -and ($normalizedChangedFile
     }
 }
 
+$orchestratorPath = 'scripts/Invoke-PrePushMechanicalChecks.ps1'
+if ($normalizedChangedFiles -contains $orchestratorPath) {
+    $orchestratorDiff = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('diff', '--unified=0', "$BaseRef..HEAD", '--', $orchestratorPath)
+    if ($orchestratorDiff.ExitCode -eq 0) {
+        $addedOrchestratorText = (@($orchestratorDiff.Lines | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' }) -join [Environment]::NewLine)
+        $referencedGateScripts = @([regex]::Matches($addedOrchestratorText, 'Test-[A-Za-z0-9-]+\.ps1') |
+            ForEach-Object { $_.Value } |
+            Where-Object { $_ -ne 'Test-PsScriptsParse.ps1' } |
+            Sort-Object -Unique)
+        foreach ($gateScript in $referencedGateScripts) {
+            if ($agentGuideText -notmatch [regex]::Escape($gateScript)) {
+                Add-Finding -Target $findings -Code 'AGENT_GUIDE_MISSING_ORCHESTRATOR_GATE' -Path '08-guia-para-agente-gpt.md' -Message ("Invoke-PrePushMechanicalChecks.ps1 passou a referenciar {0}, mas 08-guia-para-agente-gpt.md nao cita esse gate nominalmente." -f $gateScript)
+            }
+        }
+    }
+}
+
 $status = if ($findings.Count -gt 0) { 'warn' } else { 'pass' }
 $result = [ordered]@{
     status       = $status
