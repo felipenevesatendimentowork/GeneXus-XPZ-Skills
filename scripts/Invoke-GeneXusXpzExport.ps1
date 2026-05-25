@@ -166,6 +166,24 @@ function ConvertTo-JsonText {
     return ($InputObject | ConvertTo-Json -Depth 8)
 }
 
+function Resolve-ExportOperationalSubState {
+    param(
+        $InventoryBlock,
+        [string[]]$ExportErrors
+    )
+
+    if ($null -ne $InventoryBlock -and $InventoryBlock.inventoryDegraded) {
+        return [string]$InventoryBlock.operationalSubState
+    }
+    if (@($ExportErrors).Count -gt 0) {
+        return 'exportação concluída com erros parciais ignorados pela task'
+    }
+    if ($null -ne $InventoryBlock) {
+        return [string]$InventoryBlock.operationalSubState
+    }
+    return $null
+}
+
 function New-ExportPackageInventoryBlock {
     param(
         [string]$XpzPath,
@@ -1013,6 +1031,12 @@ try {
     $stdErrNoise             = ''
     $stdErrFiltered          = ''
     $gxWarningLines          = @()
+    $exportErrors            = @()
+    $invalidTypesRejected    = @()
+    $knownStdOutNoise        = @()
+    $exportSignals           = $null
+    $exportSignalsDegraded   = $false
+    $exportSignalsDegradedReason = $null
     $openOutput              = $null
     $activeVersionOutput     = $null
     $activeEnvironmentOutput = $null
@@ -1038,6 +1062,55 @@ try {
         if ($stdOutText) {
             try { $exportedFileMarker = Get-MarkerValue -Text $stdOutText -Marker '__EXPORTED_FILE__=' } catch {}
         }
+    }
+
+    $signalsPath = Join-Path $artifactDirectory 'msbuild.export.signals.json'
+    $signalsScript = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
+    try {
+        if (Test-Path -LiteralPath $signalsScript -PathType Leaf) {
+            $signalsJson = & $signalsScript -StdOutPath $stdOutPath -StdErrPath $stdErrPath -Stage 'export' -OutputPath $signalsPath -AsJson
+            $signalsJsonText = $signalsJson | Out-String
+            if (-not [string]::IsNullOrWhiteSpace($signalsJsonText)) {
+                $exportSignals = $signalsJsonText | ConvertFrom-Json
+                if ($null -ne $exportSignals.PSObject.Properties['exportErrors']) {
+                    $exportErrors = @($exportSignals.exportErrors)
+                }
+                if ($null -ne $exportSignals.PSObject.Properties['invalidTypesRejected']) {
+                    $invalidTypesRejected = @($exportSignals.invalidTypesRejected)
+                }
+                if ($null -ne $exportSignals.PSObject.Properties['knownStdOutNoise']) {
+                    $knownStdOutNoise = @($exportSignals.knownStdOutNoise)
+                }
+                if (($gxWarningLines.Count -eq 0) -and ($null -ne $exportSignals.PSObject.Properties['gxWarnings'])) {
+                    $gxWarningLines = @($exportSignals.gxWarnings)
+                }
+            }
+        } else {
+            $exportSignalsDegraded = $true
+            $exportSignalsDegradedReason = 'Read-MsBuildImportSignals.ps1 nao encontrado; sinais compactos de export nao foram gerados.'
+            Add-StrategyTrace -Message $exportSignalsDegradedReason
+        }
+    }
+    catch {
+        $exportSignalsDegraded = $true
+        $exportSignalsDegradedReason = ('Falha ao gerar msbuild.export.signals.json: {0}' -f $_.Exception.Message)
+        Add-StrategyTrace -Message $exportSignalsDegradedReason
+    }
+
+    if ($exportErrors.Count -gt 0) {
+        Add-WarningMessage -Message ('MSBuild emitiu {0} linha(s) com error: no log apesar de sucesso aparente da task Export; ver exportErrors no diagnostico.' -f $exportErrors.Count)
+        $maxExportErrorLines = 5
+        for ($i = 0; $i -lt [Math]::Min($exportErrors.Count, $maxExportErrorLines); $i++) {
+            Add-WarningMessage -Message ('exportErrors[{0}]: {1}' -f $i, $exportErrors[$i])
+        }
+        if ($exportErrors.Count -gt $maxExportErrorLines) {
+            Add-WarningMessage -Message ('exportErrors: mais {0} linha(s) em msbuild.stdout.log / msbuild.stderr.log' -f ($exportErrors.Count - $maxExportErrorLines))
+        }
+    }
+
+    $isSelectiveObjectList = (-not $FullExport.IsPresent) -and ($ExportAll -ne 'true') -and (-not [string]::IsNullOrWhiteSpace($ObjectList))
+    if ($invalidTypesRejected.Count -gt 0 -and $isSelectiveObjectList) {
+        Add-WarningMessage -Message ('Tipo(s) rejeitado(s) na ObjectList: {0}. A task Export pode ter resolvido objetos apenas por nome (risco de homonimia se existir colisao).' -f ($invalidTypesRejected -join ', '))
     }
 
     $setVersionFailed     = [bool]($stdOutText -match 'Set Active Version falhou')
@@ -1072,6 +1145,9 @@ try {
         if ($postProcessingFailed) {
             $status = 'sucesso operacional com falha no pos-processamento'
             $summary = 'Exportação headless concluída e XPZ gerado, mas o pós-processamento local falhou. Evidências do MSBuild preservadas.'
+        } elseif ($exportErrors.Count -gt 0) {
+            $status = 'sucesso operacional'
+            $summary = 'Exportação headless concluída e XPZ gerado, com erros parciais no log MSBuild ignorados pela task.'
         } else {
             $status = 'sucesso operacional'
             $summary = 'Exportação headless concluída e XPZ gerado.'
@@ -1115,6 +1191,8 @@ try {
             Add-StrategyTrace -Message ('Inventario consolidado: {0} objetos, {1} atributos; sub-estado={2}' -f $inventoryBlock.packageInventory.totalObjects, $inventoryBlock.packageInventory.totalAttributes, $inventoryBlock.operationalSubState)
         }
     }
+
+    $operationalSubState = Resolve-ExportOperationalSubState -InventoryBlock $inventoryBlock -ExportErrors $exportErrors
 
     $diagnostic = [ordered]@{
         status = $status
@@ -1165,15 +1243,25 @@ try {
             XpzPath = $resolvedXpzPath
             XpzSizeBytes = $fileSizeBytes
             PackageInventoryPath = if ($null -ne $inventoryBlock) { $inventoryBlock.packageInventoryPath } else { $null }
+            ExportSignalsPath = $signalsPath
         }
         inventoryDegraded = if ($null -ne $inventoryBlock) { [bool]$inventoryBlock.inventoryDegraded } else { $null }
         inventoryError = if ($null -ne $inventoryBlock) { $inventoryBlock.inventoryError } else { $null }
         packageInventory = if ($null -ne $inventoryBlock) { $inventoryBlock.packageInventory } else { $null }
-        operationalSubState = if ($null -ne $inventoryBlock) { $inventoryBlock.operationalSubState } else { $null }
+        operationalSubState = $operationalSubState
+        exportSignalsDegraded = $exportSignalsDegraded
+        exportSignalsDegradedReason = $exportSignalsDegradedReason
+        compactSignals = $exportSignals
         watcherContext = $script:WatcherContext
         timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+        exportErrors = @($exportErrors)
+        invalidTypesRejected = @($invalidTypesRejected)
+        knownStdOutNoise = @($knownStdOutNoise)
         stdoutSignals = [ordered]@{
             exportMarkerFound = (-not [string]::IsNullOrWhiteSpace($exportedFileMarker))
+            exportErrors = @($exportErrors)
+            invalidTypesRejected = @($invalidTypesRejected)
+            knownStdOutNoise = @($knownStdOutNoise)
             gxWarnings        = $gxWarningLines
         }
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered

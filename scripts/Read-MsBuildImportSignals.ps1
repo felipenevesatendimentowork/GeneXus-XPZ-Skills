@@ -242,6 +242,22 @@ function Get-KnownStdOutNoise {
     return @($result)
 }
 
+function Get-InvalidTypesRejected {
+    param([string[]]$ErrorLines)
+
+    $rejected = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($line in @($ErrorLines)) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        $match = [regex]::Match($line, '(?i)(\S+)\s+is not a valid type')
+        if ($match.Success) {
+            [void]$rejected.Add($match.Groups[1].Value)
+        }
+    }
+    return @($rejected | Sort-Object)
+}
+
 function Get-GxImportLogReadSignal {
     param([string[]]$Texts)
 
@@ -310,49 +326,82 @@ if ([string]::IsNullOrWhiteSpace($StdOutPath) -and [string]::IsNullOrWhiteSpace(
 
 $stdOutText = Read-TextFileSafe -FilePath $StdOutPath
 $stdErrText = Read-TextFileSafe -FilePath $StdErrPath
-$warnings = @(Get-WarningLines -Text $stdOutText)
-$errors = @()
-$errors += @(Get-ErrorLines -Text $stdOutText)
-$errors += @(Get-ErrorLines -Text $stdErrText)
-$expectedItemsRaw = @(Split-ItemFilter -FilterText $ExpectedItems)
-$importedItems = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
-$expectedItemsCanonical = @($expectedItemsRaw | ForEach-Object { ConvertTo-CanonicalGeneXusItem -Item $_ })
-$importedItemsCanonical = @($importedItems | ForEach-Object { ConvertTo-CanonicalGeneXusItem -Item $_ })
-$itemAliasMatches = @(Get-GeneXusItemAliasMatches -ExpectedRaw $expectedItemsRaw -ImportedRaw $importedItems)
-$layoutWarnings = @(Get-LayoutWarnings -Warnings $warnings)
-$knownStdOutNoise = @(Get-KnownStdOutNoise -Text $stdOutText)
-$gxImportLogReadSignal = Get-GxImportLogReadSignal -Texts @($stdOutText, $stdErrText)
 
-$signals = [ordered]@{
-    status = 'signals-read'
-    stage = $Stage
-    expectedItemsRaw = $expectedItemsRaw
-    expectedItemsCanonical = $expectedItemsCanonical
-    importedItems = $importedItems
-    importedItemsRaw = $importedItems
-    importedItemsCanonical = $importedItemsCanonical
-    itemAliasMatches = $itemAliasMatches
-    warnings = $warnings
-    errors = $errors
-    knownStdOutNoise = $knownStdOutNoise
-    gxImportLogReadStatus = $gxImportLogReadSignal.status
-    gxImportLogReadError = $gxImportLogReadSignal.error
-    diagnosticDegraded = $gxImportLogReadSignal.diagnosticDegraded
-    activeVersion = (Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'")
-    activeEnvironment = (Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'")
-    importTaskSuccess = ($stdOutText -match 'Import Task (Sucesso|Success)')
-    layoutWarnings = $layoutWarnings
-    counts = [ordered]@{
-        importedItems = $importedItems.Count
-        itemAliasMatches = $itemAliasMatches.Count
-        warnings = $warnings.Count
-        errors = $errors.Count
-        knownStdOutNoise = $knownStdOutNoise.Count
-        layoutWarnings = $layoutWarnings.Count
+if ($Stage -eq 'export') {
+    $exportErrors = @()
+    $exportErrors += @(Get-ErrorLines -Text $stdOutText)
+    $exportErrors += @(Get-ErrorLines -Text $stdErrText)
+    $invalidTypesRejected = @(Get-InvalidTypesRejected -ErrorLines $exportErrors)
+    $gxWarnings = @(Get-WarningLines -Text $stdOutText)
+    $knownStdOutNoise = @(Get-KnownStdOutNoise -Text $stdOutText)
+
+    $signals = [ordered]@{
+        status = 'export-signals-read'
+        stage = $Stage
+        exportErrors = @($exportErrors)
+        invalidTypesRejected = @($invalidTypesRejected)
+        gxWarnings = @($gxWarnings)
+        knownStdOutNoise = @($knownStdOutNoise)
+        exportMarkerFound = ($stdOutText -match '__EXPORTED_FILE__=')
+        exportTaskSuccess = ($stdOutText -match 'Export (Sucesso|Success)')
+        activeVersion = (Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'")
+        activeEnvironment = (Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'")
+        counts = [ordered]@{
+            exportErrors = $exportErrors.Count
+            invalidTypesRejected = $invalidTypesRejected.Count
+            gxWarnings = $gxWarnings.Count
+            knownStdOutNoise = $knownStdOutNoise.Count
+        }
+        artifacts = [ordered]@{
+            StdOutPath = if ([string]::IsNullOrWhiteSpace($StdOutPath)) { $null } else { [System.IO.Path]::GetFullPath($StdOutPath) }
+            StdErrPath = if ([string]::IsNullOrWhiteSpace($StdErrPath)) { $null } else { [System.IO.Path]::GetFullPath($StdErrPath) }
+        }
     }
-    artifacts = [ordered]@{
-        StdOutPath = if ([string]::IsNullOrWhiteSpace($StdOutPath)) { $null } else { [System.IO.Path]::GetFullPath($StdOutPath) }
-        StdErrPath = if ([string]::IsNullOrWhiteSpace($StdErrPath)) { $null } else { [System.IO.Path]::GetFullPath($StdErrPath) }
+} else {
+    $warnings = @(Get-WarningLines -Text $stdOutText)
+    $errors = @()
+    $errors += @(Get-ErrorLines -Text $stdOutText)
+    $errors += @(Get-ErrorLines -Text $stdErrText)
+    $expectedItemsRaw = @(Split-ItemFilter -FilterText $ExpectedItems)
+    $importedItems = @(Get-MatchingLines -Text $stdOutText -Prefix '__IMPORTED_ITEM__=')
+    $expectedItemsCanonical = @($expectedItemsRaw | ForEach-Object { ConvertTo-CanonicalGeneXusItem -Item $_ })
+    $importedItemsCanonical = @($importedItems | ForEach-Object { ConvertTo-CanonicalGeneXusItem -Item $_ })
+    $itemAliasMatches = @(Get-GeneXusItemAliasMatches -ExpectedRaw $expectedItemsRaw -ImportedRaw $importedItems)
+    $layoutWarnings = @(Get-LayoutWarnings -Warnings $warnings)
+    $knownStdOutNoise = @(Get-KnownStdOutNoise -Text $stdOutText)
+    $gxImportLogReadSignal = Get-GxImportLogReadSignal -Texts @($stdOutText, $stdErrText)
+
+    $signals = [ordered]@{
+        status = 'signals-read'
+        stage = $Stage
+        expectedItemsRaw = $expectedItemsRaw
+        expectedItemsCanonical = $expectedItemsCanonical
+        importedItems = $importedItems
+        importedItemsRaw = $importedItems
+        importedItemsCanonical = $importedItemsCanonical
+        itemAliasMatches = $itemAliasMatches
+        warnings = $warnings
+        errors = $errors
+        knownStdOutNoise = $knownStdOutNoise
+        gxImportLogReadStatus = $gxImportLogReadSignal.status
+        gxImportLogReadError = $gxImportLogReadSignal.error
+        diagnosticDegraded = $gxImportLogReadSignal.diagnosticDegraded
+        activeVersion = (Get-RegexValue -Text $stdOutText -Pattern "The active version is '([^']+)'")
+        activeEnvironment = (Get-RegexValue -Text $stdOutText -Pattern "The active environment is '([^']+)'")
+        importTaskSuccess = ($stdOutText -match 'Import Task (Sucesso|Success)')
+        layoutWarnings = $layoutWarnings
+        counts = [ordered]@{
+            importedItems = $importedItems.Count
+            itemAliasMatches = $itemAliasMatches.Count
+            warnings = $warnings.Count
+            errors = $errors.Count
+            knownStdOutNoise = $knownStdOutNoise.Count
+            layoutWarnings = $layoutWarnings.Count
+        }
+        artifacts = [ordered]@{
+            StdOutPath = if ([string]::IsNullOrWhiteSpace($StdOutPath)) { $null } else { [System.IO.Path]::GetFullPath($StdOutPath) }
+            StdErrPath = if ([string]::IsNullOrWhiteSpace($StdErrPath)) { $null } else { [System.IO.Path]::GetFullPath($StdErrPath) }
+        }
     }
 }
 

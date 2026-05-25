@@ -89,6 +89,40 @@ try {
         throw 'Esperava expectedItemsCanonical e importedItemsCanonical equivalentes para Panel/SDPanel.'
     }
 
+    $exportStdoutText = @(
+        'error : WorkWithForWeb is not a valid type.'
+        'error : WorkWithForWeb is not a valid type.'
+        'Exportando Work With for Web instância WWPDemo'
+        'Export Sucesso'
+        '__EXPORTED_FILE__=C:\Temp\demo.xpz'
+        "O acesso ao caminho 'C:\Program Files (x86)\GeneXus\GeneXus18\CssProperties.json' foi negado."
+    ) -join [Environment]::NewLine
+    [System.IO.File]::WriteAllText($stdoutPath, $exportStdoutText, [System.Text.UTF8Encoding]::new($false))
+
+    $exportJsonText = (& $readerPath -StdOutPath $stdoutPath -StdErrPath $stderrPath -Stage 'export' -AsJson) -join [Environment]::NewLine
+    $exportSignals = $exportJsonText | ConvertFrom-Json
+    $exportErrors = @($exportSignals.exportErrors)
+
+    if ($exportErrors.Count -ne 2) {
+        throw "Esperava 2 exportErrors; obtido: $($exportErrors.Count)"
+    }
+
+    if (@($exportSignals.invalidTypesRejected)[0] -ne 'WorkWithForWeb') {
+        throw "invalidTypesRejected inesperado: $(@($exportSignals.invalidTypesRejected) -join ', ')"
+    }
+
+    if (-not $exportSignals.exportTaskSuccess) {
+        throw 'Esperava exportTaskSuccess=true para Export Sucesso.'
+    }
+
+    if (-not $exportSignals.exportMarkerFound) {
+        throw 'Esperava exportMarkerFound=true para __EXPORTED_FILE__.'
+    }
+
+    if ($exportSignals.counts.knownStdOutNoise -ne 1) {
+        throw "Contador knownStdOutNoise inesperado no export: $($exportSignals.counts.knownStdOutNoise)"
+    }
+
     'TEST_MsBuildImportSignalsClassifier=PASS'
 }
 finally {
