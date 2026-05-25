@@ -876,6 +876,8 @@ Formato esperado do diagnóstico estruturado:
   - lista de alertas não bloqueantes, quando houver
 - `strategyTrace`
   - registro curto do fallback adotado para resolver `MsBuildPath` e caminhos sensíveis
+- `msBuildProbe`
+  - evidência estruturada da descoberta de `MSBuild.exe`: origem da seleção, diagnóstico de `vswhere` e lista completa de candidatos com `exists`/`selected`
 
 Forma de uso do diagnóstico:
 
@@ -900,9 +902,9 @@ Regras adicionais para `GeneXusDir`:
 Ordem de resolução e fallback de `MsBuildPath`:
 
 1. usar `-MsBuildPath` quando informado explicitamente
-2. se não vier informado, tentar caminhos conhecidos de `MSBuild.exe` em instalações compatíveis do Visual Studio ou Build Tools
-3. se houver mais de um caminho válido, preferir o host mais específico e atual que permaneça compatível com a trilha
-4. registrar qual caminho foi escolhido e quais candidatos foram descartados
+2. se não vier informado, consultar `vswhere.exe` (instalador do Visual Studio) com `-all -sort -requires Microsoft.Component.MSBuild` e `-find` para `MSBuild\Current\Bin\MSBuild.exe` e, em seguida, `MSBuild\Current\Bin\amd64\MSBuild.exe`
+3. se `vswhere` não existir ou não retornar executável existente, percorrer o catálogo estático em `scripts/GeneXusMsBuildPathContract.ps1`: Visual Studio **18** e **2022** em `C:\Program Files\Microsoft Visual Studio\`, VS **2022** e **2019** em `C:\Program Files (x86)\Microsoft Visual Studio\`, edições BuildTools/Enterprise/Professional/Community, priorizando `MSBuild\Current\Bin\MSBuild.exe` antes de `amd64\MSBuild.exe` dentro de cada árvore
+4. se houver mais de um caminho válido, usar o **primeiro** do catálogo unificado (ordem acima) e registrar os demais como descartados no `strategyTrace`
 5. abortar se nenhum caminho válido for encontrado
 
 Regras adicionais para `MsBuildPath`:
@@ -910,7 +912,9 @@ Regras adicionais para `MsBuildPath`:
 - não considerar `dotnet msbuild` como substituto implícito nesta fase
 - não promover shell alias ou comando parcial a caminho validado
 - o caminho final precisa apontar para executável real verificável pelo probe
-- registrar no `strategyTrace` a ordem dos fallbacks tentados
+- registrar no `strategyTrace` a origem da seleção (`explicit`, `vswhere`, `static`) e candidatos descartados
+- expor no JSON do probe o objeto `msBuildProbe` com `resolutionSource`, bloco `vsWhere` (`executablePath`, `invoked`, `exitCode`, `errorMessage`, `discovered`) e `candidates[]` (`path`, `source`, `exists`, `selected`) para cada entrada do catálogo unificado
+- regressão mínima do catálogo: `scripts/Test-GeneXusMsBuildDiscoveryContract.ps1` (não substitui probe real em máquina com GeneXus/VS instalados)
 
 Exemplo canônico inicial em `JSON`:
 
@@ -966,10 +970,34 @@ Exemplo canônico inicial em `JSON`:
   ],
   "strategyTrace": [
     "GeneXusDir usado conforme parâmetro explícito.",
-    "MsBuildPath não informado; fallback aplicado em caminhos conhecidos do Visual Studio.",
+    "MsBuildPath não informado; descoberta via vswhere. Selecionado: C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
     "WorkingDirectory explícito não existia; o script criou exatamente o diretório informado após validar segurança.",
     "KbPath validado apenas por existência de diretório nesta fase."
-  ]
+  ],
+  "msBuildProbe": {
+    "resolutionSource": "vswhere",
+    "vsWhere": {
+      "executablePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe",
+      "invoked": true,
+      "exitCode": 0,
+      "errorMessage": null,
+      "findPatterns": [
+        "MSBuild\\Current\\Bin\\MSBuild.exe",
+        "MSBuild\\Current\\Bin\\amd64\\MSBuild.exe"
+      ],
+      "discovered": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe"
+      ]
+    },
+    "candidates": [
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
+        "source": "vswhere",
+        "exists": true,
+        "selected": true
+      }
+    ]
+  }
 }
 ```
 

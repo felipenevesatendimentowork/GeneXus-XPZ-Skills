@@ -271,6 +271,9 @@ Contrato inicial específico de `Test-GeneXusMsBuildSetup.ps1`:
 - obrigatórios: `-WorkingDirectory`, `-LogPath`
 - opcionais: `-GeneXusDir`, `-MsBuildPath`, `-KbPath`, `-VerboseLog`
 - regra de contrato: `-WorkingDirectory` continua explícito; quando o caminho seguro ainda não existir, o probe pode criar exatamente essa pasta e registrar isso no diagnóstico
+- descoberta de `MsBuildPath` quando omitido: `vswhere.exe` (`-all -sort`, componente MSBuild, `Current\Bin` antes de `amd64`) e, em seguida, catálogo estático em `scripts/GeneXusMsBuildPathContract.ps1` (Visual Studio 18/2022/2019, `Program Files` e `Program Files (x86)`); detalhes e exemplo JSON em `10-base-operacional-msbuild-headless.md`
+- saída JSON do probe inclui `msBuildProbe` (`resolutionSource`, `vsWhere`, `candidates[]` com `path`/`source`/`exists`/`selected`) além de `strategyTrace`
+- regressão mínima do catálogo (sem substituir probe real): `scripts/Test-GeneXusMsBuildDiscoveryContract.ps1`
 - códigos de saída contratuais:
   - `0` para `apto para prosseguir`
   - `10` a `16` para bloqueios operacionais esperados com diagnóstico estruturado

@@ -57,7 +57,7 @@ Preservar rastreabilidade da consolidacao, inventario documental, inventario bru
 ## Nota sobre a skill experimental de MSBuild
 
 - `Evidência direta`: a skill `xpz-msbuild-import-export` passou a existir na raiz como contrato materializado em `xpz-msbuild-import-export/SKILL.md`.
-- `Evidência direta`: essa skill permanece experimental e, nesta fase, ja inclui a implementacao inicial de `scripts/Test-GeneXusMsBuildSetup.ps1` como probe nao invasivo de ambiente.
+- `Evidência direta`: essa skill permanece experimental e, nesta fase, ja inclui a implementacao inicial de `scripts/Test-GeneXusMsBuildSetup.ps1` como probe nao invasivo de ambiente; a descoberta de `MSBuild.exe` delega ao contrato compartilhado `scripts/GeneXusMsBuildPathContract.ps1` (`vswhere` + catalogo estatico VS 18/2022/2019) e expoe `msBuildProbe` no JSON; regressao do catalogo em `scripts/Test-GeneXusMsBuildDiscoveryContract.ps1`.
 - `Evidência direta`: essa skill tambem ja inclui a implementacao inicial de `scripts/Open-GeneXusKbHeadless.ps1` para abertura e fechamento controlados da KB com captura de contexto.
 - `Evidência direta`: essa skill tambem ja inclui a implementacao inicial de `scripts/Test-GeneXusXpzImportPreview.ps1` para `PreviewMode` de importacao sem alteracao real da KB, validada nesta conversa com `XPZ` real.
 - `Evidência direta`: essa skill tambem ja inclui a implementacao inicial de `scripts/Invoke-GeneXusXpzExport.ps1` para exportacao headless de `XPZ` com parametros explicitos.

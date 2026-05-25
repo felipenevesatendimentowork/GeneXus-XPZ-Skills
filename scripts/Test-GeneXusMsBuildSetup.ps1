@@ -106,19 +106,6 @@ function Get-KnownGeneXusCandidates {
     )
 }
 
-function Get-KnownMsBuildCandidates {
-    return @(
-        'C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin\MSBuild.exe',
-        'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe'
-    )
-}
-
 function Resolve-GeneXusDirectory {
     if (-not [string]::IsNullOrWhiteSpace($GeneXusDir)) {
         $resolved = Get-FullPathSafe -PathValue $GeneXusDir
@@ -180,58 +167,9 @@ function Resolve-GeneXusDirectory {
 }
 
 function Resolve-MsBuildExecutable {
-    if (-not [string]::IsNullOrWhiteSpace($MsBuildPath)) {
-        $resolved = Get-FullPathSafe -PathValue $MsBuildPath
-        Add-StrategyTrace -Message 'MsBuildPath usado conforme parâmetro explícito.'
-        if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
-            Add-BlockingReason -Reason ("MsBuildPath inválido: '{0}'." -f $resolved)
-            return [ordered]@{
-                path = $resolved
-                result = 'fail'
-                detail = 'Executável informado não foi encontrado.'
-                code = 11
-            }
-        }
-
-        return [ordered]@{
-            path = $resolved
-            result = 'ok'
-            detail = 'Executável informado encontrado.'
-            code = 0
-        }
-    }
-
-    $matches = New-Object System.Collections.Generic.List[string]
-    foreach ($candidate in Get-KnownMsBuildCandidates) {
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-            $matches.Add((Get-FullPathSafe -PathValue $candidate))
-        }
-    }
-
-    if ($matches.Count -gt 0) {
-        $selected = $matches[0]
-        $discarded = @($matches | Select-Object -Skip 1)
-        Add-StrategyTrace -Message ('MsBuildPath não informado; fallback aplicado em caminhos conhecidos do Visual Studio. Selecionado: {0}' -f $selected)
-        if ($discarded.Count -gt 0) {
-            Add-StrategyTrace -Message ('Candidatos de MSBuild descartados: {0}' -f ($discarded -join '; '))
-        }
-
-        return [ordered]@{
-            path = $selected
-            result = 'ok'
-            detail = 'MSBuild localizado por fallback em caminho conhecido.'
-            code = 0
-        }
-    }
-
-    Add-StrategyTrace -Message 'MsBuildPath não informado; fallback aplicado em caminhos conhecidos do Visual Studio sem sucesso.'
-    Add-BlockingReason -Reason 'MSBuild.exe não localizado.'
-    return [ordered]@{
-        path = $null
-        result = 'fail'
-        detail = 'Nenhum caminho conhecido de MSBuild foi encontrado.'
-        code = 11
-    }
+    return Resolve-MsBuildExecutableFromCatalog -ExplicitMsBuildPath $MsBuildPath `
+        -AddStrategyTrace { param($Message) Add-StrategyTrace -Message $Message } `
+        -AddBlockingReason { param($Reason) Add-BlockingReason -Reason $Reason }
 }
 
 function Validate-TargetsFile {
@@ -439,9 +377,10 @@ try {
         blockingReasons = @($script:BlockingReasons)
         warnings = @($script:Warnings)
         strategyTrace = @($script:StrategyTrace)
+        msBuildProbe = $msBuildResolution.msBuildProbe
     }
 
-    $json = $diagnostic | ConvertTo-Json -Depth 6
+    $json = $diagnostic | ConvertTo-Json -Depth 8
 
     if ($logValidation.result -eq 'ok') {
         Write-LogFile -TargetLogPath $logValidation.path -JsonPayload $json
@@ -468,9 +407,10 @@ catch {
         blockingReasons = @($_.Exception.Message)
         warnings = @()
         strategyTrace = @($script:StrategyTrace)
+        msBuildProbe = $null
     }
 
-    $failureJson = $failure | ConvertTo-Json -Depth 6
+    $failureJson = $failure | ConvertTo-Json -Depth 8
 
     try {
         if (-not [string]::IsNullOrWhiteSpace($resolvedLogPathForFallback)) {
