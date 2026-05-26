@@ -107,6 +107,7 @@ Do NOT use esta skill para:
 - Distinguir claramente:
   - sucesso operacional da chamada MSBuild
   - efeito funcional observado depois no GeneXus
+- Distinguir **Categoria B** (linhas `error :` no log MSBuild capturadas em `buildErrors`/`specifyErrors` no top-level do JSON): quando `executionEvidence.msBuildExitCode=0` mas essas listas não estiverem vazias, o wrapper rebaixa para **`exitCode=48`** (`msBuildCategoryBBlocked=true`) e `status` `falha operacional com rejeicao MSBuild no log` — **não** classificar como `compilou limpo` nem `specify e generate concluídos`; detalhe em [10-base-operacional-msbuild-headless.md](../10-base-operacional-msbuild-headless.md) e secção «Categorias A e B» em [xpz-msbuild-import-export/SKILL.md](../xpz-msbuild-import-export/SKILL.md); catálogo numérico em `scripts/msbuild-exit-codes.catalog.json`
 - Classificar o resultado de cada execução em uma das categorias definidas em WORKFLOW
 - Registrar `stdout`, `stderr`, `exitCode`, caminho do `.msbuild` temporário e log
 - Recomendar reabertura da KB na IDE somente quando houver warning ou efeito colateral
@@ -178,6 +179,10 @@ Skills externas não listadas nesta tabela não devem ser carregadas durante a e
 ## EXPECTED INTERFACE
 
 Dois scripts PowerShell, seguindo o mesmo padrão de `xpz-msbuild-import-export`.
+
+### Categoria B (rejeição MSBuild no log)
+
+Barragem estrutural compartilhada: `scripts/GeneXusMsBuildCategoryBSupport.ps1` (exit **48** em `scripts/msbuild-exit-codes.catalog.json`). Antes de varrer stdout/stderr manualmente ou declarar sucesso com `executionEvidence.msBuildExitCode=0`, ler no **top-level** do JSON de resultado: `exitCode`, `msBuildCategoryBBlocked`, `operationalSubState`, `buildErrors` (em `BuildAll`) ou `specifyErrors` (em `SpecifyGenerate`) e `blockingReasons`. Com `exitCode=48`, reproduzir as linhas `error :` ao usuário e tratar o resultado como **não confiável** para handoff operacional — mesmo que a task MSBuild tenha concluído com sucesso aparente.
 
 ### Invoke-GeneXusKbSpecifyGenerate.ps1
 
@@ -258,7 +263,8 @@ wrapper deve detectar a falha de `SetActiveVersion`/`SetActiveEnvironment`, emit
 
 **Categorias de resultado:**
 
-- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0, stdout sem padrões de alerta após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo) e sem conteúdo real em stderr após filtro de ruído estrutural conhecido
+- `falha operacional com rejeicao MSBuild no log` — Categoria B: `executionEvidence.msBuildExitCode=0` mas `specifyErrors` populado; `exitCode=48`, `msBuildCategoryBBlocked=true`, `operationalSubState` tipicamente `build com errors do MSBuild — resultado não confiável`; reproduzir linhas `error :` ao usuário; **não** declarar `specify e generate concluídos`
+- `specify e generate concluídos` — ambas as etapas passaram com exitCode 0 (classificado pelo wrapper, **sem** Categoria B), stdout sem padrões de alerta após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo) e sem conteúdo real em stderr após filtro de ruído estrutural conhecido
 - `reorg detectada ou executada` — padrão `Reorganiza` encontrado em stdout; `SpecifyAll` disparou reorganização real de banco de dados; não declarar sucesso; apresentar ao usuário e aguardar instrução explícita
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, mas impedimentos detectados: stderr não vazio, padrões de alerta (`Access denied`) ou eventos pós-build em stdout
 - `erro de specify` — `SpecifyAll` falhou; objetos com referências inválidas ou inconsistência
@@ -346,7 +352,8 @@ e confirmação explícita** por frase exata.
 
 **Categorias de resultado:**
 
-- `compilou limpo` — `BuildAll` concluiu com exitCode 0, sem reorg detectada, stderr vazio após filtro de ruído estrutural conhecido e stdout sem padrões de erro após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo)
+- `falha operacional com rejeicao MSBuild no log` — Categoria B: `executionEvidence.msBuildExitCode=0` mas `buildErrors` populado; `exitCode=48`, `msBuildCategoryBBlocked=true`, `operationalSubState` tipicamente `build com errors do MSBuild — resultado não confiável`; reproduzir linhas `error :` ao usuário; **não** declarar `compilou limpo`
+- `compilou limpo` — `BuildAll` concluiu com exitCode 0 (classificado pelo wrapper, **sem** Categoria B), sem reorg detectada, stderr vazio após filtro de ruído estrutural conhecido e stdout sem padrões de erro após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo)
 - `compilou com erros` — `BuildAll` falhou por erro de compilação
 - `reorg necessária detectada` — `FailIfReorg=true` bloqueou o build; reorg gerada mas
   não executada; usuário deve decidir o próximo passo
@@ -676,8 +683,12 @@ Read tool → $buildLog (build-all.log)
 ```
 
 Campos relevantes:
-- `status` — categoria de resultado (ver EXPECTED INTERFACE)
-- `exitCode` — código de saída classificado pelo wrapper (0 quando `compilou limpo`/`specify e generate concluídos`, valor não nulo quando há impedimento ou falha); também é o exit code do processo. O valor bruto da task MSBuild aparece canonicamente em `executionEvidence.msBuildExitCode`. `observedContext.MsBuildExitCode` (PascalCase, dentro do contexto observado), quando presente, é contexto observado/compatibilidade e não substitui o campo canônico; `msBuildExitCode` top-level, quando existir por compatibilidade transitória em algum wrapper, deve duplicar o valor canônico.
+- `status` — categoria de resultado (ver EXPECTED INTERFACE); com Categoria B costuma ser `falha operacional com rejeicao MSBuild no log`
+- `exitCode` — código de saída classificado pelo wrapper (0 quando `compilou limpo`/`specify e generate concluídos` **sem** Categoria B; **48** quando `msBuildCategoryBBlocked=true`; outros valores não nulos quando há impedimento ou falha); também é o exit code do processo. O valor bruto da task MSBuild aparece canonicamente em `executionEvidence.msBuildExitCode`. **Nunca** tratar `executionEvidence.msBuildExitCode=0` isolado como sucesso limpo quando `exitCode=48` ou `msBuildCategoryBBlocked=true`. `observedContext.MsBuildExitCode` (PascalCase, dentro do contexto observado), quando presente, é contexto observado/compatibilidade e não substitui o campo canônico; `msBuildExitCode` top-level, quando existir por compatibilidade transitória em algum wrapper, deve duplicar o valor canônico.
+- `msBuildCategoryBBlocked` — `true` quando Categoria B rebaixou o resultado para exit 48
+- `operationalSubState` — quando presente com `build com errors do MSBuild — resultado não confiável`, reforça que o build não é entrega operacional limpa
+- `buildErrors` / `specifyErrors` — listas no top-level (e espelhadas em `stdoutSignals` quando aplicável) com linhas `error :` classificadas; reproduzir ao usuário quando não vazias
+- `blockingReasons` — causas acionáveis; com Categoria B inclui resumo por estágio (`BuildAll` / `SpecifyGenerate`)
 - `executionEvidence` — evidência bruta da execução (`msBuildExitCode`, `msBuildFailed`, `wrapperExitCode`, logs brutos); `blockingReasons` deve priorizar causas acionáveis e não repetir o exit code bruto quando uma causa específica já existir
 - `summary` — descrição legível do resultado
 - `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
@@ -754,12 +765,14 @@ Campos relevantes:
       e `-AllowWideRebuild` não autoriza reorg
 8. Executar o script escolhido seguindo a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**
    (para `BuildAll`: processo desanexado + Watch em janela visível + `run_in_background`) e capturar:
-   - `exitCode`
+   - `exitCode`, `msBuildCategoryBBlocked`, `operationalSubState`
+   - `buildErrors` ou `specifyErrors` no top-level do JSON (quando existirem)
+   - `executionEvidence.msBuildExitCode` e `blockingReasons`
    - resumo de `stdout`
    - resumo de `stderr`
    - caminho do `.msbuild` temporário
    - caminho do log
-9. Escanear stdout e stderr por padrões de erro e risco antes de classificar, mesmo quando exitCode = 0:
+9. Ler `exitCode`, `msBuildCategoryBBlocked` e `buildErrors`/`specifyErrors` no JSON **antes** de classificar. Com `exitCode=48` ou `msBuildCategoryBBlocked=true`, classificar como `falha operacional com rejeicao MSBuild no log`, reproduzir linhas `error :` ao usuário e **não** usar `compilou limpo` nem `specify e generate concluídos`. Caso contrário, escanear stdout e stderr por padrões de erro e risco antes de classificar, inclusive quando `executionEvidence.msBuildExitCode=0` e `exitCode=0`:
    - padrão bloqueante máximo: `Reorganiza` em stdout → status `reorg detectada ou executada`; não declarar sucesso; informar ao usuário e aguardar instrução
    - eventos pós-build: linhas `start c:` ou `start cmd` em stdout → registrar como warning de processos externos disparados
    - stderr não vazio: qualquer conteúdo → registrar como warning; impede `specify e generate concluídos`
@@ -780,7 +793,7 @@ Campos relevantes:
     detectado no build (ex: extensão ausente, `Access denied`, stderr não vazio), ou se
     o contexto indicar que o objetivo é validar a aplicação em execução; não mencionar
     IDE nem URL quando o pedido foi apenas "faça um build" e o resultado foi limpo
-12. Não declarar sucesso funcional apenas por `exitCode = 0`
+12. Não declarar sucesso funcional apenas por `exitCode = 0` nem por `executionEvidence.msBuildExitCode = 0` quando `exitCode=48` ou `msBuildCategoryBBlocked=true`
 
 ---
 
@@ -804,6 +817,7 @@ Campos relevantes:
 - [ ] `Invoke-GeneXusDbImpact.ps1` foi executado antes de `Invoke-GeneXusDbReorg.ps1` quando o objetivo era inspecionar o impacto
 - [ ] `Invoke-GeneXusDbReorg.ps1` recebeu confirmação interativa explícita, mesmo quando precedida de `ImpactDatabaseOnly`
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
+- [ ] `msBuildCategoryBBlocked`, `operationalSubState` e `buildErrors`/`specifyErrors` no top-level do JSON foram lidos antes de declarar sucesso; com `exitCode=48`, a rodada foi tratada como Categoria B e as linhas `error :` foram reproduzidas ao usuário
 - [ ] `executionEvidence.msBuildExitCode` foi registrado como local canônico do valor bruto da task MSBuild; `msBuildExitCode` top-level, quando existir, foi tratado apenas como compatibilidade transitória e duplicação do valor canônico
 - [ ] `observedContext.pathEnrichment` registrou o enriquecimento preventivo do `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`)
 - [ ] O resultado foi classificado em categoria explícita
