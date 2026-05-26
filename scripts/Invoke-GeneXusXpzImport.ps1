@@ -149,6 +149,12 @@ if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
 }
 . $watcherSupportPath
 
+$categoryBSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildCategoryBSupport.ps1'
+if (-not (Test-Path -LiteralPath $categoryBSupportPath -PathType Leaf)) {
+    throw "Category B support script not found: $categoryBSupportPath"
+}
+. $categoryBSupportPath
+
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
 function Get-Utf8NoBomEncoding {
@@ -627,14 +633,19 @@ function Get-MatchingLines {
 function Get-ImportExitCode {
     param(
         [int]$MsBuildExitCode,
-        [string]$ResolvedUpdateFilePath
+        [string]$ResolvedUpdateFilePath,
+        [string[]]$ImportErrors
     )
 
     if ($MsBuildExitCode -eq 0) {
         if (-not [string]::IsNullOrWhiteSpace($ResolvedUpdateFilePath) -and -not (Test-Path -LiteralPath $ResolvedUpdateFilePath -PathType Leaf)) {
             return 32
         }
-        return 0
+        return (Resolve-GeneXusMsBuildCategoryBExitCode `
+            -BaseExitCode 0 `
+            -MsBuildExitCode $MsBuildExitCode `
+            -MsBuildErrors $ImportErrors `
+            -InvalidTypesRejected @())
     }
 
     return 31
@@ -914,6 +925,8 @@ try {
     $importWarningLines = @()
     $signalsPath        = Join-Path $artifactDirectory 'msbuild.import.signals.json'
     $importSignals      = $null
+    $importErrors       = @()
+    $knownStdOutNoise   = @()
     $gxImportLogReadStatus = 'ok'
     $gxImportLogReadError = $null
 
@@ -953,6 +966,12 @@ try {
                 if ($null -ne $importSignals.PSObject.Properties['gxImportLogReadError']) {
                     $gxImportLogReadError = $importSignals.gxImportLogReadError
                 }
+                if ($null -ne $importSignals.PSObject.Properties['errors']) {
+                    $importErrors = @($importSignals.errors)
+                }
+                if ($null -ne $importSignals.PSObject.Properties['knownStdOutNoise']) {
+                    $knownStdOutNoise = @($importSignals.knownStdOutNoise)
+                }
                 if ($gxImportLogReadStatus -in @('locked', 'error')) {
                     $diagnosticDegraded = $true
                     $diagnosticDegradedReason = ('Leitura de GxImport.log degradada: {0}' -f $gxImportLogReadStatus)
@@ -989,7 +1008,25 @@ try {
         Add-BlockingReason -Reason ("SetActiveEnvironment falhou — o Environment '{0}' nao existe nesta KB. O Environment ativo no momento da abertura era '{1}'. Para usar o Environment ativo, omita o parametro -EnvironmentName." -f $requestedEnvironment, $actualEnvironment)
     }
 
-    $importExitCode = Get-ImportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedUpdateFilePath $resolvedUpdateFilePath
+    if ($importErrors.Count -gt 0) {
+        Add-WarningMessage -Message ('MSBuild emitiu {0} linha(s) com error: no log apesar de sucesso aparente da task Import; ver importErrors no diagnostico.' -f $importErrors.Count)
+        $maxImportErrorLines = 5
+        for ($i = 0; $i -lt [Math]::Min($importErrors.Count, $maxImportErrorLines); $i++) {
+            Add-WarningMessage -Message ('importErrors[{0}]: {1}' -f $i, $importErrors[$i])
+        }
+    }
+
+    $importExitCode = Get-ImportExitCode `
+        -MsBuildExitCode $msBuildExitCode `
+        -ResolvedUpdateFilePath $resolvedUpdateFilePath `
+        -ImportErrors $importErrors
+
+    $msBuildCategoryBBlocked = ($importExitCode -eq $script:GeneXusMsBuildCategoryBExitCode)
+    $operationalSubState = $null
+    if ($msBuildCategoryBBlocked) {
+        $operationalSubState = $script:ImportOperationalSubStateCategoryB
+    }
+
     if ($importExitCode -eq 0) {
         if ($postProcessingFailed) {
             $status = 'sucesso operacional com falha no pos-processamento'
@@ -997,6 +1034,16 @@ try {
         } else {
             $status = 'sucesso operacional'
             $summary = 'Importação real executada sem erro operacional.'
+        }
+    } elseif ($msBuildCategoryBBlocked) {
+        $categoryBSummary = Get-GeneXusMsBuildCategoryBStatusSummary `
+            -OperationLabel 'Importação real' `
+            -ArtifactOnDisk $true `
+            -ArtifactKind 'pacote importado'
+        $status = $categoryBSummary.Status
+        $summary = $categoryBSummary.Summary
+        foreach ($reason in (Get-GeneXusMsBuildCategoryBBlockingReasons -MsBuildErrors $importErrors -InvalidTypesRejected @() -StageLabel 'Import')) {
+            Add-BlockingReason -Reason $reason
         }
     } else {
         $status = 'falha operacional'
@@ -1068,8 +1115,14 @@ try {
         watcherContext = $script:WatcherContext
         timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         importedItems = $importedItems
+        importErrors = @($importErrors)
+        knownStdOutNoise = @($knownStdOutNoise)
+        operationalSubState = $operationalSubState
+        msBuildCategoryBBlocked = $msBuildCategoryBBlocked
         stdoutSignals = [ordered]@{
             importWarnings = $importWarningLines
+            importErrors = @($importErrors)
+            knownStdOutNoise = @($knownStdOutNoise)
             compactSignals = $importSignals
         }
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered

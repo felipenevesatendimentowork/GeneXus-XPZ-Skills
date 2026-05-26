@@ -25,7 +25,7 @@ function Assert-SubState {
 $consolidado = 'exportação concluída e inventário consolidado'
 $extras = 'exportação concluída, inventário com extras não conciliados'
 $degradado = 'exportação concluída sem inventário (degradado)'
-$errosParciais = 'exportação concluída com erros parciais ignorados pela task'
+$errosParciais = 'exportação parcial com errors do MSBuild — artefato não confiável'
 
 Assert-SubState -Label 'degradado' -Expected $degradado -Actual (
     Resolve-ExportPackageInventoryOperationalSubState -PackageInventory $null -InventoryDegraded $true

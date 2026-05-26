@@ -206,6 +206,12 @@ if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
 }
 . $watcherSupportPath
 
+$categoryBSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildCategoryBSupport.ps1'
+if (-not (Test-Path -LiteralPath $categoryBSupportPath -PathType Leaf)) {
+    throw "Category B support script not found: $categoryBSupportPath"
+}
+. $categoryBSupportPath
+
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
 function Get-Utf8NoBomEncoding {
@@ -1359,7 +1365,54 @@ try {
         }
     }
 
-    if ($buildStatus.ExitCode -ne 0 -and $script:BlockingReasons.Count -eq 0) {
+    $buildErrors = @()
+    $knownStdOutNoiseBuild = @()
+    $signalsScript = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
+    if (Test-Path -LiteralPath $signalsScript -PathType Leaf) {
+        try {
+            $buildSignalsJson = (& $signalsScript -StdOutPath $stdOutPath -StdErrPath $stdErrPath -Stage 'build-all' -AsJson) | Out-String
+            if (-not [string]::IsNullOrWhiteSpace($buildSignalsJson)) {
+                $buildSignals = $buildSignalsJson | ConvertFrom-Json
+                if ($null -ne $buildSignals.PSObject.Properties['errors']) {
+                    $buildErrors = @($buildSignals.errors)
+                }
+                if ($null -ne $buildSignals.PSObject.Properties['knownStdOutNoise']) {
+                    $knownStdOutNoiseBuild = @($buildSignals.knownStdOutNoise)
+                }
+            }
+        }
+        catch {
+            Add-WarningMessage -Message ('Falha ao classificar sinais build-all para Categoria B: {0}' -f $_.Exception.Message)
+        }
+    }
+
+    $msBuildCategoryBBlocked = $false
+    $operationalSubStateBuild = $null
+    if ($msBuildExitCode -eq 0 -and $buildStatus.ExitCode -eq 0) {
+        $categoryBExit = Resolve-GeneXusMsBuildCategoryBExitCode `
+            -BaseExitCode $buildStatus.ExitCode `
+            -MsBuildExitCode $msBuildExitCode `
+            -MsBuildErrors $buildErrors `
+            -InvalidTypesRejected @()
+        if ($categoryBExit -eq $script:GeneXusMsBuildCategoryBExitCode) {
+            $msBuildCategoryBBlocked = $true
+            $operationalSubStateBuild = $script:BuildOperationalSubStateCategoryB
+            $categoryBSummary = Get-GeneXusMsBuildCategoryBStatusSummary `
+                -OperationLabel 'BuildAll' `
+                -ArtifactOnDisk $false `
+                -ArtifactKind $null
+            $buildStatus = [ordered]@{
+                Status   = $categoryBSummary.Status
+                Summary  = $categoryBSummary.Summary
+                ExitCode = $categoryBExit
+            }
+            foreach ($reason in (Get-GeneXusMsBuildCategoryBBlockingReasons -MsBuildErrors $buildErrors -InvalidTypesRejected @() -StageLabel 'BuildAll')) {
+                Add-BlockingReason -Reason $reason
+            }
+        }
+    }
+
+    if ($buildStatus.ExitCode -ne 0 -and -not $msBuildCategoryBBlocked -and $script:BlockingReasons.Count -eq 0) {
         Add-BlockingReason -Reason 'MSBuild falhou sem causa acionável classificada; consulte executionEvidence e logs brutos nos artefatos.'
     }
 
@@ -1428,10 +1481,16 @@ try {
             ExecutionLogPath = $resolvedLogPath
         }
         watcherContext   = $script:WatcherContext
+        buildErrors          = @($buildErrors)
+        knownStdOutNoise     = @($knownStdOutNoiseBuild)
+        operationalSubState  = $operationalSubStateBuild
+        msBuildCategoryBBlocked = $msBuildCategoryBBlocked
         stdoutSignals        = [ordered]@{
             blockingPattern = $detectedBlockingPattern
             postBuildEvents = $postBuildEventLines
             buildWarnings   = $buildWarningLines
+            buildErrors     = @($buildErrors)
+            knownStdOutNoise = @($knownStdOutNoiseBuild)
         }
         stdoutFilteredNoise  = Split-NonEmptyLines -Text $stdOutFilteredNoise
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered

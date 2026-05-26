@@ -143,6 +143,12 @@ if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
 }
 . $watcherSupportPath
 
+$categoryBSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildCategoryBSupport.ps1'
+if (-not (Test-Path -LiteralPath $categoryBSupportPath -PathType Leaf)) {
+    throw "Category B support script not found: $categoryBSupportPath"
+}
+. $categoryBSupportPath
+
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
 function Get-Utf8NoBomEncoding {
@@ -600,16 +606,19 @@ function Get-RegexValue {
 function Get-PreviewExitCode {
     param(
         [int]$MsBuildExitCode,
-        [string]$StdOutText,
-        [string]$StdErrText,
-        [string]$ResolvedUpdateFilePath
+        [string]$ResolvedUpdateFilePath,
+        [string[]]$PreviewErrors
     )
 
     if ($MsBuildExitCode -eq 0) {
         if (-not [string]::IsNullOrWhiteSpace($ResolvedUpdateFilePath) -and -not (Test-Path -LiteralPath $ResolvedUpdateFilePath -PathType Leaf)) {
             return 32
         }
-        return 0
+        return (Resolve-GeneXusMsBuildCategoryBExitCode `
+            -BaseExitCode 0 `
+            -MsBuildExitCode $MsBuildExitCode `
+            -MsBuildErrors $PreviewErrors `
+            -InvalidTypesRejected @())
     }
 
     return 31
@@ -887,6 +896,8 @@ try {
     $importWarningLines = @()
     $signalsPath        = Join-Path $artifactDirectory 'msbuild.import.signals.json'
     $importSignals      = $null
+    $previewErrors      = @()
+    $knownStdOutNoise   = @()
     $gxImportLogReadStatus = 'ok'
     $gxImportLogReadError = $null
 
@@ -926,6 +937,12 @@ try {
                 if ($null -ne $importSignals.PSObject.Properties['gxImportLogReadError']) {
                     $gxImportLogReadError = $importSignals.gxImportLogReadError
                 }
+                if ($null -ne $importSignals.PSObject.Properties['errors']) {
+                    $previewErrors = @($importSignals.errors)
+                }
+                if ($null -ne $importSignals.PSObject.Properties['knownStdOutNoise']) {
+                    $knownStdOutNoise = @($importSignals.knownStdOutNoise)
+                }
                 if ($gxImportLogReadStatus -in @('locked', 'error')) {
                     $diagnosticDegraded = $true
                     $diagnosticDegradedReason = ('Leitura de GxImport.log degradada: {0}' -f $gxImportLogReadStatus)
@@ -962,7 +979,21 @@ try {
         Add-BlockingReason -Reason ("SetActiveEnvironment falhou — o Environment '{0}' nao existe nesta KB. O Environment ativo no momento da abertura era '{1}'. Para usar o Environment ativo, omita o parametro -EnvironmentName." -f $requestedEnvironment, $actualEnvironment)
     }
 
-    $previewExitCode = Get-PreviewExitCode -MsBuildExitCode $msBuildExitCode -StdOutText $stdOutText -StdErrText $stdErrText -ResolvedUpdateFilePath $resolvedUpdateFilePath
+    if ($previewErrors.Count -gt 0) {
+        Add-WarningMessage -Message ('MSBuild emitiu {0} linha(s) com error: no log apesar de sucesso aparente do preview; ver previewErrors no diagnostico.' -f $previewErrors.Count)
+    }
+
+    $previewExitCode = Get-PreviewExitCode `
+        -MsBuildExitCode $msBuildExitCode `
+        -ResolvedUpdateFilePath $resolvedUpdateFilePath `
+        -PreviewErrors $previewErrors
+
+    $msBuildCategoryBBlocked = ($previewExitCode -eq $script:GeneXusMsBuildCategoryBExitCode)
+    $operationalSubState = $null
+    if ($msBuildCategoryBBlocked) {
+        $operationalSubState = $script:PreviewOperationalSubStateCategoryB
+    }
+
     if ($previewExitCode -eq 0) {
         if ($postProcessingFailed) {
             $status = 'preview apenas com falha no pos-processamento'
@@ -970,6 +1001,16 @@ try {
         } else {
             $status = 'preview apenas'
             $summary = 'Preview de importação executado sem alterar a KB.'
+        }
+    } elseif ($msBuildCategoryBBlocked) {
+        $categoryBSummary = Get-GeneXusMsBuildCategoryBStatusSummary `
+            -OperationLabel 'Preview de importação' `
+            -ArtifactOnDisk $false `
+            -ArtifactKind $null
+        $status = $categoryBSummary.Status
+        $summary = $categoryBSummary.Summary
+        foreach ($reason in (Get-GeneXusMsBuildCategoryBBlockingReasons -MsBuildErrors $previewErrors -InvalidTypesRejected @() -StageLabel 'Preview')) {
+            Add-BlockingReason -Reason $reason
         }
     } else {
         $status = 'falha operacional'
@@ -1039,8 +1080,14 @@ try {
         watcherContext = $script:WatcherContext
         timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
         importedItems = $importedItems
+        previewErrors = @($previewErrors)
+        knownStdOutNoise = @($knownStdOutNoise)
+        operationalSubState = $operationalSubState
+        msBuildCategoryBBlocked = $msBuildCategoryBBlocked
         stdoutSignals = [ordered]@{
             importWarnings = $importWarningLines
+            previewErrors = @($previewErrors)
+            knownStdOutNoise = @($knownStdOutNoise)
             compactSignals = $importSignals
         }
         stderrContent        = Split-NonEmptyLines -Text $stdErrFiltered

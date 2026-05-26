@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "description": "Catalogo inicial de exit codes classificados pelos wrappers MSBuild GeneXus. Expandir conforme 999-ideias-pendentes (catálogo completo).",
+  "codes": [
+    {
+      "exitCode": 48,
+      "scope": "wrappers-msbuild",
+      "category": "B",
+      "label": "msbuild-category-b-rejection",
+      "summary": "Task MSBuild concluiu com sucesso aparente (executionEvidence.msBuildExitCode=0), mas o log contem linha(s) error: e/ou invalidTypesRejected. Artefato ou KB podem ter sido afetados; nao declarar entrega operacional limpa."
+    },
+    {
+      "exitCode": 41,
+      "scope": "export",
+      "label": "export-msbuild-failed",
+      "summary": "Falha da task Export (msBuildExitCode != 0)."
+    },
+    {
+      "exitCode": 42,
+      "scope": "export",
+      "label": "export-xpz-missing",
+      "summary": "Task Export concluiu sem XPZ no caminho esperado."
+    },
+    {
+      "exitCode": 31,
+      "scope": "import-preview",
+      "label": "import-msbuild-failed",
+      "summary": "Falha da task Import (msBuildExitCode != 0) em import real ou preview."
+    },
+    {
+      "exitCode": 32,
+      "scope": "import-preview",
+      "label": "import-updatefile-missing",
+      "summary": "UpdateFile esperado ausente apos import/preview com msBuildExitCode=0."
+    }
+  ]
+}

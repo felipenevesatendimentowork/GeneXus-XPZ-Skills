@@ -40,5 +40,6 @@ Para cada candidato em KB com instância real:
 ## Referências
 
 - `scripts/gx-object-type-catalog.json` — campo `exportTaskLabel` por tipo
-- `xpz-msbuild-import-export/SKILL.md` — parâmetro `-ObjectList` e erros parciais
-- `scripts/Invoke-GeneXusXpzExport.ps1` — `invalidTypesRejected`, inventário pós-export
+- `xpz-msbuild-import-export/SKILL.md` — parâmetro `-ObjectList`, Categorias A/B e barragem `exitCode=48`
+- `scripts/Invoke-GeneXusXpzExport.ps1` — `invalidTypesRejected`, inventário pós-export, `exportErrors` → exit 48
+- `scripts/msbuild-exit-codes.catalog.json` — código 48 (Categoria B)

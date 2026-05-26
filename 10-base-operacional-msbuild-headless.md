@@ -733,7 +733,14 @@ Saídas esperadas dos scripts:
   - sucesso operacional com falha no pos-processamento — `executionEvidence.msBuildExitCode=0`, evidência primária do log bruto presente (`__IMPORTED_ITEM__` ou `__EXPORTED_FILE__` mais arquivo XPZ existente), mas pos-processamento local do wrapper falhou e o JSON saiu com `postProcessingFailed=true`; não é `falha operacional`
   - preview apenas com falha no pos-processamento — análogo ao anterior na fase de preview: `executionEvidence.msBuildExitCode=0` sem alterar a KB, evidência primária preservada no log bruto, pos-processamento local falhou; não é `falha operacional`
   - operação concluída, porém ainda pendente de confirmação funcional
-- no diagnóstico JSON, distinguir `exitCode` (valor classificado pelo wrapper — 0/32/41/42/... — e também exit code do processo) de `executionEvidence.msBuildExitCode` (local canônico do valor bruto da task MSBuild); `msBuildExitCode` top-level, quando existir, é compatibilidade transitória e deve duplicar o valor canônico; ambos devem aparecer no diagnóstico parcial em caso de falha no pos-processamento
+- no diagnóstico JSON, distinguir `exitCode` (valor classificado pelo wrapper — 0/32/41/42/48/... — e também exit code do processo) de `executionEvidence.msBuildExitCode` (local canônico do valor bruto da task MSBuild); `msBuildExitCode` top-level, quando existir, é compatibilidade transitória e deve duplicar o valor canônico; ambos devem aparecer no diagnóstico parcial em caso de falha no pos-processamento
+
+### Categorias A e B (rejeição MSBuild vs comportamento esperado)
+
+- **Categoria A:** extras de inventário, módulos/ExternalObjects de plataforma, `attributesTopLevelUnreconciled` — decisão do agente (inventário, Decisão pós-gates); o wrapper pode manter `exitCode=0`.
+- **Categoria B:** linhas `error :` no log, `invalidTypesRejected`, ou `importErrors`/`previewErrors`/`buildErrors` no JSON — quando `executionEvidence.msBuildExitCode=0` e a lista não estiver vazia, o wrapper rebaixa para **`exitCode=48`** (`msBuildCategoryBBlocked=true`); XPZ/pacote pode existir **só para inspeção**.
+- Catálogo numérico inicial: `scripts/msbuild-exit-codes.catalog.json`. Implementação: `scripts/GeneXusMsBuildCategoryBSupport.ps1`. Skill: `xpz-msbuild-import-export/SKILL.md` (secção «Categorias A e B»).
+- A frase «sinalizar sem rebaixar exitCode» vale **exclusivamente** para Categoria A.
 
 ### Contrato Transversal De Diagnóstico JSON Dos Wrappers MSBuild
 

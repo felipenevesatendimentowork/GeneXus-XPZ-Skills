@@ -133,6 +133,12 @@ if (-not (Test-Path -LiteralPath $exportInventoryGovernancePath -PathType Leaf))
 }
 . $exportInventoryGovernancePath
 
+$categoryBSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildCategoryBSupport.ps1'
+if (-not (Test-Path -LiteralPath $categoryBSupportPath -PathType Leaf)) {
+    throw "Category B support script not found: $categoryBSupportPath"
+}
+. $categoryBSupportPath
+
 if ($FullExport) {
     $ExportAll = 'true'
 }
@@ -595,7 +601,9 @@ function Split-NonEmptyLines {
 function Get-ExportExitCode {
     param(
         [int]$MsBuildExitCode,
-        [string]$ResolvedXpzPath
+        [string]$ResolvedXpzPath,
+        [string[]]$ExportErrors,
+        [string[]]$InvalidTypesRejected
     )
 
     if ($MsBuildExitCode -ne 0) {
@@ -606,7 +614,11 @@ function Get-ExportExitCode {
         return 42
     }
 
-    return 0
+    return (Resolve-GeneXusMsBuildCategoryBExitCode `
+        -BaseExitCode 0 `
+        -MsBuildExitCode $MsBuildExitCode `
+        -MsBuildErrors $ExportErrors `
+        -InvalidTypesRejected $InvalidTypesRejected)
 }
 
 $script:BlockingReasons = New-Object System.Collections.Generic.List[string]
@@ -1000,24 +1012,38 @@ try {
         Add-BlockingReason -Reason ('XPZ de saída não foi encontrado após a exportação: {0}' -f $resolvedXpzPath)
     }
 
-    $exportExitCode = Get-ExportExitCode -MsBuildExitCode $msBuildExitCode -ResolvedXpzPath $resolvedXpzPath
+    $exportExitCode = Get-ExportExitCode `
+        -MsBuildExitCode $msBuildExitCode `
+        -ResolvedXpzPath $resolvedXpzPath `
+        -ExportErrors $exportErrors `
+        -InvalidTypesRejected $invalidTypesRejected
+
+    $msBuildCategoryBBlocked = ($exportExitCode -eq $script:GeneXusMsBuildCategoryBExitCode)
+
     if ($exportExitCode -eq 0) {
         if ($postProcessingFailed) {
             $status = 'sucesso operacional com falha no pos-processamento'
             $summary = 'Exportação headless concluída e XPZ gerado, mas o pós-processamento local falhou. Evidências do MSBuild preservadas.'
-        } elseif ($exportErrors.Count -gt 0) {
-            $status = 'sucesso operacional'
-            $summary = 'Exportação headless concluída e XPZ gerado, com erros parciais no log MSBuild ignorados pela task.'
         } else {
             $status = 'sucesso operacional'
             $summary = 'Exportação headless concluída e XPZ gerado.'
+        }
+    } elseif ($msBuildCategoryBBlocked) {
+        $categoryBSummary = Get-GeneXusMsBuildCategoryBStatusSummary `
+            -OperationLabel 'Exportação headless' `
+            -ArtifactOnDisk $fileExists `
+            -ArtifactKind 'XPZ'
+        $status = $categoryBSummary.Status
+        $summary = $categoryBSummary.Summary
+        foreach ($reason in (Get-GeneXusMsBuildCategoryBBlockingReasons -MsBuildErrors $exportErrors -InvalidTypesRejected $invalidTypesRejected -StageLabel 'Export')) {
+            Add-BlockingReason -Reason $reason
         }
     } else {
         $status = 'falha operacional'
         $summary = 'Exportação headless falhou durante a execução do MSBuild.'
     }
 
-    if ($exportExitCode -ne 0) {
+    if ($exportExitCode -ne 0 -and -not $msBuildCategoryBBlocked) {
         if ($stdOutText -match "A versão '([^']+)' não existe") {
             Add-BlockingReason -Reason ("SetActiveVersion rejeitou VersionName '$($Matches[1])' — provavel incompatibilidade entre nome descritivo retornado por GetVersionProperty e identificador aceito pela task; para exportar da versao ativa, omitir -VersionName.")
         }
@@ -1109,6 +1135,7 @@ try {
         inventoryError = if ($null -ne $inventoryBlock) { $inventoryBlock.inventoryError } else { $null }
         packageInventory = if ($null -ne $inventoryBlock) { $inventoryBlock.packageInventory } else { $null }
         operationalSubState = $operationalSubState
+        msBuildCategoryBBlocked = $msBuildCategoryBBlocked
         exportSignalsDegraded = $exportSignalsDegraded
         exportSignalsDegradedReason = $exportSignalsDegradedReason
         compactSignals = $exportSignals

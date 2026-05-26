@@ -19,7 +19,7 @@ function Resolve-ExportOperationalSubState {
 
     # Precedência fixa de operationalSubState (do mais forte ao mais fraco):
     #   1. exportErrors[] não vazio ->
-    #      "exportação concluída com erros parciais ignorados pela task"
+    #      "exportação parcial com errors do MSBuild — artefato não confiável"
     #   2. inventoryDegraded=true ->
     #      "exportação concluída sem inventário (degradado)"
     #   3. seletiva (packageInventory.selectiveExport) com sinais de extras
@@ -29,7 +29,7 @@ function Resolve-ExportOperationalSubState {
     #   4. caso base -> "exportação concluída e inventário consolidado"
 
     if (@($ExportErrors).Count -gt 0) {
-        return 'exportação concluída com erros parciais ignorados pela task'
+        return 'exportação parcial com errors do MSBuild — artefato não confiável'
     }
     if ($null -ne $InventoryBlock) {
         return [string]$InventoryBlock.operationalSubState

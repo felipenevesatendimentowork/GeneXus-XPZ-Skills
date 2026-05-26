@@ -840,6 +840,7 @@ Campos relevantes:
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER tratar `exitCode = 0` isolado como confirmação funcional
 - NEVER classificar como `compilou limpo` quando stdout ou stderr contiver padrões de erro (`Access denied`, `error MSB`, `: error `, `FAILED`, stack traces) fora do ruído estrutural GAM/NetCore documentado, mesmo que exitCode = 0
+- NEVER ignorar **`exitCode=48`** (`msBuildCategoryBBlocked=true`) — Categoria B: `executionEvidence.msBuildExitCode=0` com linhas `error :` em `buildErrors`/`specifyErrors` no JSON; ver `scripts/msbuild-exit-codes.catalog.json` e Categorias A/B em `xpz-msbuild-import-export/SKILL.md`
 - NEVER classificar como `specify e generate concluídos` quando stdout contiver padrão `Reorganiza` — o status correto é `reorg detectada ou executada`
 - NEVER tratar stderr não vazio como irrelevante — qualquer conteúdo em stderr deve ser registrado como warning e impede classificação como `specify e generate concluídos`
 - NEVER chamar `Invoke-GeneXusKbSpecifyGenerate.ps1` quando houver sinal de alteração estrutural de atributo no import recente sem a confirmação explícita do usuário com a frase `entendo que haverá reorg e concordo que prossiga`
