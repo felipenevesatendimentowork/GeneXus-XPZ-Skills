@@ -31,11 +31,8 @@ Raiz da pasta paralela; resolve override em scripts/ quando CatalogOverridePath 
 .PARAMETER FailOnUnknownTypes
 Retorna exit code 3 quando houver tipo nao mapeado no catalogo efetivo (pre-varredura de sync).
 
-.PARAMETER SystemModulesCatalogPath
-Caminho opcional para gx-system-modules.txt (modulos de plataforma/SDK).
-
-.PARAMETER SystemExternalObjectsCatalogPath
-Caminho opcional para gx-system-external-objects.txt (ExternalObjects de plataforma/SDK).
+.PARAMETER PlatformObjectsCatalogPath
+Caminho opcional para gx-platform-objects.json (catalogo unificado de plataforma/SDK).
 
 .PARAMETER FailOnDeltaMismatch
 Quando informado junto com delta declarado, retorna exit code 2 se houver objetos
@@ -62,9 +59,7 @@ param(
 
     [switch]$FailOnUnknownTypes,
 
-    [string]$SystemModulesCatalogPath,
-
-    [string]$SystemExternalObjectsCatalogPath,
+    [string]$PlatformObjectsCatalogPath,
 
     [switch]$FailOnDeltaMismatch,
 
@@ -80,19 +75,11 @@ if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {
 }
 . $supportScript
 
-function Get-SystemModuleNameSet {
-    param([string]$Path)
-
-    $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
-        $trimmed = $line.Trim()
-        if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith('#')) {
-            continue
-        }
-        [void]$set.Add($trimmed)
-    }
-    return $set
+$platformCatalogSupport = Join-Path $PSScriptRoot 'GeneXusPlatformObjectsCatalogSupport.ps1'
+if (-not (Test-Path -LiteralPath $platformCatalogSupport -PathType Leaf)) {
+    throw "BLOCK: support script not found: $platformCatalogSupport"
 }
+. $platformCatalogSupport
 
 function Get-IdentityKey {
     param(
@@ -286,56 +273,6 @@ function Get-ObjectsByTypeMap {
     return $map
 }
 
-function Test-IsPlatformModuleInventoryItem {
-    param($Item)
-
-    if ($Item.sourceBlock -ne 'Objects' -or [string]::IsNullOrWhiteSpace($Item.name)) {
-        return $false
-    }
-
-    # Export real GeneXus 18 traz SDK/plataforma como PackagedModule (GUID c88fffcd-...).
-    # Module (GUID 00000000-...-000006) e container de KB do usuario.
-    return $Item.typeName -eq 'Module' -or $Item.typeName -eq 'PackagedModule'
-}
-
-function Get-SystemModulesPresent {
-    param(
-        $InventoryItems,
-        [System.Collections.Generic.HashSet[string]]$SystemModuleNames
-    )
-
-    $found = [System.Collections.Generic.List[string]]::new()
-    foreach ($item in @($InventoryItems | Where-Object { Test-IsPlatformModuleInventoryItem -Item $_ })) {
-        if ($SystemModuleNames.Contains($item.name)) {
-            if (-not $found.Contains($item.name)) {
-                $found.Add($item.name) | Out-Null
-            }
-        }
-    }
-    return @($found | Sort-Object)
-}
-
-function Get-SystemExternalObjectsPresent {
-    param(
-        $InventoryItems,
-        [System.Collections.Generic.HashSet[string]]$SystemExternalObjectNames
-    )
-
-    $found = [System.Collections.Generic.List[string]]::new()
-    foreach ($item in @($InventoryItems | Where-Object {
-            $_.sourceBlock -eq 'Objects' -and
-            $_.typeName -eq 'ExternalObject' -and
-            -not [string]::IsNullOrWhiteSpace($_.name)
-        })) {
-        if ($SystemExternalObjectNames.Contains($item.name)) {
-            if (-not $found.Contains($item.name)) {
-                $found.Add($item.name) | Out-Null
-            }
-        }
-    }
-    return @($found | Sort-Object)
-}
-
 if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
     throw "BLOCK: InputPath nao encontrado: $InputPath"
 }
@@ -345,22 +282,11 @@ $CatalogPath = $catalogResolution.BaseCatalogPath
 $guidMap = Get-GeneXusCatalogGuidToTypeMap -MergedCatalog $catalogResolution.MergedCatalog
 $catalogFolderMap = Get-GeneXusCatalogGuidToFolderMap -MergedCatalog $catalogResolution.MergedCatalog
 
-if (-not $SystemModulesCatalogPath) {
-    $SystemModulesCatalogPath = Join-Path $PSScriptRoot 'gx-system-modules.txt'
+if (-not $PlatformObjectsCatalogPath) {
+    $PlatformObjectsCatalogPath = Join-Path $PSScriptRoot 'gx-platform-objects.json'
 }
-if (-not (Test-Path -LiteralPath $SystemModulesCatalogPath -PathType Leaf)) {
-    throw "BLOCK: SystemModulesCatalogPath nao encontrado: $SystemModulesCatalogPath"
-}
-
-if (-not $SystemExternalObjectsCatalogPath) {
-    $SystemExternalObjectsCatalogPath = Join-Path $PSScriptRoot 'gx-system-external-objects.txt'
-}
-if (-not (Test-Path -LiteralPath $SystemExternalObjectsCatalogPath -PathType Leaf)) {
-    throw "BLOCK: SystemExternalObjectsCatalogPath nao encontrado: $SystemExternalObjectsCatalogPath"
-}
-
-$systemModuleNames = Get-SystemModuleNameSet -Path $SystemModulesCatalogPath
-$systemExternalObjectNames = Get-SystemModuleNameSet -Path $SystemExternalObjectsCatalogPath
+$platformCatalog = Import-GeneXusPlatformObjectsCatalog -CatalogPath $PlatformObjectsCatalogPath
+$platformKindSets = Get-PlatformObjectKindSets -Catalog $platformCatalog
 
 $package = Get-ExportFileXmlDocument -Path $InputPath
 $root = $package.Document.DocumentElement
@@ -403,8 +329,7 @@ foreach ($item in $unknownTypeItems) {
 $unknownTypesDiscovery = @(Get-GeneXusUnknownObjectTypesFromExportFile -XmlDocument $package.Document -GuidToFolderMap $catalogFolderMap)
 
 $objectsByType = Get-ObjectsByTypeMap -InventoryItems $inventoryArray
-$systemModulesPresent = Get-SystemModulesPresent -InventoryItems $inventoryArray -SystemModuleNames $systemModuleNames
-$systemExternalObjectsPresent = Get-SystemExternalObjectsPresent -InventoryItems $inventoryArray -SystemExternalObjectNames $systemExternalObjectNames
+$systemObjectsPresent = @(Get-SystemObjectsPresent -InventoryItems $inventoryArray -PlatformKindSets $platformKindSets)
 
 $deltaComparison = $null
 $selectiveExport = $false
@@ -467,8 +392,7 @@ if ($declaredItems.Count -gt 0) {
         extraObjects        = @($extraObjects)
         missingObjects      = @($missingObjects)
         uncomparableObjects = @($uncomparableObjects)
-        systemModulesPresent = @($systemModulesPresent)
-        systemExternalObjectsPresent = @($systemExternalObjectsPresent)
+        systemObjectsPresent = @($systemObjectsPresent)
     }
 }
 
@@ -510,8 +434,7 @@ $result = [ordered]@{
     objectCount          = $objectItems.Count
     attributeCount       = $attributeItems.Count
     objectsByType                 = $objectsByType
-    systemModulesPresent          = @($systemModulesPresent)
-    systemExternalObjectsPresent  = @($systemExternalObjectsPresent)
+    systemObjectsPresent          = @($systemObjectsPresent)
     declaredIncludesTransaction   = $declaredIncludesTransaction
     attributesTopLevelUnreconciled = $attributesTopLevelUnreconciled
     unknownTypeCount              = $unknownTypeItems.Count

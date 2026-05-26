@@ -33,8 +33,7 @@ Assert-SubState -Label 'degradado' -Expected $degradado -Actual (
 
 $seletivaLimpa = [pscustomobject]@{
     selectiveExport                = $true
-    systemModulesPresent           = @()
-    systemExternalObjectsPresent   = @()
+    systemObjectsPresent           = @()
     attributesTopLevelUnreconciled = $false
     extrasCount                    = 0
     requestedItemsMissing          = @()
@@ -45,32 +44,29 @@ Assert-SubState -Label 'seletiva limpa' -Expected $consolidado -Actual (
 
 $comModulos = [pscustomobject]@{
     selectiveExport                = $true
-    systemModulesPresent           = @('GeneXusCommon')
-    systemExternalObjectsPresent   = @()
+    systemObjectsPresent           = @([pscustomobject]@{ name = 'GeneXusCommon'; kind = 'packagedModule' })
     attributesTopLevelUnreconciled = $false
     extrasCount                    = 0
     requestedItemsMissing          = @()
 }
-Assert-SubState -Label 'systemModulesPresent' -Expected $extras -Actual (
+Assert-SubState -Label 'systemObjectsPresent packagedModule' -Expected $extras -Actual (
     Resolve-ExportPackageInventoryOperationalSubState -PackageInventory $comModulos -InventoryDegraded $false
 )
 
 $comExternal = [pscustomobject]@{
     selectiveExport                = $true
-    systemModulesPresent           = @()
-    systemExternalObjectsPresent   = @('Camera')
+    systemObjectsPresent           = @([pscustomobject]@{ name = 'Camera'; kind = 'externalObject' })
     attributesTopLevelUnreconciled = $false
     extrasCount                    = 0
     requestedItemsMissing          = @()
 }
-Assert-SubState -Label 'systemExternalObjectsPresent' -Expected $extras -Actual (
+Assert-SubState -Label 'systemObjectsPresent externalObject' -Expected $extras -Actual (
     Resolve-ExportPackageInventoryOperationalSubState -PackageInventory $comExternal -InventoryDegraded $false
 )
 
 $comAtributos = [pscustomobject]@{
     selectiveExport                = $true
-    systemModulesPresent           = @()
-    systemExternalObjectsPresent   = @()
+    systemObjectsPresent           = @()
     attributesTopLevelUnreconciled = $true
     extrasCount                    = 0
     requestedItemsMissing          = @()
@@ -81,8 +77,7 @@ Assert-SubState -Label 'attributesTopLevelUnreconciled' -Expected $extras -Actua
 
 $comExtras = [pscustomobject]@{
     selectiveExport                = $true
-    systemModulesPresent           = @()
-    systemExternalObjectsPresent   = @()
+    systemObjectsPresent           = @()
     attributesTopLevelUnreconciled = $false
     extrasCount                    = 2
     requestedItemsMissing          = @()
@@ -93,8 +88,7 @@ Assert-SubState -Label 'extrasCount' -Expected $extras -Actual (
 
 $comMissing = [pscustomobject]@{
     selectiveExport                = $true
-    systemModulesPresent           = @()
-    systemExternalObjectsPresent   = @()
+    systemObjectsPresent           = @()
     attributesTopLevelUnreconciled = $false
     extrasCount                    = 0
     requestedItemsMissing          = @('Procedure:Faltante')
@@ -105,8 +99,10 @@ Assert-SubState -Label 'requestedItemsMissing' -Expected $extras -Actual (
 
 $fullComModulos = [pscustomobject]@{
     selectiveExport                = $false
-    systemModulesPresent           = @('GeneXusCommon')
-    systemExternalObjectsPresent   = @('Camera')
+    systemObjectsPresent           = @(
+        [pscustomobject]@{ name = 'GeneXusCommon'; kind = 'packagedModule' }
+        [pscustomobject]@{ name = 'Camera'; kind = 'externalObject' }
+    )
     attributesTopLevelUnreconciled = $true
     extrasCount                    = 5
     requestedItemsMissing          = @('Procedure:Faltante')

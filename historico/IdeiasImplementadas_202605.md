@@ -314,7 +314,7 @@ Incidente operacional em KB FabricaBrasil (2026-05-25): export com 28 entradas e
 ### Limite preservado (fora desta frente; sem entrada em `999-ideias-pendentes.md`)
 
 - Encadeamento local envelope + inventário + import num único wrapper da pasta paralela.
-- Catálogo de módulos de sistema por KB/versão além de `scripts/gx-system-modules.txt` compartilhado.
+- Catálogo de módulos de sistema por KB/versão além de `scripts/gx-platform-objects.json` compartilhado.
 
 ## Inventário: atributos top-level e ExternalObject de plataforma no pacote
 
@@ -327,14 +327,14 @@ Melhoria contínua após fechamento do inventário automático pós-export (comm
 
 ### Implementação
 
-- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: warning `attributes-top-level-em-export-cirurgico` e `attributesTopLevelUnreconciled` em export seletiva sem `Transaction` declarada; `systemExternalObjectsPresent` via `scripts/gx-system-external-objects.txt`.
+- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: warning `attributes-top-level-em-export-cirurgico` e `attributesTopLevelUnreconciled` em export seletiva sem `Transaction` declarada; detecção de ExternalObjects de plataforma (hoje via `systemObjectsPresent` e `gx-platform-objects.json`).
 - `scripts/Invoke-GeneXusXpzExport.ps1`: repassa sinais no `packageInventory` e promove sub-estado quando aplicável (sem competir com `exportErrors`).
 - `scripts/Test-GeneXusImportPackageObjectInventorySelfTest.ps1`: controle negativo com `Transaction` na lista; fixture `ExternalObject:Camera`.
 - Governança: `xpz-msbuild-import-export/SKILL.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `10-base-operacional-msbuild-headless.md`, handoff em `xpz-kb-parallel-setup/SKILL.md` (redação unificada `import_file.xml` / `.xpz`).
 
 ### Limite preservado (fora desta frente; sem entrada em `999-ideias-pendentes.md`)
 
-- Catálogo unificado `gx-platform-objects.json` / `systemObjectsPresent` estruturado (hoje listas `gx-system-modules.txt` + `gx-system-external-objects.txt`).
+- Catálogo unificado `gx-platform-objects.json` / `systemObjectsPresent` (ver entrada «Consolidar catálogos de plataforma SDK», 2026-05-26).
 
 ### Rastreabilidade
 
@@ -584,3 +584,30 @@ Assinatura composta: versão semântica explícita (mudança material de cobertu
 ### Rastreabilidade
 
 - Commit: `787086d` (`Detecta índice KbIntelligence gerado por extrator defasado.`)
+
+## Consolidar catálogos de plataforma SDK em `gx-platform-objects.json`
+
+**Importância original:** média
+**Status:** concluída em 2026-05-26
+
+### Origem
+
+Frente combinada 2026-05-25 (Parte D): `gx-system-modules.txt` e `gx-system-external-objects.txt` alimentavam funções e campos JSON separados (`systemModulesPresent`, `systemExternalObjectsPresent`).
+
+### Implementação
+
+- `scripts/gx-platform-objects.json` (`schemaVersion: 1`): entradas `{ name, kind }` com `kind` em `packagedModule` | `externalObject` (nomes podem repetir entre kinds).
+- `scripts/GeneXusPlatformObjectsCatalogSupport.ps1`: `Import-GeneXusPlatformObjectsCatalog`, `Get-PlatformObjectKindSets`, `Get-SystemObjectsPresent`.
+- `scripts/Get-GeneXusImportPackageObjectInventory.ps1`: parâmetro `-PlatformObjectsCatalogPath`; saída única `systemObjectsPresent` (objetos com `name`, `kind`, `typeName` no pacote).
+- `scripts/GeneXusPackageInventorySupport.ps1`, `scripts/GeneXusXpzExportInventoryGovernance.ps1`: resumo e sub-estado usam `systemObjectsPresent`.
+- Remoção de `gx-system-modules.txt` e `gx-system-external-objects.txt`.
+- `scripts/Test-GeneXusPlatformObjectsCatalogSelfTest.ps1`; self-tests de inventário e sub-estado atualizados.
+- `10-base-operacional-msbuild-headless.md`, `09-inventario-e-rastreabilidade-publica.md`, `xpz-msbuild-import-export/SKILL.md`, `xpz-kb-parallel-setup/SKILL.md`, `xpz-builder/SKILL.md`, `xpz-builder/quality-checklist.md`.
+
+### Decisão final
+
+Sem período de compatibilidade: campos legados `systemModulesPresent` / `systemExternalObjectsPresent` removidos do contrato JSON.
+
+### Rastreabilidade
+
+- Commit: `067af90` (`Unifica catálogo de objetos de plataforma SDK em gx-platform-objects.json.`)

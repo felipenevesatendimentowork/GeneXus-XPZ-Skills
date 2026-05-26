@@ -232,8 +232,7 @@ function New-PackageInventoryResult {
             totalObjects                   = [int]$inventory.objectCount
             totalAttributes                = [int]$inventory.attributeCount
             objectsByType                  = $objectsByType
-            systemModulesPresent           = @($inventory.systemModulesPresent)
-            systemExternalObjectsPresent   = @($inventory.systemExternalObjectsPresent)
+            systemObjectsPresent           = @($inventory.systemObjectsPresent)
             declaredIncludesTransaction    = [bool]$inventory.declaredIncludesTransaction
             attributesTopLevelUnreconciled = [bool]$inventory.attributesTopLevelUnreconciled
             packageInventoryPath           = $result.packageInventoryPath

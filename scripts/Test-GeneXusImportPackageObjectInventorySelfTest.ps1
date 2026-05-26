@@ -44,14 +44,13 @@ if ($result.status -ne 'DELTA_MISMATCH') { throw "status esperado DELTA_MISMATCH
 if ($result.deltaComparison.extraCount -ne 3) {
     throw "extraCount esperado 3 (PackagedModule:GeneXus + ProcExtra + Camera); obtido $($result.deltaComparison.extraCount)"
 }
-if (@($result.systemModulesPresent).Count -ne 1) {
-    throw "systemModulesPresent esperado 1 (PackagedModule:GeneXus); obtido $(@($result.systemModulesPresent).Count)"
+if (@($result.systemObjectsPresent).Count -ne 2) {
+    throw "systemObjectsPresent esperado 2 (GeneXus + Camera); obtido $(@($result.systemObjectsPresent).Count)"
 }
-if ($result.systemModulesPresent[0] -ne 'GeneXus') { throw 'modulo sistema esperado GeneXus' }
-if (@($result.systemExternalObjectsPresent).Count -ne 1) {
-    throw "systemExternalObjectsPresent esperado 1 (Camera); obtido $(@($result.systemExternalObjectsPresent).Count)"
-}
-if ($result.systemExternalObjectsPresent[0] -ne 'Camera') { throw 'external object plataforma esperado Camera' }
+$gxPresent = @($result.systemObjectsPresent | Where-Object { $_.name -eq 'GeneXus' -and $_.kind -eq 'packagedModule' })
+if ($gxPresent.Count -ne 1) { throw 'packagedModule GeneXus esperado em systemObjectsPresent' }
+$camPresent = @($result.systemObjectsPresent | Where-Object { $_.name -eq 'Camera' -and $_.kind -eq 'externalObject' })
+if ($camPresent.Count -ne 1) { throw 'externalObject Camera esperado em systemObjectsPresent' }
 $genexusItem = @($result.inventory | Where-Object { $_.name -eq 'GeneXus' } | Select-Object -First 1)
 if ($genexusItem.typeName -ne 'PackagedModule') {
     throw "tipo esperado PackagedModule para GeneXus; obtido $($genexusItem.typeName)"
@@ -95,8 +94,7 @@ Compress-Archive -LiteralPath $xmlPath -DestinationPath $xpzPath -Force
 $resultXpz = (& $inventoryScript -InputPath $xpzPath -DeclaredDeltaItems 'Procedure:ProcPedida' -AsJson | ConvertFrom-Json)
 if ($resultXpz.inputKind -ne 'xpz') { throw 'inputKind xpz esperado' }
 if ($resultXpz.objectCount -ne 4) { throw 'objectCount xpz esperado 4' }
-if (@($resultXpz.systemModulesPresent).Count -ne 1) { throw 'systemModulesPresent xpz esperado 1' }
-if (@($resultXpz.systemExternalObjectsPresent).Count -ne 1) { throw 'systemExternalObjectsPresent xpz esperado 1' }
+if (@($resultXpz.systemObjectsPresent).Count -ne 2) { throw 'systemObjectsPresent xpz esperado 2' }
 
 $full = (& $inventoryScript -InputPath $xmlPath -AsJson | ConvertFrom-Json)
 if ($full.selectiveExport) { throw 'selectiveExport deve ser false sem delta' }

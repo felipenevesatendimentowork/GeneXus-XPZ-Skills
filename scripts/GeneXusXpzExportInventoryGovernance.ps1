@@ -23,7 +23,7 @@ function Resolve-ExportOperationalSubState {
     #   2. inventoryDegraded=true ->
     #      "exportação concluída sem inventário (degradado)"
     #   3. seletiva (packageInventory.selectiveExport) com sinais de extras
-    #      (systemModules, systemExternalObjects, attributesTopLevelUnreconciled,
+    #      (systemObjectsPresent, attributesTopLevelUnreconciled,
     #       extraCount > 0, requestedItemsMissing não vazio) ->
     #      "exportação concluída, inventário com extras não conciliados"
     #   4. caso base -> "exportação concluída e inventário consolidado"
@@ -51,8 +51,7 @@ function Resolve-ExportPackageInventoryOperationalSubState {
         return 'exportação concluída e inventário consolidado'
     }
 
-    $hasSystemModules = @($PackageInventory.systemModulesPresent).Count -gt 0
-    $hasSystemExternalObjects = @($PackageInventory.systemExternalObjectsPresent).Count -gt 0
+    $hasSystemObjects = @($PackageInventory.systemObjectsPresent).Count -gt 0
     $hasAttributesUnreconciled = $false
     if (Get-Member -InputObject $PackageInventory -Name 'attributesTopLevelUnreconciled' -MemberType NoteProperty, Property -ErrorAction SilentlyContinue) {
         $hasAttributesUnreconciled = [bool]$PackageInventory.attributesTopLevelUnreconciled
@@ -65,7 +64,7 @@ function Resolve-ExportPackageInventoryOperationalSubState {
     if (Get-Member -InputObject $PackageInventory -Name 'requestedItemsMissing' -MemberType NoteProperty, Property -ErrorAction SilentlyContinue) {
         $hasMissing = @($PackageInventory.requestedItemsMissing).Count -gt 0
     }
-    if ($hasSystemModules -or $hasSystemExternalObjects -or $hasAttributesUnreconciled -or $hasExtras -or $hasMissing) {
+    if ($hasSystemObjects -or $hasAttributesUnreconciled -or $hasExtras -or $hasMissing) {
         return 'exportação concluída, inventário com extras não conciliados'
     }
 

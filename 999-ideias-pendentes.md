@@ -30,25 +30,6 @@ Padronizar em um único padrão (inline ou helper compartilhado) em todos os wra
 
 Quando uma frente tocar vários desses scripts por outro motivo, ou em sessão dedicada de higiene.
 
-## Consolidar catálogos de plataforma SDK em `gx-platform-objects.json`
-
-**Importância:** média
-**Maturidade:** pronta para implementar
-
-**Origem:** frente combinada 2026-05-25 (Parte D); hoje `gx-system-modules.txt` e `gx-system-external-objects.txt` alimentam funções e campos JSON separados.
-
-### Problema concreto
-
-Cada novo tipo de objeto de plataforma SDK exigiria novo `.txt`, nova função e novo campo de saída.
-
-### Ideia de melhoria
-
-JSON único `scripts/gx-platform-objects.json`, função `Get-SystemObjectsPresent`, transição opção (b): emitir `systemObjectsPresent` mantendo `systemModulesPresent` / `systemExternalObjectsPresent` por uma versão; atualizar `xpz-kb-parallel-setup/SKILL.md` L210, self-test existente e `09`.
-
-### Limiar para implementar
-
-Onda 3 (PR separada após Onda 1/2). Ao fechar, mover para `historico/IdeiasImplementadas_202605.md`.
-
 ## Teste de integração para bloqueio de XML de referência no Build-GeneXusImportFileEnvelope
 
 **Importância:** baixa
