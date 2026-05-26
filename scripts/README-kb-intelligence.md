@@ -91,7 +91,8 @@ O indice so deve ser usado para triagem ampla quando estiver em dia com a ultima
 - `inventory_validation_status` fica na tabela `metadata` do SQLite e deve estar `OK`
 - `generated_at` nao faz mais parte do contrato operacional do indice; se aparecer em artefato antigo, trate esse indice como legado/incompativel e regenere
 - todo processamento bem-sucedido de `XPZ` exportado pela IDE que materialize ou atualize XMLs em `ObjetosDaKbEmXml` deve chamar a regeneracao/validacao do indice logo depois
-- se `last_index_build_run_at >= last_xpz_materialization_run_at` e `inventory_validation_status=OK`, o indice esta apto para triagem inicial
+- se `last_index_build_run_at >= last_xpz_materialization_run_at`, `inventory_validation_status=OK` e `extractor_signature_version`/`extractor_signature_hash` na metadata coincidirem com o motor atual em `scripts/Build-KbIntelligenceIndex.py` (via `scripts/GeneXusKbIntelligenceExtractorContract.ps1`), o indice esta apto para triagem inicial
+- ausencia de `extractor_signature_version` ou `extractor_signature_hash` na metadata, ou divergencia em relacao ao motor compartilhado, significa indice gerado por extrator antigo mesmo quando os timestamps parecem frescos — `Test-*KbIndexGate.ps1` bloqueia com `BLOCK:` e a resposta correta e rebuild do indice
 - se o indice estiver ausente, sem metadado, mais antigo que a ultima materializacao ou se `kb-source-metadata.md` nao expuser literalmente `last_xpz_materialization_run_at`, o agente nao deve consultar o acervo oficial de objetos para responder pergunta de negocio, nem por varredura ampla nem por caminho pontual deduzido, e tambem nao deve gerar objetos para importacao na KB pela IDE
 - se `inventory_validation_status` estiver ausente, `BLOCK` ou diferente de `OK`, tratar o indice como semanticamente incompativel com o snapshot oficial e oferecer rebuild/atualizacao antes da triagem ampla
 - nesse estado defasado, o agente deve tratar a situacao como excecao operacional, oferecer regeneracao/validacao do indice ao usuario e nao seguir para varredura ampla, triagem substantiva, caminho pontual deduzido, leitura de XML oficial de objeto ou geracao
@@ -111,7 +112,18 @@ Para ler os metadados do indice pelo wrapper:
 
 Se `index-metadata` falhar, retornar vazio ou nao expor `last_index_build_run_at` ou `inventory_validation_status`, trate o indice como legado/incompativel ou sem metadado valido. Nao siga para triagem substantiva, pesquisa ampla, caminho pontual deduzido em `ObjetosDaKbEmXml`, leitura de XML oficial de objeto ou geracao de objetos; ofereca regeneracao/validacao do indice ao usuario.
 
-Quando a validacao do indice for parte relevante da resposta ou handoff, registre a decisao de forma curta. Em caso apto, informe `last_index_build_run_at >= last_xpz_materialization_run_at` e `inventory_validation_status=OK`; em caso bloqueado, informe o campo/capacidade ausente, qual timestamp ficou defasado ou qual incompatibilidade semantica de inventario foi detectada.
+Quando a validacao do indice for parte relevante da resposta ou handoff, registre a decisao de forma curta. Em caso apto, informe `last_index_build_run_at >= last_xpz_materialization_run_at`, `inventory_validation_status=OK` e assinatura do extrator alinhada; em caso bloqueado, informe o campo/capacidade ausente, qual timestamp ficou defasado, assinatura do extrator ausente/defasada ou qual incompatibilidade semantica de inventario foi detectada.
+
+## Assinatura do extrator (`extractor_signature_*`)
+
+O motor `Build-KbIntelligenceIndex.py` grava na tabela `metadata`:
+
+- `extractor_signature_version` — incrementada quando a cobertura ou regras do indexador mudam de forma material
+- `extractor_signature_hash` — SHA-256 dos bytes do proprio `Build-KbIntelligenceIndex.py` usado no build
+
+Contrato compartilhado: `scripts/GeneXusKbIntelligenceExtractorContract.ps1`. Verificacao: `scripts/Test-GeneXusKbIntelligenceExtractorSignatureSelfTest.ps1` (sentinela `KB_INTELLIGENCE_EXTRACTOR_SIGNATURE_SELFTEST_OK`).
+
+O gate `Test-*KbIndexGate.ps1` (molde em `xpz-kb-parallel-setup/examples/Test-KbIndexGate.example.ps1`) compara a metadata do indice com o motor do repositorio ativo. Indices antigos sem esses campos passam no teste de timestamp mas falham neste passo — comportamento esperado apos evolucoes como ampliacao de `INDEXED_SOURCE_TYPES`.
 
 ## Schema e versionamento
 

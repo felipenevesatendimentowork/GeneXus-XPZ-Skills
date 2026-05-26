@@ -21,6 +21,9 @@ Quando omitido, usa Query-KbIntelligence.ps1 na mesma pasta deste script.
 Caminho opcional para o wrapper local de verificacao de estrutura.
 Quando omitido, usa Test-KbStructure.ps1 na mesma pasta deste script.
 
+.PARAMETER SharedSkillsRoot
+Raiz local da base compartilhada `GeneXus-XPZ-Skills` (motor do extrator em `scripts/`).
+
 .EXAMPLE
 .\Test-KbIndexGate.ps1
 
@@ -30,7 +33,9 @@ Quando omitido, usa Test-KbStructure.ps1 na mesma pasta deste script.
 
 param(
     [string]$QueryWrapperPath,
-    [string]$StructureWrapperPath
+    [string]$StructureWrapperPath,
+
+    [string]$SharedSkillsRoot = 'C:\CAMINHO\PARA\GeneXus-XPZ-Skills'
 )
 
 Set-StrictMode -Version Latest
@@ -110,5 +115,19 @@ if ($inventoryStatusMatch.Groups['value'].Value -ne 'OK') {
     throw 'BLOCK: indice com inventario semantico invalido ou pendente'
 }
 
+$extractorContractPath = Join-Path $SharedSkillsRoot 'scripts\GeneXusKbIntelligenceExtractorContract.ps1'
+if (-not (Test-Path -LiteralPath $extractorContractPath -PathType Leaf)) {
+    throw "BLOCK: contrato de assinatura do extrator ausente: $extractorContractPath"
+}
+. $extractorContractPath
+
+$indexMetadataMap = Get-GeneXusKbIntelligenceExtractorSignatureFromIndexMetadataText -IndexMetadataText $indexMetadataText
+$extractorCheck = Test-GeneXusKbIntelligenceExtractorSignatureFromMetadata -Metadata $indexMetadataMap
+if (-not $extractorCheck.ok) {
+    throw ('BLOCK: {0}' -f $extractorCheck.summary)
+}
+
+('extractor_signature_version: {0}' -f $extractorCheck.stored.extractor_signature_version)
+('extractor_signature_hash: {0}' -f $extractorCheck.stored.extractor_signature_hash)
 'inventory_validation_status: OK'
 'GATE_OK'

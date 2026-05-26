@@ -36,6 +36,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
+# Incrementar quando a cobertura ou regras do indexador mudarem de forma material (nao em refator inerte).
+EXTRACTOR_SIGNATURE_VERSION = "2"
+
+
+def compute_extractor_signature_hash() -> str:
+    script_path = Path(__file__).resolve()
+    return hashlib.sha256(script_path.read_bytes()).hexdigest()
+
 
 SOURCE_RE = re.compile(r"<Source(?:\s[^>]*)?>(?P<body>.*?)</Source>", re.IGNORECASE | re.DOTALL)
 CDATA_RE = re.compile(r"^\s*<!\[CDATA\[(?P<body>.*)\]\]>\s*$", re.DOTALL)
@@ -1561,6 +1569,8 @@ def write_index(
     if output_path.exists():
         output_path.unlink()
 
+    extractor_signature_hash = compute_extractor_signature_hash()
+
     conn = sqlite3.connect(output_path)
     try:
         create_schema(conn)
@@ -1570,6 +1580,8 @@ def write_index(
                 ("last_index_build_run_at", index_build_run_at),
                 ("source_root", str(source_root)),
                 ("schema_version", "1"),
+                ("extractor_signature_version", EXTRACTOR_SIGNATURE_VERSION),
+                ("extractor_signature_hash", extractor_signature_hash),
                 ("scope", ",".join(sorted(set(obj.object_type for obj in objects)))),
                 ("inventory_catalog_version", str(inventory_semantics["catalog_version"])),
                 ("inventory_validation_status", str(inventory_semantics["status"])),

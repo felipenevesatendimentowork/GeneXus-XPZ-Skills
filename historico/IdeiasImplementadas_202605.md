@@ -559,4 +559,28 @@ Sessão de alinhamento watcher MSBuild e revisão pré-push (2026-05-22). Docume
 
 ### Rastreabilidade
 
-- Commit: _(preencher após commit na sessão do mantenedor)._
+- Commit: `f022911` (`Adiciona catálogo JSON de códigos de saída MSBuild e teste de paridade.`)
+
+## Detecção de defasagem do extrator KbIntelligence vs índice gerado
+
+**Importância original:** média
+**Status:** concluída em 2026-05-26
+
+### Origem
+
+Achado 4 (2026-05-23): índices com timestamps frescos mas cobertura incompleta após evolução de `Build-KbIntelligenceIndex.py` (ex.: commit `122a171`).
+
+### Implementação
+
+- `scripts/Build-KbIntelligenceIndex.py`: grava `extractor_signature_version` (constante `EXTRACTOR_SIGNATURE_VERSION`, iniciada em `"2"`) e `extractor_signature_hash` (SHA-256 do motor) na tabela `metadata`.
+- `scripts/GeneXusKbIntelligenceExtractorContract.ps1` + `scripts/Test-GeneXusKbIntelligenceExtractorSignatureSelfTest.ps1`.
+- `xpz-kb-parallel-setup/examples/Test-KbIndexGate.example.ps1`: bloqueia indice sem assinatura ou com extrator defasado.
+- `scripts/README-kb-intelligence.md`, `xpz-kb-parallel-setup/SKILL.md`, `09-inventario-e-rastreabilidade-publica.md`.
+
+### Decisão final
+
+Assinatura composta: versão semântica explícita (mudança material de cobertura) + hash do script do motor. Ausência dos campos na metadata equivale a motor antigo.
+
+### Rastreabilidade
+
+- Commit: `37cecd4` (`Detecta índice KbIntelligence gerado por extrator defasado.`)
