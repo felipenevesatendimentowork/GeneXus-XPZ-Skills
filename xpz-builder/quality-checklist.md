@@ -33,11 +33,13 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] Active front folder format was validated before packaging; if local rules require `NomeCurto_GUID_YYYYMMDD`, nonconforming folders were reported and realigned before package generation
 - [ ] Round spec was declared (object names + types) before listing the workspace in step 4b — the declaration came from user intent, not from reading the workspace first
 - [ ] After listing the workspace, the round spec was verified against the workspace content, and any divergence (missing object or unexpected extra) was reconciled explicitly before proceeding to the collision gate
+- [ ] When a textual search in the official corpus returned multiple XML path candidates, every match was listed, one path was recommended with reason from user context, and the user confirmed before any file was opened — never defaulting to the first tool result
 - [ ] When the task was packaging, active XMLs were listed from the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus`
 - [ ] Candidate batch was isolated; no workspace contamination remained
 - [ ] No reference/example/template XML remained inside the active front folder; any such file blocked packaging until moved or handled outside the generated-objects area with explicit approval and traceability
 - [ ] When the front required a new unitary delta, the current front folder under `ObjetosGeradosParaImportacaoNaKbNoGenexus` was isolated explicitly before packaging
 - [ ] Current-front artifacts were distinguished explicitly from pre-existing parallel changes before packaging
+- [ ] Packages from MSBuild export or other external sources with more objects than the declared delta were classified as `extra unrequested change`; packaging **ABORT**ed rather than merging surplus into the surgical import package until the user explicitly accepted each extra
 - [ ] Root type of every active XML was classified before package serialization
 - [ ] No top-level `Attribute` was placed under `<Objects>`
 - [ ] For each object type present in the batch, the corresponding satellite under `responsibilities-by-type/` was loaded and its Quality Checklist was satisfied end-to-end

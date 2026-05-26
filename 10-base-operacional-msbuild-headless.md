@@ -144,7 +144,8 @@ O probe (sondagem técnica inicial) não deve:
 - usar `GetActiveVersion` para confirmar a versão ativa antes de operar
 - usar `GetActiveEnvironment` para confirmar o `Environment` ativo antes de operar
 - usar `CaptureOutput` quando útil para processar programaticamente a saída das tasks
-- privilegiar `PreviewMode` em importação quando o objetivo for inspeção e não alteração real
+- privilegiar `PreviewMode` em importação quando o objetivo for inspeção e não alteração real, ou quando import real ainda não foi autorizado na sessão ou a rodada for exploratória
+- quando import real já foi autorizado na sessão, `Test-GeneXusImportFileEnvelope.ps1` → `apto para prosseguir` e inventário do pacote sem bloqueio de extras, seguir **Decisão pós-gates** em `xpz-msbuild-import-export/SKILL.md`: `Invoke-GeneXusXpzImport.ps1` na mesma rodada, com `-StartWatcher` e `-MonitorLogPath`; não exigir `Test-GeneXusXpzImportPreview.ps1` obrigatório antes do import real nesse cenário
 - considerar `UpdateFile` como artefato útil para análise de impacto antes de importação efetiva
 - considerar `IncludeItems` e `ExcludeItems` como mecanismos de recorte fino para cenários controlados
 
