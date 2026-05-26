@@ -95,7 +95,7 @@ Do NOT use esta skill para:
 - Registrar `stdoutSignals` (campos semânticos por domínio), `stderrContent`, `stderrFilteredNoise`, `exitCode`, caminho do `.msbuild` temporário e caminho do log
 - Validar a assinatura efetiva do wrapper e da task antes de assumir formato de parâmetro sensível de exportação ou importação
 - Em exportação full da KB, preferir o atalho ergonômico `-FullExport` do wrapper local quando ele existir; manter `ExportAll='true'` apenas como compatibilidade com contratos antigos
-- Privilegiar `PreviewMode` e, quando suportado pela task carregada, `UpdateFile` antes de importação real
+- Privilegiar `PreviewMode` e, quando suportado pela task carregada, `UpdateFile` antes de importação real **quando import real ainda não foi autorizado na sessão ou a rodada for exploratória**; com import real já autorizado e passos **6b–6c** sem bloqueio, seguir **Decisão pós-gates** no WORKFLOW (preview não obrigatório; `Invoke-GeneXusXpzImport.ps1` na mesma rodada)
 - Distinguir explicitamente `operação na KB` de `atualização do acervo oficial`
 - Sucesso de preview ou importação não autoriza atualização manual de `ObjetosDaKbEmXml`
 - Quando houver retorno oficial da KB em `XPZ`, a atualização de `ObjetosDaKbEmXml` deve ocorrer depois, pelo fluxo de `xpz-sync`

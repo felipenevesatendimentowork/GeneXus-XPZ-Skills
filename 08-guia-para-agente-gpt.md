@@ -809,7 +809,8 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 
 - quando a frente envolver `MSBuild` headless, consultar primeiro o plano e a skill experimental correspondente antes de presumir suporte de parametros da task `Import`
 - tratar `UpdateFile` e `ImportKBInformation` como capacidades dependentes da assinatura real da task carregada, nao apenas da documentacao offline
-- se a instalacao expuser `PreviewMode`, `IncludeItems` e `ExcludeItems`, priorizar esses caminhos para inspecao controlada antes de qualquer importacao real
+- se a instalacao expuser `PreviewMode`, `IncludeItems` e `ExcludeItems`, priorizar esses caminhos para inspecao controlada antes de importacao real **quando import real ainda nao foi autorizado na sessao ou a rodada for exploratoria**
+- quando o usuario ja autorizou importacao real headless na mesma sessao e `xpz-msbuild-import-export` registrou envelope `apto para prosseguir` e inventario do pacote sem bloqueio de extras, seguir **Decisao pos-gates** dessa skill (`Invoke-GeneXusXpzImport.ps1` na mesma rodada, sem `Test-GeneXusXpzImportPreview.ps1` obrigatorio antes); nao encerrar apos o gate de envelope nem exigir novo preview so por rotina geral
 - quando `IncludeItems` ou `ExcludeItems` vierem com multiplos recortes, normalizar a entrada como lista e serializar em formato de lista aceito pela task carregada; nao presumir que uma string unica separada por virgulas sera aceita como um unico item
 - se o wrapper devolver diagnostico estruturado, manter `importedItems` sempre como lista, inclusive com item unico
 - ao conferir item esperado versus importado, comparar tambem os campos canonicos do diagnostico (`expectedItemsCanonical` e `importedItemsCanonical`); `Panel:Nome` e `SDPanel:Nome` contam como o mesmo item quando aparecem em `itemAliasMatches`, mas a resposta deve citar a forma crua quando ela for relevante
