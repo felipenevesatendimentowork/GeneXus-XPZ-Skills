@@ -739,8 +739,17 @@ Saídas esperadas dos scripts:
 
 - **Categoria A:** extras de inventário, módulos/ExternalObjects de plataforma, `attributesTopLevelUnreconciled` — decisão do agente (inventário, Decisão pós-gates); o wrapper pode manter `exitCode=0`.
 - **Categoria B:** linhas `error :` no log, `invalidTypesRejected`, ou `exportErrors`/`importErrors`/`previewErrors`/`buildErrors`/`specifyErrors` no JSON — quando `executionEvidence.msBuildExitCode=0` e a lista não estiver vazia, o wrapper rebaixa para **`exitCode=48`** (`msBuildCategoryBBlocked=true`); XPZ/pacote pode existir **só para inspeção**.
-- Catálogo numérico inicial: `scripts/msbuild-exit-codes.catalog.json`. Implementação: `scripts/GeneXusMsBuildCategoryBSupport.ps1`. Skill: `xpz-msbuild-import-export/SKILL.md` (secção «Categorias A e B»).
+- Catálogo numérico canônico: `scripts/msbuild-exit-codes.catalog.json`. Implementação Categoria B: `scripts/GeneXusMsBuildCategoryBSupport.ps1`. Verificação mecânica: `scripts/Test-MsBuildExitCodesCatalog.ps1`. Skill: `xpz-msbuild-import-export/SKILL.md` (secção «Categorias A e B»).
 - A frase «sinalizar sem rebaixar exitCode» vale **exclusivamente** para Categoria A.
+
+### Catálogo canônico de códigos de saída
+
+- **Fonte machine-readable:** `scripts/msbuild-exit-codes.catalog.json` (`schemaVersion`, `legend`, `codes[]`, `families.probe`, `families.headlessKbOpen`).
+- **Esta base (`10-base`)** mantém regras de interpretação (`exitCode` classificado vs `executionEvidence.msBuildExitCode`, pós-processamento, Categorias A/B) e o contrato completo do probe `Test-GeneXusMsBuildSetup.ps1` (códigos `10`–`16`) — **não** duplicar a tabela inteira de exits aqui.
+- **`02` e `08`:** ponteiro operacional curto; **`09`:** rastreabilidade pública; skills `xpz-msbuild-build` / `xpz-msbuild-import-export`: subconjunto operacional + link para o JSON.
+- **Exit `46`:** `disambiguationRequired=true` no catálogo — políticas distintas (watcher, wide rebuild, reorg). Ler `summary`, `blockingReasons`, `requestedContext` e `causes[]` no JSON; **não** inferir causa só pelo número no terminal.
+- **Exit `48`:** Categoria B — ver secção anterior; detalhe de campos no catálogo (`jsonHints`).
+- **Build/specify:** códigos `40`–`45` e `status` rico (`compilou limpo`, `reorg necessaria detectada`, …) estão no catálogo; quando `exitCode` e `status` divergirem em importância, priorizar o JSON completo do wrapper.
 
 ### Contrato Transversal De Diagnóstico JSON Dos Wrappers MSBuild
 

@@ -1,37 +1,329 @@
 {
   "schemaVersion": 1,
-  "description": "Catalogo inicial de exit codes classificados pelos wrappers MSBuild GeneXus. Expandir conforme 999-ideias-pendentes (catálogo completo).",
+  "lastUpdated": "2026-05-26",
+  "legend": {
+    "exitCode": "Valor classificado pelo wrapper GeneXus XPZ; e tambem o exit code do processo PowerShell.",
+    "executionEvidence.msBuildExitCode": "Codigo bruto retornado pela invocacao MSBuild/task GeneXus; nao substitui exitCode quando o wrapper reclassifica (ex.: 48, 32, 41-45).",
+    "disambiguation": "Exit 46 concentra politicas distintas; nunca inferir causa so pelo numero — ler summary, blockingReasons, requestedContext e o anexo causes[] deste catalogo."
+  },
+  "families": {
+    "probe": {
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1",
+      "wrapper": "Test-GeneXusMsBuildSetup.ps1",
+      "exitCodes": [0, 10, 11, 12, 13, 14, 15, 16, 90]
+    },
+    "headlessKbOpen": {
+      "wrapper": "Open-GeneXusKbHeadless.ps1",
+      "exitCodes": [0, 20, 21, 22, 23, 24, 25, 90]
+    }
+  },
   "codes": [
     {
-      "exitCode": 48,
-      "scope": "wrappers-msbuild",
-      "category": "B",
-      "label": "msbuild-category-b-rejection",
-      "summary": "Task MSBuild concluiu com sucesso aparente (executionEvidence.msBuildExitCode=0), mas o log contem linha(s) error: e/ou invalidTypesRejected. Artefato ou KB podem ter sido afetados; nao declarar entrega operacional limpa."
+      "exit": 0,
+      "category": "sucesso",
+      "summary": "Operacao classificada como sucesso pelo wrapper (pode ainda exigir confirmacao funcional na IDE).",
+      "wrappers": ["*"]
     },
     {
-      "exitCode": 41,
-      "scope": "export",
-      "label": "export-msbuild-failed",
-      "summary": "Falha da task Export (msBuildExitCode != 0)."
+      "exit": 10,
+      "category": "probe",
+      "summary": "Probe: GeneXusDir ausente ou invalido.",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
     },
     {
-      "exitCode": 42,
-      "scope": "export",
-      "label": "export-xpz-missing",
-      "summary": "Task Export concluiu sem XPZ no caminho esperado."
+      "exit": 11,
+      "category": "probe",
+      "summary": "Probe: MsBuildPath ausente ou invalido.",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
     },
     {
-      "exitCode": 31,
-      "scope": "import-preview",
-      "label": "import-msbuild-failed",
-      "summary": "Falha da task Import (msBuildExitCode != 0) em import real ou preview."
+      "exit": 12,
+      "category": "probe",
+      "summary": "Probe: Genexus.Tasks.targets ausente na instalacao.",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
     },
     {
-      "exitCode": 32,
-      "scope": "import-preview",
-      "label": "import-updatefile-missing",
-      "summary": "UpdateFile esperado ausente apos import/preview com msBuildExitCode=0."
+      "exit": 13,
+      "category": "probe",
+      "summary": "Probe: WorkingDirectory inseguro (ex.: sob Program Files x86).",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
+    },
+    {
+      "exit": 14,
+      "category": "probe",
+      "summary": "Probe: LogPath inseguro ou diretorio pai invalido.",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
+    },
+    {
+      "exit": 15,
+      "category": "probe",
+      "summary": "Probe: KbPath informado mas invalido.",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
+    },
+    {
+      "exit": 16,
+      "category": "probe",
+      "summary": "Probe: ambiguidade de fallback (ex.: multiplas instalacoes GeneXus).",
+      "wrappers": ["Test-GeneXusMsBuildSetup.ps1"],
+      "documentedIn": "10-base-operacional-msbuild-headless.md#contrato-inicial-de-test-genexusmsbuildsetupps1"
+    },
+    {
+      "exit": 20,
+      "category": "msbuild",
+      "summary": "OpenKnowledgeBase headless: falha MSBuild generica (sem padrao SetActive/Close mapeado).",
+      "wrappers": ["Open-GeneXusKbHeadless.ps1"]
+    },
+    {
+      "exit": 21,
+      "category": "msbuild",
+      "summary": "OpenKnowledgeBase headless: falha em SetActiveVersion.",
+      "wrappers": ["Open-GeneXusKbHeadless.ps1"]
+    },
+    {
+      "exit": 22,
+      "category": "msbuild",
+      "summary": "OpenKnowledgeBase headless: falha em SetActiveEnvironment.",
+      "wrappers": ["Open-GeneXusKbHeadless.ps1"]
+    },
+    {
+      "exit": 23,
+      "category": "msbuild",
+      "summary": "OpenKnowledgeBase headless: falha em GetActiveVersion.",
+      "wrappers": ["Open-GeneXusKbHeadless.ps1"]
+    },
+    {
+      "exit": 24,
+      "category": "msbuild",
+      "summary": "OpenKnowledgeBase headless: falha em GetActiveEnvironment.",
+      "wrappers": ["Open-GeneXusKbHeadless.ps1"]
+    },
+    {
+      "exit": 25,
+      "category": "msbuild",
+      "summary": "OpenKnowledgeBase headless: falha em CloseKnowledgeBase.",
+      "wrappers": ["Open-GeneXusKbHeadless.ps1"]
+    },
+    {
+      "exit": 30,
+      "category": "ferramenta",
+      "summary": "Test-GeneXusKbConsistency: KB nao abriu ou consistencia bloqueada antes do diagnostico completo.",
+      "wrappers": ["Test-GeneXusKbConsistency.ps1"]
+    },
+    {
+      "exit": 31,
+      "category": "msbuild",
+      "summary": "Import/preview: task MSBuild falhou (msBuildExitCode != 0) ou Get-GeneXusKbProperty: MSBuild falhou.",
+      "wrappers": ["Invoke-GeneXusXpzImport.ps1", "Test-GeneXusXpzImportPreview.ps1", "Get-GeneXusKbProperty.ps1"]
+    },
+    {
+      "exit": 32,
+      "category": "artefato",
+      "summary": "Import/preview: bloqueio pre-task, UpdateFile ausente apos MSBuild=0, ou assinatura da task Import incompativel.",
+      "wrappers": ["Invoke-GeneXusXpzImport.ps1", "Test-GeneXusXpzImportPreview.ps1"],
+      "disambiguationRequired": true,
+      "variants": [
+        {
+          "id": "import-msbuild-failed",
+          "condition": "Get-ImportExitCode/Get-PreviewExitCode retorna 31 quando msBuildExitCode != 0 (nao confundir com exit 32).",
+          "stage": "pos-msbuild",
+          "jsonHints": ["executionEvidence.msBuildExitCode", "exitCode"]
+        },
+        {
+          "id": "update-file-missing",
+          "condition": "MSBuild concluiu com exit 0 mas UpdateFilePath resolvido nao existe no disco.",
+          "stage": "pos-msbuild",
+          "jsonHints": ["resolvedPaths.UpdateFilePath", "executionEvidence.msBuildExitCode"]
+        },
+        {
+          "id": "task-support-unsupported",
+          "condition": "Task Import nao expoe propriedade publica exigida pelo wrapper (stage task-support ou pre-validate no preview).",
+          "stage": "task-support",
+          "jsonHints": ["stage", "blockingReasons", "requestedContext"]
+        }
+      ]
+    },
+    {
+      "exit": 33,
+      "category": "artefato",
+      "summary": "Export: validacao pre-export (XpzPath invalido/inseguro ou ObjectList/ExportAll inconsistentes).",
+      "wrappers": ["Invoke-GeneXusXpzExport.ps1"],
+      "stage": "pre-export",
+      "jsonHints": ["blockingReasons", "resolvedPaths.XpzPath", "requestedContext.ObjectList", "requestedContext.ExportAll"]
+    },
+    {
+      "exit": 34,
+      "category": "artefato",
+      "summary": "Export: task Export nao expoe propriedade publica exigida pelo wrapper (stage task-support).",
+      "wrappers": ["Invoke-GeneXusXpzExport.ps1"],
+      "stage": "task-support",
+      "jsonHints": ["stage", "blockingReasons"]
+    },
+    {
+      "exit": 40,
+      "category": "classificado-build",
+      "summary": "BuildAll: KB inacessivel antes do build. SpecifyGenerate: KB inacessivel ou SpecifyAll nao iniciou.",
+      "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+      "variants": [
+        {
+          "id": "build-kb-inacessivel",
+          "condition": "Invoke-GeneXusKbBuildAll: OpenKnowledgeBase falhou.",
+          "jsonHints": ["status", "blockingReasons"]
+        },
+        {
+          "id": "specify-kb-inacessivel",
+          "condition": "Invoke-GeneXusKbSpecifyGenerate: SpecifyDone=false.",
+          "jsonHints": ["status", "observedContext"]
+        }
+      ]
+    },
+    {
+      "exit": 41,
+      "category": "msbuild",
+      "summary": "Export: MSBuild != 0. SpecifyGenerate: SpecifyAll falhou.",
+      "wrappers": ["Invoke-GeneXusXpzExport.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"]
+    },
+    {
+      "exit": 42,
+      "category": "artefato",
+      "summary": "Export: XPZ nao gerado apos MSBuild=0. SpecifyGenerate: Specify concluiu mas GenerateOnly falhou.",
+      "wrappers": ["Invoke-GeneXusXpzExport.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+      "variants": [
+        {
+          "id": "export-xpz-ausente",
+          "condition": "Get-ExportExitCode: arquivo XPZ resolvido inexistente.",
+          "jsonHints": ["resolvedPaths.XpzPath", "executionEvidence.msBuildExitCode"]
+        },
+        {
+          "id": "specify-generate-falhou",
+          "condition": "SpecifyDone=true e GenerateDone=false.",
+          "jsonHints": ["status", "observedContext"]
+        }
+      ]
+    },
+    {
+      "exit": 43,
+      "category": "classificado-build",
+      "summary": "BuildAll: timeout do wrapper. SpecifyGenerate: reorg detectada/executada no SpecifyAll.",
+      "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+      "variants": [
+        {
+          "id": "build-timeout",
+          "condition": "Invoke-GeneXusKbBuildAll: TimedOut=true.",
+          "jsonHints": ["observedContext.TimedOut", "status"]
+        },
+        {
+          "id": "specify-reorg",
+          "condition": "Padrao Reorganiza em stdout do SpecifyAll.",
+          "jsonHints": ["status", "warnings"]
+        }
+      ]
+    },
+    {
+      "exit": 44,
+      "category": "classificado-build",
+      "summary": "BuildAll: reorg necessaria detectada mas FailIfReorg bloqueou (sem -AllowReorg confirmado).",
+      "wrappers": ["Invoke-GeneXusKbBuildAll.ps1"],
+      "jsonHints": ["status", "observedContext.ReorgDetected", "requestedContext.AllowReorgConfirmed"]
+    },
+    {
+      "exit": 45,
+      "category": "classificado-build",
+      "summary": "BuildAll: compilou com erros (MSBuild != 0 ou marcador de conclusao ausente com falha).",
+      "wrappers": ["Invoke-GeneXusKbBuildAll.ps1"],
+      "jsonHints": ["status", "executionEvidence.msBuildExitCode", "buildErrors"]
+    },
+    {
+      "exit": 46,
+      "category": "politica",
+      "summary": "Bloqueio por politica de seguranca antes ou sem MSBuild — exige desambiguacao.",
+      "wrappers": [
+        "Invoke-GeneXusKbBuildAll.ps1",
+        "Invoke-GeneXusKbSpecifyGenerate.ps1",
+        "Invoke-GeneXusXpzImport.ps1",
+        "Invoke-GeneXusXpzExport.ps1",
+        "Test-GeneXusXpzImportPreview.ps1"
+      ],
+      "disambiguationRequired": true,
+      "causes": [
+        {
+          "id": "watcher-sem-monitor-log",
+          "condition": "-StartWatcher sem -MonitorLogPath.",
+          "wrappers": [
+            "Invoke-GeneXusKbBuildAll.ps1",
+            "Invoke-GeneXusKbSpecifyGenerate.ps1",
+            "Invoke-GeneXusXpzImport.ps1",
+            "Invoke-GeneXusXpzExport.ps1",
+            "Test-GeneXusXpzImportPreview.ps1"
+          ],
+          "jsonHints": ["watcherContext.startWatcherRequested", "resolvedPaths", "blockingReasons"]
+        },
+        {
+          "id": "force-rebuild-sem-allow-wide",
+          "condition": "ForceRebuild=true sem -AllowWideRebuild (e confirmacao quando exigida).",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+          "jsonHints": ["requestedContext.ForceRebuild", "requestedContext.AllowWideRebuildRequested"]
+        },
+        {
+          "id": "confirm-wide-sem-allow",
+          "condition": "-ConfirmWideRebuild sem -AllowWideRebuild.",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+          "jsonHints": ["requestedContext.ConfirmWideRebuildMode", "requestedContext.AllowWideRebuildRequested"]
+        },
+        {
+          "id": "confirm-reorg-sem-allow",
+          "condition": "-ConfirmReorg sem -AllowReorg.",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1"],
+          "jsonHints": ["requestedContext.ConfirmReorgMode", "requestedContext.AllowReorgRequested"]
+        },
+        {
+          "id": "failifreorg-false-sem-allow",
+          "condition": "FailIfReorg=false (ou equivalente) sem -AllowReorg e confirmacao.",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1"],
+          "jsonHints": ["requestedContext.FailIfReorg", "requestedContext.AllowReorgRequested"]
+        }
+      ]
+    },
+    {
+      "exit": 47,
+      "category": "cancelamento",
+      "summary": "Usuario nao confirmou frase de wide rebuild/reorg em modo interativo (distinto de bloqueio 46).",
+      "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+      "jsonHints": ["confirmWideRebuildMode", "confirmReorgMode", "summary"]
+    },
+    {
+      "exit": 48,
+      "category": "classificado-build",
+      "summary": "Categoria B: MSBuild exit 0 aparente mas log traz error:/tipos rejeitados — artefato so para inspecao.",
+      "wrappers": [
+        "Invoke-GeneXusXpzExport.ps1",
+        "Invoke-GeneXusXpzImport.ps1",
+        "Test-GeneXusXpzImportPreview.ps1",
+        "Invoke-GeneXusKbBuildAll.ps1",
+        "Invoke-GeneXusKbSpecifyGenerate.ps1"
+      ],
+      "documentedIn": "scripts/GeneXusMsBuildCategoryBSupport.ps1",
+      "jsonHints": [
+        "msBuildCategoryBBlocked",
+        "exportErrors",
+        "importErrors",
+        "previewErrors",
+        "buildErrors",
+        "specifyErrors",
+        "invalidTypesRejected",
+        "executionEvidence.msBuildExitCode"
+      ]
+    },
+    {
+      "exit": 90,
+      "category": "ferramenta",
+      "summary": "Falha interna do wrapper antes de diagnostico completo (excecao nao classificada).",
+      "wrappers": ["*"]
     }
   ]
 }

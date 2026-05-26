@@ -831,6 +831,7 @@ Campos relevantes:
 
 ## CONSTRAINTS
 
+- Ao interpretar `exitCode` do processo ou do JSON (`46`, `47`, `40`–`45`, `48`, …), consultar `scripts/msbuild-exit-codes.catalog.json` — especialmente o anexo `causes[]` do **46**; não inferir causa só pelo número no terminal
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER executar `BuildAll` ou `SpecifyGenerate` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
 - NEVER executar reorg sem autorização explícita do usuário

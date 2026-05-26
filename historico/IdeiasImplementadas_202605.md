@@ -535,3 +535,28 @@ Frente combinada (Partes B e C conservador).
 ### Rastreabilidade
 
 - Commit: `7df2c73` (`Documenta exportTaskLabel WorkWith e limpa governança de export.`)
+
+## Catálogo unificado de códigos de saída MSBuild (JSON + espelho no `10-base`)
+
+**Importância original:** média
+**Status:** concluída em 2026-05-26
+
+### Origem
+
+Sessão de alinhamento watcher MSBuild e revisão pré-push (2026-05-22). Documentação já citava `scripts/msbuild-exit-codes.catalog.json` (Categoria B / exit 48) antes do arquivo existir.
+
+### Implementação
+
+- `scripts/msbuild-exit-codes.catalog.json` (`schemaVersion: 1`): índice de exits dos wrappers MSBuild (probe `10`–`16`, headless `20`–`25`, import/export `31`–`34`/`41`–`42`, export pré-validação **33**, build `40`–`45`, política **46** com `causes[]`, cancelamento **47**, Categoria B **48**, falha **90**); `variants[]` para **32**, **40**–**43**, **42**.
+- `scripts/Test-MsBuildExitCodesCatalog.ps1` — parse JSON, validação de **46**/**48**, paridade com `exit`/`exitCode` nos wrappers prioritários (sentinela `MSBUILD_EXIT_CODES_CATALOG_OK`).
+- `10-base-operacional-msbuild-headless.md`: secção «Catálogo canônico de códigos de saída».
+- `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `xpz-msbuild-build/SKILL.md`: ponteiros e regra de desambiguação do **46**.
+
+### Decisões preservadas
+
+- Sem renumeração de códigos; sem import do JSON em runtime nos wrappers (fase documental).
+- `32` permanece um único exit com `variants[]` (não breaking change).
+
+### Rastreabilidade
+
+- Commit: _(preencher após commit na sessão do mantenedor)._
