@@ -401,6 +401,39 @@ Parâmetros específicos de importação:
    - Este gate é não invasivo: lê apenas o arquivo local, não abre KB, não requer GeneXus instalado
    - Aplicar mesmo quando o arquivo vier de geração anterior já validada — o gate é obrigatório por rodada, não por sessão
 6c. Antes de **importação real**: executar o **inventário do pacote** (lista completa de objetos no envelope) e confrontá-lo com o delta declarado, conforme a secção **Inventário do pacote antes do import real**. Preferir `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <pacote import_file.xml ou .xpz> -AsJson`; se houver delta declarado em arquivo `Tipo:Nome`, passar `-DeclaredDeltaPath` ou `-DeclaredDeltaItems`; quando a rodada exigir bloqueio automático, `-FailOnDeltaMismatch`. Se o pacote contiver extras não conciliados, módulo/ExternalObject de plataforma não pedido ou `attributesTopLevelUnreconciled` num pacote cirúrgico, **ABORT** salvo confirmação explícita do utilizador. Omitir este passo apenas quando o pacote foi gerado na mesma rodada pelo fluxo `xpz-builder` com manifesto na conversa que já feche o lote esperado.
+
+### Decisão pós-gates (importação real autorizada na sessão)
+
+Quando o usuário **já autorizou importação real headless na mesma sessão** (ex.: «pode importar», «gerar e importar», ou «sim»/«pode executar» a uma **proposta explícita** do agente que inclua import real) e o ambiente for controlado:
+
+1. **Envelope + inventário:** com `Test-GeneXusImportFileEnvelope.ps1` → `apto para prosseguir` e inventário do pacote (passo **6c**) **sem bloqueio**, executar **`Invoke-GeneXusXpzImport.ps1` na mesma rodada**. `apto para prosseguir` valida estrutura do envelope, **não** substitui o inventário nem autoriza ignorar extras.
+2. **Sem nova confirmação de import:** o passo **6b** é obrigatório **por rodada**, não uma nova autorização humana por rodada. **Não** encerrar a sessão só porque o envelope está apto.
+3. **Preview dispensável:** **não** exigir `Test-GeneXusXpzImportPreview.ps1` antes do import real neste cenário. Preview permanece para rodadas exploratórias ou quando import real **ainda não** foi autorizado.
+4. **Pré-requisitos MSBuild:** resolver `KbPath`, `VersionName`, `EnvironmentName`, `WorkingDirectory` e `LogPath` (passos **7–8**) se ainda faltarem.
+5. **Watcher obrigatório:** import real com **`-StartWatcher` e `-MonitorLogPath`** (ausência de `-MonitorLogPath` bloqueia cedo, exit 46). Não tratar watcher como opcional nesta skill.
+6. **Parada obrigatória (extras):** se o inventário ou a conciliação com o delta revelar **objeto extra não previsto** — objeto, atributo top-level, módulo de plataforma ou ExternalObject fora do pedido da rodada, inclusive itens herdados de **export/reempacotamento** sem classificação — **ABORT imediato** antes de qualquer import real; apresentar lista **completa** do que está no pacote, origem provável (export gordo, merge na montagem, dependência não justificada) e **aguardar decisão explícita** do usuário. Autorização de import na sessão **não** cobre importar extras: impacto pode incluir builds longos (ex.: módulos de plataforma). Ver também anti-padrão **reempacotar lixo de export**.
+7. **Ressalvas:** `apto com ressalvas` no envelope, bloqueio de assinatura da task, falha de permissão ou limite do ambiente → parar e reportar; não substituir por import na IDE sem declarar.
+8. **Build separado:** autorização de import **não** autoriza `xpz-msbuild-build` nem reorg ampla; build só após proposta explícita aceita pelo usuário.
+
+**Anti-padrão (nomeado): parada após envelope apto** — envelope `apto para prosseguir`, usuário já autorizou import real, inventário sem bloqueio, e o agente **não** chama `Invoke-GeneXusXpzImport.ps1`.
+
+**Anti-padrão (nomeado): reempacotar lixo de export** — receber `.xpz`/export com objetos além do delta, **incluir** esses itens no `import_file.xml` da frente atual sem classificar e sem confirmação, e tratar o pacote como cirúrgico.
+
+**Invocação canônica (ajustar caminhos):**
+
+```text
+pwsh -NoProfile -File scripts/Invoke-GeneXusXpzImport.ps1 `
+  -KbPath "<caminho-kb>" `
+  -XpzPath "<caminho.import_file.xml ou .xpz>" `
+  -VersionName "<versao>" `
+  -EnvironmentName "<ambiente>" `
+  -WorkingDirectory "<pasta-msbuild-segura>" `
+  -LogPath "<pasta-artefatos>/import" `
+  -MonitorLogPath "<pasta-artefatos>/import/watcher.log" `
+  -StartWatcher `
+  -AsJson
+```
+
 7. Só depois abrir a KB e confirmar versão ativa e `Environment` ativo quando aplicável
    Quando o objetivo for confirmar versão e Environment para usar em `-VersionName`/`-EnvironmentName`, usar `GetActiveVersion` e `GetActiveEnvironment` — nunca `GetVersionProperty -Name Name` nem `GetEnvironmentProperty -Name Name`, pois esses retornam propriedades de metadados incompatíveis com o identificador aceito por `SetActiveVersion`/`SetActiveEnvironment` (verificado empiricamente: `GetVersionProperty -Name Name` retornou `"Design"` enquanto `GetActiveVersion` retornou `"wsEducacaoSpTeste"` na mesma KB)
 8. Se o objetivo for inspeção, priorizar:
@@ -410,7 +443,7 @@ Parâmetros específicos de importação:
    Antes de emitir parâmetro sensível de exportação, validar a assinatura efetiva do wrapper e da task carregada para evitar sintaxe presumida incorreta.
    Em exportação full, preferir `-FullExport` quando o wrapper expuser esse atalho.
    Após exportação com XPZ gerado: ler `packageInventory` e `operationalSubState` no `export.json`; **abrir `package-inventory.json` sempre que** o resumo apontar `attributesTopLevelUnreconciled=true`, `extrasCount > 0`, ou `systemModulesPresent` / `systemExternalObjectsPresent` não vazios (caminho em `nominalInventoryAt`, `packageInventoryPath` ou `artifacts.PackageInventoryPath`); a **lista nominal completa é obrigatória no relatório ao usuário** nesses casos — incluindo **cada atributo top-level por nome** somente quando `attributesTopLevelUnreconciled=true` (export seletiva sem `Transaction` na lista); com `Transaction` na lista, atributos top-level esperados não exigem enumeração nominal no fechamento, salvo pedido explícito do utilizador — conforme a secção **Inventário do pacote após export seletivo**; só então declarar conclusão limpa ou seguir para materialização/import
-10. Se o objetivo for importação real, exigir autorização explícita e ambiente controlado
+10. Se o objetivo for importação real, exigir autorização explícita e ambiente controlado na sessão. Quando essa autorização já existir e os passos **6b–6c** tiverem passado sem bloqueio de inventário, seguir **Decisão pós-gates** — inclusive executar `Invoke-GeneXusXpzImport.ps1` sem nova confirmação intermediária só pelo envelope apto e **sem** `Test-GeneXusXpzImportPreview.ps1` obrigatório nesse caminho.
 11. Capturar e relatar:
    - `exitCode` — valor classificado pelo wrapper (0/32/41/42/...) combinando o código bruto do MSBuild com presença de artefato gerado, `UpdateFile` ou outros sinais; é também o exit code do processo
    - `executionEvidence` — evidência bruta da execução (`msBuildExitCode`, `msBuildFailed`, `wrapperExitCode`, logs brutos); `executionEvidence.msBuildExitCode` é o local canônico do código bruto da task MSBuild, e `blockingReasons` deve priorizar causas acionáveis sem repetir o exit code bruto quando uma causa específica já existir
@@ -524,6 +557,8 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] O gate de envelope retornou `apto para prosseguir` ou `apto com ressalvas` com confirmação explícita do usuário
 - [ ] O gate de envelope não foi ignorado por presunção de que o arquivo já havia sido validado anteriormente
 - [ ] Importação real só ocorreu com autorização explícita
+- [ ] Com importação real autorizada na sessão e envelope `apto para prosseguir`, `Invoke-GeneXusXpzImport.ps1` foi executado com `-StartWatcher` e `-MonitorLogPath`, ou o bloqueio foi declarado explicitamente
+- [ ] Não houve parada após envelope apto sem import real nem inclusão de extras de export no pacote sem ABORT e decisão do usuário
 - [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado quando `-StartWatcher` era esperado; se `false`, a ausência foi documentada e justificada explicitamente
 - [ ] `stdoutSignals`, `stderrContent`, `stderrFilteredNoise`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
@@ -559,7 +594,9 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER assumir defaults internos de importação ou exportação como seguros sem validação prática
 - NEVER tratar importação real como comportamento implícito
-- NEVER executar importação real de pacote amplo ou com muitos `WorkWithForWeb` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` com `-MonitorLogPath` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
+- NUNCA encerrar rodada com importação real já autorizada na sessão, envelope `apto para prosseguir` e inventário sem bloqueio de extras, sem chamar `Invoke-GeneXusXpzImport.ps1` ou sem declarar bloqueio operacional explícito (permissão negada, limite do plano, assinatura da task, inventário com extra não previsto, etc.)
+- NUNCA prosseguir para importação real quando o inventário apontar extra não previsto, módulo/ExternalObject de plataforma não pedido ou `attributesTopLevelUnreconciled` em pacote cirúrgico, esperando que a autorização ampla da sessão cubra o risco — **ABORT**, listar o pacote completo ao usuário e aguardar decisão
+- NUNCA executar importação real sem `-StartWatcher` e `-MonitorLogPath`; ausência bloqueia cedo (exit 46). Exceção apenas com bloqueio documentado e reportado ao usuário, nunca por omissão silenciosa
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER chamar MSBuild para preview ou import sem antes executar `Test-GeneXusImportFileEnvelope.ps1` no arquivo alvo
 - NEVER usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName`; para exportar da versão ativa, omitir `-VersionName`; se for necessário posicionar versão explicitamente, obter o identificador via `GetActiveVersion`, não via `GetVersionProperty`
