@@ -17,6 +17,7 @@ Satellite of `xpz-builder/SKILL.md` for the `Procedure` object type (including s
 When changing a `Procedure`, run a minimum semantic pre-packaging gate on the `Procedure` itself:
 
 - declare the primary edit block before touching the XML
+- For `Source` inside `CDATA`, follow **Edição cirúrgica de XML e limitações da ferramenta Edit do harness** in the main `SKILL.md`: prefer raw/script patch over harness Edit; ABORT when the saved diff shows changes outside the declared `Source` block.
 - use only the adjacent blocks required by explicit functional dependency
 - name each justified block transition during review, for example `Rules/parm -> Variables` or `Source -> Calls and dependencies`
 - if the current reasoning no longer needs a new block, stop expanding; do NOT reopen the whole object by reflex

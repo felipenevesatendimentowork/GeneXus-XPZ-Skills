@@ -21,6 +21,9 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] Active XMLs were classified as `modified in this round` or `reused unchanged for mandatory dependency closure`
 - [ ] Every altered copy in `ObjetosGeradosParaImportacaoNaKbNoGenexus` preserved textual fidelity outside the approved delta: comments, `CDATA`, indentation, blank lines, node order, line endings, and inherited whitespace were not changed by broad reconstruction or full-file reserialization
 - [ ] Diff against the source XML was reviewed before packaging, and any whitespace-only change, indentation churn, line-ending churn, removed comment, or serialization churn outside the approved delta was corrected or explicitly approved
+- [ ] The object XML was copied from official `ObjetosDaKbEmXml` into the active front under `ObjetosGeradosParaImportacaoNaKbNoGenexus` before any functional edit; `ObjetosDaKbEmXml` was not edited in place
+- [ ] Diff against the source XML was limited to the declared primary edit block; no mass line churn, trailing spaces on untouched lines, or inherited indented blank lines normalized outside the approved delta
+- [ ] Long `Source`/`CDATA` was not edited primarily via harness Edit; when Edit was used or whitespace was suspected, `scripts/Show-FileWhitespace.ps1` was run on the altered file or delta line range before packaging (see root `AGENTS.md`)
 - [ ] New or modified lines introduced by the agent contain no trailing spaces or tabs
 - [ ] Every modified object XML was reread after writing and its saved `lastUpdate` was confirmed strictly fresher than the official corpus baseline by at least the declared freshness margin (default 60s)
 - [ ] Every unchanged object reused only for dependency closure preserved the official `lastUpdate`

@@ -74,6 +74,17 @@ If the main need is to prepare or validate the initial folder structure around t
 - When creating an altered copy of GeneXus XML in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, preserve the source XML outside the approved functional delta; the default operation is surgical editing, not broad reconstruction or full-file reserialization
 - Outside the approved delta, preserve comments, `CDATA`, indentation, blank lines, node order, line endings, and inherited whitespace; do not introduce trailing spaces or tabs on new or modified lines
 - Before packaging, compare the altered copy against the source XML and confirm that the diff contains only the intended delta; whitespace-only changes, indentation churn, line-ending churn, removed comments, or serialization churn outside the delta are process noise and must be corrected or explicitly approved before delivery
+
+### Edição cirúrgica de XML e limitações da ferramenta Edit do harness
+
+- Fluxo obrigatório: copiar o XML oficial de `ObjetosDaKbEmXml` para a frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus` e editar **somente** o delta funcional aprovado na cópia de trabalho; nunca editar `ObjetosDaKbEmXml` diretamente.
+- A edição cirúrgica padrão **não** é a ferramenta **Edit** do harness (substituição por trecho em chat) em XML GeneXus com `Source`, `Rules` ou `CDATA` longos. Essa ferramenta pode: (1) normalizar linhas em branco indentadas (tabs/espaços herdados) para quebra de linha pura; (2) tratar `\n\t\t\t\t\n` e `\n\n` como equivalentes na comparação, impedindo correção por novo Edit; (3) introduzir espaços ou tabs no fim de linha ou ampliar o diff para longe do trecho pretendido.
+- **Preferido** para alterar XML de objeto: script PowerShell (ou wrapper `.ps1` em `scripts/`) que lê o arquivo em modo raw, aplica substituição **apenas** no intervalo aprovado e grava sem reserializar o documento inteiro.
+- Regravar o arquivo inteiro com `Write` só para XML **pequeno** e montado programaticamente a partir da leitura raw da origem; para Procedure/WebPanel/Transaction com `Source` longo, tratar `Write` do arquivo completo como alto risco de churn e evitar como caminho padrão.
+- **Não confiar** em nova tentativa da mesma ferramenta Edit só para “recolocar” tabs em linhas em branco ou remover trailing spaces.
+- Antes de empacotar: comparar a cópia alterada com o XML de origem da mesma frente. Se o diff trouxer mudanças fora do bloco primário declarado, whitespace-only fora do delta, linhas em branco com indentação herdada alteradas, trailing spaces novos em linhas não tocadas funcionalmente, ou centenas de linhas alteradas longe do delta → **ABORT**, refazer por script/raw e registrar o ruído como erro de processo.
+- Quando a edição tiver usado Edit do harness ou o diff suspeitar de whitespace: inspecionar com `scripts/Show-FileWhitespace.ps1` (modos `whitespace` ou `mixed`; `-AsJson` para agentes) conforme `AGENTS.md` na raiz do repositório ativo — no arquivo inteiro ou no intervalo de linhas do delta.
+
 - The set of standard KB parallel-folder subfolders (`ObjetosDaKbEmXml`, `XpzExportadosPelaIDE`, `scripts`, `Temp`, `KbIntelligence`, `ObjetosGeradosParaImportacaoNaKbNoGenexus`, `PacotesGeradosParaImportacaoNaKbNoGenexus`) and their recommended creation order are normative in the `xpz-kb-parallel-setup` skill — see [xpz-kb-parallel-setup/SKILL.md](../xpz-kb-parallel-setup/SKILL.md). This builder assumes those names by default and falls back to `xpz-kb-parallel-setup` when alternative naming, structural ambiguity, or missing setup is detected.
 - If `XpzExportadosPelaIDE` does not exist yet, ask where the user wants to store exported `.xpz` files
 - If `ObjetosDaKbEmXml` does not exist yet, stop and treat the KB as not yet materialized
@@ -554,6 +565,7 @@ The end-to-end Quality Checklist for any packaging round lives in the satellite 
 - NEVER treat an intended edit in `ObjetosDaKbEmXml` for a delta not yet returned by official KB export as acceptable; it is an explicit process error
 - NEVER treat locally generated XML as if it were the official KB snapshot
 - NEVER reserialize, reconstruct, or normalize a whole GeneXus XML object when the task is a surgical change and the source XML can be edited locally; preserve text outside the approved delta
+- NEVER use the harness Edit tool as the primary mechanism to change GeneXus object XML with long `Source`, `Rules`, or serialized `CDATA`; NEVER deliver an altered copy whose diff against the source shows material changes outside the declared primary edit block without explicit user approval
 - NEVER remove existing comments, alter unrelated `CDATA`, or introduce whitespace-only changes outside the approved delta without explicit user approval
 - NEVER deliver locally generated object XML with trailing spaces or tabs introduced on new or modified lines
 - NEVER keep the active front batch directly in the root of `ObjetosGeradosParaImportacaoNaKbNoGenexus`; use the front folder `NomeCurto_GUID_YYYYMMDD`
