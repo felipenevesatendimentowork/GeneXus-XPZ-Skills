@@ -145,7 +145,7 @@ O probe (sondagem técnica inicial) não deve:
 - usar `GetActiveEnvironment` para confirmar o `Environment` ativo antes de operar
 - usar `CaptureOutput` quando útil para processar programaticamente a saída das tasks
 - privilegiar `PreviewMode` em importação quando o objetivo for inspeção e não alteração real, ou quando import real ainda não foi autorizado na sessão ou a rodada for exploratória
-- quando import real já foi autorizado na sessão, `Test-GeneXusImportFileEnvelope.ps1` → `apto para prosseguir` e inventário do pacote sem bloqueio de extras, seguir **Decisão pós-gates** em `xpz-msbuild-import-export/SKILL.md`: `Invoke-GeneXusXpzImport.ps1` na mesma rodada, com `-StartWatcher` e `-MonitorLogPath` (obrigatórios nesse caminho, sem exceção por justificativa de ausência); não exigir `Test-GeneXusXpzImportPreview.ps1` obrigatório antes do import real nesse cenário
+- quando import real já foi autorizado na sessão, `Test-GeneXusImportFileEnvelope.ps1` → `apto para prosseguir` e inventário do pacote sem bloqueio de extras, seguir **Decisão pós-gates** em `xpz-msbuild-import-export/SKILL.md`: `Invoke-GeneXusXpzImport.ps1` na mesma rodada, com `-StartWatcher` e `-MonitorLogPath` (obrigatórios nesse caminho, sem exceção por justificativa de ausência); não exigir `Test-GeneXusXpzImportPreview.ps1` obrigatório antes do import real nesse cenário; **`exitCode=48`** (Categoria B no export/preview upstream) **bloqueia** import real nesse caminho — autorização de import na sessão não cobre rejeição MSBuild no log
 - considerar `UpdateFile` como artefato útil para análise de impacto antes de importação efetiva
 - considerar `IncludeItems` e `ExcludeItems` como mecanismos de recorte fino para cenários controlados
 
@@ -738,7 +738,7 @@ Saídas esperadas dos scripts:
 ### Categorias A e B (rejeição MSBuild vs comportamento esperado)
 
 - **Categoria A:** extras de inventário, módulos/ExternalObjects de plataforma, `attributesTopLevelUnreconciled` — decisão do agente (inventário, Decisão pós-gates); o wrapper pode manter `exitCode=0`.
-- **Categoria B:** linhas `error :` no log, `invalidTypesRejected`, ou `importErrors`/`previewErrors`/`buildErrors` no JSON — quando `executionEvidence.msBuildExitCode=0` e a lista não estiver vazia, o wrapper rebaixa para **`exitCode=48`** (`msBuildCategoryBBlocked=true`); XPZ/pacote pode existir **só para inspeção**.
+- **Categoria B:** linhas `error :` no log, `invalidTypesRejected`, ou `exportErrors`/`importErrors`/`previewErrors`/`buildErrors`/`specifyErrors` no JSON — quando `executionEvidence.msBuildExitCode=0` e a lista não estiver vazia, o wrapper rebaixa para **`exitCode=48`** (`msBuildCategoryBBlocked=true`); XPZ/pacote pode existir **só para inspeção**.
 - Catálogo numérico inicial: `scripts/msbuild-exit-codes.catalog.json`. Implementação: `scripts/GeneXusMsBuildCategoryBSupport.ps1`. Skill: `xpz-msbuild-import-export/SKILL.md` (secção «Categorias A e B»).
 - A frase «sinalizar sem rebaixar exitCode» vale **exclusivamente** para Categoria A.
 
