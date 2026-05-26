@@ -145,7 +145,7 @@ O probe (sondagem técnica inicial) não deve:
 - usar `GetActiveEnvironment` para confirmar o `Environment` ativo antes de operar
 - usar `CaptureOutput` quando útil para processar programaticamente a saída das tasks
 - privilegiar `PreviewMode` em importação quando o objetivo for inspeção e não alteração real, ou quando import real ainda não foi autorizado na sessão ou a rodada for exploratória
-- quando import real já foi autorizado na sessão, `Test-GeneXusImportFileEnvelope.ps1` → `apto para prosseguir` e inventário do pacote sem bloqueio de extras, seguir **Decisão pós-gates** em `xpz-msbuild-import-export/SKILL.md`: `Invoke-GeneXusXpzImport.ps1` na mesma rodada, com `-StartWatcher` e `-MonitorLogPath`; não exigir `Test-GeneXusXpzImportPreview.ps1` obrigatório antes do import real nesse cenário
+- quando import real já foi autorizado na sessão, `Test-GeneXusImportFileEnvelope.ps1` → `apto para prosseguir` e inventário do pacote sem bloqueio de extras, seguir **Decisão pós-gates** em `xpz-msbuild-import-export/SKILL.md`: `Invoke-GeneXusXpzImport.ps1` na mesma rodada, com `-StartWatcher` e `-MonitorLogPath` (obrigatórios nesse caminho, sem exceção por justificativa de ausência); não exigir `Test-GeneXusXpzImportPreview.ps1` obrigatório antes do import real nesse cenário
 - considerar `UpdateFile` como artefato útil para análise de impacto antes de importação efetiva
 - considerar `IncludeItems` e `ExcludeItems` como mecanismos de recorte fino para cenários controlados
 
@@ -692,7 +692,7 @@ O contrato de watcher acima aplica-se aos wrappers MSBuild que o suportam:
 `Invoke-GeneXusKbBuildAll.ps1`, `Invoke-GeneXusKbSpecifyGenerate.ps1`,
 `Test-GeneXusXpzImportPreview.ps1`, `Invoke-GeneXusXpzExport.ps1` e
 `Invoke-GeneXusXpzImport.ps1` (lista canônica também em `02-regras-operacionais-e-runtime.md`).
-Em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`, watcher e fluxo padrao; em preview/export/import, e padrao para execucao longa. Em importacao real de pacote amplo ou com muitos `WorkWithForWeb`, a ausencia de watcher exige justificativa operacional explicita.
+Em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`, watcher e fluxo padrao; em preview/export/import, e padrao para execucao longa. **Fora** da **Decisão pós-gates** (import real já autorizado na sessão, envelope apto e inventário sem bloqueio — ver secção 2A), em importacao real de pacote amplo ou com muitos `WorkWithForWeb`, a ausencia de watcher exige justificativa operacional explicita. Na **Decisão pós-gates**, `-StartWatcher` e `-MonitorLogPath` são obrigatórios na mesma invocação de `Invoke-GeneXusXpzImport.ps1`.
 Não se aplica a wrappers sem `-StartWatcher`, como `Open-GeneXusKbHeadless.ps1`.
 O contrato é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher,
 timing ou `watcherContext`, manter o helper comum como sede da regra e evitar lógica
