@@ -7,8 +7,9 @@
     Produz packageInventory resumido e sidecar JSON a partir de
     Get-GeneXusImportPackageObjectInventory.ps1. O resumo expoe
     nominalInventoryAt (lista nominal completa no sidecar), extrasSample
-    (extras de Objects quando extrasCount <= 50), extrasSampleTruncated e
-    extrasFullListAt quando a lista de extras excede 50. Consumido por
+    (extras de Objects quando extrasCount <= 50), extrasSampleTruncated quando
+    extrasCount > 50 (extrasSample omitido do resumo) e extrasFullListAt apontando
+    para o sidecar quando o motor gravou sidecar em confronto seletivo. Consumido por
     Build-GeneXusImportFileEnvelope.ps1, New-XpzImportPackage.ps1 e pelo export
     MSBuild via GeneXusXpzExportInventoryGovernance.ps1 (governanca de sub-estado
     permanece no modulo de export, nao neste arquivo).
