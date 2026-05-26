@@ -583,4 +583,4 @@ Assinatura composta: versão semântica explícita (mudança material de cobertu
 
 ### Rastreabilidade
 
-- Commit: `37cecd4` (`Detecta índice KbIntelligence gerado por extrator defasado.`)
+- Commit: `787086d` (`Detecta índice KbIntelligence gerado por extrator defasado.`)
