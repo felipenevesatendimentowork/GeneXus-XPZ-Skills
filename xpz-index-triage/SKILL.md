@@ -90,6 +90,14 @@ Do NOT use this skill for:
   3. Resolver o objeto efetivamente aberto ou executado
   4. Quando houver mais de um alvo plausível, declarar a ambiguidade explicitamente e confirmar o alvo com o usuário antes de prosseguir
   5. Produzir o bloco de handoff auditável de resolução de alvo (ver COMMUNICATION) antes de liberar leitura ou edição
+
+### Localização com índice e desambiguação de candidatos
+
+- Para localizar objeto, dependência ou ponto de leitura inicial, preferir consultas do índice (`search-objects`, `object-info`, `who-uses`, `what-uses`, etc.) depois de `GATE_OK`; o índice existe para reduzir abertura ampla de XML e erro de caminho.
+- O índice não substitui leitura de XML quando a pergunta depender de conteúdo não representado no índice (trecho literal de `Source`/`Rules`, mensagem de erro exata, semântica GeneXus no XML). Nesses casos, após a consulta mínima ao índice quando ela ainda ajudar, pode-se usar busca textual pontual no acervo oficial — somente com `GATE_OK` e sem varredura ampla desnecessária.
+- Quando o agente já souber nome e caminho nominal do XML oficial e a tarefa for apenas ler ou editar esse arquivo, não é obrigatório repetir `search-objects`; ainda assim, se a busca textual por trecho literal retornar mais de um arquivo, aplicar desambiguação antes de abrir um único XML.
+- Quando o índice ou a busca textual pontual retornar **mais de um** candidato plausível, listar **todos**, cruzar com pistas do usuário (action, botão, evento, Procedure/WebPanel citados, tokens no nome do arquivo, fluxo declarado), declarar **recomendação explícita com motivo** e **confirmar com o usuário** antes de abrir XML ou responder como se o alvo estivesse fechado.
+
 - Executar a triagem inicial apropriada
 - Não executar consulta substantiva do índice antes de `GATE_OK`; `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` e `functional-trace-basic` só podem rodar depois que o gate terminar liberado
 - Depois de `GATE_OK`, ir direto para a consulta substantiva mínima necessária; não abrir `scripts/README-kb-intelligence.md`, não listar `scripts` e não reinspecionar o wrapper local se a pergunta já puder ser atendida com consulta simples como `search-objects`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
@@ -221,6 +229,7 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negócio e oferecer `xpz-kb
    - resolução de alvo de navegação (pergunta ou solicitação de edição ancorada em ação, botão, link ou evento: "qual popup esse botão abre?", "o objeto chamado pelo evento X", "nesta tela clico em Y")
 9a. Se a natureza for resolução de alvo de navegação, executar o sub-fluxo obrigatório de resolução de alvo (ver RESPONSIBILITIES) antes de prosseguir: identificar caller, localizar evento/ação no XML do caller, resolver objeto efetivamente aberto, confirmar alvo com o usuário se houver ambiguidade e produzir o bloco de handoff auditável; só então continuar para o step 10
 10. Escolher a consulta do índice mais adequada
+10a. Se houver mais de um candidato (índice ou busca textual pontual com `GATE_OK`), executar desambiguação: listar candidatos, recomendar um com motivo, confirmar com o usuário; não abrir um único XML nem fechar resposta enquanto a ambiguidade persistir
 11. Só depois de `GATE_OK`, executar a consulta substantiva mínima necessária sem leitura lateral de `scripts`, `scripts/README-kb-intelligence.md` ou reinspeção do wrapper quando a pergunta já couber em `search-objects`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
     - para pergunta simples de existência/localização nominal, listagem por tipo ou consulta leve de atributo/gravabilidade, usar diretamente `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes` conforme a pergunta, usando os parâmetros documentados em **QUERY PARAMETER REFERENCE**; não abrir o wrapper para confirmar assinatura
 12. Resumir o resultado da triagem de forma curta e auditável
@@ -266,6 +275,7 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negócio e oferecer `xpz-kb
 - NUNCA abrir XML oficial de objeto para responder pergunta de negócio quando o gate de compatibilidade/frescor estiver bloqueado
 - NUNCA normalizar trabalho sem índice como alternativa econômica quando o repositório adota `KbIntelligence`; índice ausente ou defasado exige oferta de atualização
 - NUNCA editar ou liberar edição de objeto-alvo de fluxo ancorado em ação ou evento ("nesta tela clico em X", "o popup aberto por Y", "o objeto chamado pelo evento Z") com base apenas em similaridade nominal — evidência do caller real é obrigatória antes da primeira edição
+- NUNCA, com múltiplos candidatos do índice ou da busca textual pontual no acervo oficial, abrir silenciosamente o primeiro resultado nem responder como certeza sem listar os demais, recomendar com motivo e confirmar com o usuário quando a escolha não for inequívoca pelo contexto já fornecido
 - NUNCA substituir `nexa`
 - NUNCA substituir `xpz-reader`
 - NUNCA executar `Query-*KbIntelligence.ps1` ou chamar qualquer consulta ao índice sem ter verificado primeiro que `Test-*KbIndexGate.ps1` existe em `scripts/` e executado o gate com retorno `GATE_OK`; ausência do gate script é bloqueio estrutural, não licença para consultar o índice diretamente
