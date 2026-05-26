@@ -559,7 +559,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] Importação real só ocorreu com autorização explícita
 - [ ] Com importação real autorizada na sessão e envelope `apto para prosseguir`, `Invoke-GeneXusXpzImport.ps1` foi executado com `-StartWatcher` e `-MonitorLogPath`, ou o bloqueio foi declarado explicitamente
 - [ ] Não houve parada após envelope apto sem import real nem inclusão de extras de export no pacote sem ABORT e decisão do usuário
-- [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado quando `-StartWatcher` era esperado; se `false`, a ausência foi documentada e justificada explicitamente
+- [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado quando `-StartWatcher` era esperado; **fora** da **Decisão pós-gates**, se `false`, a ausência foi documentada e justificada explicitamente; **dentro** da Decisão pós-gates, `-StartWatcher` com `-MonitorLogPath` é obrigatório na mesma invocação de `Invoke-GeneXusXpzImport.ps1` — `watcherLaunched=false` nesse caminho é falha ou bloqueio operacional a reportar ao usuário, não exceção por justificativa de ausência de watcher (alinhado a `08-guia-para-agente-gpt.md`)
 - [ ] `stdoutSignals`, `stderrContent`, `stderrFilteredNoise`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] O resultado foi separado entre sucesso operacional e confirmação funcional
 - [ ] O resultado de import foi classificado com sub-estado explícito: `importação real efetiva provada`, `sucesso operacional sem prova de import efetivo` ou sub-estado de falha com causa nomeada — nunca apenas `sucesso operacional` ou `falha operacional` para operações de import
