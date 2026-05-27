@@ -1,14 +1,18 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Wrapper local sanitizado para executar o gate de compatibilidade da pasta paralela.
+Gate de compatibilidade do indice KbIntelligence (estrutura, frescor, inventario e assinatura do extrator).
 
 .DESCRIPTION
 Verifica sequencialmente: estrutura da pasta paralela via Test-*KbStructure.ps1,
 pasta KbIntelligence, kb-intelligence.sqlite, wrapper local de consulta,
-metadado de build do indice via index-metadata, kb-source-metadata.md e campo
-last_xpz_materialization_run_at. Compara timestamps e retorna GATE_OK em stdout
-quando o indice esta apto, ou lanca excecao com BLOCK: <motivo> quando nao esta.
+index-metadata (last_index_build_run_at, inventory_validation_status literal OK),
+kb-source-metadata.md com last_xpz_materialization_run_at, comparacao de timestamps
+(last_index_build_run_at >= last_xpz_materialization_run_at) e assinatura do extrator
+(extractor_signature_version/extractor_signature_hash na metadata do SQLite contra
+scripts/Build-KbIntelligenceIndex.py do repositorio ativo via
+scripts/GeneXusKbIntelligenceExtractorContract.ps1 em SharedSkillsRoot).
+Retorna GATE_OK em stdout quando o indice esta apto, ou lanca excecao com BLOCK: <motivo>.
 
 Deve ser o unico ponto de execucao do gate da pasta paralela da KB.
 Dependencias: Query-KbIntelligence.ps1 e Test-KbStructure.ps1 na mesma pasta.
