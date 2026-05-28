@@ -44,9 +44,9 @@ Quando acionada pelo gatilho global, "auditoria completa" significa: executar `T
 - `setup_apto_com_metadata_pendente`: auditoria passou e gate passou, mas o motivo original do `AUDIT_REQUIRED` foi ausencia, defasagem ou inconsistencia de campo persistente em `kb-source-metadata.md`, como `last_setup_audit_run_at`.
 - `setup_bloqueado`: runtime PowerShell minimo falhou/ausente, auditoria ou gate falhou, ou `estado_operacional_sugerido` nao e compativel com a tarefa em curso.
 
-Se o subestado for `setup_apto_com_metadata_pendente`, o agente nao pode prosseguir silenciosamente apenas porque o gate retornou `GATE_OK`. Antes de continuar a tarefa original, deve declarar ao usuario: o motivo original do `AUDIT_REQUIRED`; que auditoria e gate passaram; que a tarefa atual esta liberada, mas a pasta ainda caira em auditoria completa nas proximas sessoes se o metadata nao for corrigido; e que a correcao recomendada e atualizar `kb-source-metadata.md` com `last_setup_audit_run_at` no instante real da auditoria bem-sucedida, preservando o restante do arquivo. Se regras locais exigirem aprovacao para editar arquivos, oferecer a correcao e aguardar aprovacao explicita. O fluxo so pode voltar a tarefa original depois de registrar uma destas decisoes: correcao aplicada, correcao recusada/adiada pelo usuario ou correcao bloqueada por restricao tecnica ou regra local.
+Se o subestado for `setup_apto_com_metadata_pendente`, o agente nao pode prosseguir silenciosamente apenas porque o gate retornou `GATE_OK`. Antes de continuar a tarefa original, montar o **plano consolidado de correcoes** (secao PLANO DE CORRECOES POS-AUDITORIA), incluindo obrigatoriamente a linha de `last_setup_audit_run_at` com `Set-*KbSetupAuditTimestamp.ps1` quando a auditoria bem-sucedida permitir gravacao. Declarar que a tarefa atual esta liberada pelo gate, mas a pasta repetira auditoria completa nas proximas sessoes enquanto o plano nao for executado ou adiado explicitamente pelo usuario.
 
-Quando `estado_operacional_sugerido` for `atualizacao_metodologica_pendente`: ler todas as linhas `wrappers/inventario:` da saida para identificar scripts ausentes (`INVENTORY_GAPS`), com naming curto (`INVENTORY_SHORT_NAMING`), customizados (`INVENTORY_CUSTOMIZED`) ou legados orfaos (`INVENTORY_LEGACY_ORPHANS`). Apresentar ao usuario, em portugues e sem termos tecnicos em ingles, a natureza de cada pendencia. Para ausentes, dizer quais scripts ainda nao existem; para naming curto, dizer quais scripts precisam de renome canonico; para customizados, dizer quais scripts divergem metodologicamente e qual motivo foi emitido pelo inventario; para legados orfaos, dizer qual arquivo antigo persiste lado a lado com o canonico atual. Perguntar se deseja corrigir agora antes de prosseguir com a tarefa original — se sim, executar `atualizar_bootstrap_local` ou `corrigir_wrapper_local`, conforme o tipo de pendencia; se nao, prosseguir com a tarefa original registrando o gap. Nao acionar o WORKFLOW de criacao/documentacao (passos 1-7b) — esse WORKFLOW e reservado para quando o usuario pede explicitamente setup, atualizacao ou auditoria. Quando a saida trouxer `INVENTORY_RECOMMENDED_MISSING`, tratar como recomendacao consultiva: oferecer criacao dos wrappers finos a partir dos `.example.ps1`, com aprovacao explicita, mas nao rebaixar o estado operacional apenas por esse sinal.
+Quando `estado_operacional_sugerido` for `atualizacao_metodologica_pendente`: ler todas as linhas `wrappers/inventario:` da saida e incorporar cada pendencia (`INVENTORY_GAPS`, `INVENTORY_SHORT_NAMING`, `INVENTORY_CUSTOMIZED`, `INVENTORY_LEGACY_ORPHANS`, `INVENTORY_RECOMMENDED_MISSING`) ao **plano consolidado de correcoes**, com explicacao em portugues e sem termos tecnicos em ingles. Nao acionar o WORKFLOW de criacao/documentacao (passos 1-7b) — esse WORKFLOW e reservado para quando o usuario pede explicitamente setup, atualizacao ou auditoria.
 
 Quando a saida de `Test-*KbSetupAudit.ps1` trouxer `metadata wrapper:` diferente de `OK` (`PENDENTE_DE_DADOS`, `PENDENTE` ou `BLOCK`), esse resultado tambem exige `estado_operacional_sugerido=atualizacao_metodologica_pendente`. `GATE_OK`, `NAMING_OK` e inventario sem gaps nao neutralizam metadado de identidade ausente ou wrapper de metadata quebrado. O agente deve evidenciar a linha `metadata wrapper.evidencia`, distinguir campo ausente de falha funcional do wrapper e, quando a pendencia for identidade estavel ausente, oferecer reconciliacao via resolvedor/atualizador de identidade antes de declarar estado limpo.
 
@@ -61,13 +61,13 @@ Essa confirmacao breve antes de gravar deve ser textual, objetiva e aderente ao 
 Em `modo_atualizacao`, a verificacao de naming de `ObjetosDaKbEmXml` nao e opcional e nao pode ser pulada mesmo quando todos os scripts forem EQUIVALENTE: para cada diretorio presente na pasta, o agente deve ler pelo menos um XML, extrair o tipo canonico pelo GUID (ou pelo elemento raiz `<Attribute>`), comparar com o nome do diretorio e reportar o resultado — conforme ou divergente — antes de declarar qualquer estado de conclusao.
 
 Dentro de `modo_atualizacao`, separar primeiro a intencao operacional antes de avancar:
-- `auditar_setup`: o usuario quer conferir se a pasta paralela esta aderente, atualizada e coerente; a saida principal e diagnostico com estado operacional, classificacao de scripts e pendencias
+- `auditar_setup`: o usuario quer conferir se a pasta paralela esta aderente, atualizada e coerente; a saida principal e diagnostico com estado operacional, classificacao de scripts, pendencias e **plano consolidado de correcoes** oferecido para execucao na mesma sessao
 - `corrigir_wrapper_local`: o usuario quer corrigir um wrapper local defasado, quebrado ou reprovado por gate; a saida principal e edicao do wrapper, rerun do gate relevante e handoff atualizado
 - `atualizar_bootstrap_local`: o usuario quer incorporar wrappers ou secoes documentais ausentes previstos pela base metodologica; a saida principal e completar o bootstrap local faltante sem recriar a pasta
 
 `modo_atualizacao` descreve o contexto da pasta; `auditar_setup`, `corrigir_wrapper_local` e `atualizar_bootstrap_local` descrevem a natureza do trabalho. Nao tratar essas tres intencoes como se fossem a mesma coisa so porque acontecem na mesma pasta com historico real.
 
-Em `auditar_setup`, concluir primeiro a auditoria minima obrigatoria e so depois oferecer proximos passos. Antes disso, nao oferecer `sincronizar XPZ novamente`, `rebuild do indice` ou equivalentes como resposta-padrao a um pedido de "refazer setup".
+Em `auditar_setup`, concluir primeiro a auditoria minima obrigatoria e, em seguida, montar e oferecer o **plano consolidado de correcoes** (secao PLANO DE CORRECOES POS-AUDITORIA) antes de qualquer outro proximo passo operacional. Antes disso, nao oferecer `sincronizar XPZ novamente`, `rebuild do indice` ou equivalentes como resposta-padrao a um pedido de "refazer setup".
 
 Quando `auditar_setup` detectar `INVENTORY_SHORT_NAMING` no campo `wrappers/inventario` da saida de `Test-*KbSetupAudit.ps1`: os scripts listados existem com naming curto (ex: `Test-KbIndexGate.ps1`) em vez do naming canonico com prefixo KB (ex: `Test-wsEducacaoSpTesteKbIndexGate.ps1`). Essa divergencia NAO e opcional, NAO pode ser descartada como "convencao consistente aceita", NAO e neutralizada por `GATE_OK`, `STRUCTURE_OK` ou pelo fato de os scripts funcionarem operacionalmente. O naming curto e uma divergencia do padrao desta skill. O agente deve: classificar cada script SHORT_NAMING como CUSTOMIZADO com acao de renome na tabela de 8.h; oferecer `atualizar_bootstrap_local` para executar os renomes; incluir os renomes na lista de trabalho da sessao corrente — nao adiar para sessao futura nem condicionar a confirmacao a que o usuario mencione o problema primeiro.
 
@@ -76,6 +76,75 @@ Quando `auditar_setup` detectar `INVENTORY_CUSTOMIZED` no campo `wrappers/invent
 Quando `auditar_setup` detectar `INVENTORY_LEGACY_ORPHANS` no campo `wrappers/inventario` da saida de `Test-*KbSetupAudit.ps1`: os scripts listados sao nomes antigos que permaneceram na pasta `scripts/` depois que o nome canonico atual ja existe. Isso e pendencia metodologica objetiva porque mantem allowlists e documentacao local apontando para comandos antigos. O agente deve classificar o arquivo legado como CUSTOMIZADO/legado na tabela de 8.h, oferecer remocao segura e atualizacao de referencias em `.claude\settings.json`, `AGENTS.md`, `README.md` e scripts locais, sempre com aprovacao explicita antes de apagar ou editar.
 
 Quando `auditar_setup` detectar `metadata wrapper: PENDENTE_DE_DADOS`, `metadata wrapper: PENDENTE` ou `metadata wrapper: BLOCK`, nao declarar `materializado_e_indice_validado` nem gravar `last_setup_audit_run_at` como conclusao bem-sucedida. Se o proprio `estado_operacional_sugerido` ainda vier limpo nesse cenario, tratar como divergencia do motor de auditoria e corrigir a metodologia antes de usar o resultado para liberar a pasta.
+
+## PLANO DE CORRECOES POS-AUDITORIA
+
+Aplica-se sempre que esta skill tiver concluido **auditoria minima** — seja em `auditar_setup`, no BLOCO DE ATUALIZACAO de `modo_atualizacao` ou na **auditoria completa** da PRE-CONDICAO do gatilho global (apos `Test-*KbSetupAudit.ps1` e `Test-*KbIndexGate.ps1` com `GATE_OK`, quando aplicavel). Nao substitui as regras de aprovacao explicita antes de gravar; consolida **o que oferecer corrigir** e **em que ordem**, para o usuario nao precisar descobrir pendencia por pendencia.
+
+### Objetivo
+
+Ao terminar a auditoria, o agente deve entregar ao usuario:
+
+1. **Diagnostico** (estado operacional canonico, dimensoes do `Test-*KbSetupAudit.ps1` quando existir, tabela 8.h quando `modo_atualizacao`).
+2. **Plano consolidado de correcoes** — lista unica de itens corrigiveis nesta pasta segundo esta skill, cada um com acao proposta, pre-requisito de aprovacao (sim/nao) e skill/intencao usada (`atualizar_bootstrap_local`, `corrigir_wrapper_local`, passo 34, etc.).
+3. **Oferta em lote**: perguntar se deseja executar o plano (ou subconjunto) **agora nesta sessao**; nao encerrar com apenas "fica pendente" nem recomendar rodada futura por padrao.
+
+`GATE_OK` pode liberar a tarefa original do usuario **em paralelo** ao plano, mas **nao** dispensa apresentar o plano quando houver item corrigivel.
+
+### Itens que entram no plano (quando detectados)
+
+Consolidar **todos** os itens abaixo que a auditoria tiver identificado; omitir um item da lista e proibido quando a evidencia existir:
+
+| Origem tipica | Item no plano | Acao preferida | Aprovacao antes de gravar |
+|---|---|---|---|
+| `setup_apto_com_metadata_pendente` ou passo 34 | `last_setup_audit_run_at` ausente, vazio ou defasado apos auditoria OK | `Set-*KbSetupAuditTimestamp.ps1`; rerodar freshness e index gate | Sim, se regra local exigir |
+| `INVENTORY_GAPS` / scripts AUSENTE em 8.h | Wrappers ou gates ausentes previstos | `atualizar_bootstrap_local` a partir dos `.example.ps1` | Sim |
+| `INVENTORY_SHORT_NAMING` | Naming curto de wrapper | Renome canonico em lote (8.c excecao 2) | Sim, confirmacao em lote |
+| `INVENTORY_LEGACY_ORPHANS` | Script legado lado a lado com canonico | Remocao segura + atualizar referencias (8.f.1) | Sim |
+| `INVENTORY_CUSTOMIZED` (nao SHORT_NAMING) | Wrapper divergente do exemplo | Menu 8.c ou caso deterministico → `corrigir_wrapper_local` | Sim, por script ou lote |
+| Caso deterministico (8.a.iii, 8.z) | Wrapper defasado com correcao inequivoca | `corrigir_wrapper_local` sem menu A/B/C/D | Sim, se regra local exigir |
+| `metadata wrapper` ≠ OK | Identidade ou contrato de metadata | Reconciliacao via `Resolve-*KbIdentity` / `Update-*KbMetadataIdentity` ou corrigir wrapper | Sim |
+| `declarativo/timestamps=DRIFT_TIMESTAMPS_LITERAIS` | Timestamps literais em `AGENTS.md`/`README.md` | Substituir por ponteiros (`examples/AGENTS.md.example`) | Sim |
+| Secao `## Triagem Por Indice` ausente (8.g) | Roteamento para `xpz-index-triage` | Inserir bloco padrao no `AGENTS.md` local | Sim |
+| `INVENTORY_RECOMMENDED_MISSING` | Wrappers finos recomendados | Criar a partir dos `.example.ps1` | Sim |
+| Naming divergente em `ObjetosDaKbEmXml` (8.g2) | Diretorios com tipo real ≠ nome da pasta | Renome seguro com aprovacao | Sim |
+| Prefixo verbal defasado (8.f) | Nome local ≠ exemplo canonico (`Update-` vs `Rebuild-`, etc.) | Renome + atualizar referencias | Sim |
+| `Test-*KbPowerShellRuntime.ps1` ausente | Runtime gate ausente | Incorporar wrapper de runtime | Sim |
+
+### Itens que **nao** entram no plano desta skill
+
+Nao prometer no plano consolidado o que pertence a outra frente, salvo mencionar como **fora de escopo** com skill responsavel:
+
+- Materializacao XPZ/XML, sync de acervo, `last_xpz_materialization_run_at` → `xpz-sync`
+- Rebuild/regeneracao de indice quando defasado por materializacao → wrappers de indice + `xpz-sync` encadeado
+- Import/build MSBuild, empacotamento de negocio, geracao de objetos → skills respectivas
+- Scripts **CUSTOMIZADOS** com divergencia editorial de logica sem correcao deterministica → entram no plano como **decisao do usuario** (8.c), nao como "correcao automatica"
+
+### Ordem de execucao sugerida no plano
+
+Quando o usuario aprovar o pacote, executar na ordem abaixo salvo bloqueio concreto:
+
+1. `Test-*KbPowerShellRuntime.ps1` presente e OK (se estava ausente).
+2. Casos deterministicos de wrapper (`corrigir_wrapper_local`) que desbloqueiam gates.
+3. `atualizar_bootstrap_local` para scripts AUSENTE e renomes SHORT_NAMING.
+4. Limpeza de legados orfaos e alinhamento de prefixos verbais (8.f / 8.f.1).
+5. Drift declarativo (`AGENTS.md`/`README.md`) e secao de triagem por indice.
+6. Metadata de setup (`Set-*KbSetupAuditTimestamp.ps1`) quando auditoria bem-sucedida permitir.
+7. Reconciliacao de identidade estavel quando `metadata wrapper` exigir.
+8. Wrappers `INVENTORY_RECOMMENDED_MISSING` e naming de `ObjetosDaKbEmXml` aprovados pelo usuario.
+9. Rerodar `Test-*KbSetupAudit.ps1`, `Test-*KbSetupFreshness.ps1` (se existir) e `Test-*KbIndexGate.ps1`; atualizar handoff.
+
+### PRE-CONDICAO do gatilho global
+
+Depois de classificar o subestado transitorio (`setup_apto`, `setup_apto_com_metadata_pendente`, `setup_bloqueado`):
+
+- Se `setup_bloqueado`: nao voltar a tarefa original; plano so com o que for corrigivel para destravar.
+- Se `setup_apto` ou `setup_apto_com_metadata_pendente` com itens corrigiveis: **montar o plano consolidado** antes de retomar a tarefa original; itens de metadata pendente entram como linhas do plano, nao como unico aviso solto.
+- Registrar decisao do usuario sobre o plano: executado (total/parcial), recusado ou adiado — so entao retomar a tarefa original liberada pelo gate.
+
+### Fechamento de `auditar_setup`
+
+`auditar_setup` **nao** fecha apenas com diagnostico. Fecha com diagnostico **+** plano consolidado oferecido **+** registro da decisao do usuario (executar agora, recusar, adiar ou executar subconjunto). Se o usuario aprovar execucao, o agente pode transitar para `atualizar_bootstrap_local` e/ou `corrigir_wrapper_local` na mesma sessao sem exigir novo pedido do usuario.
 
 ## PATH RESOLUTION
 
@@ -96,7 +165,7 @@ Use esta skill para:
 - Preparar a estrutura inicial de pastas para fluxos com `XPZ`
 - Validar se a pasta paralela da KB esta pronta para `sync`, geracao de XML ou empacotamento
 - Preparar a pasta paralela da KB para uso de indice derivado em `KbIntelligence`
-- Auditar setup de pasta paralela existente sem necessariamente corrigir todos os wrappers na mesma rodada
+- Auditar setup de pasta paralela existente e, ao final, oferecer na mesma sessao o plano consolidado de correcoes de tudo que esta skill classificar como corrigivel nesta pasta (execucao apos aprovacao quando a skill exigir)
 - Corrigir wrapper local defasado ou reprovado por gate, especialmente quando a evidencia vier de `Test-*KbMetadataWrapper.ps1`, `Test-*KbIndexGate.ps1` ou `Test-*KbStructure.ps1`
 - Atualizar wrappers de pasta paralela com historico de uso para incorporar novos scripts previstos pela base metodologica compartilhada
 - Barrar uso operacional da pasta paralela quando `pwsh` com PowerShell 7.4 LTS ou superior nao estiver disponivel
@@ -264,6 +333,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 | `Test-*KbPowerShellRuntime.ps1` | sempre (primeiro gate de uso operacional) | qualquer uso operacional da pasta paralela |
 | `Test-*KbObjetosDaKbNaming.ps1` | `ObjetosDaKbEmXml` materializado | `wrappers_atualizados` e `materializado_e_indice_validado` limpos |
 | `Test-*KbSetupFreshness.ps1` | sempre (invocacao pelo gatilho global) | fast path da PRE-CONDICAO — ausente forca auditoria completa a cada invocacao do gatilho |
+| `Set-*KbSetupAuditTimestamp.ps1` | recomendado quando `last_setup_audit_run_at` estiver ausente, invalido ou defasado apos auditoria bem-sucedida | nenhum estado, enquanto o motor compartilhado puder ser chamado diretamente ou a edicao manual seguir o passo 34 |
 | `Update-*KbFromXpz.ps1` | sempre (fluxo oficial de materializacao) | `pronto_para_primeira_materializacao` |
 | `Test-*KbFullSnapshot.ps1` | sempre (fluxo oficial de materializacao) | `pronto_para_primeira_materializacao` |
 | `Query-*KbIntelligence.ps1` | `KbIntelligence` adotado | `wrappers_atualizados` |
@@ -385,6 +455,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - [Test-KbSetupAudit.example.ps1](examples/Test-KbSetupAudit.example.ps1)
   - [Test-KbStructure.example.ps1](examples/Test-KbStructure.example.ps1)
   - [Test-KbSetupFreshness.example.ps1](examples/Test-KbSetupFreshness.example.ps1)
+  - [Set-KbSetupAuditTimestamp.example.ps1](examples/Set-KbSetupAuditTimestamp.example.ps1)
 - Esses `.example.ps1` sao exemplos metodologicos importantes para bootstrap tecnico e reconstrucao assistida dos wrappers locais finais.
 - Quando os wrappers locais precisarem nascer do zero no setup inicial, preferir adaptar os exemplos sanitizados completos desta skill como base do bootstrap tecnico, em vez de improvisar wrappers curtos ou parciais que ainda exijam correcao na etapa seguinte.
 - Esses `.example.ps1` nao substituem o wrapper local real da pasta paralela da KB e nao devem virar fallback automatico de execucao no fluxo normal.
@@ -498,7 +569,7 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
 - Se a estrutura nao existir, dizer explicitamente o que falta
 - Em setup inicial padrao bem delimitado, preferir fechamento curto e objetivo em vez de narrar exploracao desnecessaria
 - Se o gate de compatibilidade falhar, explicar a falha como defasagem operacional da pasta paralela e oferecer atualizacao antes de responder a pergunta de negocio
-- Quando `AUDIT_REQUIRED` tiver origem em metadata persistente ausente, defasado ou inconsistente e a auditoria completa seguida do gate passar, diferenciar no handoff: `GATE_OK` libera a tarefa atual, mas a pasta ainda tem pendencia de metadata que deve ser corrigida para restaurar o caminho rapido das proximas sessoes
+- Quando `AUDIT_REQUIRED` tiver origem em metadata persistente ausente, defasado ou inconsistente e a auditoria completa seguida do gate passar, diferenciar no handoff: `GATE_OK` libera a tarefa atual, mas a pasta ainda tem pendencia de metadata que deve ser corrigida na mesma sessao (via `Set-*KbSetupAuditTimestamp.ps1` ou passo 34) para restaurar o caminho rapido das proximas sessoes; adiar para outra sessao so quando o usuario recusar ou adiar explicitamente
 - Nao tratar a estrutura da pasta nativa da KB como se fosse a mesma coisa que o repositorio paralelo
 - Ao fechar um setup inicial bem-sucedido, diferenciar explicitamente `estrutura pronta` de `snapshot oficial ainda nao materializado`
 - No fechamento do setup inicial, apresentar `A)` e `B)` como opcoes de proximo passo e informar o tradeoff de tempo entre elas
@@ -514,6 +585,8 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
 - Se `Test-*KbObjetosDaKbNaming.ps1` ou `Test-*KbSetupAudit.ps1` reportar `NAMING_DIVERGENT` ou `naming/objetos-da-kb: DIVERGENT`, incluir na resposta ao usuario — independente da pergunta original — o aviso explicito de quais diretorios estao com nome divergente e a oferta de correcao via `xpz-kb-parallel-setup`; nao suprimir esse aviso mesmo quando a pergunta de negocio ja foi respondida
 - Se `AGENTS.md` local ou `README.md` local gravarem timestamps literais de materializacao ou indice, tratar isso como drift documental mesmo que o valor ainda pareca coerente com `kb-source-metadata.md`, `-Query index-metadata` ou com o gate efetivo; nao declarar a pasta "tudo certo" sem antes apontar a divergencia e oferecer substituicao por ponteiros para as fontes autoritativas
 - Em `auditar_setup`, quando `Test-*KbSetupAudit.ps1` existir, o handoff deve citar nominalmente os blocos consolidados produzidos por esse wrapper (`powershell/runtime`, `sync/materializacao`, `naming/objetos-da-kb`, `indice/gate`, `indice/semantica`, `metadata wrapper`, `empacotamento local`, `declarativo/timestamps`, `wrappers/inventario`, `estado_operacional_sugerido`) em vez de sintetizar essas dimensoes manualmente; a sintese manual so e aceitavel quando o wrapper estiver ausente
+- Apos toda auditoria minima desta skill (`auditar_setup`, BLOCO DE ATUALIZACAO ou PRE-CONDICAO com auditoria completa), o handoff deve incluir o **plano consolidado de correcoes** quando existir ao menos um item corrigivel; se nao houver nenhum, declarar explicitamente "plano de correcoes: nenhum item corrigivel nesta pasta nesta rodada"
+- O plano consolidado deve ser lista estruturada (tabela ou bullets numerados) com colunas ou campos minimos: `Item`, `Evidencia`, `Acao proposta`, `Aprovacao necessaria` (sim/nao), `Intencao` (`atualizar_bootstrap_local` / `corrigir_wrapper_local` / passo 34 / fora de escopo)
 - O campo `estado_operacional_sugerido` reportado pelo wrapper deve ser confrontado com o estado canonico declarado pela skill; se o wrapper sugerir um estado diferente do estado canonico que a evidencia objetiva da auditoria sustenta, o agente deve declarar o estado canonico correto e explicitar a divergencia — nao silenciar nem adotar o sugerido pelo wrapper sem verificacao
 - No fechamento do setup inicial, informar que `nexa` nao e verificada por esta skill (pertence a outro repositorio) e recomendar `xpz-skills-setup` para auditoria do ecossistema completo
 
@@ -574,7 +647,7 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
    - Se o usuario pedir explicitamente para apagar tudo, recriar do zero ou equivalente e a pasta tem historico real: recusar, explicar que dados existentes nao serao destruidos e oferecer `modo_atualizacao` como unico caminho disponivel
 
 8.z Classificar a intencao operacional dentro do contexto detectado antes de escolher a profundidade da execucao:
-   - `auditar_setup`: usar quando o pedido central for conferir, revisar, validar, diagnosticar ou responder se "esta tudo certo"; o fluxo deve priorizar evidencia, classificacao e handoff
+   - `auditar_setup`: usar quando o pedido central for conferir, revisar, validar, diagnosticar ou responder se "esta tudo certo"; o fluxo deve priorizar evidencia, classificacao, **plano consolidado de correcoes** e handoff com registro da decisao do usuario sobre esse plano
    - `corrigir_wrapper_local`: usar quando a propria evidencia do gate ou do bloco de atualizacao apontar um wrapper especifico como defasado, ou quando o usuario pedir para corrigir wrapper/script local; o fluxo deve priorizar editar o wrapper, rerodar o gate afetado e so depois consolidar o estado final
    - `atualizar_bootstrap_local`: usar quando a pasta com historico real estiver sem wrappers previstos, sem secoes documentais obrigatorias ou sem parte do bootstrap metodologico; o fluxo deve priorizar incorporar esses faltantes
    - Em pedido generico de auditoria, comecar por `auditar_setup`; se a auditoria encontrar um caso deterministico de wrapper defasado que esta skill manda corrigir, trocar explicitamente para `corrigir_wrapper_local` e comunicar ao usuario antes da escrita usando a formula: "a auditoria encontrou um caso deterministico de correcao; vou mudar explicitamente para `corrigir_wrapper_local` antes da escrita"
@@ -585,7 +658,8 @@ No handoff final, usar literalmente um dos estados canonicos listados acima. Nao
      - a auditoria minima ainda nao foi concluida: gate ainda nao rodou, wrappers de 8.a ainda nao foram todos classificados ou naming de `ObjetosDaKbEmXml` (8.g2) ainda nao foi encerrado
      - o wrapper e CUSTOMIZADO com diferenca de logica ou parametros que exijam decisao explicita do usuario sobre o que preservar
      - o bloqueio do gate nao tem causa inequivoca ou depende de dado externo a pasta paralela para ser diagnosticado
-   - Nao usar a mesma regra de interacao para todas as intencoes: `auditar_setup` fecha com diagnostico; `corrigir_wrapper_local` fecha com gate rerodado; `atualizar_bootstrap_local` fecha com lista do que foi incorporado
+   - Nao usar a mesma regra de interacao para todas as intencoes: `auditar_setup` fecha com diagnostico **e plano consolidado de correcoes oferecido** (execucao na mesma sessao apos aprovacao quando houver itens corrigiveis); `corrigir_wrapper_local` fecha com gate rerodado; `atualizar_bootstrap_local` fecha com lista do que foi incorporado
+   - Quando `auditar_setup` encontrar itens corrigiveis, o agente deve oferecer executar o plano consolidado na mesma sessao; transitar para `corrigir_wrapper_local` ou `atualizar_bootstrap_local` conforme o item, comunicando a transicao ao usuario, sem exigir novo pedido generico de "corrigir setup"
    - Em `atualizar_bootstrap_local`, ao gravar cada wrapper novo criado a partir de exemplo canonico, atualizar tambem a secao `## Wrappers locais` do `AGENTS.md` local para incluir a entrada do novo wrapper; nao encerrar o fluxo sem esse sincronismo
 --- BLOCO DE ATUALIZACAO (executar somente em modo_atualizacao) ---
 
@@ -627,7 +701,7 @@ Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao an
     Excecao 2: esta regra de quatro opcoes nao se aplica a scripts CUSTOMIZADO exclusivamente por SHORT_NAMING (nome sem prefixo KB quando o canonico exige prefixo); para esse subconjunto, "manter o nome curto" nao e uma opcao valida — o rename e correcao de conformidade, nao preferencia editorial. O agente deve: listar todos os scripts SHORT_NAMING de uma vez, descrever o rename de cada um (nome atual → nome canonico), e pedir uma confirmacao em lote antes de executar qualquer rename; nao abrir A/B/C/D por script.
     Quando dois ou mais scripts consecutivos receberem a mesma decisao, o agente pode perguntar ao usuario se deseja aplicar essa mesma decisao a todos os scripts CUSTOMIZADO ainda nao revisados, evitando rounds repetitivos; aguardar resposta antes de prosseguir
 
-8.d Nao tocar campos de `kb-source-metadata.md` fora da autoridade da operacao corrente. Em `modo_atualizacao`, esta skill so pode gravar `last_setup_audit_run_at` nos casos permitidos por esta skill, ou atualizar campos de identidade estavel da KB quando a frente aprovada for explicitamente a reconciliacao de metadata a partir da KB nativa local; `last_xpz_materialization_run_at`, `source_xpz` e `source_refresh_status` pertencem ao fluxo `xpz-sync`. Essa excecao cobre tanto o passo 34 do WORKFLOW quanto o subestado `setup_apto_com_metadata_pendente` da PRE-CONDICAO, sempre preservando campos fora do escopo e respeitando regras locais de aprovacao antes da escrita.
+8.d Nao tocar campos de `kb-source-metadata.md` fora da autoridade da operacao corrente. Em `modo_atualizacao`, esta skill so pode gravar `last_setup_audit_run_at` nos casos permitidos por esta skill (preferir `Set-*KbSetupAuditTimestamp.ps1`), ou atualizar campos de identidade estavel da KB quando a frente aprovada for explicitamente a reconciliacao de metadata a partir da KB nativa local; `last_xpz_materialization_run_at`, `source_xpz` e `source_refresh_status` pertencem ao fluxo `xpz-sync`. Essa excecao cobre tanto o passo 34 do WORKFLOW quanto o subestado `setup_apto_com_metadata_pendente` da PRE-CONDICAO, sempre preservando campos fora do escopo e respeitando regras locais de aprovacao antes da escrita.
 
 8.e Para `.claude\settings.json` existente: ler entradas presentes e inserir apenas os padroes que ainda nao constarem; nao remover nem sobrescrever entradas ja existentes
 
@@ -739,7 +813,7 @@ Pre-condicao obrigatoria: confirmar que o passo 7b foi executado nesta sessao an
     - Quando a saida incluir `wrappers/inventario: INVENTORY_RECOMMENDED_MISSING: <lista>`: oferecer criacao dos wrappers recomendados ausentes a partir dos `.example.ps1` publicados pela skill; esse sinal e consultivo e nao impede `materializado_e_indice_validado` quando as demais dimensoes estiverem OK, mas deve aparecer no handoff para evitar que o agente volte a usar comandos compostos ou motores compartilhados diretos sem necessidade
     - Quando a saida incluir combinacoes de `INVENTORY_SHORT_NAMING`, `INVENTORY_CUSTOMIZED`, `INVENTORY_LEGACY_ORPHANS`, `INVENTORY_GAPS` e `INVENTORY_RECOMMENDED_MISSING`: o script de auditoria os emite como linhas `wrappers/inventario:` separadas — tratar cada linha de forma independente; SHORT_NAMING → CUSTOMIZADO com rename, CUSTOMIZED → CUSTOMIZADO com correcao metodologica, LEGACY_ORPHANS → CUSTOMIZADO/legado com limpeza aprovada, GAPS → AUSENTE com criacao, RECOMMENDED_MISSING → recomendacao consultiva com oferta de criacao; ignorar qualquer linha e proibido e invalida a tabela de 8.h
     - Quando a saida incluir `declarativo/timestamps: DRIFT_TIMESTAMPS_LITERAIS`: o `AGENTS.md` e/ou `README.md` local da pasta paralela contem timestamps literais de `last_xpz_materialization_run_at` e/ou `last_index_build_run_at` gravados como espelho de fonte autoritativa. Isso e divergencia metodologica objetiva: nenhum wrapper mantem esses espelhos coerentes com o `kb-source-metadata.md` ou com o `-Query index-metadata`, e o drift se acumula silenciosamente. O `estado_operacional_sugerido` emitido pelo motor sera `atualizacao_metodologica_pendente` — isso e esperado e correto. A correcao NAO e atualizar os valores literais antigos; e remover os literais e substitui-los por ponteiros para as fontes autoritativas. A acao desta skill e: (1) reproduzir a evidencia (`declarativo/timestamps.evidencia` aponta arquivo e campo); (2) propor ao usuario substituir o bloco "Estado operacional" pelo formato de ponteiros descrito em `examples/AGENTS.md.example` desta skill — sem timestamps literais, apenas referenciando `kb-source-metadata.md`, `Query-*KbIntelligence.ps1 -Query index-metadata` e `Test-*KbSetupAudit.ps1` como fontes vivas; (3) aguardar aprovacao explicita do usuario da pasta paralela antes de editar; (4) executar a correcao editorial via `atualizar_bootstrap_local`. Nao tratar essa linha como observacao informativa; impede declarar `wrappers_atualizados` ou `materializado_e_indice_validado` como estado final limpo enquanto o drift persistir.
-    - Mini-runbook especifico para `DRIFT_TIMESTAMPS_LITERAIS`: localizar os literais em `AGENTS.md` e/ou `README.md`; substituir por texto estavel que aponte para `kb-source-metadata.md` (`last_xpz_materialization_run_at`, preferencialmente via `Get-*KbMetadata.ps1`), para `Query-*KbIntelligence.ps1 -Query index-metadata` (`last_index_build_run_at`) e para `Test-*KbIndexGate.ps1` (`GATE_OK` como liberacao operacional); rerodar `Test-*KbSetupAudit.ps1`; se `estado_operacional_sugerido` voltar para `materializado_e_indice_validado` ou outro estado canonico bem-sucedido permitido, gravar `last_setup_audit_run_at` em `kb-source-metadata.md` com o horario real da auditoria bem-sucedida; rerodar `Test-*KbSetupFreshness.ps1` e esperar `GATE_ONLY`; rerodar `Test-*KbIndexGate.ps1` e esperar `GATE_OK`.
+    - Mini-runbook especifico para `DRIFT_TIMESTAMPS_LITERAIS`: localizar os literais em `AGENTS.md` e/ou `README.md`; substituir por texto estavel que aponte para `kb-source-metadata.md` (`last_xpz_materialization_run_at`, preferencialmente via `Get-*KbMetadata.ps1`), para `Query-*KbIntelligence.ps1 -Query index-metadata` (`last_index_build_run_at`) e para `Test-*KbIndexGate.ps1` (`GATE_OK` como liberacao operacional); rerodar `Test-*KbSetupAudit.ps1`; se `estado_operacional_sugerido` voltar para `materializado_e_indice_validado` ou outro estado canonico bem-sucedido permitido, executar `Set-*KbSetupAuditTimestamp.ps1` (ou gravar manualmente conforme passo 34) com o horario real da auditoria bem-sucedida; rerodar `Test-*KbSetupFreshness.ps1` e esperar `GATE_ONLY`; rerodar `Test-*KbIndexGate.ps1` e esperar `GATE_OK`.
     - Exemplo ruim em `AGENTS.md`/`README.md`: ``last_index_build_run_at: 2026-05-23T10:00:00-03:00``. Exemplo correto: "Timestamp efetivo do indice: consultar `last_index_build_run_at` via `scripts\Query-<NomeKb>KbIntelligence.ps1 -Query index-metadata`." O mesmo criterio vale para `last_xpz_materialization_run_at`: o valor efetivo fica em `kb-source-metadata.md`, nao em memoria declarativa duplicada.
 
 8.g5 Verificar se o `AGENTS.md` local contem regra irrestrita de invocacao de `nexa` para qualquer tarefa GeneXus:
@@ -874,7 +948,7 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
 32. Ao oferecer `A)` e `B)`, declarar que `A)` e o caminho preferencial e normalmente mais rapido, enquanto `B)` tende a demorar mais por depender da trilha via `MSBuild`
 32a. No fechamento do setup inicial, informar ao usuario que esta skill nao verifica a presenca de `nexa` nas ferramentas instaladas: `nexa` pertence a outro repositorio e esta fora do escopo desta skill. Recomendar invocar `xpz-skills-setup` para auditar o ecossistema completo de skills, incluindo `nexa`.
 33. Se o usuario escolher `B)`, usar a skill `xpz-msbuild-import-export` e nao improvisar fluxo alternativo de exportacao
-34. Ao declarar qualquer estado canonico de conclusao bem-sucedido (`pronto_para_primeira_materializacao`, `materializado_e_indice_validado` ou `wrappers_atualizados`), gravar `last_setup_audit_run_at` com o timestamp atual no frontmatter de `kb-source-metadata.md`; nao gravar quando o estado for `bootstrap_incompleto`, `auditoria_de_empacotamento_pendente` ou `atualizacao_metodologica_pendente`; o valor deve ser ISO 8601 com fuso horario, no mesmo formato de `last_xpz_materialization_run_at`. Esse campo registra a auditoria de setup bem-sucedida; nao substitui nem espelha `last_xpz_materialization_run_at` ou `last_index_build_run_at`.
+34. Ao declarar qualquer estado canonico de conclusao bem-sucedido (`pronto_para_primeira_materializacao`, `materializado_e_indice_validado` ou `wrappers_atualizados`), gravar `last_setup_audit_run_at` com o timestamp da auditoria bem-sucedida no frontmatter de `kb-source-metadata.md`; nao gravar quando o estado for `bootstrap_incompleto`, `auditoria_de_empacotamento_pendente` ou `atualizacao_metodologica_pendente`; o valor deve ser ISO 8601 com fuso horario, no mesmo formato de `last_xpz_materialization_run_at`. Preferir `Set-*KbSetupAuditTimestamp.ps1` (motor `scripts/Set-XpzSetupAuditTimestamp.ps1`), que atualiza somente esse campo e preserva o restante do arquivo; edicao manual so quando o wrapper estiver ausente e a frente aprovada permitir gravacao local. Esse campo registra a auditoria de setup bem-sucedida; nao substitui nem espelha `last_xpz_materialization_run_at` ou `last_index_build_run_at`. No subestado `setup_apto_com_metadata_pendente` da PRE-CONDICAO, esta mesma gravacao aplica-se quando a auditoria completa acabou de passar com estado canonico bem-sucedido compativel — nao adiar por padrao para outra sessao.
 
 ---
 
@@ -964,3 +1038,6 @@ PastaParalelaDaKb/
 - NUNCA omitir ou resumir as linhas `wrappers/inventario:` da saida de `Test-*KbSetupAudit.ps1` ao reportar ao usuario; todas as linhas devem aparecer na resposta exatamente como emitidas pelo script.
 - NUNCA declarar em prosa que "todos os scripts sao EQUIVALENTE", "todos os scripts estao presentes e funcionais" ou qualquer afirmacao global equivalente quando a saida de `wrappers/inventario:` contiver `INVENTORY_SHORT_NAMING`; a afirmacao global em prosa nao substitui a classificacao individual de 8.a.ii e invalida a tabela de 8.h — cada script SHORT_NAMING deve aparecer na tabela como CUSTOMIZADO com acao de renome, independentemente do resultado do gate ou de qualquer outra dimensao da auditoria.
 - NUNCA ignorar regra irrestrita de nexa ("qualquer tarefa GeneXus → nexa") no `AGENTS.md` local sem evidenciar ao usuario o risco de carregamento desnecessario em tarefas ja cobertas por skills `xpz-*` especificas e sem oferecer a correcao de escopo prevista em 8.g5.
+- NUNCA encerrar auditoria minima, PRE-CONDICAO com auditoria completa ou `auditar_setup` apenas com diagnostico quando a evidencia objetiva indicar ao menos um item corrigivel listado na secao PLANO DE CORRECOES POS-AUDITORIA; apresentar o plano consolidado e oferecer execucao na mesma sessao e obrigatorio
+- NUNCA recomendar "rodada separada", "corrigir depois" ou equivalente como resposta-padrao a pendencias de setup corrigiveis nesta skill; adiar so quando o usuario recusar ou adiar explicitamente o plano ou itens dele
+- NUNCA retomar silenciosamente a tarefa original do usuario apos `GATE_OK` sem ter apresentado o plano consolidado quando houver pendencia de setup corrigivel, mesmo que a tarefa esteja liberada pelo gate

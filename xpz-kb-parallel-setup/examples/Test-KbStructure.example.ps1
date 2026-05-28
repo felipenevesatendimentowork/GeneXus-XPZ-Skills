@@ -87,7 +87,8 @@ foreach ($script in @(
 }
 
 foreach ($script in @(
-    'New-KbImportPackage.ps1'
+    'New-KbImportPackage.ps1',
+    'Set-KbSetupAuditTimestamp.ps1'
 )) {
     $optionalPath = Join-Path $scriptsDir $script
     if (Test-Path -LiteralPath $optionalPath -PathType Leaf) {
@@ -114,7 +115,7 @@ $scriptsToParse = @(
     'Test-KbSetupAudit.ps1'
 )
 
-foreach ($optionalScriptName in @('New-KbImportPackage.ps1')) {
+foreach ($optionalScriptName in @('New-KbImportPackage.ps1', 'Set-KbSetupAuditTimestamp.ps1')) {
     if (Test-Path -LiteralPath (Join-Path $scriptsDir $optionalScriptName) -PathType Leaf) {
         $scriptsToParse += $optionalScriptName
     }
