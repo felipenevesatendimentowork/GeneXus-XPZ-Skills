@@ -8,6 +8,10 @@ Le kb-source-metadata.md na raiz da pasta paralela da KB e retorna campos chave
 como texto estruturado. Elimina o padrao recorrente de Select-String + regex
 inline nos chamadores.
 
+O parse de tabelas Markdown usa ReadAllLines + split por pipe + Trim, tolerando
+CRLF residual; evite regex multiline terminada em \|$, fragil quando o arquivo
+tiver terminadores CR antes do LF.
+
 Campos retornados e sua origem em kb-source-metadata.md:
   last_xpz_materialization_run_at : campo de topo ou frontmatter do arquivo
   kb_name                         : campo "name" na tabela da secao ## Source/Version

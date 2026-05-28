@@ -173,8 +173,11 @@ if ($null -ne $SqlCredential) {
     $resolverArgs.SqlCredential = $SqlCredential
 }
 
+. (Join-Path $PSScriptRoot 'XpzTextFileEolSupport.ps1')
+
 $resolved = (& $resolverPath @resolverArgs | ConvertFrom-Json)
-$lines = [System.IO.File]::ReadAllLines($resolvedMetadataPath)
+$fileContext = Get-TextFileLineContext -Path $resolvedMetadataPath
+$lines = @($fileContext.Lines.ToArray())
 
 $changes = @(
     Test-IdentityChange -Field 'Source/kb (GUID)' -Existing (Get-MarkdownTableValue -Lines $lines -SectionName 'Source' -FieldName 'kb (GUID)') -Resolved $resolved.kbGuid -AllowOverwrite:$AllowIdentityOverwrite
@@ -207,8 +210,8 @@ if ($PSCmdlet.ShouldProcess($resolvedMetadataPath, 'reconciliar identidade estav
     $updatedLines = Set-MarkdownTableValue -Lines $updatedLines -SectionName 'Source/Version' -FieldName 'guid' -Value $resolved.versionGuid
     $updatedLines = Set-MarkdownTableValue -Lines $updatedLines -SectionName 'Source/Version' -FieldName 'name' -Value $resolved.versionName
 
-    $content = ($updatedLines -join [Environment]::NewLine) + [Environment]::NewLine
-    [System.IO.File]::WriteAllText($resolvedMetadataPath, $content, (New-Object System.Text.UTF8Encoding($false)))
+    $fileContext.Lines = [System.Collections.Generic.List[string]]@($updatedLines)
+    Write-TextFilePreservingEol -Path $resolvedMetadataPath -FileContext $fileContext
 }
 
 if ($PassThru) {

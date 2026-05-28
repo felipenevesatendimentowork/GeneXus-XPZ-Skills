@@ -4,7 +4,8 @@
     Grava last_setup_audit_run_at em kb-source-metadata.md da pasta paralela da KB.
 
 .DESCRIPTION
-    Atualiza ou insere somente o campo last_setup_audit_run_at, preservando o restante do arquivo.
+    Atualiza ou insere somente o campo last_setup_audit_run_at, preservando o restante do arquivo
+    (conteudo, EOL dominante e newline final).
     Autoridade desta operacao: xpz-kb-parallel-setup (auditoria de setup bem-sucedida).
 
     Projetado para ser chamado pelo wrapper local Set-*KbSetupAuditTimestamp.ps1 apos auditoria
@@ -57,18 +58,19 @@ if ([string]::IsNullOrWhiteSpace($AuditTimestamp)) {
   }
 }
 
+. (Join-Path $PSScriptRoot 'XpzTextFileEolSupport.ps1')
+
 $fieldName = 'last_setup_audit_run_at'
-$newLine = "${fieldName}: $isoValue"
+$newFieldLine = "${fieldName}: $isoValue"
 $fieldPattern = '^\s*{0}\s*[:=]\s*.+$' -f [regex]::Escape($fieldName)
 
-$lines = [System.Collections.Generic.List[string]]@(
-  [System.IO.File]::ReadAllLines($metadataPath)
-)
+$fileContext = Get-TextFileLineContext -Path $metadataPath
+$fileLines = $fileContext.Lines
 
 $updated = $false
-for ($i = 0; $i -lt $lines.Count; $i++) {
-  if ($lines[$i] -match $fieldPattern) {
-    $lines[$i] = $newLine
+for ($i = 0; $i -lt $fileLines.Count; $i++) {
+  if ($fileLines[$i] -match $fieldPattern) {
+    $fileLines[$i] = $newFieldLine
     $updated = $true
     break
   }
@@ -77,11 +79,11 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
 if (-not $updated) {
   $insertAt = -1
   $frontmatterClose = -1
-  $hasFrontmatter = ($lines.Count -gt 0 -and $lines[0].Trim() -eq '---')
+  $hasFrontmatter = ($fileLines.Count -gt 0 -and $fileLines[0].Trim() -eq '---')
 
   if ($hasFrontmatter) {
-    for ($i = 1; $i -lt $lines.Count; $i++) {
-      if ($lines[$i].Trim() -eq '---') {
+    for ($i = 1; $i -lt $fileLines.Count; $i++) {
+      if ($fileLines[$i].Trim() -eq '---') {
         $frontmatterClose = $i
         break
       }
@@ -90,25 +92,25 @@ if (-not $updated) {
     if ($frontmatterClose -gt 0) {
       $insertAt = $frontmatterClose
       for ($j = 1; $j -lt $frontmatterClose; $j++) {
-        if ($lines[$j] -match '^\s*last_xpz_materialization_run_at\s*[:=]') {
+        if ($fileLines[$j] -match '^\s*last_xpz_materialization_run_at\s*[:=]') {
           $insertAt = $j + 1
         }
       }
     }
   } else {
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-      if ($lines[$i] -match '^\s*##\s+') {
+    for ($i = 0; $i -lt $fileLines.Count; $i++) {
+      if ($fileLines[$i] -match '^\s*##\s+') {
         $insertAt = $i
         break
       }
     }
 
     if ($insertAt -lt 0) {
-      $insertAt = $lines.Count
+      $insertAt = $fileLines.Count
     }
 
     for ($j = 0; $j -lt $insertAt; $j++) {
-      if ($lines[$j] -match '^\s*last_xpz_materialization_run_at\s*[:=]') {
+      if ($fileLines[$j] -match '^\s*last_xpz_materialization_run_at\s*[:=]') {
         $insertAt = $j + 1
       }
     }
@@ -122,11 +124,10 @@ if (-not $updated) {
     }
   }
 
-  $lines.Insert($insertAt, $newLine)
+  $fileLines.Insert($insertAt, $newFieldLine)
 }
 
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-[System.IO.File]::WriteAllLines($metadataPath, $lines.ToArray(), $utf8NoBom)
+Write-TextFilePreservingEol -Path $metadataPath -FileContext $fileContext
 
 if ($AsJson) {
   [pscustomobject]@{
