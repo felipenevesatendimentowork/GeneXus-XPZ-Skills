@@ -184,6 +184,19 @@ Dois scripts PowerShell, seguindo o mesmo padrão de `xpz-msbuild-import-export`
 
 Barragem estrutural compartilhada: `scripts/GeneXusMsBuildCategoryBSupport.ps1` (exit **48** em `scripts/msbuild-exit-codes.catalog.json`). Antes de varrer stdout/stderr manualmente ou declarar sucesso com `executionEvidence.msBuildExitCode=0`, ler no **top-level** do JSON de resultado: `exitCode`, `msBuildCategoryBBlocked`, `operationalSubState`, `buildErrors` (em `BuildAll`) ou `specifyErrors` (em `SpecifyGenerate`) e `blockingReasons`. Com `exitCode=48`, reproduzir as linhas `error :` ao usuário e tratar o resultado como **não confiável** para handoff operacional — mesmo que a task MSBuild tenha concluído com sucesso aparente.
 
+### Pós-processamento resiliente (BuildAll / SpecifyGenerate)
+
+Após a task `MSBuild` concluir, `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1` envolvem parse de stdout, montagem do diagnóstico e serialização JSON em `try/catch` (motor compartilhado `scripts/GeneXusMsBuildGamPlatformsSupport.ps1` para filtro GAM/NetCore).
+
+- `postProcessingFailed` / `postProcessingError` — falha **local** do wrapper depois que o `MSBuild` já rodou (parse, classificação, hints consultivos, serialização ou gravação do log). **Não** reclassificam automaticamente `executionEvidence.msBuildExitCode=0` como falha operacional nem elevam para exit **90** quando a evidência primária do log bruto sustenta conclusão limpa da task.
+- Evidência primária por trilha quando `postProcessingFailed=true` e `executionEvidence.msBuildExitCode=0`:
+  - **build-all:** `__BUILDALL_DONE__=true` no `msbuild.stdout.log` e/ou `observedContext.BuildAllDone=true` no JSON parcial; status pode permanecer `compilou limpo` com `exitCode=0` e `summary` indicando falha só no pós-processamento.
+  - **specify-generate:** `__SPECIFY_DONE__=true` e/ou `__GENERATE_DONE__=true` no log bruto e/ou `observedContext.SpecifyDone` / `observedContext.GenerateDone` no JSON parcial; status pode permanecer `specify e generate concluídos` com `exitCode=0`.
+- Consultar `artifacts.MsBuildStdoutLogPath` / `executionEvidence.StdOutPath` quando o JSON estiver parcial, com `note` apontando log bruto.
+- `environmentRemediationHints` é **omitido** quando não houve ruído GAM filtrado; falha ao montar hints com stdout limpo não deve derrubar o pós-processamento inteiro (`Get-GamPlatformsStdoutPostFilterResult`).
+
+Contrato transversal ampliado (import/export/preview): `10-base-operacional-msbuild-headless.md` e `xpz-msbuild-import-export/SKILL.md`.
+
 ### Invoke-GeneXusKbSpecifyGenerate.ps1
 
 Executa `SpecifyAll` seguido de `GenerateOnly`. Sem compilação explícita. Mais rápido
@@ -712,6 +725,8 @@ Campos relevantes:
 - `environmentRemediationHints` — **omitido** quando não houve ruído GAM filtrado; quando presente, contém `gamPlatformsWriteDeniedFiltered` com `condition`, `filteredLineCount`, `resolvedGeneXusDir`, `resolvedPlatformsPath`, `buildUser`, `summaryForUser`, `suggestedCommands` (`grant`, `verify`, `revert`) e flags `oneTimeUserAction` / `skillDoesNotExecuteGrant` / `doesNotRecommendElevatedBuild`. Oferta consultiva para silenciar o ruído de vez com permissão NTFS — **não** é warning, erro nem mudança de classificação
 - `stderrContent` — linhas reais de stderr após remoção do ruído estrutural do GeneXus 18
 - `stderrFilteredNoise` — ruído estrutural removido de stderr; quando `stderrContent` está vazio e `stderrFilteredNoise` tem conteúdo, o build é limpo e nenhuma recomendação de IDE deve ser emitida
+- `postProcessingFailed` / `postProcessingError` — quando `true`, o pós-processamento local falhou após o `MSBuild`; ler `postProcessingError` e o log bruto em `executionEvidence`/`artifacts`. Com `executionEvidence.msBuildExitCode=0` e marcas primárias no stdout (`__BUILDALL_DONE__`, `__SPECIFY_DONE__`, `__GENERATE_DONE__` ou `observedContext` equivalente), **não** tratar como `falha operacional` nem inferir exit **90** só pelo terminal; `exitCode` classificado pode permanecer **0** com `summary` degradado
+- `note` — quando presente após falha de serialização, indica diagnóstico parcial; priorizar `msbuild.stdout.log` nos artefatos
 
 > **Promoção de warnings `pmm00xx` (versão de módulo) a `warnings` top-level:**
 > Warnings GeneXus de família `pmm00xx` (ex.: `pmm0003` "módulo deve ser atualizado para versão N", `pmm0045` "version conflict") sinalizam estado da KB que precisa de atenção do usuário — tipicamente resolvido via `Update Modules` na IDE. Como `buildWarnings` é lista interna que o usuário raramente inspeciona, esses warnings são adicionalmente surfacados em `warnings` (top-level) do diagnóstico, com texto orientativo:

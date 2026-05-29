@@ -732,7 +732,7 @@ Saídas esperadas dos scripts:
   - sucesso operacional
   - falha operacional
   - operação apenas em preview
-  - sucesso operacional com falha no pos-processamento — `executionEvidence.msBuildExitCode=0`, evidência primária do log bruto presente (`__IMPORTED_ITEM__` ou `__EXPORTED_FILE__` mais arquivo XPZ existente), mas pos-processamento local do wrapper falhou e o JSON saiu com `postProcessingFailed=true`; não é `falha operacional`
+  - sucesso operacional com falha no pos-processamento — `executionEvidence.msBuildExitCode=0`, evidência primária do log bruto presente (import/export: `__IMPORTED_ITEM__` ou `__EXPORTED_FILE__` mais arquivo XPZ existente; build-all: `__BUILDALL_DONE__=true` e/ou `observedContext.BuildAllDone=true`; specify-generate: `__SPECIFY_DONE__=true` e/ou `__GENERATE_DONE__=true` e/ou `observedContext.SpecifyDone`/`observedContext.GenerateDone`), mas pós-processamento local do wrapper falhou e o JSON saiu com `postProcessingFailed=true`; não é `falha operacional`
   - preview apenas com falha no pos-processamento — análogo ao anterior na fase de preview: `executionEvidence.msBuildExitCode=0` sem alterar a KB, evidência primária preservada no log bruto, pos-processamento local falhou; não é `falha operacional`
   - operação concluída, porém ainda pendente de confirmação funcional
 - no diagnóstico JSON, distinguir `exitCode` (valor classificado pelo wrapper — 0/32/41/42/48/... — e também exit code do processo) de `executionEvidence.msBuildExitCode` (local canônico do valor bruto da task MSBuild); `msBuildExitCode` top-level, quando existir, é compatibilidade transitória e deve duplicar o valor canônico; ambos devem aparecer no diagnóstico parcial em caso de falha no pos-processamento
@@ -769,11 +769,12 @@ Este contrato aplica-se aos wrappers que já chamaram `MSBuild` ou processaram s
   - `postProcessingFailed=true` sinaliza falha local do wrapper depois que o `MSBuild` já rodou, como parse de stdout, montagem do diagnóstico, serialização JSON ou gravação do log
   - `postProcessingError` deve carregar a mensagem curta da falha local quando disponível
   - em exportação, `postProcessingFailed=true` pode aparecer sem `diagnosticDegraded`; nessa família, o sub-estado é decidido por `executionEvidence`, marcas do log bruto e existência do XPZ gerado
+  - em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`, o contrato operacional detalhado está em `xpz-msbuild-build/SKILL.md`; com `executionEvidence.msBuildExitCode=0` e marcas primárias no stdout, o wrapper pode manter `exitCode=0` e status `compilou limpo` ou `specify e generate concluídos` mesmo com JSON parcial — consultar `msbuild.stdout.log` nos artefatos
 - `diagnosticDegraded` / `diagnosticDegradedReason`
   - `diagnosticDegraded` (booleano) sinaliza que o pós-processamento local do wrapper ficou parcial ou falhou após o `MSBuild` já ter concluído; `diagnosticDegradedReason` (string) carrega a causa textual curta
   - hoje contratado e emitido em `scripts/Invoke-GeneXusXpzImport.ps1` e `scripts/Test-GeneXusXpzImportPreview.ps1`; o contrato completo de resiliência do pós-processamento está em `xpz-msbuild-import-export/SKILL.md`
   - `diagnosticDegraded=true` pode coexistir com `postProcessingFailed=false`, por exemplo quando a task concluiu e o diagnóstico principal foi montado, mas a leitura compacta de `msbuild.import.signals.json` falhou ou ficou parcial
-  - semântica: **não** reclassifica a task `MSBuild` — a evidência primária de conclusão da task permanece em `executionEvidence` e nos marcadores do log bruto (`__IMPORTED_ITEM__`, `__EXPORTED_FILE__`)
+  - semântica: **não** reclassifica a task `MSBuild` — a evidência primária de conclusão da task permanece em `executionEvidence` e nos marcadores do log bruto (`__IMPORTED_ITEM__`, `__EXPORTED_FILE__`, `__BUILDALL_DONE__`, `__SPECIFY_DONE__`, `__GENERATE_DONE__`)
   - quando `diagnosticDegraded=true` coexistir com `executionEvidence.msBuildExitCode=0` e evidência de marca no log bruto, o sub-estado correto é `concluído com diagnóstico degradado` ou o sub-estado mais específico definido pela skill consumidora; não é `falha operacional` por si só
 - `gxImportLogReadStatus` / `gxImportLogReadError`
   - `gxImportLogReadStatus` vem do leitor compacto de sinais de importação e indica `ok`, `locked` ou `error` para a leitura de `GxImport.log`
