@@ -272,7 +272,7 @@ Os wrappers seguem esta convenção de parâmetros:
     - explicar que um item pode aparecer como `unchanged` no sync porque o arquivo local já está igual ao conteúdo vindo do `XPZ`, mesmo que esse mesmo arquivo ainda tenha diff pendente no Git contra o último commit
     - quando houver resumo Git, apresentar essa camada separadamente como comparação do worktree contra o commit atual, sem reclassificar o resultado do sync
     - se o mesmo `XPZ` tiver sido reprocessado após atualização do arquivo, deixar explícito que a comparação relevante é com o conteúdo do insumo reprocessado e com o estado atual do acervo, não com o relatório antigo
-    - se `kb-source-metadata.md` tiver sido reescrito pelo wrapper, tratar isso como artefato normal do fluxo, não como evidência automática de mudança funcional na frente
+    - se `kb-source-metadata.md` tiver sido atualizado cirurgicamente pelo wrapper (campos de materialização), tratar isso como artefato normal do fluxo, não como evidência automática de mudança funcional na frente
     - se a pasta ainda carregar memória local provisória do setup dizendo que `ObjetosDaKbEmXml` não foi materializada, `aguardando primeiro XPZ` ou equivalente, atualizar ou neutralizar esse estado quando a primeira materialização oficial tiver sido concluída com sucesso
     - só afirmar conteúdo específico de `kb-source-metadata.md`, como versão do GeneXus, build, GUID da KB, usuário ou caminho `Source`, quando esse metadado tiver aparecido explicitamente na saída real do wrapper ou quando o próprio `kb-source-metadata.md` tiver sido aberto e lido nominalmente na rodada atual
     - quando nenhuma dessas duas fontes aceitáveis tiver mostrado o metadado, limitar o resumo ao que o wrapper efetivamente retornou
@@ -298,7 +298,7 @@ Os wrappers seguem esta convenção de parâmetros:
     - relatório principal usado para a conclusão e, quando houver, relatório separado de verificação posterior
     - `MaterializationInterpretation` quando o wrapper expuser esse campo; caso contrário, limitar a leitura aos contadores e warnings reais
     - evidência usada para afirmar refresh do índice ou bloqueio que impediu essa conclusão
-    - se `kb-source-metadata.md` foi lido nominalmente na rodada atual ou apenas reescrito pelo wrapper
+    - se `kb-source-metadata.md` foi lido nominalmente na rodada atual ou apenas atualizado cirurgicamente pelo wrapper (campos de materialização)
     - se houve falha de opcional comparativo por divergência wrapper/engine,
       declarar o parâmetro afetado, o rerun sem ele e que isso não bloqueou o
       sync principal
@@ -380,7 +380,7 @@ XPZ/XML, não apenas a última mudança material detectada nos XMLs.
 - Antes de gerar novo delta de objeto já retornado da KB, comparar a cópia intermediária com o XML atual do acervo e rebasear no acervo se houver defasagem
 - Se o script não for encontrado na raiz resolvida, reportar o erro e perguntar ao usuário antes de tentar qualquer alternativa
 - NUNCA tratar reprocessamento do mesmo `XPZ` atualizado como se o resultado anterior ainda fosse autoritativo
-- NUNCA tratar regravação de `kb-source-metadata.md` pelo wrapper como mudança funcional automática da frente atual
+- NUNCA tratar atualização cirúrgica de `kb-source-metadata.md` pelo wrapper (campos de materialização) como mudança funcional automática da frente atual
 - NUNCA deixar `kb-source-metadata.md` perder valores estáveis conhecidos porque o `XPZ` veio com `Source` vazio ou incompleto
 - NUNCA apagar ou sobrescrever `last_setup_audit_run_at` nem outros campos de frontmatter fora da autoridade do sync; a gravacao desse campo pertence a `xpz-kb-parallel-setup` (`Set-*KbSetupAuditTimestamp.ps1` / `scripts/Set-XpzSetupAuditTimestamp.ps1`)
 - NUNCA reformatar ou normalizar `ObjetosDaKbEmXml` durante sync para remover whitespace herdado de export oficial; se o ruído tiver sido introduzido por XML/pacote local gerado pelo agente, a correção deve acontecer na etapa de geração em `ObjetosGeradosParaImportacaoNaKbNoGenexus` antes da importação, não como limpeza posterior do snapshot oficial
