@@ -1242,6 +1242,9 @@ try {
     $stdOutText = Read-TextFileSafe -PathValue $stdOutPath
     $stdErrText = Read-TextFileSafe -PathValue $stdErrPath
 
+    $postProcessingFailed = $false
+    $postProcessingError  = $null
+
     $kbOpenMarker     = Get-MarkerValue -Text $stdOutText -Marker '__KB_OPEN__='
     $buildAllDoneMarker = Get-MarkerValue -Text $stdOutText -Marker '__BUILDALL_DONE__='
     $kbOpen       = ($kbOpenMarker -eq 'true')
@@ -1285,6 +1288,20 @@ try {
         -TimedOut           $timedOut `
         -AllowReorgConfirmed $allowReorgConfirmed
 
+    $stdErrFilteredNoise = ''
+    $stdErrFiltered      = ''
+    $stdOutNoiseLines    = @()
+    $stdOutNonNoiseLines = @()
+    $stdOutFilteredNoise = ''
+    $stdOutFiltered      = ''
+    $environmentRemediationHints = $null
+    $detectedBlockingPattern = $null
+    $postBuildEventLines = @()
+    $buildWarningLines = @()
+    $buildErrors = @()
+    $knownStdOutNoiseBuild = @()
+
+    try {
     # GeneXus 18 grava exatamente 3 linhas "context [anonymous] N:N attribute component
     # isn't defined" no stderr durante SpecifyAll (executado internamente pelo BuildAll).
     # O GeneXus nao conta isso como erro: stdout reporta "0 avisos, 0 erros".
@@ -1295,14 +1312,15 @@ try {
 
     # Ruido estrutural GAM/NetCore: GeneXusMsBuildGamPlatformsSupport.ps1 (ver SKILL.md).
     $stdOutLines      = if ([string]::IsNullOrEmpty($stdOutText)) { @() } else { $stdOutText -split "`r?`n" }
-    $gamStdoutSplit   = Split-StdoutByGamPlatformsNoise -Lines $stdOutLines
-    $stdOutNoiseLines = @($gamStdoutSplit.NoiseLines)
-    $stdOutNonNoiseLines = @($gamStdoutSplit.NonNoiseLines)
+    $gamPostFilter    = Get-GamPlatformsStdoutPostFilterResult -StdOutLines $stdOutLines -ResolvedGeneXusDir $resolvedGeneXusDir
+    $stdOutNoiseLines = @($gamPostFilter.NoiseLines)
+    $stdOutNonNoiseLines = @($gamPostFilter.NonNoiseLines)
     $stdOutFilteredNoise = ($stdOutNoiseLines -join "`n")
     $stdOutFiltered      = ($stdOutNonNoiseLines -join "`n")
-    $environmentRemediationHints = New-GamPlatformsEnvironmentRemediationHints `
-        -ResolvedGeneXusDir $resolvedGeneXusDir `
-        -FilteredNoiseLines $stdOutNoiseLines
+    $environmentRemediationHints = $gamPostFilter.EnvironmentRemediationHints
+    if (-not [string]::IsNullOrWhiteSpace($gamPostFilter.RemediationHintWarning)) {
+        Add-WarningMessage -Message ('Falha ao montar environmentRemediationHints (consultivo): {0}' -f $gamPostFilter.RemediationHintWarning)
+    }
 
     $stdOutBlockingPatternRegex = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
     $blockingPatternMatch       = [regex]::Match($stdOutFiltered, $stdOutBlockingPatternRegex)
@@ -1358,8 +1376,6 @@ try {
         }
     }
 
-    $buildErrors = @()
-    $knownStdOutNoiseBuild = @()
     $signalsScript = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
     if (Test-Path -LiteralPath $signalsScript -PathType Leaf) {
         try {
@@ -1416,6 +1432,28 @@ try {
     if ($buildStatus.Status -eq 'operacao concluida, pendente de confirmacao funcional' -and -not [string]::IsNullOrWhiteSpace($stdErrFiltered)) {
         $stderrPreview = ((Split-NonEmptyLines -Text $stdErrFiltered) | Select-Object -First 5 | ForEach-Object { $_.TrimEnd() }) -join ' | '
         Add-WarningMessage -Message "Stderr nao vazio detectado apos build: $stderrPreview"
+    }
+
+    }
+    catch {
+        $postProcessingFailed = $true
+        $postProcessingError  = $_.Exception.Message
+        Add-WarningMessage -Message ('Pos-processamento local falhou apos MSBuild: {0}' -f $postProcessingError)
+        Add-StrategyTrace -Message ('Pos-processamento falhou apos MSBuild: {0}' -f $postProcessingError)
+        if ([string]::IsNullOrEmpty($stdOutFiltered) -and -not [string]::IsNullOrEmpty($stdOutText)) {
+            $stdOutFiltered = $stdOutText
+        }
+        if ([string]::IsNullOrEmpty($stdErrFiltered) -and -not [string]::IsNullOrEmpty($stdErrText)) {
+            $stdErrFiltered = $stdErrText
+        }
+    }
+
+    if ($postProcessingFailed -and ($msBuildExitCode -eq 0) -and ($null -ne $buildStatus) -and ($buildStatus.ExitCode -eq 0) -and ($buildStatus.Status -eq 'compilou limpo')) {
+        $buildStatus = [ordered]@{
+            Status   = 'compilou limpo'
+            Summary  = 'BuildAll concluiu sem erro de MSBuild, mas o pos-processamento local falhou. Evidencias do MSBuild preservadas nos artefatos.'
+            ExitCode = 0
+        }
     }
 
     $diagnostic = [ordered]@{
@@ -1491,6 +1529,8 @@ try {
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
+        postProcessingFailed = $postProcessingFailed
+        postProcessingError  = $postProcessingError
     }
 
     if ($null -ne $environmentRemediationHints) {
@@ -1498,12 +1538,127 @@ try {
     }
 
     $diagnostic['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
-    $json = ConvertTo-JsonText -InputObject $diagnostic
+
+    try {
+        $json = ConvertTo-JsonText -InputObject $diagnostic
+    }
+    catch {
+        $postProcessingFailed = $true
+        $postProcessingError  = ('Falha ao serializar diagnostico apos MSBuild: {0}' -f $_.Exception.Message)
+        Add-StrategyTrace -Message $postProcessingError
+        if (($buildStatus.ExitCode -eq 0) -and ($msBuildExitCode -eq 0)) {
+            $buildStatus = [ordered]@{
+                Status   = 'compilou limpo'
+                Summary  = 'BuildAll concluiu sem erro de MSBuild, mas a serializacao do diagnostico falhou. Evidencias primarias preservadas no log bruto.'
+                ExitCode = 0
+            }
+        }
+        $fallback = [ordered]@{
+            status               = $buildStatus.Status
+            summary              = $buildStatus.Summary
+            exitCode             = $buildStatus.ExitCode
+            executionEvidence    = [ordered]@{
+                msBuildExitCode = $msBuildExitCode
+                msBuildFailed   = ($msBuildExitCode -ne 0)
+                wrapperExitCode = $buildStatus.ExitCode
+                StdOutPath      = $stdOutPath
+                StdErrPath      = $stdErrPath
+            }
+            postProcessingFailed = $true
+            postProcessingError  = $postProcessingError
+            stage                = 'build-all'
+            artifacts            = [ordered]@{
+                MsBuildStdoutLogPath = $stdOutPath
+                MsBuildStderrLogPath = $stdErrPath
+                ExecutionLogPath     = $resolvedLogPath
+            }
+            watcherContext       = $script:WatcherContext
+            timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria.'
+        }
+        try {
+            $json = $fallback | ConvertTo-Json -Depth 3
+        }
+        catch {
+            $msBuildExitCodeText = if ($null -eq $msBuildExitCode) { 'null' } else { [string]$msBuildExitCode }
+            $msBuildFailedText = if ($null -eq $msBuildExitCode) { 'null' } elseif ($msBuildExitCode -ne 0) { 'true' } else { 'false' }
+            $json = '{"status":"' + $buildStatus.Status + '","exitCode":' + $buildStatus.ExitCode + ',"msBuildExitCode":' + $msBuildExitCodeText + ',"executionEvidence":{"msBuildExitCode":' + $msBuildExitCodeText + ',"msBuildFailed":' + $msBuildFailedText + ',"wrapperExitCode":' + $buildStatus.ExitCode + '},"postProcessingFailed":true,"note":"Fallback minimo: serializacao do fallback tambem falhou. Consultar msbuild.stdout.log."}'
+        }
+    }
+
     Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $json
     Write-Output $json
     exit $buildStatus.ExitCode
 }
 catch {
+    if (($null -ne $msBuildExitCode) -and ($msBuildExitCode -eq 0)) {
+        $recoveryStatus = 'compilou limpo com falha no pos-processamento'
+        $recoverySummary = 'BuildAll concluiu sem erro de MSBuild, mas o wrapper falhou ao montar o diagnostico. Consulte msbuild.stdout.log nos artefatos.'
+        $recoveryBuildAllDone = $false
+        $recoveryKbOpen = $false
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($stdOutPath) -and (Test-Path -LiteralPath $stdOutPath -PathType Leaf)) {
+                $recoveryStdOut = Read-TextFileSafe -PathValue $stdOutPath
+                $recoveryBuildAllDone = ((Get-MarkerValue -Text $recoveryStdOut -Marker '__BUILDALL_DONE__=') -eq 'true')
+                $recoveryKbOpen = ((Get-MarkerValue -Text $recoveryStdOut -Marker '__KB_OPEN__=') -eq 'true')
+            }
+        }
+        catch {
+            # best effort apenas
+        }
+
+        $recovery = [ordered]@{
+            status               = $recoveryStatus
+            summary              = $recoverySummary
+            exitCode             = 0
+            executionEvidence    = [ordered]@{
+                msBuildExitCode = $msBuildExitCode
+                msBuildFailed   = $false
+                wrapperExitCode = 0
+                StdOutPath      = $stdOutPath
+                StdErrPath      = $stdErrPath
+            }
+            postProcessingFailed = $true
+            postProcessingError  = $_.Exception.Message
+            stage                = 'build-all'
+            observedContext      = [ordered]@{
+                KbOpen       = $recoveryKbOpen
+                BuildAllDone = $recoveryBuildAllDone
+                MsBuildExitCode = $msBuildExitCode
+            }
+            resolvedPaths        = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $resolvedGeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $resolvedMsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $resolvedKbPath)
+                LogPath          = $resolvedLogPath
+            }
+            artifacts            = [ordered]@{
+                MsBuildStdoutLogPath = $stdOutPath
+                MsBuildStderrLogPath = $stdErrPath
+                ExecutionLogPath     = $resolvedLogPath
+            }
+            watcherContext       = $script:WatcherContext
+            timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria.'
+        }
+        try {
+            $recoveryJson = ConvertTo-JsonText -InputObject $recovery
+            try {
+                if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+                    Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $recoveryJson
+                }
+            }
+            catch {
+                # best effort apenas
+            }
+            Write-Output $recoveryJson
+            exit 0
+        }
+        catch {
+            # cair no failure padrao abaixo
+        }
+    }
+
     $failure = [ordered]@{
         status           = 'falha operacional'
         summary          = 'Falha interna do script antes de concluir o build.'

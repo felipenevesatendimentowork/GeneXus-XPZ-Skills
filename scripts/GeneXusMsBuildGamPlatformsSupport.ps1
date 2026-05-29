@@ -61,7 +61,8 @@ function New-GamPlatformsEnvironmentRemediationHints {
         [Parameter(Mandatory = $true)]
         [string]$ResolvedGeneXusDir,
 
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
         [string[]]$FilteredNoiseLines
     )
 
@@ -101,5 +102,39 @@ function New-GamPlatformsEnvironmentRemediationHints {
                 revert = $revertCmd
             }
         }
+    }
+}
+
+function Get-GamPlatformsStdoutPostFilterResult {
+    param(
+        [AllowNull()]
+        [string[]]$StdOutLines,
+
+        [AllowNull()]
+        [string]$ResolvedGeneXusDir
+    )
+
+    $gamStdoutSplit = Split-StdoutByGamPlatformsNoise -Lines $StdOutLines
+    $noiseLines     = @($gamStdoutSplit.NoiseLines)
+    $nonNoiseLines  = @($gamStdoutSplit.NonNoiseLines)
+    $hints          = $null
+    $hintWarning    = $null
+
+    if ($noiseLines.Count -gt 0) {
+        try {
+            $hints = New-GamPlatformsEnvironmentRemediationHints `
+                -ResolvedGeneXusDir $ResolvedGeneXusDir `
+                -FilteredNoiseLines $noiseLines
+        }
+        catch {
+            $hintWarning = $_.Exception.Message
+        }
+    }
+
+    return [ordered]@{
+        NoiseLines                  = $noiseLines
+        NonNoiseLines               = $nonNoiseLines
+        EnvironmentRemediationHints = $hints
+        RemediationHintWarning      = $hintWarning
     }
 }
