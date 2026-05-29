@@ -141,6 +141,12 @@ if (-not (Test-Path -LiteralPath $categoryBSupportPath -PathType Leaf)) {
 }
 . $categoryBSupportPath
 
+$gamPlatformsSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildGamPlatformsSupport.ps1'
+if (-not (Test-Path -LiteralPath $gamPlatformsSupportPath -PathType Leaf)) {
+    throw "GAM Platforms support script not found: $gamPlatformsSupportPath"
+}
+. $gamPlatformsSupportPath
+
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
 function Get-Utf8NoBomEncoding {
@@ -878,32 +884,16 @@ try {
     $stdErrFilteredNoise = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }) -join "`n"
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
-    # Ruido estrutural do dotnet publish em Program Files\GAM\Platforms\NetCore*.
-    # Duas assinaturas independentes sao aceitas:
-    #   1. error MSB3491 + is denied/acesso negado + caminho da instalacao do GeneXus
-    #   2. NuGet.targets(...): error : + is denied/acesso negado + caminho da instalacao do GeneXus
-    # Em ambos os casos o caminho deve conter \Library\GAM\Platforms\. Linhas que casam
-    # uma assinatura completa sao removidas de stdout antes de classificar e listadas
-    # em stdoutFilteredNoise. Linhas que casem apenas alguns criterios permanecem como
-    # diagnostico legitimo.
-    # Cobertura empirica: o padrao foi verificado via BuildAll em 2026-05-12 (matriz 2x2
-    # KB/Environment); para SpecifyAll puro, ainda nao ha evidencia empirica de presenca
-    # ou ausencia deste ruido. O filtro e idempotente: se o ruido nao aparece, nada e
-    # removido; se aparecer, e removido com a mesma assinatura precisa.
-    $stdOutLines             = if ([string]::IsNullOrEmpty($stdOutText)) { @() } else { $stdOutText -split "`r?`n" }
-    $stdOutNoiseLines        = @()
-    $stdOutNonNoiseLines     = @()
-    foreach ($line in $stdOutLines) {
-        $isGamAccessDenied = (($line -match 'is denied') -or ($line -match 'acesso negado')) -and
-                             ($line -match '\\GeneXus\\') -and
-                             ($line -match '\\Library\\GAM\\Platforms\\')
-        $isGamMsb3491Noise = ($line -match 'error MSB3491') -and $isGamAccessDenied
-        $isGamNuGetNoise   = ($line -match 'NuGet\.targets\(\d+,\d+\):\s*error\s*:') -and $isGamAccessDenied
-        $isGamNoise        = $isGamMsb3491Noise -or $isGamNuGetNoise
-        if ($isGamNoise) { $stdOutNoiseLines += $line } else { $stdOutNonNoiseLines += $line }
-    }
+    # Ruido estrutural GAM/NetCore: GeneXusMsBuildGamPlatformsSupport.ps1 (ver SKILL.md).
+    $stdOutLines      = if ([string]::IsNullOrEmpty($stdOutText)) { @() } else { $stdOutText -split "`r?`n" }
+    $gamStdoutSplit   = Split-StdoutByGamPlatformsNoise -Lines $stdOutLines
+    $stdOutNoiseLines = @($gamStdoutSplit.NoiseLines)
+    $stdOutNonNoiseLines = @($gamStdoutSplit.NonNoiseLines)
     $stdOutFilteredNoise = ($stdOutNoiseLines -join "`n")
     $stdOutFiltered      = ($stdOutNonNoiseLines -join "`n")
+    $environmentRemediationHints = New-GamPlatformsEnvironmentRemediationHints `
+        -ResolvedGeneXusDir $resolvedGeneXusDir `
+        -FilteredNoiseLines $stdOutNoiseLines
 
     $specifyDoneMarker  = Get-MarkerValue -Text $stdOutText -Marker '__SPECIFY_DONE__='
     $generateDoneMarker = Get-MarkerValue -Text $stdOutText -Marker '__GENERATE_DONE__='
@@ -1086,6 +1076,10 @@ try {
         blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
         warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
+    }
+
+    if ($null -ne $environmentRemediationHints) {
+        $diagnostic['environmentRemediationHints'] = $environmentRemediationHints
     }
 
     $json = ConvertTo-JsonText -InputObject $diagnostic

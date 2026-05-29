@@ -286,7 +286,9 @@ wrapper deve detectar a falha de `SetActiveVersion`/`SetActiveEnvironment`, emit
 > `Invoke-GeneXusKbBuildAll.ps1` (assinaturas: `MSB3491` ou `NuGet.targets(...): error :`,
 > sempre com mensagem de acesso negado e caminho contendo `\GeneXus\...\Library\GAM\Platforms\`).
 > `Invoke-GeneXusKbSpecifyGenerate.ps1`
-> aplica o mesmo filtro e popula `stdoutFilteredNoise` no diagnóstico.
+> aplica o mesmo filtro e popula `stdoutFilteredNoise` no diagnóstico. Quando houver
+> ruído GAM filtrado, o JSON pode incluir `environmentRemediationHints` (mesmo contrato
+> documentado na seção `Invoke-GeneXusKbBuildAll.ps1`).
 >
 > **Cobertura empírica:** a evidência da matriz 2×2 foi coletada via `BuildAll`. Não foi
 > verificado empiricamente se `SpecifyAll` puro (sem compile) também dispara a fase de
@@ -413,6 +415,17 @@ e confirmação explícita** por frase exata.
 > `NuGet.targets` fora da árvore de instalação do GeneXus ou `Access denied` fora de
 > `\Library\GAM\Platforms\`) **não são filtradas** — são
 > diagnósticos legítimos.
+>
+> **Remediação opcional (one-time, consultiva):** quando pelo menos uma linha desse ruído
+> for filtrada para `stdoutFilteredNoise`, `Invoke-GeneXusKbBuildAll.ps1` (via
+> `scripts/GeneXusMsBuildGamPlatformsSupport.ps1`) popula `environmentRemediationHints`
+> no diagnóstico JSON com caminhos derivados de `resolvedPaths.GeneXusDir` efetivo,
+> a conta `buildUser` que executou o wrapper e comandos `icacls` sugeridos (conceder,
+> verificar, reverter) sobre `<GeneXusDir>\Library\GAM\Platforms`. É ação **única** do
+> usuário humano em terminal **elevado** — a skill **nunca** executa `icacls` nem altera
+> a instalação do GeneXus. **Não** recomenda elevar o build a cada execução; filtrar o
+> ruído e classificar como limpo permanece o comportamento padrão aceitável. O hint é
+> **não bloqueante**: não entra em `warnings`, não altera `status` nem `exitCode`.
 
 > **Evidência empírica acumulada (ruído GAM/NetCore):**
 > Coleta controlada em 2026-05-12, GeneXus 18 Up 14, em duas KBs distintas e dois
@@ -696,6 +709,7 @@ Campos relevantes:
 - `observedContext.ReorgDetected` — se reorg foi detectada
 - `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado APÓS filtro de ruído estrutural, ou `null`), `postBuildEvents` (linhas `start c:` / `start cmd`, com prefixo `(commented) ` quando o GeneXus encenou o comando como comentado), `buildWarnings` (linhas de warning com posição; warnings `pmm00xx` de versão de módulo são adicionalmente promovidos a `warnings` top-level — ver nota abaixo)
 - `stdoutFilteredNoise` — ruído estrutural removido de stdout antes de classificar (ex: linhas `error MSB3491` ou `NuGet.targets(...): error :` do `dotnet publish` em `GAM\Platforms\NetCore*` quando rodando sem elevação); quando o único conteúdo bloqueante em stdout for ruído filtrado, o build é classificado como limpo
+- `environmentRemediationHints` — **omitido** quando não houve ruído GAM filtrado; quando presente, contém `gamPlatformsWriteDeniedFiltered` com `condition`, `filteredLineCount`, `resolvedGeneXusDir`, `resolvedPlatformsPath`, `buildUser`, `summaryForUser`, `suggestedCommands` (`grant`, `verify`, `revert`) e flags `oneTimeUserAction` / `skillDoesNotExecuteGrant` / `doesNotRecommendElevatedBuild`. Oferta consultiva para silenciar o ruído de vez com permissão NTFS — **não** é warning, erro nem mudança de classificação
 - `stderrContent` — linhas reais de stderr após remoção do ruído estrutural do GeneXus 18
 - `stderrFilteredNoise` — ruído estrutural removido de stderr; quando `stderrContent` está vazio e `stderrFilteredNoise` tem conteúdo, o build é limpo e nenhuma recomendação de IDE deve ser emitida
 
@@ -780,6 +794,10 @@ Campos relevantes:
    - **carve-out para ruído estrutural GAM/NetCore:** linhas que casam uma das assinaturas conhecidas (`error MSB3491` ou `NuGet.targets(...): error :`) junto com `is denied`/`acesso negado` e caminho contendo `\GeneXus\` e `\Library\GAM\Platforms\` são removidas de stdout antes desta varredura e listadas em `stdoutFilteredNoise`; padrões legítimos de `Access denied` em qualquer outro contexto **permanecem** bloqueantes
    - se encontrados: registrar no diagnóstico e usar `operação concluída, pendente de confirmação funcional` em lugar de `compilou limpo`
    Classificar então o resultado em uma das categorias definidas em EXPECTED INTERFACE
+9a. Quando `environmentRemediationHints.gamPlatformsWriteDeniedFiltered` estiver presente no JSON:
+   - apresentar ao usuário `summaryForUser` e os três comandos em `suggestedCommands` como nota **opcional** para eliminar o ruído GAM de forma permanente
+   - deixar claro que é execução **única** pelo usuário em terminal elevado e que a skill não executa `icacls`
+   - **não** promover a `warnings`, **não** reclassificar o build, **não** sugerir build elevado recorrente nem reabertura da IDE só por causa desse hint
 10. Quando o resultado for `reorg necessária detectada`:
     - informar ao usuário sem dramatizar
     - apresentar as três opções:
@@ -826,6 +844,7 @@ Campos relevantes:
 - [ ] Quando erros C# como `CS1010`/`CS1513` sugeriram truncamento de `.cs` gerado, o arquivo referenciado foi inspecionado antes de atribuir a falha ao XML, e qualquer regeneração ampla preservou o gate de `-ForceRebuild=true`
 - [ ] Quando o contexto for handoff de import OK com evento que não surte efeito, o `.cs` gerado foi inspecionado pelo nome do evento após build/`SpecifyGenerate`; foi distinguido **mecanismo (b)** (handler ausente/vazio — strip por DCE, correção no source conforme `02`) de falha de build e de **mecanismo (a)** (rejeição na importação — handoff para `xpz-msbuild-import-export`, sem tratar `.cs` como causa primária)
 - [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado; se `false`, a ausência foi documentada e justificada explicitamente
+- [ ] Quando `environmentRemediationHints` estiver presente, a oferta `icacls` foi apresentada como consultiva e opcional, sem confundir com warning nem com falha de build
 
 ---
 
@@ -833,6 +852,8 @@ Campos relevantes:
 
 - Ao interpretar `exitCode` do processo ou do JSON (`46`, `47`, `40`–`45`, `48`, …), consultar `scripts/msbuild-exit-codes.catalog.json` — especialmente o anexo `causes[]` do **46**; não inferir causa só pelo número no terminal
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
+- NEVER executar `icacls` nem qualquer concessão NTFS na instalação do GeneXus — apenas oferecer comandos em `environmentRemediationHints` para o usuário executar uma vez, por conta própria, se quiser silenciar o ruído GAM filtrado
+- NEVER recomendar elevar o build MSBuild a cada execução como substituto do filtro de ruído GAM; a única elevação mencionada é terminal administrativo **one-time** para o usuário rodar `icacls` sugerido
 - NEVER executar `BuildAll` ou `SpecifyGenerate` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
 - NEVER executar reorg sem autorização explícita do usuário
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê

@@ -96,6 +96,8 @@ Regras aplicáveis:
 - é proibido sobrescrever arquivos nessa árvore
 - é proibido gerar temporários, logs, cache, saídas intermediárias ou qualquer outra gravação nessa árvore
 
+Exceção **fora** da skill/agente: o usuário humano pode, **uma única vez** e por conta própria, conceder permissão NTFS (`icacls`) em `<GeneXusDir>\Library\GAM\Platforms` para a conta que executa builds headless, a fim de eliminar ruído estrutural `MSB3491`/`NuGet.targets` filtrado pelos wrappers `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`. Os wrappers **não** executam essa concessão; quando o ruído foi filtrado, podem incluir `environmentRemediationHints` no diagnóstico JSON com comandos sugeridos (ver `xpz-msbuild-build/SKILL.md`).
+
 ## Camadas De Validação
 
 ### 1. Descoberta De Ambiente
