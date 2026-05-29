@@ -26,8 +26,10 @@ Mantém o relatório JSON mesmo quando a execução termina sem erro.
 
 .PARAMETER KbMetadataPath
 Caminho opcional para salvar metadados da KB em Markdown.
-Quando omitido, o wrapper grava `kb-source-metadata.md` na raiz da pasta
-paralela da KB.
+Quando omitido, o wrapper usa `kb-source-metadata.md` na raiz da pasta
+paralela da KB. Com `-KbMetadataPath` ativo, o motor compartilhado faz
+atualizacao **cirurgica** dos campos de materializacao, preservando
+`last_setup_audit_run_at` e o frontmatter fora do escopo.
 
 .PARAMETER IndexUpdateScriptPath
 Caminho opcional do wrapper local que regenera o indice derivado apos
