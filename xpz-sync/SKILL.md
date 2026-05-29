@@ -181,8 +181,8 @@ Os wrappers seguem esta convenção de parâmetros:
 - `-KbMetadataPath` *(opcional)* — salva metadados da KB em formato Markdown
 - `-ParallelKbRoot` *(opcional)* — raiz da pasta paralela; resolve `scripts/gx-object-type-catalog.override.json`
 - `-CatalogOverridePath` / `-DiscoveryReportPath` *(opcionais)* — override local e relatório JSON quando o pacote tiver GUID não mapeado
-- se esse parâmetro estiver ativo no wrapper local, `kb-source-metadata.md` faz parte normal do fluxo e pode ser reescrito a cada processamento
-- quando `kb-source-metadata.md` for reescrito, ele deve registrar `last_xpz_materialization_run_at` como horário do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudança material
+- se esse parâmetro estiver ativo no wrapper local, `kb-source-metadata.md` faz parte normal do fluxo; o motor `scripts/Sync-GeneXusXpzToXml.ps1` (via `scripts/XpzKbSourceMetadataEditSupport.ps1`) atualiza **cirurgicamente** somente campos de materializacao (`updated`, `last_xpz_materialization_run_at`, `source_xpz`, `source_refresh_status` e tabelas `KMW`/`Source`/`Source/Version`), preservando `last_setup_audit_run_at`, demais frontmatter e secoes fora do escopo, com EOL dominante via `scripts/XpzTextFileEolSupport.ps1`
+- quando `kb-source-metadata.md` for atualizado pelo sync, ele deve registrar `last_xpz_materialization_run_at` como horário do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudança material
 - se o `XPZ` vier com `Source` vazio, incompleto ou ausente, o wrapper deve preservar valores estáveis conhecidos e emitir warning de refresh parcial; isso não invalida o sync de objetos
 - depois de materialização XPZ/XML bem-sucedida em `ObjetosDaKbEmXml`, o wrapper local deve acionar compulsoriamente a regeneração/validação do índice derivado por wrapper local de `KbIntelligence`
 - evidência clara desse encadeamento significa declaração local explícita no `README.md`/`AGENTS.md` ou chamada observável no próprio wrapper local; não presumir essa capacidade apenas porque a base compartilhada a exige
@@ -335,11 +335,14 @@ PastaParalelaDaKb/
 ```
 
 O arquivo `kb-source-metadata.md`, quando exposto pelo wrapper local via
-`-KbMetadataPath`, é artefato normal de processamento e pode ser reescrito em
-cada sync. Ele deve preservar valores estáveis conhecidos quando o `XPZ` atual
-vier com metadados de `Source` vazios ou parciais.
+`-KbMetadataPath`, é artefato normal de processamento e recebe atualizacao
+cirurgica em cada sync (nao regeneracao total do arquivo). O motor preserva
+`last_setup_audit_run_at` (autoridade de `xpz-kb-parallel-setup`), demais
+frontmatter fora do escopo do sync e secoes extras; atualiza valores estaveis de
+`Source`/`KMW` quando o `XPZ` atual vier com metadados vazios ou parciais.
 
-Esse arquivo também é o local esperado de `last_xpz_materialization_run_at`.
+Esse arquivo também é o local esperado de `last_xpz_materialization_run_at`
+(autoridade desta skill).
 Esse horário representa a última solicitação/processamento de materialização
 XPZ/XML, não apenas a última mudança material detectada nos XMLs.
 
@@ -379,6 +382,7 @@ XPZ/XML, não apenas a última mudança material detectada nos XMLs.
 - NUNCA tratar reprocessamento do mesmo `XPZ` atualizado como se o resultado anterior ainda fosse autoritativo
 - NUNCA tratar regravação de `kb-source-metadata.md` pelo wrapper como mudança funcional automática da frente atual
 - NUNCA deixar `kb-source-metadata.md` perder valores estáveis conhecidos porque o `XPZ` veio com `Source` vazio ou incompleto
+- NUNCA apagar ou sobrescrever `last_setup_audit_run_at` nem outros campos de frontmatter fora da autoridade do sync; a gravacao desse campo pertence a `xpz-kb-parallel-setup` (`Set-*KbSetupAuditTimestamp.ps1` / `scripts/Set-XpzSetupAuditTimestamp.ps1`)
 - NUNCA reformatar ou normalizar `ObjetosDaKbEmXml` durante sync para remover whitespace herdado de export oficial; se o ruído tiver sido introduzido por XML/pacote local gerado pelo agente, a correção deve acontecer na etapa de geração em `ObjetosGeradosParaImportacaoNaKbNoGenexus` antes da importação, não como limpeza posterior do snapshot oficial
 - NUNCA classificar automaticamente como erro de processo, contaminação indevida ou violação da trilha o simples fato de um `XPZ` oficial vindo da KB trazer objetos adicionais além do foco da frente
 - NUNCA materializar `XPZ` com tipo desconhecido no catálogo efetivo (compartilhado + override aprovado)

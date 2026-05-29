@@ -35,6 +35,7 @@ function New-LfMetadataFixture {
         'description: fixture de self-test'
         'last_xpz_materialization_run_at: 2026-01-01T00:00:00.0000000+00:00'
         'last_setup_audit_run_at: ' + $auditTimestamp
+        'custom_future_field: keep-me'
         'source_xpz: C:\Old\Package.xpz'
         'source_refresh_status: partial-preserved'
         '---'
@@ -178,6 +179,7 @@ try {
     Assert-ContainsPattern -Path $metadataPath -Pattern 'source_refresh_status:\s*complete' -Message 'source_refresh_status deve refletir Source completo do pacote'
     Assert-ContainsPattern -Path $metadataPath -Pattern '\| MajorVersion \| 18 \|' -Message 'tabela KMW MajorVersion deve ser atualizada'
     Assert-ContainsPattern -Path $metadataPath -Pattern '\| username \| newuser \|' -Message 'tabela Source username deve ser atualizada'
+    Assert-ContainsPattern -Path $metadataPath -Pattern 'custom_future_field:\s*keep-me' -Message 'frontmatter fora do escopo do sync deve ser preservado'
     Assert-ContainsPattern -Path $metadataPath -Pattern 'Texto auxiliar preservado pelo self-test' -Message 'secao ## Uso deve ser preservada'
     Assert-NotContainsPattern -Path $metadataPath -Pattern '\| username \| olduser \|' -Message 'valor antigo de username nao deve permanecer'
 
