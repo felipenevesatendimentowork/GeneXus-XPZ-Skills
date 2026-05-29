@@ -214,6 +214,55 @@ Aguardar ate que haja uma frente de refatoracao maior no motor compartilhado ou 
 - Ha outras renomeclaturas de campo ou arquivo pendentes que pudessem ser agrupadas na mesma frente de migracao para amortizar o custo?
 - O rename deve ser feito com compatibilidade retroativa (suporte temporario aos dois nomes) ou como corte limpo?
 
+## `Update-KbSourceMetadata` deve preservar campos fora de escopo e EOL (xpz-sync) — **implementada**
+
+**Importância:** alta (fechada nesta base)
+**Maturidade:** implementada (commits locais `20e9e49`, `06eba2e`, `f759971`; pre-requisito `7402e58`)
+
+**Origem:** incidente real em pasta paralela FabricaBrasil18 (2026-05-28), reportado por agente externo. A funcao legada `Update-KbSourceMetadata` em `Sync-GeneXusXpzToXml.ps1` **regerava** `kb-source-metadata.md` inteiro e apagava `last_setup_audit_run_at` apos setup bem-sucedido, forcando `AUDIT_REQUIRED` na sessao seguinte.
+
+### Incidente (historico — nao reabrir como pendencia de implementacao)
+
+1. **Autoridade de campo violada:** o template do sync so incluia campos de materializacao; `last_setup_audit_run_at` (setup) sumia a cada materializacao oficial.
+2. **EOL:** reescrita total nao preservava EOL dominante nem newline final do arquivo existente (CRLF/misto em pastas com politica local divergente).
+
+### O que foi implementado (frente E fechada)
+
+| Commit | Entrega |
+|---|---|
+| `7402e58` | Pre-requisito: `XpzTextFileEolSupport.ps1`, `Set-XpzSetupAuditTimestamp.ps1`, `Update-XpzKbSourceMetadataIdentity.ps1`, `Test-XpzSetupAuditTimestampEolSelfTest.ps1`. |
+| `20e9e49` | Etapa A: `scripts/XpzKbSourceMetadataEditSupport.ps1` com `Update-XpzKbSourceMetadataFromSync`; `Sync-GeneXusXpzToXml.ps1` deixa de regerar o arquivo; `Test-XpzSyncKbMetadataSelfTest.ps1` (sentinela `XPZ_SYNC_KB_METADATA_SELFTEST_OK`). |
+| `06eba2e` | Etapa B: `09-inventario-e-rastreabilidade-publica.md`, `xpz-sync/SKILL.md` (autoridade por campo + atualizacao cirurgica). |
+| `f759971` | `README.md` trilingue + ajustes finais de redacao em `xpz-sync/SKILL.md` (handoff sem "reescrito"). |
+
+Comportamento atual quando `-KbMetadataPath` esta ativo:
+
+| Campo / bloco | Acao |
+|---|---|
+| `updated`, `last_xpz_materialization_run_at`, `source_xpz`, `source_refresh_status` | atualizar ou inserir no frontmatter |
+| Tabelas `## KMW`, `## Source`, `## Source/Version` | atualizar valores (merge pacote/baseline de tabela inalterado) |
+| `last_setup_audit_run_at` e demais frontmatter/secoes fora do escopo | preservar intactos |
+| EOL e newline final | `Write-TextFilePreservingEol` via `XpzTextFileEolSupport.ps1` |
+| Arquivo ausente | template completo (`Write-NewKbSourceMetadataTemplate`), sem carimbo de setup ate o setup gravar |
+
+### Decisoes registradas (perguntas da ideia original)
+
+- **Criacao do arquivo ausente:** manter template completo (equivalente ao legado), nao minimal — setup continua responsavel por identidade estavel depois.
+- **Frontmatter desconhecido futuro:** preservar genericamente tudo que nao for dos quatro campos de materializacao do sync; nao whitelist fechada alem do que o motor ja nao toca.
+- **Self-test:** bateria dedicada `Test-XpzSyncKbMetadataSelfTest.ps1` (nao estender so o self-test do carimbo de setup).
+
+### Follow-up opcional (ainda pode virar entrada propria)
+
+- **`Get-KbSourceMetadataSnapshot`** ainda le apenas tabelas Markdown (ignora frontmatter de materializacao). Nao bloqueia a frente E; avaliar se refresh parcial futuro precisa ler `source_xpz` / `source_refresh_status` do YAML.
+- **XML do acervo** em `Write-ItemToDestination`: `WriteAllText` sem preservar EOL do XML existente — frente separada; risco menor enquanto XMLs sao gerados do zero com LF na raiz.
+- **Rename** `kb-source-metadata.md` → `kb-parallel-state.md` (entrada separada acima neste arquivo).
+
+### Referencias cruzadas
+
+- Entrada **Rename de `kb-source-metadata.md`** (mesmo arquivo, responsabilidades multiplas).
+- Entrada **Drift de identidade estavel vs metadata wrapper OK** (comparacao read-only; complementar).
+- Linha ~200 neste arquivo: tres responsabilidades no mesmo arquivo — a frente E materializou o conflito sync vs setup na pratica.
+
 ## CreateOfflineDatabase
 
 **Importância:** FALTA AVALIAR
