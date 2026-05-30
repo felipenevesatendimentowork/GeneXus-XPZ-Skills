@@ -2010,3 +2010,56 @@ Para `xpz-builder`, isso significaria expor um vocabulário de operações de al
 - `xpz-builder/SKILL.md` e `xpz-builder/responsibilities-by-type/`
 - `01a-catalogo-e-padroes-empiricos.md` (fonte de validação dos padrões)
 - `01e-moldes-sanitizados-core.md` a `01h-moldes-sanitizados-metadados-e-artefatos.md` (insumo)
+
+## Reclassificar `queryableByKbIntelligence` de `SmartDevicesApplication` após medição de grafo
+
+**Importância:** média
+**Maturidade:** pesquisa feita
+
+**Origem:** fechamento da frente Evo1 / prompts externos de pasta paralela (KB com addon Smart Devices Plus, GeneXus 18 U13), 2026-05-30. Entrada no catálogo upstream em commit `1866c52`; self-test fixture Evo1 descartado em `998-ideias-descartadas-e-porque.md`.
+
+### Problema concreto que motiva a ideia
+
+`SmartDevicesApplication` entrou em `scripts/gx-object-type-catalog.json` com `queryableByKbIntelligence=true` por analogia a tipos com `Source` e eventos. `SmartDevicesPlus` (mesmo addon) ficou com `queryableByKbIntelligence=false` porque o motor atual só vê `Properties` — consultas semânticas vazias enganam.
+
+Ainda **não** houve medição empírica de arestas de entrada/saída no índice para `SmartDevicesApplication` (Part dashboard embutido + `Source` com eventos). Se o grafo for zero ou irrelevante, a flag deveria ser `false` e a nota do JSON/`01a`/`scripts/README-kb-intelligence.md` alinhadas — mesmo padrão já aplicado a `SmartDevicesPlus`.
+
+### Ideia de melhoria
+
+Em **qualquer** pasta paralela com objetos `SmartDevicesApplication` materializados (não precisa ser Evo1):
+
+1. rebuild do índice com motor atual;
+2. contagem de arestas envolvendo objetos desse tipo (consulta ao SQLite ou script de amostra existente, ex. `scripts/Invoke-ParallelKbEnvelopeScan.ps1` + inspeção de grafo);
+3. se grafo zero ou assimétrico sem relações úteis → `queryableByKbIntelligence=false` no catálogo + documentação;
+4. se houver arestas reais → manter `true` e registrar evidência breve em `01a` ou `09`.
+
+### Limiar para implementar
+
+Implementar quando houver acesso a uma KB com addon SDP materializada **ou** quando um usuário da base reportar `who-uses`/`impact-basic` enganoso para `SmartDevicesApplication`. Não reabrir fixture Evo1 no código de teste.
+
+## `exportTaskLabel` MSBuild para `DataView` e tipos SDP do catálogo
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** mesma frente Evo1 / prompts externos, 2026-05-30. Tipos `DataView`, `SmartDevicesApplication` e `SmartDevicesPlus` registrados sem campo `exportTaskLabel` (diferente de casos já documentados em `10a-gx-export-task-labels.md`, ex. `WorkWithForWeb` → `WorkWith`).
+
+### Problema concreto que motiva a ideia
+
+Export seletivo MSBuild (`-ObjectList`) usa rótulos da task Export que podem divergir do nome no catálogo interno / KbIntelligence. Sem `exportTaskLabel` no JSON, agentes montam `-ObjectList` com o nome do catálogo e a task pode rejeitar (`is not a valid type`, `exitCode=48`).
+
+Hoje **não há** evidência de divergência para `DataView` nem para os tipos SDP recém-registrados. Inventar label sem teste MSBuild real seria pior que omitir.
+
+### Ideia de melhoria
+
+**Somente após evidência:**
+
+1. reproduzir export MSBuild headless com `-ObjectList` usando o nome do catálogo;
+2. se falhar com tipo inválido, repetir com rótulos candidatos até sucesso ou documentação GeneXus;
+3. registrar `exportTaskLabel` em `scripts/gx-object-type-catalog.json` e linha correspondente em `10a-gx-export-task-labels.md`.
+
+Prioridade entre tipos: `DataView` (tipo core) antes de addon SDP, salvo quem reportar caso SDP primeiro.
+
+### Limiar para implementar
+
+Implementar quando houver falha MSBuild Export reproduzível **ou** documentação oficial / export real da IDE confirmando o rótulo aceito. Até lá, manter ausência de `exportTaskLabel` como estado honesto (sem suposição).
