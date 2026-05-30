@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-05-30T18:29:53.0254596-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "DataStore",
+  "folderName": "DataStore",
+  "specimenObjectName": "Default",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "DataStore:Default",
+      "candidateTypeLabel": "DataStore",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "DataStore"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-aa7cc90a0a6c4213bda13c3164e5b358\\export-xpz.msbuild(32,5): error : DataStore is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": false,
+      "inventoryTypes": [],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore\\run-01-DataStore_Default\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore\\run-01-DataStore_Default",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "Default",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": false,
+      "inventoryTypes": [],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore\\run-02-Default\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore\\run-02-Default",
+      "cleanSuccess": false
+    }
+  ]
+}

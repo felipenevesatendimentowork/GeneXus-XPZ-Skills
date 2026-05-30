@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-05-30T18:31:06.9670575-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "ThemeClass",
+  "folderName": "ThemeClass",
+  "specimenObjectName": "ActionAttribute",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeClass",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "ThemeClass:ActionAttribute",
+      "candidateTypeLabel": "ThemeClass",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "ThemeClass"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeClass\\run-01-ThemeClass_ActionAttribute\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeClass\\run-01-ThemeClass_ActionAttribute",
+      "cleanSuccess": true
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "ActionAttribute",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "ThemeClass"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeClass\\run-02-ActionAttribute\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeClass\\run-02-ActionAttribute",
+      "cleanSuccess": true
+    }
+  ]
+}

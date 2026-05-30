@@ -1,0 +1,505 @@
+{
+  "generatedAt": "2026-05-30T18:32:40.1787846-03:00",
+  "matrixRoot": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix",
+  "testedTypeCount": 33,
+  "divergenceCount": 1,
+  "catalogMatchCount": 22,
+  "ambiguousCount": 0,
+  "inconclusiveCount": 10,
+  "notTestableNoInstance": [
+    {
+      "catalogTypeName": "DataView",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    },
+    {
+      "catalogTypeName": "Query",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    },
+    {
+      "catalogTypeName": "SmartDevicesApplication",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    },
+    {
+      "catalogTypeName": "SmartDevicesPlus",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    },
+    {
+      "catalogTypeName": "WorkPanel",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    },
+    {
+      "catalogTypeName": "WorkWithPlusInstance",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    },
+    {
+      "catalogTypeName": "WorkWithPlusTemplate",
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ]
+    }
+  ],
+  "divergences": [
+    {
+      "catalogTypeName": "WorkWithForWeb",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "WorkWithWebAbateOrdem",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\matrix-summary.json",
+      "verdict": "divergence",
+      "exportTaskLabel": "WorkWith",
+      "catalogMatchesTask": false,
+      "note": "Task Export aceita rótulo diferente do catálogo.",
+      "inventoryTypes": [
+        "WorkWithForWeb",
+        "Domain"
+      ],
+      "winningObjectList": "WorkWith:WorkWithWebAbateOrdem"
+    }
+  ],
+  "catalogMatchesTask": [
+    {
+      "catalogTypeName": "API",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "apiPDV_Integracao",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "ColorPalette",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Carmine",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "DataProvider",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "DPRegions",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "DataSelector",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "dsRelatoriosDeTitulosViaLancamentos",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "DesignSystem",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "GAMDesignSystem",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Document",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "ConversorXmlToXsd",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Domain",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "AbrangenciaDaSelecaoDeCorte",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "ExternalObject",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "AnyObject",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "File",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "3OF9",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Folder",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "ACESSO",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Image",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "ActionCancel",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Language",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Portuguese",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Procedure",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "DataBrit",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "SDT",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "ActionGroupItem",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Stencil",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "GAM_DataCard",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Table",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "AbateOrdem",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Theme",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Carmine",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "ThemeClass",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "ActionAttribute",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "ThemeColor",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Action",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "Transaction",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "AbateOrdem",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "UserControl",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "UCContainerSizeChanger",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    },
+    {
+      "catalogTypeName": "WebPanel",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "AbateMenu",
+      "note": "Rótulo da task Export coincide com o nome do catálogo."
+    }
+  ],
+  "ambiguous": [],
+  "inconclusive": [
+    {
+      "catalogTypeName": "Dashboard",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "GAM_ActivityDashboard",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "Dashboard"
+      ],
+      "winningObjectList": "GAM_ActivityDashboard"
+    },
+    {
+      "catalogTypeName": "DataStore",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Default",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore\\matrix-summary.json",
+      "verdict": "inconclusive",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Nenhum candidato com export limpo (exit 0, sem Categoria B, objeto no XPZ).",
+      "inventoryTypes": [],
+      "winningObjectList": null
+    },
+    {
+      "catalogTypeName": "DeploymentUnit",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "DeploymentUnit1",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "DeploymentUnit"
+      ],
+      "winningObjectList": "DeploymentUnit1"
+    },
+    {
+      "catalogTypeName": "Generator",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Android",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Generator\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "Generator"
+      ],
+      "winningObjectList": "Android"
+    },
+    {
+      "catalogTypeName": "Module",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "A_Refatorar",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Module\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "Module"
+      ],
+      "winningObjectList": "A_Refatorar"
+    },
+    {
+      "catalogTypeName": "PackagedModule",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "Extensions",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PackagedModule\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "PackagedModule"
+      ],
+      "winningObjectList": "Extensions"
+    },
+    {
+      "catalogTypeName": "Panel",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "GAMSDChangePassword",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "Panel"
+      ],
+      "winningObjectList": "GAMSDChangePassword"
+    },
+    {
+      "catalogTypeName": "PatternSettings",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "WorkWith",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings\\matrix-summary.json",
+      "verdict": "inconclusive",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Nenhum candidato com export limpo (exit 0, sem Categoria B, objeto no XPZ).",
+      "inventoryTypes": [],
+      "winningObjectList": null
+    },
+    {
+      "catalogTypeName": "SubTypeGroup",
+      "kbId": "FabricaBrasil",
+      "specimenObjectName": "AbateOrdemCompraGado",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "SubTypeGroup"
+      ],
+      "winningObjectList": "AbateOrdemCompraGado"
+    },
+    {
+      "catalogTypeName": "CategoryDiagram",
+      "kbId": "OnlineShopSS",
+      "specimenObjectName": "Diagram1",
+      "matrixSummaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram\\matrix-summary.json",
+      "verdict": "nameOnlyWorks",
+      "exportTaskLabel": null,
+      "catalogMatchesTask": false,
+      "note": "Export limpo apenas com nome sem prefixo Tipo: (formato degradado).",
+      "inventoryTypes": [
+        "CategoryDiagram"
+      ],
+      "winningObjectList": "Diagram1"
+    }
+  ],
+  "catalogUpdatesApplied": []
+}

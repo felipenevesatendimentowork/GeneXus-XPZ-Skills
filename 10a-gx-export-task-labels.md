@@ -51,6 +51,36 @@ Efeito: o declarado entra em `requestedItemsFound`; deixa `requestedItemsMissing
 | `PatternInstance:...` | `PatternInstance` | sim | não |
 | só `WorkWithWebCliente` | (vazio) | não | inventário degradado (formato exige `Tipo:Nome`) |
 
+## Campanha P5 multi-KB (2026-05-30)
+
+Artefatos: `historico/export-task-label-matrix-20260530/` (`coverage-map.json`, `consolidation-report.json`, `campaign-log.json`, `matrix/**/matrix-summary.json` e `export.json` por candidato).
+
+KBs com índice KbIntelligence na campanha: FabricaBrasil18 (`C:\GxModels\FabricaBrasil18`), wsEducacaoSpTeste (`C:\KBs\wsEducacaoSpTeste`), OnlineShopSS (`C:\KBs\OnlineShopSS`). Espécime por tipo: primeira KB por prioridade com instância no índice.
+
+| Métrica | Valor |
+|---------|-------|
+| Tipos `inventoryEligible` + `rootKind=Object` no catálogo | 40 |
+| Com espécime (matriz executada) | 33 |
+| Sem instância nas 3 KBs | 7 |
+| Divergência `exportTaskLabel` (além da já conhecida) | 0 — só `WorkWithForWeb` → `WorkWith` (reconfirma A1) |
+| Rótulo da task = nome do catálogo em `Tipo:Nome` | 22 |
+| Inconcluso ou export limpo só com nome (sem `Tipo:`) | 10 |
+
+### Tipos testados sem divergência de rótulo (2026-05-30)
+
+`API`, `ColorPalette`, `DataProvider`, `DataSelector`, `DesignSystem`, `Document`, `Domain`, `ExternalObject`, `File`, `Folder`, `Image`, `Language`, `Procedure`, `SDT`, `Stencil`, `Table`, `Theme`, `ThemeClass`, `ThemeColor`, `Transaction`, `UserControl`, `WebPanel`.
+
+### Tipos sem espécime nas KBs da campanha (sem teste MSBuild nesta rodada)
+
+`DataView`, `Query`, `SmartDevicesApplication`, `SmartDevicesPlus`, `WorkPanel`, `WorkWithPlusInstance`, `WorkWithPlusTemplate` — **não** registrar `exportTaskLabel` no catálogo até haver instância e export reproduzível.
+
+### Observações (não viraram campo `exportTaskLabel`)
+
+- **Inconclusos** (`Tipo:Nome` sem export limpo com o objeto no XPZ): `DataStore`, `PatternSettings`.
+- **Export limpo só com nome** (inventário degradado; não usar em automação — ver anti-patrão fallback silencioso): `CategoryDiagram`, `Dashboard`, `DeploymentUnit`, `Generator`, `Module`, `PackagedModule`, `Panel`, `SubTypeGroup`.
+
+Motores: `scripts/Build-ExportTaskLabelCoverageMap.ps1`, `scripts/Run-ExportTaskLabelMatrix.ps1`, `scripts/Invoke-ExportTaskLabelCampaign.ps1` (opção `-ParseOnly` reaproveita `export.json` já gerados), `scripts/Merge-ExportTaskLabelCampaignResults.ps1`.
+
 ## Critério de aceite (smoke)
 
 Para cada candidato em KB com instância real:
@@ -65,3 +95,5 @@ Para cada candidato em KB com instância real:
 - `xpz-msbuild-import-export/SKILL.md` — parâmetro `-ObjectList`, anti-padrão **fallback silencioso por nome**, Categorias A/B e barragem `exitCode=48`
 - `scripts/Invoke-GeneXusXpzExport.ps1` — `invalidTypesRejected`, inventário pós-export, `exportErrors` → exit 48
 - `scripts/msbuild-exit-codes.catalog.json` — código 48 (Categoria B)
+- `historico/export-task-label-matrix-20260530/` — campanha P5 (2026-05-30)
+- `scripts/GeneXusExportTaskLabelSupport.ps1`, `scripts/Build-ExportTaskLabelCoverageMap.ps1`, `scripts/Run-ExportTaskLabelMatrix.ps1`, `scripts/Invoke-ExportTaskLabelCampaign.ps1`, `scripts/Merge-ExportTaskLabelCampaignResults.ps1`

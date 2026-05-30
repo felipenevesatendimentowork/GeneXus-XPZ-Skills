@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-05-30T18:29:40.6949460-03:00",
+  "kbId": "OnlineShopSS",
+  "kbPath": "C:\\KBs\\OnlineShopSS",
+  "catalogTypeName": "CategoryDiagram",
+  "folderName": "CategoryDiagram",
+  "specimenObjectName": "Diagram1",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "CategoryDiagram:Diagram1",
+      "candidateTypeLabel": "CategoryDiagram",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "CategoryDiagram"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-a03ba259436c47d4be4a5f7c0e3165b1\\export-xpz.msbuild(32,5): error : CategoryDiagram is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "CategoryDiagram"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram\\run-01-CategoryDiagram_Diagram1\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram\\run-01-CategoryDiagram_Diagram1",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "Diagram1",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "CategoryDiagram"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram\\run-02-Diagram1\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram\\run-02-Diagram1",
+      "cleanSuccess": true
+    }
+  ]
+}

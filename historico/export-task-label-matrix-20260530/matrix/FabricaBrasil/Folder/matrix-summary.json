@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-05-30T18:30:03.8744281-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "Folder",
+  "folderName": "Folder",
+  "specimenObjectName": "ACESSO",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Folder",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "Folder:ACESSO",
+      "candidateTypeLabel": "Folder",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "Folder"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Folder\\run-01-Folder_ACESSO\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Folder\\run-01-Folder_ACESSO",
+      "cleanSuccess": true
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "ACESSO",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "Folder"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Folder\\run-02-ACESSO\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Folder\\run-02-ACESSO",
+      "cleanSuccess": true
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "status": "falha operacional com rejeicao MSBuild no log",
+  "summary": "Exportação headless concluiu com sucesso aparente da task MSBuild, mas o log contem linha(s) error: ou tipo(s) rejeitado(s) (Categoria B). O XPZ pode ter sido gravado no disco apenas para inspecao — nao tratar como entrega operacional limpa.",
+  "exitCode": 48,
+  "msBuildExitCode": 0,
+  "executionEvidence": {
+    "msBuildExitCode": 0,
+    "msBuildFailed": false,
+    "wrapperExitCode": 48,
+    "StdOutPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.stdout.log",
+    "StdErrPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.stderr.log"
+  },
+  "postProcessingFailed": false,
+  "postProcessingError": null,
+  "stage": "export",
+  "requestedContext": {
+    "VersionName": "",
+    "EnvironmentName": "",
+    "ObjectList": "WWP:WorkWithWebAbateOrdem",
+    "DependencyType": "",
+    "ReferenceType": "",
+    "ExportKbInfo": "false",
+    "ExportAll": "false",
+    "StartWatcherRequested": false
+  },
+  "observedContext": {
+    "ActiveVersion": "FabricaBrasil18",
+    "ActiveEnvironment": "NETPostgreSQL",
+    "OpenOutput": "========== Open Knowledge Base Task iniciado ==========",
+    "pathEnrichment": {
+      "applied": false,
+      "subdirsAdded": [],
+      "subdirsSkipped": []
+    }
+  },
+  "resolvedPaths": {
+    "GeneXusDir": "C:\\Program Files (x86)\\GeneXus\\GeneXus18",
+    "MsBuildPath": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+    "KbPath": "C:\\GxModels\\FabricaBrasil18",
+    "XpzPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem\\matrix-export.xpz",
+    "WorkingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem",
+    "LogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem\\export.json"
+  },
+  "pathActions": {
+    "WorkingDirectory": "validated-existing"
+  },
+  "artifacts": {
+    "ProbeLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\probe-stage.json",
+    "MsBuildFilePath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild",
+    "StdOutPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.stdout.log",
+    "StdErrPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.stderr.log",
+    "ExecutionLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem\\export.json",
+    "XpzPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem\\matrix-export.xpz",
+    "XpzSizeBytes": 19179,
+    "PackageInventoryPath": null,
+    "ExportSignalsPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.export.signals.json"
+  },
+  "inventoryDegraded": null,
+  "inventoryError": null,
+  "packageInventory": null,
+  "operationalSubState": "exportação parcial com errors do MSBuild — artefato não confiável",
+  "msBuildCategoryBBlocked": true,
+  "exportSignalsDegraded": false,
+  "exportSignalsDegradedReason": null,
+  "compactSignals": {
+    "status": "export-signals-read",
+    "stage": "export",
+    "exportErrors": [
+      "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild(32,5): error : WWP is not a valid type."
+    ],
+    "invalidTypesRejected": [
+      "WWP"
+    ],
+    "gxWarnings": [],
+    "knownStdOutNoise": [],
+    "exportMarkerFound": true,
+    "exportTaskSuccess": true,
+    "activeVersion": "FabricaBrasil18",
+    "activeEnvironment": "NETPostgreSQL",
+    "counts": {
+      "exportErrors": 1,
+      "invalidTypesRejected": 1,
+      "gxWarnings": 0,
+      "knownStdOutNoise": 0
+    },
+    "artifacts": {
+      "StdOutPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.stdout.log",
+      "StdErrPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\msbuild.stderr.log"
+    }
+  },
+  "watcherContext": {
+    "startWatcherRequested": false,
+    "watcherLaunched": false,
+    "watcherPid": null,
+    "watcherMonitorLogPath": null,
+    "watcherScriptPath": null,
+    "watcherLaunchError": null
+  },
+  "timing": {
+    "scriptStart": "2026-05-30T18:31:19-03:00",
+    "probeStart": "2026-05-30T18:31:19-03:00",
+    "probeEnd": "2026-05-30T18:31:19-03:00",
+    "probeDurationSeconds": 0,
+    "msbuildStart": "2026-05-30T18:31:19-03:00",
+    "msbuildEnd": "2026-05-30T18:31:31-03:00",
+    "msbuildDurationSeconds": 12,
+    "scriptEnd": "2026-05-30T18:31:31-03:00",
+    "totalDurationSeconds": 12,
+    "phases": []
+  },
+  "exportErrors": [
+    "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild(32,5): error : WWP is not a valid type."
+  ],
+  "invalidTypesRejected": [
+    "WWP"
+  ],
+  "knownStdOutNoise": [],
+  "stdoutSignals": {
+    "exportMarkerFound": true,
+    "exportErrors": [
+      "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild(32,5): error : WWP is not a valid type."
+    ],
+    "invalidTypesRejected": [
+      "WWP"
+    ],
+    "knownStdOutNoise": [],
+    "gxWarnings": []
+  },
+  "stderrContent": [],
+  "stderrFilteredNoise": [],
+  "blockingReasons": [
+    "Export: tipo(s) rejeitado(s) na lista ou no log (WWP).",
+    "Export: linha error: no log — C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild(32,5): error : WWP is not a valid type."
+  ],
+  "warnings": [
+    "MSBuild emitiu 1 linha(s) com error: no log apesar de sucesso aparente da task Export; ver exportErrors no diagnostico.",
+    "exportErrors[0]: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild(32,5): error : WWP is not a valid type.",
+    "Tipo(s) rejeitado(s) na ObjectList: WWP. A task Export pode ter resolvido objetos apenas por nome (risco de homonimia se existir colisao)."
+  ],
+  "strategyTrace": [
+    "GeneXusDir resolvido por fallback em caminho conhecido: C:\\Program Files (x86)\\GeneXus\\GeneXus18",
+    "MsBuildPath não informado; descoberta via vswhere. Selecionado: C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+    "Candidatos de MSBuild descartados: C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe; C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe; C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe",
+    "vswhere: 4 caminho(s) reportado(s); exit 0.",
+    "WorkingDirectory explícito já existia e foi validado como seguro.",
+    "Probe executado antes da exportação com exitCode 0.",
+    "PATH enriquecido preventivamente com subdirs do GeneXus para execucao headless de import/export: []. Subdirs ausentes: [].",
+    "Arquivo .msbuild temporário gerado em: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild",
+    "MSBuild acionado com alvo Run em: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild",
+    "XPZ gerado em: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem\\matrix-export.xpz"
+  ]
+}

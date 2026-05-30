@@ -1,0 +1,242 @@
+{
+  "generatedAt": "2026-05-30T18:32:06.7407730-03:00",
+  "coverageMapPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\coverage-map.json",
+  "matrixRoot": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix",
+  "processedCount": 33,
+  "completedCount": 33,
+  "failedCount": 0,
+  "skippedCount": 0,
+  "entries": [
+    {
+      "catalogTypeName": "API",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "apiPDV_Integracao",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\API\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "CategoryDiagram",
+      "status": "completed",
+      "kbId": "OnlineShopSS",
+      "specimenName": "Diagram1",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\OnlineShopSS\\CategoryDiagram\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "ColorPalette",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Carmine",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ColorPalette\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Dashboard",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "GAM_ActivityDashboard",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "DataProvider",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "DPRegions",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataProvider\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "DataSelector",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "dsRelatoriosDeTitulosViaLancamentos",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataSelector\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "DataStore",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Default",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DataStore\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "DeploymentUnit",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "DeploymentUnit1",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "DesignSystem",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "GAMDesignSystem",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DesignSystem\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Document",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "ConversorXmlToXsd",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Document\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Domain",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "AbrangenciaDaSelecaoDeCorte",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Domain\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "ExternalObject",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "AnyObject",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ExternalObject\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "File",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "3OF9",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\File\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Folder",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "ACESSO",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Folder\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Generator",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Android",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Generator\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Image",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "ActionCancel",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Image\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Language",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Portuguese",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Language\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Module",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "A_Refatorar",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Module\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "PackagedModule",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Extensions",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PackagedModule\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Panel",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "GAMSDChangePassword",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "PatternSettings",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "WorkWith",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Procedure",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "DataBrit",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Procedure\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "SDT",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "ActionGroupItem",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SDT\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Stencil",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "GAM_DataCard",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Stencil\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "SubTypeGroup",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "AbateOrdemCompraGado",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Table",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "AbateOrdem",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Theme",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Carmine",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Theme\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "ThemeClass",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "ActionAttribute",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeClass\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "ThemeColor",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "Action",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\ThemeColor\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "Transaction",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "AbateOrdem",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Transaction\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "UserControl",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "UCContainerSizeChanger",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\UserControl\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "WebPanel",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "AbateMenu",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WebPanel\\matrix-summary.json"
+    },
+    {
+      "catalogTypeName": "WorkWithForWeb",
+      "status": "completed",
+      "kbId": "FabricaBrasil",
+      "specimenName": "WorkWithWebAbateOrdem",
+      "summaryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\matrix-summary.json"
+    }
+  ]
+}

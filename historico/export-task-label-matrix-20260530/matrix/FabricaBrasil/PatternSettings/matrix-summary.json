@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-05-30T18:30:52.2914228-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "PatternSettings",
+  "folderName": "PatternSettings",
+  "specimenObjectName": "WorkWith",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "PatternSettings:WorkWith",
+      "candidateTypeLabel": "PatternSettings",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "PatternSettings"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-c373aa3ed65844088bf30c43be7c6eda\\export-xpz.msbuild(32,5): error : PatternSettings is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": false,
+      "inventoryTypes": [],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings\\run-01-PatternSettings_WorkWith\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings\\run-01-PatternSettings_WorkWith",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "WorkWith",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": false,
+      "inventoryTypes": [],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings\\run-02-WorkWith\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\PatternSettings\\run-02-WorkWith",
+      "cleanSuccess": false
+    }
+  ]
+}

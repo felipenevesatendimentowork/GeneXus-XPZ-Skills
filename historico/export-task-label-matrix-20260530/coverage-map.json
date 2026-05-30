@@ -1,0 +1,1621 @@
+{
+  "generatedAt": "2026-05-30T18:16:07.8699758-03:00",
+  "catalogTypeCount": 40,
+  "testableCount": 33,
+  "kbRegistry": [
+    {
+      "id": "FabricaBrasil",
+      "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+      "kbPath": "C:\\GxModels\\FabricaBrasil18",
+      "priority": 1,
+      "referenceKb": true
+    },
+    {
+      "id": "wsEducacao",
+      "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+      "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+      "priority": 2,
+      "referenceKb": false
+    },
+    {
+      "id": "OnlineShopSS",
+      "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+      "kbPath": "C:\\KBs\\OnlineShopSS",
+      "priority": 3,
+      "referenceKb": false
+    }
+  ],
+  "types": [
+    {
+      "catalogTypeName": "API",
+      "folderName": "API",
+      "objectTypeGuid": "36e32e2d-023e-4188-95df-d13573bac2e0",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "apiPDV_Integracao",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 1,
+          "specimenName": "apiPDV_Integracao",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "CategoryDiagram",
+      "folderName": "CategoryDiagram",
+      "objectTypeGuid": "280c149c-48b2-4284-a532-0c999df9e006",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "OnlineShopSS",
+        "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+        "kbPath": "C:\\KBs\\OnlineShopSS",
+        "specimenName": "Diagram1",
+        "priority": 3,
+        "referenceKb": false
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 2,
+          "specimenName": "Diagram1",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "ColorPalette",
+      "folderName": "ColorPalette",
+      "objectTypeGuid": "3affc0b3-494b-4d84-9ec1-3a6ab8349cda",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Carmine",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 1,
+          "specimenName": "Carmine",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Dashboard",
+      "folderName": "Dashboard",
+      "objectTypeGuid": "526aba9f-a725-4bc7-b1db-0b9f92ac9550",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "GAM_ActivityDashboard",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 1,
+          "specimenName": "GAM_ActivityDashboard",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "DataProvider",
+      "folderName": "DataProvider",
+      "objectTypeGuid": "2a9e9aba-d2de-4801-ae7f-5e3819222daf",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "DPRegions",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 24,
+          "specimenName": "DPRegions",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 3,
+          "specimenName": "GetBackendMenu",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 6,
+          "specimenName": "Category_DataProvider",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "DataSelector",
+      "folderName": "DataSelector",
+      "objectTypeGuid": "ffd44be7-3bb4-4d01-9e7e-d1c1a3c095af",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "dsRelatoriosDeTitulosViaLancamentos",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 2,
+          "specimenName": "dsRelatoriosDeTitulosViaLancamentos",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "DataStore",
+      "folderName": "DataStore",
+      "objectTypeGuid": "dcdcdcdc-dfe0-4a57-ae8f-c6e31b0dcbc0",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Default",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 2,
+          "specimenName": "Default",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 2,
+          "specimenName": "Default",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "Default",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "DataView",
+      "folderName": "DataView",
+      "objectTypeGuid": "19abc6ff-2cd2-0000-0006-6d172bc2333b",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    },
+    {
+      "catalogTypeName": "DeploymentUnit",
+      "folderName": "DeploymentUnit",
+      "objectTypeGuid": "bf08dfb1-361c-4e7e-ad54-391e56e60b49",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "DeploymentUnit1",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 1,
+          "specimenName": "DeploymentUnit1",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "DesignSystem",
+      "folderName": "DesignSystem",
+      "objectTypeGuid": "78b3fa0e-174c-4b2b-8716-718167a428b5",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "GAMDesignSystem",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 2,
+          "specimenName": "GAMDesignSystem",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 1,
+          "specimenName": "wsEducacaoSpTeste",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "OnlineShopSS",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Document",
+      "folderName": "Document",
+      "objectTypeGuid": "faeb588c-dcce-4dad-9af3-cdd11b961a32",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "ConversorXmlToXsd",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 3,
+          "specimenName": "ConversorXmlToXsd",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Domain",
+      "folderName": "Domain",
+      "objectTypeGuid": "00972a17-9975-449e-aab1-d26165d51393",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "AbrangenciaDaSelecaoDeCorte",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 593,
+          "specimenName": "AbrangenciaDaSelecaoDeCorte",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 49,
+          "specimenName": "Ano",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 9,
+          "specimenName": "Balance",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "ExternalObject",
+      "folderName": "ExternalObject",
+      "objectTypeGuid": "c163e562-42c6-4158-ad83-5b21a14cf30e",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "AnyObject",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 18,
+          "specimenName": "AnyObject",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 4,
+          "specimenName": "FBConcatAndWatermarkPDF",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "GlobalEvents",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "File",
+      "folderName": "File",
+      "objectTypeGuid": "1132ac08-290f-4fd1-bd18-64777b7329d1",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "3OF9",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 81,
+          "specimenName": "3OF9",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 14,
+          "specimenName": "FBiTextSharp.dll",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Folder",
+      "folderName": "Folder",
+      "objectTypeGuid": "00000000-0000-0000-0000-000000000008",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "ACESSO",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 279,
+          "specimenName": "ACESSO",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 17,
+          "specimenName": "APIs",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 5,
+          "specimenName": "FileUploadUserControl",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Generator",
+      "folderName": "Generator",
+      "objectTypeGuid": "ecececec-dfe0-4a57-ae8f-c6e31b0dcbc0",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Android",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 5,
+          "specimenName": "Android",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 1,
+          "specimenName": "Default",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "Default",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Image",
+      "folderName": "Image",
+      "objectTypeGuid": "9fb193d9-64a4-4d30-b129-ff7c76830f7e",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "ActionCancel",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 251,
+          "specimenName": "ActionCancel",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 105,
+          "specimenName": "CardPhotoActions_Preview",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 13,
+          "specimenName": "Argentine_Flag",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Language",
+      "folderName": "Language",
+      "objectTypeGuid": "88313f43-5eb2-0000-0028-e8d9f5bf9588",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Portuguese",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 1,
+          "specimenName": "Portuguese",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 1,
+          "specimenName": "Portuguese",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "English",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Module",
+      "folderName": "Module",
+      "objectTypeGuid": "00000000-0000-0000-0000-000000000006",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "A_Refatorar",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 7,
+          "specimenName": "A_Refatorar",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 10,
+          "specimenName": "BasicModuleObjects",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "Main Programs",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "PackagedModule",
+      "folderName": "PackagedModule",
+      "objectTypeGuid": "c88fffcd-b6f8-0000-8fec-00b5497e2117",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Extensions",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 16,
+          "specimenName": "Extensions",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 9,
+          "specimenName": "Extensions",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 5,
+          "specimenName": "GeneXus",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Panel",
+      "folderName": "Panel",
+      "objectTypeGuid": "d82625fd-5892-40b0-99c9-5c8559c197fc",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "GAMSDChangePassword",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 7,
+          "specimenName": "GAMSDChangePassword",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "PatternSettings",
+      "folderName": "PatternSettings",
+      "objectTypeGuid": "83476c1e-fa72-4229-9930-f51b954fca2d",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "WorkWith",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 2,
+          "specimenName": "WorkWith",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 1,
+          "specimenName": "WorkWithForWeb",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "WorkWithForWeb",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Procedure",
+      "folderName": "Procedure",
+      "objectTypeGuid": "84a12160-f59b-4ad7-a683-ea4481ac23e9",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "DataBrit",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 2320,
+          "specimenName": "DataBrit",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 100,
+          "specimenName": "ExportCargaGuiaPedWC",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 10,
+          "specimenName": "InsertImageFile",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Query",
+      "folderName": "Query",
+      "objectTypeGuid": "926a06b9-3417-4ab4-9f8c-09c2f626bb1c",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    },
+    {
+      "catalogTypeName": "SDT",
+      "folderName": "SDT",
+      "objectTypeGuid": "447527b5-9210-4523-898b-5dccb17be60a",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "ActionGroupItem",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 595,
+          "specimenName": "ActionGroupItem",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 14,
+          "specimenName": "FileUploadData",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 5,
+          "specimenName": "ActionGroupItem",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "SmartDevicesApplication",
+      "folderName": "SmartDevicesApplication",
+      "objectTypeGuid": "9bdcc055-174e-4af6-96cb-a2ceef6c5f09",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    },
+    {
+      "catalogTypeName": "SmartDevicesPlus",
+      "folderName": "SmartDevicesPlus",
+      "objectTypeGuid": "c84ec0ea-d159-46e2-a118-2108860379bb",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    },
+    {
+      "catalogTypeName": "Stencil",
+      "folderName": "Stencil",
+      "objectTypeGuid": "624a8b31-36f0-4292-adba-2d270d1e3537",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "GAM_DataCard",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 11,
+          "specimenName": "GAM_DataCard",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "SubTypeGroup",
+      "folderName": "SubTypeGroup",
+      "objectTypeGuid": "87313f43-5eb2-41d7-9b8c-e8d9f5bf9588",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "AbateOrdemCompraGado",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 710,
+          "specimenName": "AbateOrdemCompraGado",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 10,
+          "specimenName": "EscolaDiretoriaDeEnsino",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 1,
+          "specimenName": "ProductCountry",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Table",
+      "folderName": "Table",
+      "objectTypeGuid": "857ca50e-7905-0000-0007-c5d9ff2975ec",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "AbateOrdem",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 228,
+          "specimenName": "AbateOrdem",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 11,
+          "specimenName": "Carga",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 19,
+          "specimenName": "Category",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Theme",
+      "folderName": "Theme",
+      "objectTypeGuid": "c804fdbd-7c0b-440d-8527-4316c92649a6",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Carmine",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 7,
+          "specimenName": "Carmine",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "ThemeClass",
+      "folderName": "ThemeClass",
+      "objectTypeGuid": "d4876646-98dd-419b-8c1c-896f83c48368",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "ActionAttribute",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 501,
+          "specimenName": "ActionAttribute",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 30,
+          "specimenName": "K2BT_CollapsibleMenuContainer",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "ThemeColor",
+      "folderName": "ThemeColor",
+      "objectTypeGuid": "5592de59-d30a-499d-9100-a7006d3674f2",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "Action",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 24,
+          "specimenName": "Action",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "Transaction",
+      "folderName": "Transaction",
+      "objectTypeGuid": "1db606f2-af09-4cf9-a3b5-b481519d28f6",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "AbateOrdem",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 184,
+          "specimenName": "AbateOrdem",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 10,
+          "specimenName": "Carga",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 15,
+          "specimenName": "Category",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "UserControl",
+      "folderName": "UserControl",
+      "objectTypeGuid": "562f4793-aabe-449f-8821-fc77e550698e",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "UCContainerSizeChanger",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 7,
+          "specimenName": "UCContainerSizeChanger",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 1,
+          "specimenName": "ucGxSweetAlert20201001ComSom",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "WebPanel",
+      "folderName": "WebPanel",
+      "objectTypeGuid": "c9584656-94b6-4ccd-890f-332d11fc2c25",
+      "exportTaskLabel": null,
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "AbateMenu",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 1199,
+          "specimenName": "AbateMenu",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 82,
+          "specimenName": "CargaGeneral",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 73,
+          "specimenName": "CategoryGeneral",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "WorkPanel",
+      "folderName": "WorkPanel",
+      "objectTypeGuid": "198e8ea4-1d49-4c9c-8a9a-417024baa9d1",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    },
+    {
+      "catalogTypeName": "WorkWithForWeb",
+      "folderName": "WorkWithForWeb",
+      "objectTypeGuid": "78cecefe-be7d-4980-86ce-8d6e91fba04b",
+      "exportTaskLabel": "WorkWith",
+      "chosenSpecimen": {
+        "kbId": "FabricaBrasil",
+        "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+        "kbPath": "C:\\GxModels\\FabricaBrasil18",
+        "specimenName": "WorkWithWebAbateOrdem",
+        "priority": 1,
+        "referenceKb": true
+      },
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 184,
+          "specimenName": "WorkWithWebAbateOrdem",
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 10,
+          "specimenName": "WorkWithWebCarga",
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 14,
+          "specimenName": "WorkWithWebCategory",
+          "queryError": null
+        }
+      ],
+      "testable": true
+    },
+    {
+      "catalogTypeName": "WorkWithPlusInstance",
+      "folderName": "WorkWithPlusInstance",
+      "objectTypeGuid": "07135890-56fc-489b-b408-063722fa9f7d",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    },
+    {
+      "catalogTypeName": "WorkWithPlusTemplate",
+      "folderName": "WorkWithPlusTemplate",
+      "objectTypeGuid": "083f1b21-5715-45e1-8a8d-ceadef141e02",
+      "exportTaskLabel": null,
+      "chosenSpecimen": null,
+      "perKb": [
+        {
+          "kbId": "FabricaBrasil",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_FabricaBrasil",
+          "kbPath": "C:\\GxModels\\FabricaBrasil18",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "wsEducacao",
+          "parallelKbRoot": "C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste",
+          "kbPath": "C:\\KBs\\wsEducacaoSpTeste",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        },
+        {
+          "kbId": "OnlineShopSS",
+          "parallelKbRoot": "C:\\Dev\\Test\\Gx_OnlineShopSS",
+          "kbPath": "C:\\KBs\\OnlineShopSS",
+          "total": 0,
+          "specimenName": null,
+          "queryError": null
+        }
+      ],
+      "testable": false
+    }
+  ]
+}

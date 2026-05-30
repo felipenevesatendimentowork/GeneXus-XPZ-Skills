@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-05-30T18:30:52.3798620-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "SDT",
+  "folderName": "SDT",
+  "specimenObjectName": "ActionGroupItem",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SDT",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "SDT:ActionGroupItem",
+      "candidateTypeLabel": "SDT",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "SDT"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SDT\\run-01-SDT_ActionGroupItem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SDT\\run-01-SDT_ActionGroupItem",
+      "cleanSuccess": true
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "ActionGroupItem",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "SDT"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SDT\\run-02-ActionGroupItem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SDT\\run-02-ActionGroupItem",
+      "cleanSuccess": true
+    }
+  ]
+}

@@ -611,3 +611,30 @@ Sem período de compatibilidade: campos legados `systemModulesPresent` / `system
 ### Rastreabilidade
 
 - Commit: `067af90` (`Unifica catálogo de objetos de plataforma SDK em gx-platform-objects.json.`)
+
+## Campanha P5 `exportTaskLabel` multi-KB (matriz MSBuild)
+
+**Importância original:** média
+**Status:** concluída em 2026-05-30
+
+### Origem
+
+Ideia em `999-ideias-pendentes.md` (`exportTaskLabel` para `DataView` e tipos SDP) e frente de prompt externo (pasta paralela FabricaBrasil) sobre risco de fallback silencioso por nome. Plano A+ aprovado: união de índices em FabricaBrasil18, wsEducacaoSpTeste e OnlineShopSS; MSBuild na KB nativa do espécime.
+
+### Implementação
+
+- Motores: `scripts/GeneXusExportTaskLabelSupport.ps1`, `Build-ExportTaskLabelCoverageMap.ps1`, `Run-ExportTaskLabelMatrix.ps1`, `Invoke-ExportTaskLabelCampaign.ps1` (`-ParseOnly`, `-Force`), `Merge-ExportTaskLabelCampaignResults.ps1` (`-ApplyCatalog`).
+- Artefatos: `historico/export-task-label-matrix-20260530/` (33 matrizes, `consolidation-report.json`).
+- `10a-gx-export-task-labels.md`: seção campanha P5, anexos de tipos sem divergência, sem espécime e observações (inconclusos / só nome).
+- Correções de robustez: `packageInventory` nulo no `export.json`; relatório `catalogMatchesTask` sem perder campos em `[ordered]@{}`.
+
+### Resultado empírico
+
+- **Divergência** confirmada apenas para `WorkWithForWeb` → `WorkWith` (já no catálogo; reconfirma matriz A1).
+- **22 tipos** com `Tipo:Nome` usando o mesmo rótulo do catálogo (lista em `10a`).
+- **7 tipos** sem instância nas 3 KBs indexadas (`DataView`, `Query`, `SmartDevicesApplication`, `SmartDevicesPlus`, `WorkPanel`, `WorkWithPlusInstance`, `WorkWithPlusTemplate`) — manter ausência de `exportTaskLabel`.
+- **10 tipos** testados sem divergência de rótulo mas inconclusos ou só com export por nome (detalhe em `10a`); não inventar `exportTaskLabel`.
+
+### Decisão final
+
+Fechar a ideia pendente de `DataView`/SDP sem label inventado: campanha executada; ausência de espécime ou de evidência de divergência permanece estado honesto. Reabrir só com KB que materialize instância ou falha MSBuild reproduzível.

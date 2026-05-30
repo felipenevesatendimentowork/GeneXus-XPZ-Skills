@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-05-30T18:31:06.9235382-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "Theme",
+  "folderName": "Theme",
+  "specimenObjectName": "Carmine",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Theme",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "Theme:Carmine",
+      "candidateTypeLabel": "Theme",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "Module",
+        "Theme",
+        "ThemeClass",
+        "ThemeColor"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Theme\\run-01-Theme_Carmine\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Theme\\run-01-Theme_Carmine",
+      "cleanSuccess": true
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "Carmine",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": false,
+      "inventoryTypes": [],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Theme\\run-02-Carmine\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Theme\\run-02-Carmine",
+      "cleanSuccess": false
+    }
+  ]
+}

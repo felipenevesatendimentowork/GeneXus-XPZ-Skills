@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-05-30T18:31:07.1948611-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "WebPanel",
+  "folderName": "WebPanel",
+  "specimenObjectName": "AbateMenu",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WebPanel",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "WebPanel:AbateMenu",
+      "candidateTypeLabel": "WebPanel",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WebPanel",
+        "PackagedModule"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WebPanel\\run-01-WebPanel_AbateMenu\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WebPanel\\run-01-WebPanel_AbateMenu",
+      "cleanSuccess": true
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "AbateMenu",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WebPanel"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WebPanel\\run-02-AbateMenu\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WebPanel\\run-02-AbateMenu",
+      "cleanSuccess": true
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-05-30T18:31:06.8265673-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "SubTypeGroup",
+  "folderName": "SubTypeGroup",
+  "specimenObjectName": "AbateOrdemCompraGado",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "SubTypeGroup:AbateOrdemCompraGado",
+      "candidateTypeLabel": "SubTypeGroup",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "SubTypeGroup"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-5f8a991d313149d18d5325b460a0bb5c\\export-xpz.msbuild(32,5): error : SubTypeGroup is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "SubTypeGroup"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup\\run-01-SubTypeGroup_AbateOrdemCompraGado\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup\\run-01-SubTypeGroup_AbateOrdemCompraGado",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "AbateOrdemCompraGado",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "SubTypeGroup"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup\\run-02-AbateOrdemCompraGado\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\SubTypeGroup\\run-02-AbateOrdemCompraGado",
+      "cleanSuccess": true
+    }
+  ]
+}

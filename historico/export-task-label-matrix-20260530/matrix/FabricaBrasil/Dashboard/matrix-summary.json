@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-05-30T18:29:40.8570658-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "Dashboard",
+  "folderName": "Dashboard",
+  "specimenObjectName": "GAM_ActivityDashboard",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "Dashboard:GAM_ActivityDashboard",
+      "candidateTypeLabel": "Dashboard",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": false,
+      "inventoryTypes": [],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard\\run-01-Dashboard_GAM_ActivityDashboard\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard\\run-01-Dashboard_GAM_ActivityDashboard",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "GAM_ActivityDashboard",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "Dashboard"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard\\run-02-GAM_ActivityDashboard\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Dashboard\\run-02-GAM_ActivityDashboard",
+      "cleanSuccess": true
+    }
+  ]
+}

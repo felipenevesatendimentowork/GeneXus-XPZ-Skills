@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-05-30T18:30:03.5927761-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "DeploymentUnit",
+  "folderName": "DeploymentUnit",
+  "specimenObjectName": "DeploymentUnit1",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "DeploymentUnit:DeploymentUnit1",
+      "candidateTypeLabel": "DeploymentUnit",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "DeploymentUnit"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-9d2553b9580f4007ac76c70810cd9519\\export-xpz.msbuild(32,5): error : DeploymentUnit is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "DeploymentUnit"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit\\run-01-DeploymentUnit_DeploymentUnit1\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit\\run-01-DeploymentUnit_DeploymentUnit1",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "DeploymentUnit1",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "DeploymentUnit"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit\\run-02-DeploymentUnit1\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\DeploymentUnit\\run-02-DeploymentUnit1",
+      "cleanSuccess": true
+    }
+  ]
+}

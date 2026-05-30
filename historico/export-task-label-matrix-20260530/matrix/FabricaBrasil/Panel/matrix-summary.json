@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-05-30T18:30:41.6666883-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "Panel",
+  "folderName": "Panel",
+  "specimenObjectName": "GAMSDChangePassword",
+  "existingExportTaskLabel": null,
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "Panel:GAMSDChangePassword",
+      "candidateTypeLabel": "Panel",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "Panel"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-50a78e28ccd84ea096b406d4f600a611\\export-xpz.msbuild(32,5): error : Panel is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "Panel"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel\\run-01-Panel_GAMSDChangePassword\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel\\run-01-Panel_GAMSDChangePassword",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "GAMSDChangePassword",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "Panel"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel\\run-02-GAMSDChangePassword\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Panel\\run-02-GAMSDChangePassword",
+      "cleanSuccess": true
+    }
+  ]
+}

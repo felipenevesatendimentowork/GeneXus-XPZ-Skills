@@ -1,0 +1,137 @@
+{
+  "generatedAt": "2026-05-30T18:32:06.7389394-03:00",
+  "kbId": "FabricaBrasil",
+  "kbPath": "C:\\GxModels\\FabricaBrasil18",
+  "catalogTypeName": "WorkWithForWeb",
+  "folderName": "WorkWithForWeb",
+  "specimenObjectName": "WorkWithWebAbateOrdem",
+  "existingExportTaskLabel": "WorkWith",
+  "outputDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb",
+  "runs": [
+    {
+      "candidateId": "run-01",
+      "objectList": "WorkWithForWeb:WorkWithWebAbateOrdem",
+      "candidateTypeLabel": "WorkWithForWeb",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "WorkWithForWeb"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-713d3c41731b4f05a53aff47992083ba\\export-xpz.msbuild(32,5): error : WorkWithForWeb is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WorkWithForWeb"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-01-WorkWithForWeb_WorkWithWebAbateOrdem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-01-WorkWithForWeb_WorkWithWebAbateOrdem",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-02",
+      "objectList": "WorkWith:WorkWithWebAbateOrdem",
+      "candidateTypeLabel": "WorkWith",
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WorkWithForWeb",
+        "Domain"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-02-WorkWith_WorkWithWebAbateOrdem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-02-WorkWith_WorkWithWebAbateOrdem",
+      "cleanSuccess": true
+    },
+    {
+      "candidateId": "run-03",
+      "objectList": "WWP:WorkWithWebAbateOrdem",
+      "candidateTypeLabel": "WWP",
+      "processExitCode": 48,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "WWP"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-7ba251ac008049e8bad7192891cd0737\\export-xpz.msbuild(32,5): error : WWP is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WorkWithForWeb"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-03-WWP_WorkWithWebAbateOrdem",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-04",
+      "objectList": "WorkWithDevicesForWeb:WorkWithWebAbateOrdem",
+      "candidateTypeLabel": "WorkWithDevicesForWeb",
+      "processExitCode": 48,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "WorkWithDevicesForWeb"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-18ed840e6d324d76a72ee68939dc0661\\export-xpz.msbuild(32,5): error : WorkWithDevicesForWeb is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WorkWithForWeb"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-04-WorkWithDevicesForWeb_WorkWithWebAbateOrdem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-04-WorkWithDevicesForWeb_WorkWithWebAbateOrdem",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-05",
+      "objectList": "PatternInstance:WorkWithWebAbateOrdem",
+      "candidateTypeLabel": "PatternInstance",
+      "processExitCode": 48,
+      "processError": null,
+      "exitCode": 48,
+      "invalidTypesRejected": [
+        "PatternInstance"
+      ],
+      "exportErrors": [
+        "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-6bb7f400ccc149a6856687bad713acfd\\export-xpz.msbuild(32,5): error : PatternInstance is not a valid type."
+      ],
+      "msBuildCategoryBBlocked": true,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WorkWithForWeb"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-05-PatternInstance_WorkWithWebAbateOrdem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-05-PatternInstance_WorkWithWebAbateOrdem",
+      "cleanSuccess": false
+    },
+    {
+      "candidateId": "run-06",
+      "objectList": "WorkWithWebAbateOrdem",
+      "candidateTypeLabel": null,
+      "processExitCode": 0,
+      "processError": null,
+      "exitCode": 0,
+      "invalidTypesRejected": [],
+      "exportErrors": [],
+      "msBuildCategoryBBlocked": false,
+      "objectInXpz": true,
+      "inventoryTypes": [
+        "WorkWithForWeb"
+      ],
+      "exportLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-06-WorkWithWebAbateOrdem\\export.json",
+      "workingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\scripts\\..\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\WorkWithForWeb\\run-06-WorkWithWebAbateOrdem",
+      "cleanSuccess": true
+    }
+  ]
+}

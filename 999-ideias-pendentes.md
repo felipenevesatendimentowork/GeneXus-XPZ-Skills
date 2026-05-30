@@ -2037,29 +2037,3 @@ Em **qualquer** pasta paralela com objetos `SmartDevicesApplication` materializa
 
 Implementar quando houver acesso a uma KB com addon SDP materializada **ou** quando um usuário da base reportar `who-uses`/`impact-basic` enganoso para `SmartDevicesApplication`. Não reabrir fixture Evo1 no código de teste.
 
-## `exportTaskLabel` MSBuild para `DataView` e tipos SDP do catálogo
-
-**Importância:** média
-**Maturidade:** ideia
-
-**Origem:** mesma frente Evo1 / prompts externos, 2026-05-30. Tipos `DataView`, `SmartDevicesApplication` e `SmartDevicesPlus` registrados sem campo `exportTaskLabel` (diferente de casos já documentados em `10a-gx-export-task-labels.md`, ex. `WorkWithForWeb` → `WorkWith`).
-
-### Problema concreto que motiva a ideia
-
-Export seletivo MSBuild (`-ObjectList`) usa rótulos da task Export que podem divergir do nome no catálogo interno / KbIntelligence. Sem `exportTaskLabel` no JSON, agentes montam `-ObjectList` com o nome do catálogo e a task pode rejeitar (`is not a valid type`, `exitCode=48`).
-
-Hoje **não há** evidência de divergência para `DataView` nem para os tipos SDP recém-registrados. Inventar label sem teste MSBuild real seria pior que omitir.
-
-### Ideia de melhoria
-
-**Somente após evidência:**
-
-1. reproduzir export MSBuild headless com `-ObjectList` usando o nome do catálogo;
-2. se falhar com tipo inválido, repetir com rótulos candidatos até sucesso ou documentação GeneXus;
-3. registrar `exportTaskLabel` em `scripts/gx-object-type-catalog.json` e linha correspondente em `10a-gx-export-task-labels.md`.
-
-Prioridade entre tipos: `DataView` (tipo core) antes de addon SDP, salvo quem reportar caso SDP primeiro.
-
-### Limiar para implementar
-
-Implementar quando houver falha MSBuild Export reproduzível **ou** documentação oficial / export real da IDE confirmando o rótulo aceito. Até lá, manter ausência de `exportTaskLabel` como estado honesto (sem suposição).

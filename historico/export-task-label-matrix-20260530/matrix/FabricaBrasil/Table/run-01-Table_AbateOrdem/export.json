@@ -1,0 +1,188 @@
+{
+  "status": "sucesso operacional",
+  "summary": "Exportação headless concluída e XPZ gerado.",
+  "exitCode": 0,
+  "msBuildExitCode": 0,
+  "executionEvidence": {
+    "msBuildExitCode": 0,
+    "msBuildFailed": false,
+    "wrapperExitCode": 0,
+    "StdOutPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.stdout.log",
+    "StdErrPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.stderr.log"
+  },
+  "postProcessingFailed": false,
+  "postProcessingError": null,
+  "stage": "export",
+  "requestedContext": {
+    "VersionName": "",
+    "EnvironmentName": "",
+    "ObjectList": "Table:AbateOrdem",
+    "DependencyType": "",
+    "ReferenceType": "",
+    "ExportKbInfo": "false",
+    "ExportAll": "false",
+    "StartWatcherRequested": false
+  },
+  "observedContext": {
+    "ActiveVersion": "FabricaBrasil18",
+    "ActiveEnvironment": "NETPostgreSQL",
+    "OpenOutput": "========== Open Knowledge Base Task iniciado ==========",
+    "pathEnrichment": {
+      "applied": false,
+      "subdirsAdded": [],
+      "subdirsSkipped": []
+    }
+  },
+  "resolvedPaths": {
+    "GeneXusDir": "C:\\Program Files (x86)\\GeneXus\\GeneXus18",
+    "MsBuildPath": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+    "KbPath": "C:\\GxModels\\FabricaBrasil18",
+    "XpzPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\run-01-Table_AbateOrdem\\matrix-export.xpz",
+    "WorkingDirectory": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\run-01-Table_AbateOrdem",
+    "LogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\run-01-Table_AbateOrdem\\export.json"
+  },
+  "pathActions": {
+    "WorkingDirectory": "validated-existing"
+  },
+  "artifacts": {
+    "ProbeLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\probe-stage.json",
+    "MsBuildFilePath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\export-xpz.msbuild",
+    "StdOutPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.stdout.log",
+    "StdErrPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.stderr.log",
+    "ExecutionLogPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\run-01-Table_AbateOrdem\\export.json",
+    "XpzPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\run-01-Table_AbateOrdem\\matrix-export.xpz",
+    "XpzSizeBytes": 95411,
+    "PackageInventoryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\package-inventory.json",
+    "ExportSignalsPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.export.signals.json"
+  },
+  "inventoryDegraded": false,
+  "inventoryError": null,
+  "packageInventory": {
+    "inventoryStatus": "DELTA_MISMATCH",
+    "selectiveExport": true,
+    "totalObjects": 21,
+    "totalAttributes": 128,
+    "objectsByType": {
+      "Domain": 19,
+      "Table": 1,
+      "PackagedModule": 1
+    },
+    "systemObjectsPresent": [
+      {
+        "name": "GeneXus",
+        "kind": "packagedModule",
+        "typeName": "PackagedModule"
+      }
+    ],
+    "declaredIncludesTransaction": false,
+    "attributesTopLevelUnreconciled": true,
+    "packageInventoryPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\package-inventory.json",
+    "inventoryWarnings": [
+      "attributes-top-level-em-export-cirurgico: 128 atributo(s) top-level em export seletiva sem Transaction na lista declarada"
+    ],
+    "requestedItemsFound": [
+      "Table:AbateOrdem"
+    ],
+    "requestedItemsMissing": [],
+    "aliasResolutionCount": 0,
+    "extrasCount": 20,
+    "deltaStatus": "MISMATCH",
+    "extrasSample": [
+      "Domain:Data",
+      "Domain:Id",
+      "Domain:Observacao",
+      "Domain:BusifrigRomaneio",
+      "Domain:AnimaisContagem",
+      "Domain:Cancelado",
+      "Domain:TipoContribuinte",
+      "PackagedModule:GeneXus",
+      "Domain:Nome",
+      "Domain:Codigo",
+      "Domain:Razao",
+      "Domain:NomeSemCaseUpper",
+      "Domain:AnimaisPeso",
+      "Domain:Logico",
+      "Domain:DataHoraCompleta",
+      "Domain:ResumoAtualizacao",
+      "Domain:JustificativaCancelamento",
+      "Domain:SiglaServicoInspecaoSanitaria",
+      "Domain:TipoRomaneio",
+      "Domain:VolumesTotalPeso"
+    ],
+    "extrasFullListAt": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\package-inventory.json",
+    "nominalInventoryAt": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\package-inventory.json"
+  },
+  "operationalSubState": "exportação concluída, inventário com extras não conciliados",
+  "msBuildCategoryBBlocked": false,
+  "exportSignalsDegraded": false,
+  "exportSignalsDegradedReason": null,
+  "compactSignals": {
+    "status": "export-signals-read",
+    "stage": "export",
+    "exportErrors": [],
+    "invalidTypesRejected": [],
+    "gxWarnings": [],
+    "knownStdOutNoise": [],
+    "exportMarkerFound": true,
+    "exportTaskSuccess": true,
+    "activeVersion": "FabricaBrasil18",
+    "activeEnvironment": "NETPostgreSQL",
+    "counts": {
+      "exportErrors": 0,
+      "invalidTypesRejected": 0,
+      "gxWarnings": 0,
+      "knownStdOutNoise": 0
+    },
+    "artifacts": {
+      "StdOutPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.stdout.log",
+      "StdErrPath": "C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\msbuild.stderr.log"
+    }
+  },
+  "watcherContext": {
+    "startWatcherRequested": false,
+    "watcherLaunched": false,
+    "watcherPid": null,
+    "watcherMonitorLogPath": null,
+    "watcherScriptPath": null,
+    "watcherLaunchError": null
+  },
+  "timing": {
+    "scriptStart": "2026-05-30T18:24:33-03:00",
+    "probeStart": "2026-05-30T18:24:33-03:00",
+    "probeEnd": "2026-05-30T18:24:33-03:00",
+    "probeDurationSeconds": 0,
+    "msbuildStart": "2026-05-30T18:24:33-03:00",
+    "msbuildEnd": "2026-05-30T18:24:48-03:00",
+    "msbuildDurationSeconds": 15,
+    "scriptEnd": "2026-05-30T18:24:48-03:00",
+    "totalDurationSeconds": 15,
+    "phases": []
+  },
+  "exportErrors": [],
+  "invalidTypesRejected": [],
+  "knownStdOutNoise": [],
+  "stdoutSignals": {
+    "exportMarkerFound": true,
+    "exportErrors": [],
+    "invalidTypesRejected": [],
+    "knownStdOutNoise": [],
+    "gxWarnings": []
+  },
+  "stderrContent": [],
+  "stderrFilteredNoise": [],
+  "blockingReasons": [],
+  "warnings": [],
+  "strategyTrace": [
+    "GeneXusDir resolvido por fallback em caminho conhecido: C:\\Program Files (x86)\\GeneXus\\GeneXus18",
+    "MsBuildPath não informado; descoberta via vswhere. Selecionado: C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+    "Candidatos de MSBuild descartados: C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe; C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe; C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe; C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe",
+    "vswhere: 4 caminho(s) reportado(s); exit 0.",
+    "WorkingDirectory explícito já existia e foi validado como seguro.",
+    "Probe executado antes da exportação com exitCode 0.",
+    "PATH enriquecido preventivamente com subdirs do GeneXus para execucao headless de import/export: []. Subdirs ausentes: [].",
+    "Arquivo .msbuild temporário gerado em: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\export-xpz.msbuild",
+    "MSBuild acionado com alvo Run em: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\Temp\\xpz-msbuild-import-export\\gx-export-b6bbcf46b697410db33febd09a94be6e\\export-xpz.msbuild",
+    "XPZ gerado em: C:\\Dev\\Knowledge\\GeneXus-XPZ-Skills\\historico\\export-task-label-matrix-20260530\\matrix\\FabricaBrasil\\Table\\run-01-Table_AbateOrdem\\matrix-export.xpz",
+    "Inventario consolidado: 21 objetos, 128 atributos; sub-estado=exportação concluída, inventário com extras não conciliados"
+  ]
+}
