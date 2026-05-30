@@ -56,6 +56,12 @@ A extracao basica cobre `DataProvider` como origem e como destino de chamada dir
 
 Eles nao substituem o acervo XML em `ObjetosDaKbEmXml` e nao provam comportamento runtime.
 
+## Pre-requisito Python
+
+- rebuild do indice exige **Python 3.x utilizavel** no `PATH` (resolucao em `scripts/GeneXusPythonPrerequisite.ps1`, chamado por `Build-KbIntelligenceIndex.ps1`)
+- stub `WindowsApps` da Microsoft Store nao conta; ausencia retorna exit `8` com mensagem `PREREQUISITO AUSENTE`
+- falha do motor Python propaga stderr/saida capturada no `throw` do wrapper PowerShell
+
 ## Gerar indice
 
 ```powershell

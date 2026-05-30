@@ -50,18 +50,18 @@ param(
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $PSCommandPath
+. (Join-Path $scriptDir 'GeneXusPythonPrerequisite.ps1')
+
 $enginePath = Join-Path $scriptDir "Build-KbIntelligenceIndex.py"
 
 if (-not (Test-Path -LiteralPath $enginePath)) {
     throw "Engine script not found: $enginePath"
 }
 
-$python = Get-Command python -ErrorAction SilentlyContinue
-if (-not $python) {
-    $python = Get-Command py -ErrorAction SilentlyContinue
-}
-if (-not $python) {
-    throw "Python was not found in PATH. Python 3 with sqlite3 is required."
+$python = Get-GeneXusPythonExecutable
+if ($null -eq $python) {
+    Write-Host (Get-GeneXusPythonPrerequisiteErrorMessage) -ForegroundColor Red
+    exit 8
 }
 
 $arguments = @(
@@ -86,5 +86,18 @@ if ($CatalogOverridePath) {
     $arguments += @("--catalog-override-path", $CatalogOverridePath)
 }
 
-& $python.Source @arguments
-exit $LASTEXITCODE
+$output = @(& $python.Source @arguments 2>&1)
+if ($LASTEXITCODE -ne 0) {
+    $detail = (($output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($detail)) {
+        $detail = '(sem saida capturada do motor Python)'
+    }
+
+    throw "KbIntelligence index build failed (exit $LASTEXITCODE).`n$detail"
+}
+
+if ($output.Count -gt 0) {
+    $output | ForEach-Object { Write-Output $_ }
+}
+
+exit 0

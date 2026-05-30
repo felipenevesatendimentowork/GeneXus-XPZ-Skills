@@ -103,6 +103,12 @@ A rotina pré-push não está concluída enquanto essa busca de coerência cruza
 - Essa avaliação faz parte do fechamento metodológico da frente, mesmo quando nenhuma edição for feita imediatamente no repositório privado.
 - Se houver necessidade de atualização no `GeneXus-XPZ-PrivateMap`, tratar isso como outro contexto operacional e sinalizar claramente ao usuário antes de editar fora desta base pública.
 
+## Pré-requisitos de ambiente (trilha KB Intelligence)
+
+- Rebuild do índice SQLite (`scripts/Build-KbIntelligenceIndex.ps1` / `.py`) exige **Python 3.x utilizável** no `PATH`, resolvido por `scripts/GeneXusPythonPrerequisite.ps1` (rejeita stub `WindowsApps` sem executável real).
+- Ausência de Python bloqueia o refresh com exit `8` e mensagem `PREREQUISITO AUSENTE`; a materialização XPZ/XML pode já ter concluído — não tratar como falha do pacote exportado.
+- Wrappers locais `Update-*KbFromXpz` devem chamar o rebuild no **mesmo processo** `pwsh` e propagar a mensagem do motor (não mascarar com só código numérico).
+
 ## Idioma
 
 - Responder ao usuário em português, salvo pedido explícito em outro idioma.

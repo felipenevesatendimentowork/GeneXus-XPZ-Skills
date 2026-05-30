@@ -99,6 +99,13 @@ if (-not (Test-Path -LiteralPath $enginePath)) {
     throw "Engine script not found: $enginePath"
 }
 
+$pythonPrerequisiteScript = Join-Path $SharedSkillsRoot 'scripts/GeneXusPythonPrerequisite.ps1'
+if (-not (Test-Path -LiteralPath $pythonPrerequisiteScript -PathType Leaf)) {
+    throw "Shared prerequisite script not found: $pythonPrerequisiteScript"
+}
+
+. $pythonPrerequisiteScript
+
 $reminderScriptPath = Join-Path $SharedSkillsRoot 'scripts\Test-XpzCatalogOverrideSessionReminder.ps1'
 if (Test-Path -LiteralPath $reminderScriptPath -PathType Leaf) {
     $reminderResult = & $reminderScriptPath -ParallelKbRoot $repoRoot -AsJson | ConvertFrom-Json
@@ -132,36 +139,35 @@ function Invoke-IndexRefresh {
         throw "Index refresh wrapper not found: $ScriptPath"
     }
 
-    $powerShellCommand = Get-Command pwsh -ErrorAction SilentlyContinue
-    if ($null -eq $powerShellCommand) {
-        $powerShellCommand = Get-Command powershell -ErrorAction SilentlyContinue
+    $rebuildParams = @{
+        SharedSkillsRoot = $SharedSkillsRoot
     }
-    if ($null -eq $powerShellCommand) {
-        throw "PowerShell executable not found for index refresh."
-    }
-    $powerShellPath = $powerShellCommand.Source
-
-    $arguments = @(
-        "-NoProfile",
-        "-File",
-        $ScriptPath,
-        "-SharedSkillsRoot",
-        $SharedSkillsRoot
-    )
 
     if ($ValidationCasesPath) {
-        $arguments += @(
-            "-ValidationCasesPath",
-            $ValidationCasesPath,
-            "-FailOnValidationFailure"
-        )
+        $rebuildParams.ValidationCasesPath = $ValidationCasesPath
+        $rebuildParams.FailOnValidationFailure = $true
     }
 
     Write-Host ""
     Write-Host "Refreshing KbIntelligence index after XPZ/XML materialization..." -ForegroundColor Cyan
-    & $powerShellPath @arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Index refresh failed after XPZ/XML materialization. Exit code: $LASTEXITCODE"
+
+    $prefix = 'Index refresh failed after XPZ/XML materialization. A materializacao XPZ/XML foi concluida; apenas o indice KbIntelligence nao foi gerado.'
+
+    try {
+        & $ScriptPath @rebuildParams
+        if ($LASTEXITCODE -ne 0) {
+            if ($LASTEXITCODE -eq 8) {
+                throw "$(Get-GeneXusPythonPrerequisiteErrorMessage)"
+            }
+
+            throw "Falha no rebuild do indice (exit $LASTEXITCODE)."
+        }
+    } catch {
+        if ($_.Exception.Message -match '^PREREQUISITO AUSENTE:') {
+            throw "$prefix $($_.Exception.Message)"
+        }
+
+        throw "$prefix $($_.Exception.Message)"
     }
 }
 
