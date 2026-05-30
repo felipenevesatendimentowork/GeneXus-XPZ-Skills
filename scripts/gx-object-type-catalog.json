@@ -78,9 +78,9 @@
       "rootKind": "Object",
       "folderName": "DataStore",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Datastore GeneXus."
+      "notes": "Datastore GeneXus (so Properties no export; sem extrator de relacoes no indice atual). queryableByKbIntelligence=false: nao usar who-uses/what-uses/impact-basic/functional-trace-basic; usar object-info, search-objects ou list-by-type."
     },
     "DeploymentUnit": {
       "objectTypeGuid": "bf08dfb1-361c-4e7e-ad54-391e56e60b49",
@@ -141,18 +141,18 @@
       "rootKind": "Object",
       "folderName": "Folder",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": true,
-      "notes": "Container criado pelo usuario."
+      "notes": "Container criado pelo usuario (so Properties; ...0008). queryableByKbIntelligence=false: consultas semanticas do indice nao modelam dependencia de pasta; usar object-info ou navegacao por parent no XML."
     },
     "Generator": {
       "objectTypeGuid": "ecececec-dfe0-4a57-ae8f-c6e31b0dcbc0",
       "rootKind": "Object",
       "folderName": "Generator",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Gerador GeneXus."
+      "notes": "Gerador GeneXus (so Properties no export). queryableByKbIntelligence=false: motor atual nao extrai relacoes; nao usar who-uses/what-uses/impact-basic/functional-trace-basic."
     },
     "Image": {
       "objectTypeGuid": "9fb193d9-64a4-4d30-b129-ff7c76830f7e",
@@ -213,9 +213,9 @@
       "rootKind": "Object",
       "folderName": "PatternSettings",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Configuracao de pattern."
+      "notes": "Configuracao global de pattern (Part com Data/CDATA; extrator atual nao parseia). queryableByKbIntelligence=false: nao usar who-uses/what-uses/impact-basic/functional-trace-basic."
     },
     "Procedure": {
       "objectTypeGuid": "84a12160-f59b-4ad7-a683-ea4481ac23e9",
@@ -303,18 +303,18 @@
       "rootKind": "Object",
       "folderName": "ThemeClass",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Classe de tema."
+      "notes": "Classe de tema (so Properties no export). queryableByKbIntelligence=false: grafo do indice nao modela referencias a ThemeClass; usar object-info ou XML/tema."
     },
     "ThemeColor": {
       "objectTypeGuid": "5592de59-d30a-499d-9100-a7006d3674f2",
       "rootKind": "Object",
       "folderName": "ThemeColor",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Cor de tema."
+      "notes": "Cor de tema (so Properties no export). queryableByKbIntelligence=false: motor atual nao extrai relacoes."
     },
     "Transaction": {
       "objectTypeGuid": "1db606f2-af09-4cf9-a3b5-b481519d28f6",

@@ -20,7 +20,7 @@ Catalogo tecnico canonico de tipos:
 
 - `inventoryEligible=true`: o tipo entra no inventario do indice (objeto listavel em `object-info`, `search-objects`, `list-by-type`) quando houver XML em subpasta de `ObjetosDaKbEmXml`.
 - `queryableByKbIntelligence=true`: consultas semânticas do indice (`who-uses`, `what-uses`, `impact-basic`, `functional-trace-basic`) sao **aptas** para o tipo com o extrator atual — o grafo tende a refletir dependencias tecnicas reais no acervo.
-- `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Exemplo: `SmartDevicesPlus` (config global do addon SDP; so `Properties`).
+- `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Exemplos atuais: `SmartDevicesPlus`, `DataStore`, `Generator`, `ThemeClass`, `ThemeColor`, `Folder`, `PatternSettings` (amostra multi-KB: `scripts/Invoke-ParallelKbEnvelopeScan.ps1`).
 - `Query-KbIntelligenceIndex.py` recusa `who-uses`, `what-uses`, `impact-basic` e `functional-trace-basic` quando o tipo tem `queryableByKbIntelligence=false`: JSON com `blocked=true`, `reason=QUERY_NOT_SEMANTIC_FOR_TYPE`, exit `11`.
 
 Escopo de inventario atual:
@@ -434,6 +434,10 @@ Esses casos conferem apenas a montagem da trilha funcional basica. Eles nao prov
 
 Como esses casos validam consultas e trazem `query`, eles pertencem ao executor `Test-KbIntelligenceQueries.ps1`, nao ao fluxo de regeneracao via `Build-KbIntelligenceIndex.ps1`.
 
+### Amostra de envelope XML (Properties vs Part)
+
+- `scripts/Invoke-ParallelKbEnvelopeScan.ps1`: varre pastas paralelas com `ObjetosDaKbEmXml` sob `C:\Dev\Test` e `C:\Dev\Prod` (ou `-KbRoots` explicitos) e classifica amostra por tipo (`only_properties_in_sample`, `has_part_in_sample`, `absent`). Uso tipico antes de alterar `queryableByKbIntelligence` no catalogo.
+
 ## Saidas
 
 - `json`: formato padrao para consumo por agentes e automacoes
@@ -446,7 +450,7 @@ Como esses casos validam consultas e trazem `query`, eles pertencem ao executor 
 - ignorar pastas `ArquivoMorto`, salvo pedido explicito do usuario para analise historica
 - tratar o SQLite como derivado e regeneravel
 - manter o XML oficial como fonte normativa
-- antes de alterar objeto GeneXus coberto pelo indice, executar `impact-basic`
+- antes de alterar objeto GeneXus coberto pelo indice, executar `impact-basic` apenas quando o tipo tiver `queryableByKbIntelligence=true`; para tipos com flag `false`, usar `object-info` e leitura XML (o query semantico retorna exit `11`)
 - tratar `impact-basic` como impacto tecnico direto, nao como prova funcional completa
 - para perguntas funcionais curtas, `functional-trace-basic` pode reduzir a coleta inicial, mas a resposta final ainda deve separar `Evidencia direta`, `Leitura adicional do XML`, `Inferencia forte` e `Hipotese`
 - usar a linha e o `snippet` apenas como evidencia tecnica, nao como prova funcional completa
