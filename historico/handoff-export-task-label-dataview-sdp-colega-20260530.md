@@ -1,7 +1,7 @@
 # Handoff — Matriz `exportTaskLabel` (DataView + SDP) na máquina do colega
 
-**Destinatário:** agente na pasta paralela de uma KB GeneXus que **tenha instâncias** de `DataView`, `SmartDevicesApplication` e/ou `SmartDevicesPlus`.  
-**Solicitante:** mantenedor da base `GeneXus-XPZ-Skills` (Antonio) — integrará o resultado em `10a-gx-export-task-labels.md` e, se houver divergência comprovada, em `scripts/gx-object-type-catalog.json`.  
+**Destinatário:** agente na pasta paralela de uma KB GeneXus que **tenha instâncias** de `DataView`, `SmartDevicesApplication` e/ou `SmartDevicesPlus`.
+**Solicitante:** mantenedor da base `GeneXus-XPZ-Skills` (Antonio) — integrará o resultado em `10a-gx-export-task-labels.md` e, se houver divergência comprovada, em `scripts/gx-object-type-catalog.json`.
 **Data do handoff:** 2026-05-30.
 
 ---

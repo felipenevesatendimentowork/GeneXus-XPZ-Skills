@@ -703,7 +703,8 @@ divergente dentro dos wrappers.
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
-- `-ObjectList`
+- `-ObjectList` (export seletivo: formato `Tipo:Nome`; exige `-ParallelKbRoot` ou `-IndexPath` — pré-validação `objectListPreflight`, estágio `pre-export-identity`, exit **35** se homônimo ou índice inválido; ver `10a-gx-export-task-labels.md`)
+- `-ParallelKbRoot` / `-IndexPath` / `-CatalogOverridePath` (obrigatórios com `-ObjectList` preenchido e sem `-ExportAll`/exportação full)
 - `-DependencyType`
 - `-ReferenceType`
 - `-ExportKbInfo`

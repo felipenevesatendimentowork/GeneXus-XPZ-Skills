@@ -2036,4 +2036,3 @@ Em **qualquer** pasta paralela com objetos `SmartDevicesApplication` materializa
 ### Limiar para implementar
 
 Implementar quando houver acesso a uma KB com addon SDP materializada **ou** quando um usuário da base reportar `who-uses`/`impact-basic` enganoso para `SmartDevicesApplication`. Não reabrir fixture Evo1 no código de teste.
-
