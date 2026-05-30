@@ -8,7 +8,14 @@ import html
 import json
 import re
 import sqlite3
+import sys
 from pathlib import Path
+
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+
+from GeneXusObjectTypeCatalogCore import resolve_effective_object_type_catalog_for_query  # noqa: E402
 
 
 EXPECTED_SCHEMA_VERSION = "1"
@@ -23,40 +30,55 @@ PROPERTY_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
-CATALOG_PATH = Path(__file__).with_name("gx-object-type-catalog.json")
 SEMANTIC_QUERIES = frozenset(
     {"who-uses", "what-uses", "impact-basic", "functional-trace-basic"}
 )
 EXIT_QUERY_NOT_SEMANTIC_FOR_TYPE = 11
-_CATALOG_TYPES_BY_NAME: dict[str, dict[str, object]] | None = None
+_CATALOG_TYPES_CACHE: dict[tuple[str | None, str | None, str], dict[str, dict[str, object]]] = {}
 
 
-def load_catalog_types_by_name() -> dict[str, dict[str, object]]:
-    global _CATALOG_TYPES_BY_NAME
-    if _CATALOG_TYPES_BY_NAME is not None:
-        return _CATALOG_TYPES_BY_NAME
-
-    try:
-        catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8-sig"))
-    except FileNotFoundError as exc:
-        raise RuntimeError(f"Object type catalog not found: {CATALOG_PATH}") from exc
-
-    raw_types = catalog.get("types")
-    if not isinstance(raw_types, dict):
-        raise RuntimeError(f"Invalid object type catalog format: {CATALOG_PATH}")
-
-    normalized: dict[str, dict[str, object]] = {}
-    for canonical_type, payload in raw_types.items():
-        if isinstance(payload, dict):
-            normalized[str(canonical_type)] = payload
-
-    _CATALOG_TYPES_BY_NAME = normalized
-    return _CATALOG_TYPES_BY_NAME
+def _catalog_cache_key(
+    index_path: Path,
+    parallel_kb_root: Path | None,
+    catalog_override_path: Path | None,
+) -> tuple[str | None, str | None, str]:
+    parallel_key = str(parallel_kb_root.resolve()) if parallel_kb_root is not None else None
+    override_key = (
+        str(catalog_override_path.resolve()) if catalog_override_path is not None else None
+    )
+    return parallel_key, override_key, str(index_path.resolve())
 
 
-def semantic_query_allowed(object_type: str) -> tuple[bool, dict[str, object] | None]:
+def load_catalog_types_by_name(
+    index_path: Path,
+    parallel_kb_root: Path | None = None,
+    catalog_override_path: Path | None = None,
+) -> dict[str, dict[str, object]]:
+    """Effective catalog (base + optional override), aligned with Build-KbIntelligenceIndex."""
+    cache_key = _catalog_cache_key(index_path, parallel_kb_root, catalog_override_path)
+    cached = _CATALOG_TYPES_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    merged, _override_path = resolve_effective_object_type_catalog_for_query(
+        index_path,
+        parallel_kb_root=parallel_kb_root,
+        catalog_override_path=catalog_override_path,
+    )
+    types_by_name = merged["types"]
+    if not isinstance(types_by_name, dict):
+        raise RuntimeError("Invalid effective object type catalog: missing types map")
+
+    _CATALOG_TYPES_CACHE[cache_key] = types_by_name
+    return types_by_name
+
+
+def semantic_query_allowed(
+    object_type: str,
+    types_by_name: dict[str, dict[str, object]],
+) -> tuple[bool, dict[str, object] | None]:
     """Return whether semantic index queries are allowed for this canonical type name."""
-    entry = load_catalog_types_by_name().get(object_type)
+    entry = types_by_name.get(object_type)
     if entry is None:
         return True, None
     return bool(entry.get("queryableByKbIntelligence", True)), entry
@@ -909,6 +931,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-name")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--format", choices=["json", "text"], default="json")
+    parser.add_argument(
+        "--parallel-kb-root",
+        type=Path,
+        help="Raiz da pasta paralela da KB; resolve scripts/gx-object-type-catalog.override.json.",
+    )
+    parser.add_argument(
+        "--catalog-override-path",
+        type=Path,
+        help="Caminho explicito do override de catalogo (prevalece sobre deteccao por parallel-kb-root).",
+    )
     return parser.parse_args()
 
 
@@ -916,7 +948,12 @@ def main() -> int:
     args = parse_args()
 
     if args.query in SEMANTIC_QUERIES and args.object_type:
-        allowed, entry = semantic_query_allowed(args.object_type)
+        catalog_types = load_catalog_types_by_name(
+            args.index_path,
+            parallel_kb_root=args.parallel_kb_root,
+            catalog_override_path=args.catalog_override_path,
+        )
+        allowed, entry = semantic_query_allowed(args.object_type, catalog_types)
         if not allowed:
             blocked = build_semantic_blocked_result(
                 args.query,

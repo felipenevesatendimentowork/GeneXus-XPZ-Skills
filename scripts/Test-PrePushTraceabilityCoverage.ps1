@@ -101,13 +101,17 @@ $agentGuideText = if (Test-Path -LiteralPath $agentGuidePath -PathType Leaf) {
 $findings = [System.Collections.Generic.List[object]]::new()
 
 $agentsChanged = $normalizedChangedFiles -contains 'AGENTS.md'
+$prePushDocChanged = $normalizedChangedFiles -contains '13-revisao-pre-push.md'
 if ($agentsChanged) {
     $agentsDiff = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('diff', '--unified=0', "$BaseRef..HEAD", '--', 'AGENTS.md')
     if ($agentsDiff.ExitCode -eq 0 -and
-        $agentsDiff.Text -match '(?i)(pre-push|pré-push|09-inventario|rastreabilidade)' -and
+        $agentsDiff.Text -match '(?i)(pre-push|pré-push|09-inventario|rastreabilidade|13-revisao)' -and
         -not ($normalizedChangedFiles -contains '08-guia-para-agente-gpt.md')) {
         Add-Finding -Target $findings -Code 'AGENTS_PREPUSH_NOT_MIRRORED_IN_08' -Path '08-guia-para-agente-gpt.md' -Message 'AGENTS.md alterou regra pre-push/rastreabilidade, mas 08-guia-para-agente-gpt.md nao aparece no intervalo; avaliar se o guia do agente ficou defasado.'
     }
+}
+if ($prePushDocChanged -and -not ($normalizedChangedFiles -contains '08-guia-para-agente-gpt.md')) {
+    Add-Finding -Target $findings -Code 'PREPUSH_DOC_NOT_MIRRORED_IN_08' -Path '08-guia-para-agente-gpt.md' -Message '13-revisao-pre-push.md alterado no intervalo, mas 08-guia-para-agente-gpt.md nao; avaliar se o resumo para agentes GPT ficou defasado.'
 }
 
 $scriptRiskPattern = '(INVENTORY_[A-Z_]+|DRIFT_[A-Z_]+|executionEvidence|watcherContext|pathEnrichment|diagnosticDegraded|compactSignals|PUSH_READINESS|pushReadiness|estado_operacional_sugerido|atualizacao_metodologica_pendente)'
@@ -170,11 +174,55 @@ foreach ($selfTestPath in $selfTestChangedPaths) {
     }
 }
 
-if (($normalizedChangedFiles -contains 'AGENTS.md') -and ($normalizedChangedFiles -contains '08-guia-para-agente-gpt.md')) {
-    foreach ($requiredPhrase in @('09-inventario-e-rastreabilidade-publica.md', 'encontrar o termo', 'rastreabilidade agregada')) {
+if ((($agentsChanged -or $prePushDocChanged) -and ($normalizedChangedFiles -contains '08-guia-para-agente-gpt.md'))) {
+    foreach ($requiredPhrase in @('13-revisao-pre-push.md', '09-inventario-e-rastreabilidade-publica.md', 'paridade motor', 'rastreabilidade agregada')) {
         if ($agentGuideText -notmatch [regex]::Escape($requiredPhrase)) {
-            Add-Finding -Target $findings -Code 'AGENT_GUIDE_PREPUSH_RULE_INCOMPLETE' -Path '08-guia-para-agente-gpt.md' -Message ("08-guia-para-agente-gpt.md foi alterado junto com AGENTS.md, mas nao contem marcador esperado da regra pre-push: {0}" -f $requiredPhrase)
+            Add-Finding -Target $findings -Code 'AGENT_GUIDE_PREPUSH_RULE_INCOMPLETE' -Path '08-guia-para-agente-gpt.md' -Message ("08-guia-para-agente-gpt.md foi alterado junto com doc pre-push, mas nao contem marcador esperado: {0}" -f $requiredPhrase)
         }
+    }
+}
+
+$queryPyPath = Join-Path $resolvedRoot 'scripts/Query-KbIntelligenceIndex.py'
+$buildPs1Path = Join-Path $resolvedRoot 'scripts/Build-KbIntelligenceIndex.ps1'
+$queryPs1Path = Join-Path $resolvedRoot 'scripts/Query-KbIntelligenceIndex.ps1'
+if ((Test-Path -LiteralPath $queryPyPath -PathType Leaf) -and (Test-Path -LiteralPath $buildPs1Path -PathType Leaf)) {
+    $queryPyText = [System.IO.File]::ReadAllText($queryPyPath)
+    $buildPs1Text = [System.IO.File]::ReadAllText($buildPs1Path)
+    $queryPs1Text = if (Test-Path -LiteralPath $queryPs1Path -PathType Leaf) {
+        [System.IO.File]::ReadAllText($queryPs1Path)
+    } else {
+        ''
+    }
+
+    $docPaths = @(
+        '02-regras-operacionais-e-runtime.md',
+        '08-guia-para-agente-gpt.md',
+        'README.md',
+        'AGENTS.md',
+        '13-revisao-pre-push.md',
+        'scripts/README-kb-intelligence.md'
+    )
+    $docCombined = ($docPaths | ForEach-Object {
+        $docPath = Join-Path $resolvedRoot $_
+        if (Test-Path -LiteralPath $docPath -PathType Leaf) {
+            [System.IO.File]::ReadAllText($docPath)
+        } else {
+            ''
+        }
+    }) -join [Environment]::NewLine
+
+    $docsPromiseEffectiveCatalog = ($docCombined -match '(?i)catalogo efetivo|effective catalog') -and
+        ($docCombined -match 'Query-KbIntelligenceIndex')
+
+    if ($docsPromiseEffectiveCatalog) {
+        $queryHasEffectiveCatalog = $queryPyText -match '(?i)catalog-override-path|parallel-kb-root|resolve_effective|GeneXusObjectTypeCatalogCore'
+        if (-not $queryHasEffectiveCatalog) {
+            Add-Finding -Target $findings -Code 'MOTOR_DOC_CATALOG_EFFECTIVE_MISMATCH' -Path $queryPyPath -Message 'Documentacao promete catalogo efetivo no Query-KbIntelligenceIndex, mas o motor Python nao referencia merge/override/parallel-kb-root.'
+        }
+    }
+
+    if ($buildPs1Text -match '\$ParallelKbRoot' -and $queryPs1Text -and $queryPs1Text -notmatch '\$ParallelKbRoot') {
+        Add-Finding -Target $findings -Code 'MOTOR_PAIR_PARAM_ASYMMETRY' -Path $queryPs1Path -Message 'Build-KbIntelligenceIndex.ps1 expoe -ParallelKbRoot, mas Query-KbIntelligenceIndex.ps1 nao.'
     }
 }
 

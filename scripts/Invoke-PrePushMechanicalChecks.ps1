@@ -9,7 +9,7 @@
     arquivos do diff para insumo da fase semantica do agente.
 
     Nao substitui busca de coerencia cruzada, regra em camadas de skills longas
-    nem relatorio final ao usuario — ver AGENTS.md secao "Revisao pre-push".
+    nem relatorio final ao usuario — ver 13-revisao-pre-push.md (AGENTS.md aponta para esse arquivo).
     Emite avisos informativos se a branch nao for main ou se a working tree
     tiver alteracoes nao commitadas fora do intervalo BaseRef..HEAD. Com
     commitsBehind > 0, define pushReadiness=blocked e marca o diff do intervalo
@@ -485,7 +485,7 @@ foreach ($msBuildParityFinding in @($msBuildProbeDocParityGate.findings)) {
 }
 
 $agentSemanticChecklist = @(
-    'Fase semantica: seguir integralmente a secao Revisao pre-push do AGENTS.md na raiz do repositorio (fonte autoritativa).',
+    'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
     'Nao tratar exit 0 deste passo mecanico como pre-push concluida.'
 )
 

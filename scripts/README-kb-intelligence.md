@@ -12,7 +12,7 @@ O comando `impact-basic` resume dependentes e dependencias diretas do objeto. O 
 Catalogo tecnico canonico de tipos:
 
 - `scripts/gx-object-type-catalog.json`
-- `Regra operacional`: catalogo **efetivo** = base compartilhada + `scripts/gx-object-type-catalog.override.json` na pasta paralela quando existir (override prevalece por tipo canonico); `Build-KbIntelligenceIndex.py` mescla da mesma forma que `Sync-GeneXusXpzToXml.ps1`, com `--parallel-kb-root` ou deteccao automatica quando `--source-root` termina em `ObjetosDaKbEmXml`
+- `Regra operacional`: catalogo **efetivo** = base compartilhada + `scripts/gx-object-type-catalog.override.json` na pasta paralela quando existir (override prevalece por tipo canonico); `Build-KbIntelligenceIndex.py` e `Query-KbIntelligenceIndex.py` mesclam via `scripts/GeneXusObjectTypeCatalogCore.py`, com `--parallel-kb-root` / `--catalog-override-path` (build: deteccao automatica quando `--source-root` termina em `ObjetosDaKbEmXml`; query: deteccao quando o SQLite esta em `KbIntelligence/`)
 - `Regra operacional`: esse JSON e a fonte tecnica canonica para `Object/@type`, `rootKind`, pasta esperada e elegibilidade de inventario; os `.md` seguem como explicacao editorial e historica
 - `Regra operacional`: `Attribute` so deve ser classificado como tipo canonico do arquivo quando a raiz real for `<Attribute ...>`; ocorrencias inline de `<Attribute>` dentro de `Transaction`, `Table` ou outros XMLs nao redefinem o tipo do objeto
 
@@ -21,7 +21,7 @@ Catalogo tecnico canonico de tipos:
 - `inventoryEligible=true`: o tipo entra no inventario do indice (objeto listavel em `object-info`, `search-objects`, `list-by-type`) quando houver XML em subpasta de `ObjetosDaKbEmXml`.
 - `queryableByKbIntelligence=true`: consultas semânticas do indice (`who-uses`, `what-uses`, `impact-basic`, `functional-trace-basic`) sao **aptas** para o tipo com o extrator atual — o grafo tende a refletir dependencias tecnicas reais no acervo.
 - `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Lista canônica: cada entrada em `scripts/gx-object-type-catalog.json` (amostra multi-KB: `scripts/Invoke-ParallelKbEnvelopeScan.ps1`; grafo zero: consulta a `kb-intelligence.sqlite`).
-- `Query-KbIntelligenceIndex.py` recusa `who-uses`, `what-uses`, `impact-basic` e `functional-trace-basic` quando o tipo tem `queryableByKbIntelligence=false`: JSON com `blocked=true`, `reason=QUERY_NOT_SEMANTIC_FOR_TYPE`, exit `11`.
+- `Query-KbIntelligenceIndex.py` recusa `who-uses`, `what-uses`, `impact-basic` e `functional-trace-basic` quando o tipo tem `queryableByKbIntelligence=false` no **catalogo efetivo** (base + override): JSON com `blocked=true`, `reason=QUERY_NOT_SEMANTIC_FOR_TYPE`, exit `11`. Wrappers devem repassar `-ParallelKbRoot` / `-CatalogOverridePath` como no build.
 
 ### Tipos com grafo assimétrico (`queryableByKbIntelligence=true`)
 

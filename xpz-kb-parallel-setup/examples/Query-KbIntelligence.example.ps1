@@ -18,6 +18,14 @@ Caminho opcional para um SQLite alternativo. O padrao local aponta para
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parametro quando
 o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
+.PARAMETER ParallelKbRoot
+Raiz da pasta paralela da KB. Por padrao, a pasta pai de `scripts/` deste wrapper.
+Usada para resolver `scripts/gx-object-type-catalog.override.json` no gate
+`queryableByKbIntelligence` das consultas semanticas.
+
+.PARAMETER CatalogOverridePath
+Caminho opcional do override de catalogo (prevalece sobre a deteccao por ParallelKbRoot).
+
 .EXAMPLE
 .\Query-KbIntelligence.ps1 -Query impact-basic -ObjectType Procedure -ObjectName procExemplo -Limit 10 -Format text
 
@@ -50,6 +58,10 @@ param(
     [ValidateSet("json", "text")]
     [string]$Format = "json",
 
+    [string]$ParallelKbRoot,
+
+    [string]$CatalogOverridePath,
+
     [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
 )
 
@@ -71,10 +83,19 @@ if (-not (Test-Path -LiteralPath $IndexPath)) {
     throw "KB Intelligence index not found: $IndexPath"
 }
 
+if (-not $ParallelKbRoot) {
+    $ParallelKbRoot = $repoRoot
+}
+
 $params = @{
-    IndexPath = $IndexPath
-    Query     = $Query
-    Format    = $Format
+    IndexPath      = $IndexPath
+    Query          = $Query
+    Format         = $Format
+    ParallelKbRoot = $ParallelKbRoot
+}
+
+if ($CatalogOverridePath) {
+    $params.CatalogOverridePath = $CatalogOverridePath
 }
 
 if ($ObjectType) { $params.ObjectType = $ObjectType }

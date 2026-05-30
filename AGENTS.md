@@ -44,58 +44,14 @@
 
 ## Alinhamento entre documentos
 
-- Ao alterar nomenclatura, fluxo ou regra operacional, verificar impacto pelo menos em `README.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md` e nas skills afetadas.
+- Ao alterar nomenclatura, fluxo ou regra operacional, verificar impacto pelo menos em `README.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `13-revisao-pre-push.md` (quando a frente alterar a rotina pré-push ou gates associados) e nas skills afetadas.
 - Não deixar convenções conflitantes entre a base compartilhada e as skills quando a mudança fizer parte da mesma frente.
 
 ## Revisão pré-push
 
-Antes de concluir rotina pré-push, não basta ler os diffs dos commits pendentes. O agente deve procurar erros e inconsistências entre o que mudou e o restante do repositório.
-
-**Escopo:** a rotina pré-push é de **análise, busca de coerência e relatório** ao usuário. **Não** inclui alterar arquivos nem criar commits com base no relatório. Em face dos gaps, o agente **apresenta** o diagnóstico e, se fizer sentido, um diff ou lista de alterações sugeridas, e **só grava** no repositório após **aprovação explícita** do usuário **depois** do relatório — mesmo que a intenção inicial da sessão fosse aplicar correções; a pré-push não autoriza aplicar automaticamente com base apenas nessa intenção inicial. Uma única aprovação explícita (ex.: «ok, aplica os gaps do relatório») cobre o **conjunto** de alterações sugeridas, salvo o usuário pedir confirmação item a item.
-
-**Passo mecânico inicial:** executar `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` quando o chamador for agente). Por padrão o script compara a branch atual com `origin/main` — ou seja, **tudo que foi commitado localmente e ainda não foi enviado ao remoto** (desde o último push usual em `main`). Contagem de commits, lista de commits, arquivos alterados e `git diff --check` usam **o mesmo** intervalo (`BaseRef..HEAD`, com `BaseRef` default `origin/main`); não altere `-BaseRef` salvo necessidade explícita. O script classifica os arquivos **do diff desse intervalo** e delega parse a `scripts/Test-PsScriptsParse.ps1` — **sem** substituir a busca semântica abaixo. O orquestrador **avisa** (sem falhar o gate mecânico) se a branch não for `main` ou se a working tree tiver alterações não commitadas fora desse intervalo.
-
-**Limites do passo mecânico (evitar leituras erradas):**
-
-- **Parse:** `Test-PsScriptsParse.ps1` varre **todo** o repositório ativo (`scripts/*.ps1` e `*.example.ps1` fora de `historico/`) — gate de saúde do repo, **não** limitado ao diff do intervalo. Pode falhar o mecânico com `commitsAhead=0` se houver script quebrado fora do que mudou.
-- **Working tree:** com `commitsAhead=0` não há diff nem `git diff --check` no intervalo («nada commitado pendente de push»). A pré-push **não** substitui revisão de alterações **só** na working tree; o orquestrador avisa contagens, mas não analisa esses arquivos no intervalo.
-- **`exit 0` vs push:** `exit 0` do orquestrador **não** significa «pode dar push» nem pré-push concluída. Ler `PUSH_READINESS` (e `pushReadiness` no JSON): com `blocked`, push fica proibido até integrar o remoto, mesmo com parse/whitespace limpos.
-- **`pushReadiness=blocked`:** bloqueia **push** e torna diff/arquivos do intervalo apenas diagnósticos; **não** dispensa a fase semântica sobre os commits locais ainda pendentes — continuar o relatório de coerência cruzada.
-
-**Referência remota fresca:** quando a intenção for comparar contra o **remoto real atual** (não só a cópia local da última vez que você fez fetch), garantir `origin/main` atualizada com `git fetch origin` **antes** do passo mecânico. Ref inexistente (o script falha com mensagem clara) e ref existente porém desatualizada são casos distintos — a segunda pode superestimar commits «à frente» ou mascarar divergência com o remoto.
-
-**Remoto à frente (`commitsBehind`):** quando `commitsBehind > 0`, o intervalo `BaseRef..HEAD` deixa de representar limpidamente «só o que falta enviar» — compara árvores divergentes; lista de arquivos e `git diff --check` nesse intervalo são **apenas diagnósticos**. O orquestrador emite `pushReadiness=blocked` (sem falhar parse/whitespace). A pré-push **não** deve ser considerada liberada para push até integrar o remoto: se ainda não houve fetch, `git fetch origin`; se `commitsBehind` persistir, integrar com o usuário (ex.: `git pull --rebase origin main` ou merge) — não fazer push automático.
-
-**Regra em camadas para skills longas:** ao alinhar nomenclatura ou contrato (ex.: `lastUpdate`, `-AcervoPath`, `executionEvidence`, `pathEnrichment`), varrer o `SKILL.md` **e os satélites que ele manda carregar** antes de considerar a frente fechada — não basta o `SKILL.md` estar alinhado. Exemplos em `xpz-builder`: [quality-checklist.md](xpz-builder/quality-checklist.md), [wwp-packaging.md](xpz-builder/wwp-packaging.md), `responsibilities-by-type/*.md`. Três cortes: (1) checklist final ou gates de fechamento (incluindo satélites de checklist); (2) fluxo operacional e captura de resultado (passos numerados, RESPONSIBILITIES, «Capturar e relatar»); (3) inventário de scripts, constraints e blocos de contrato por script. Quando um termo novo aparecer no `SKILL.md`, buscá-lo também nesses satélites. Se qualquer camada ainda usar só a forma antiga (ex.: `msBuildExitCode` top-level como canônico) sem apontar o bloco canônico (`executionEvidence.msBuildExitCode`), reportar como gap da mesma frente — não tratar como coberto só porque `02`, `08` ou `10` já estão alinhados.
-
-Para cada frente alterada:
-
-1. Identificar termos, scripts, wrappers, parâmetros, estados, caminhos e regras operacionais introduzidos ou modificados.
-2. Buscar esses mesmos termos no repositório inteiro.
-3. Comparar a documentação afetada com:
-   - skills relacionadas
-   - `README.md`
-   - `02-regras-operacionais-e-runtime.md`
-   - `08-guia-para-agente-gpt.md`
-   - `09-inventario-e-rastreabilidade-publica.md`, quando a frente alterar script compartilhado, contrato metodológico, skill, checklist, nomenclatura operacional, estado, parâmetro, wrapper ou evidência pública rastreável
-   - exemplos canônicos `*.example.ps1` nas skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`; não há `examples/` na raiz)
-   - scripts compartilhados em `scripts/`
-4. Confirmar se há:
-   - documentação antiga que contradiz a nova
-   - exemplos canônicos desatualizados
-   - scripts cujo contrato não bate com a descrição
-   - checklist que promete validação que o script não executa
-   - checklist em **satélite** referenciado pelo `SKILL.md` (ex.: `xpz-builder/quality-checklist.md`) com regra de fechamento fraca ou antiga frente ao `SKILL.md`, `02` ou scripts da mesma frente
-   - nova ferramenta, caminho ou parâmetro documentado em uma skill, mas ausente nas skills correlatas
-   - rastreabilidade pública desatualizada em `09-inventario-e-rastreabilidade-publica.md`; encontrar o termo no `09` não basta, é preciso comparar se a descrição ainda reflete a abrangência atual do contrato, script ou regra
-   - rastreabilidade agregada demais em `09-inventario-e-rastreabilidade-publica.md`; quando a frente envolver motor, orquestrador, wrapper e bateria de teste com papéis distintos, cada papel relevante deve ter evidência própria ou justificativa explícita para não registrar separadamente
-5. Reportar separadamente:
-   - gaps confirmados
-   - flags descartados, com justificativa
-   - áreas não cobertas pela busca
-6. Encerrar o relatório com uma linha de veredicto explícita, em formato fixo: `VEREDICTO: nenhum gap confirmado` ou `VEREDICTO: N gap(s) confirmado(s)` (com `N` igual à contagem da lista acima). Avisos descartados com justificativa e áreas não cobertas **não** contam como gap. A linha de veredicto é obrigatória mesmo quando o mecânico passou e a busca semântica não achou nada; sua ausência significa pré-push não concluída.
-
-A rotina pré-push não está concluída enquanto essa busca de coerência cruzada não tiver sido executada e reportada, mesmo que `git diff --check`, parse (`scripts/Test-PsScriptsParse.ps1`, também invocado por `scripts/Invoke-PrePushMechanicalChecks.ps1`) e testes locais estejam limpos. **Não** tratar `exit 0` do passo mecânico como pré-push concluída **nem** como autorização de push quando `PUSH_READINESS=blocked`.
+- Fonte **autoritativa** da rotina: [13-revisao-pre-push.md](13-revisao-pre-push.md) (passo mecânico, fase semântica, paridade motor↔doc, veredicto).
+- Resumo obrigatório antes de push: executar `scripts/Invoke-PrePushMechanicalChecks.ps1` (`-AsJson` para agentes), depois a busca semântica integral descrita no `13` — **não** basta grep de termos em `.md`; validar implementação dos motores citados.
+- Escopo: análise e relatório ao usuário; correções só após aprovação explícita **depois** do relatório pré-push.
 
 ## Rastreabilidade privada de moldes sanitizados
 
@@ -108,7 +64,7 @@ A rotina pré-push não está concluída enquanto essa busca de coerência cruza
 - Rebuild do índice SQLite (`scripts/Build-KbIntelligenceIndex.ps1` / `.py`) exige **Python 3.x utilizável** no `PATH`, resolvido por `scripts/GeneXusPythonPrerequisite.ps1` (rejeita stub `WindowsApps` sem executável real).
 - Ausência de Python bloqueia o refresh com exit `8` e mensagem `PREREQUISITO AUSENTE`; a materialização XPZ/XML pode já ter concluído — não tratar como falha do pacote exportado.
 - Wrappers locais `Update-*KbFromXpz` devem chamar o rebuild no **mesmo processo** `pwsh` e propagar a mensagem do motor (não mascarar com só código numérico).
-- Antes de `who-uses`, `what-uses`, `impact-basic` ou `functional-trace-basic`, conferir no catálogo efetivo (`scripts/gx-object-type-catalog.json` + override local) se o tipo tem `queryableByKbIntelligence=true`; quando for `false`, `Query-KbIntelligenceIndex.py` devolve exit `11`, `blocked=true` e `reason=QUERY_NOT_SEMANTIC_FOR_TYPE` — **não** tratar como zero dependências; ver `02`, `08` e `scripts/README-kb-intelligence.md`.
+- Antes de `who-uses`, `what-uses`, `impact-basic` ou `functional-trace-basic`, conferir no catálogo efetivo (`scripts/gx-object-type-catalog.json` + override local) se o tipo tem `queryableByKbIntelligence=true`; quando for `false`, `Query-KbIntelligenceIndex.py` aplica o mesmo merge (via `GeneXusObjectTypeCatalogCore.py`, `--parallel-kb-root` / `--catalog-override-path`) e devolve exit `11`, `blocked=true` e `reason=QUERY_NOT_SEMANTIC_FOR_TYPE` — **não** tratar como zero dependências; ver `02`, `08` e `scripts/README-kb-intelligence.md`.
 
 ## Idioma
 

@@ -21,7 +21,11 @@ param(
     [string]$TargetName,
     [int]$Limit,
     [ValidateSet("json", "text")]
-    [string]$Format = "json"
+    [string]$Format = "json",
+
+    [string]$ParallelKbRoot,
+
+    [string]$CatalogOverridePath
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,6 +60,8 @@ if ($TargetType) { $arguments += @("--target-type", $TargetType) }
 if ($TargetName) { $arguments += @("--target-name", $TargetName) }
 if ($Limit) { $arguments += @("--limit", $Limit) }
 if ($Format) { $arguments += @("--format", $Format) }
+if ($ParallelKbRoot) { $arguments += @("--parallel-kb-root", $ParallelKbRoot) }
+if ($CatalogOverridePath) { $arguments += @("--catalog-override-path", $CatalogOverridePath) }
 
 & $python.Source @arguments
 exit $LASTEXITCODE

@@ -78,6 +78,7 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 - `03-risco-e-decisao-por-tipo.md`
 - `07-open-points-e-checklist.md`
 - `08-guia-para-agente-gpt.md`
+- `13-revisao-pre-push.md`
 - `10-base-operacional-msbuild-headless.md`
 - `10a-gx-export-task-labels.md`
 
