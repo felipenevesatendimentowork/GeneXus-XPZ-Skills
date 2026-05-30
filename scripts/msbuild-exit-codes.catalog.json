@@ -167,9 +167,13 @@
     {
       "exit": 35,
       "category": "artefato",
-      "summary": "Export seletivo: pre-validacao de identidade no indice KbIntelligence bloqueou (indice ausente/obrigatorio, indice invalido ou homonimia).",
-      "wrappers": ["Invoke-GeneXusXpzExport.ps1"],
-      "stage": "pre-export-identity",
+      "summary": "Export/import seletivo: pre-validacao de identidade no indice KbIntelligence bloqueou (indice ausente/obrigatorio, indice invalido ou homonimia).",
+      "wrappers": [
+        "Invoke-GeneXusXpzExport.ps1",
+        "Invoke-GeneXusXpzImport.ps1",
+        "Test-GeneXusXpzImportPreview.ps1"
+      ],
+      "stage": "pre-export-identity|pre-import-identity",
       "jsonHints": [
         "objectListPreflight",
         "objectListPreflight.items",

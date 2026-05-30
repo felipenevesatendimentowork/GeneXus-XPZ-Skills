@@ -80,6 +80,15 @@ Intervalo de polling em segundos do watcher. Padrão: 5. Intervalo válido: 1-60
 .PARAMETER WatcherSilenceThresholdSeconds
 Segundos sem nova linha no log antes de o watcher emitir alerta de silêncio. Padrão: 120.
 Intervalo válido: 30-3600.
+
+.PARAMETER ParallelKbRoot
+Raiz da pasta paralela da KB. Obrigatório em preview/import seletivo com -IncludeItems.
+
+.PARAMETER IndexPath
+Caminho explícito do kb-intelligence.sqlite; prevalece sobre -ParallelKbRoot.
+
+.PARAMETER CatalogOverridePath
+Override opcional de scripts/gx-object-type-catalog.override.json.
 #>
 
 param(
@@ -131,7 +140,13 @@ param(
     [int]$WatcherIntervalSeconds = 5,
 
     [ValidateRange(30, 3600)]
-    [int]$WatcherSilenceThresholdSeconds = 120
+    [int]$WatcherSilenceThresholdSeconds = 120,
+
+    [string]$ParallelKbRoot,
+
+    [string]$IndexPath,
+
+    [string]$CatalogOverridePath
 )
 
 Set-StrictMode -Version Latest
@@ -148,6 +163,12 @@ if (-not (Test-Path -LiteralPath $categoryBSupportPath -PathType Leaf)) {
     throw "Category B support script not found: $categoryBSupportPath"
 }
 . $categoryBSupportPath
+
+$preflightSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusObjectListIdentityPreflight.ps1'
+if (-not (Test-Path -LiteralPath $preflightSupportPath -PathType Leaf)) {
+    throw "Object list identity preflight script not found: $preflightSupportPath"
+}
+. $preflightSupportPath
 
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
@@ -772,6 +793,69 @@ try {
         exit $exitCode
     }
 
+    $preflightResult = Invoke-GeneXusObjectListIdentityPreflight `
+        -GateContext 'import' `
+        -IncludeItems $IncludeItems `
+        -ParallelKbRoot $ParallelKbRoot `
+        -IndexPath $IndexPath `
+        -CatalogOverridePath $CatalogOverridePath
+
+    foreach ($warn in @($preflightResult.warnings)) {
+        Add-WarningMessage -Message $warn
+    }
+
+    if ($preflightResult.block) {
+        foreach ($reason in @($preflightResult.blockingReasons)) {
+            Add-BlockingReason -Reason $reason
+        }
+
+        $preflightBlocked = [ordered]@{
+            status = 'não apto para prosseguir'
+            summary = 'Pré-validação de identidade no índice KbIntelligence bloqueou o preview de importação seletiva.'
+            exitCode = $preflightResult.exitCode
+            stage = 'pre-import-identity'
+            requestedContext = [ordered]@{
+                VersionName = $VersionName
+                EnvironmentName = $EnvironmentName
+                IncludeItems = $IncludeItems
+                ExcludeItems = $ExcludeItems
+                ParallelKbRoot = $ParallelKbRoot
+                IndexPath = $IndexPath
+            }
+            resolvedPaths = [ordered]@{
+                GeneXusDir = $probeStage.Diagnostic.resolvedPaths.GeneXusDir
+                MsBuildPath = $probeStage.Diagnostic.resolvedPaths.MsBuildPath
+                KbPath = $probeStage.Diagnostic.resolvedPaths.KbPath
+                XpzPath = $xpzValidation.Path
+                WorkingDirectory = $probeStage.Diagnostic.resolvedPaths.WorkingDirectory
+                LogPath = $resolvedLogPath
+                UpdateFilePath = $updateFileValidation.Path
+                KbIntelligenceIndexPath = $preflightResult.indexPath
+            }
+            objectListPreflight = ConvertTo-GeneXusObjectListPreflightLogSection -PreflightResult $preflightResult
+            pathActions = $probeStage.Diagnostic.pathActions
+            artifacts = [ordered]@{
+                ProbeLogPath = $probeLogPath
+                ExecutionLogPath = $resolvedLogPath
+            }
+            watcherContext = $script:WatcherContext
+            timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            importedItems = @()
+            blockingReasons = @($script:BlockingReasons)
+            warnings = @($script:Warnings)
+            strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
+        }
+
+        $preflightBlockedJson = ConvertTo-JsonText -InputObject $preflightBlocked
+        Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $preflightBlockedJson
+        Write-Output $preflightBlockedJson
+        exit $preflightResult.exitCode
+    }
+
+    if ($preflightResult.preflightEnabled) {
+        Add-StrategyTrace -Message ('Pré-validação de identidade no índice (preview): {0} item(ns); avisos={1}.' -f @($preflightResult.preflightItems).Count, @($preflightResult.warnings).Count)
+    }
+
     $resolvedGeneXusDir = [string]$probeStage.Diagnostic.resolvedPaths.GeneXusDir
     $resolvedMsBuildPath = [string]$probeStage.Diagnostic.resolvedPaths.MsBuildPath
     $resolvedKbPath = [string]$probeStage.Diagnostic.resolvedPaths.KbPath
@@ -1051,7 +1135,9 @@ try {
             WorkingDirectory = $probeStage.Diagnostic.resolvedPaths.WorkingDirectory
             LogPath = $resolvedLogPath
             UpdateFilePath = $resolvedUpdateFilePath
+            KbIntelligenceIndexPath = if ($preflightResult.preflightEnabled) { $preflightResult.indexPath } else { $null }
         }
+        objectListPreflight = ConvertTo-GeneXusObjectListPreflightLogSection -PreflightResult $preflightResult
         pathActions = $probeStage.Diagnostic.pathActions
         requestedContext = [ordered]@{
             VersionName = $VersionName
@@ -1063,6 +1149,8 @@ try {
             IncludeItems = $IncludeItems
             ExcludeItems = $ExcludeItems
             StartWatcherRequested = $StartWatcher.IsPresent
+            ParallelKbRoot = $ParallelKbRoot
+            IndexPath = $IndexPath
         }
         observedContext = [ordered]@{
             ActiveVersion = $activeVersionOutput

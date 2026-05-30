@@ -714,8 +714,9 @@ Parâmetros específicos de importação:
 - `-XpzPath` (aceita `.xpz`, `.xml` e `.import_file.xml` quando o envelope foi validado por `Test-GeneXusImportFileEnvelope.ps1`; nome do parâmetro é histórico e não restringe a extensão)
 - `-PreviewMode`
 - `-UpdateFilePath`
-- `-IncludeItems`
+- `-IncludeItems` (import seletivo: formato `Tipo:Nome`; exige `-ParallelKbRoot` ou `-IndexPath` — pré-validação `objectListPreflight`, exit **35** se homônimo ou índice inválido)
 - `-ExcludeItems`
+- `-ParallelKbRoot` / `-IndexPath` / `-CatalogOverridePath` (obrigatórios com `-IncludeItems` preenchido; ver `10a-gx-export-task-labels.md`)
 - `-AutomaticBackup`
 - `-ImportType`
 - `-ImportKbInformation` (tri-state: omitido ou `false` equivalem a não emitir o atributo; apenas `true` emite e exige suporte na task carregada)

@@ -81,9 +81,9 @@ KBs com índice KbIntelligence na campanha: FabricaBrasil18 (`C:\GxModels\Fabric
 
 Motores: `scripts/Build-ExportTaskLabelCoverageMap.ps1`, `scripts/Run-ExportTaskLabelMatrix.ps1`, `scripts/Invoke-ExportTaskLabelCampaign.ps1` (opção `-ParseOnly` reaproveita `export.json` já gerados), `scripts/Merge-ExportTaskLabelCampaignResults.ps1`.
 
-## Pré-validação no índice (export seletivo, P1)
+## Pré-validação no índice (export/import seletivo, P1 / P1 v2)
 
-Antes do MSBuild, `Invoke-GeneXusXpzExport.ps1` com `-ParallelKbRoot` ou `-IndexPath` consulta KbIntelligence (`objectListPreflight` no `export.json`). Homônimo ou índice inválido/ausente → **exit 35**. Objeto ausente no índice (`not_in_index`) → aviso e MSBuild segue (pode existir só na KB nativa). Não substitui inventário pós-export nem `exportTaskLabel`.
+Antes do MSBuild, `Invoke-GeneXusXpzExport.ps1` (`-ObjectList`) e `Invoke-GeneXusXpzImport.ps1` / `Test-GeneXusXpzImportPreview.ps1` (`-IncludeItems`) com `-ParallelKbRoot` ou `-IndexPath` consultam KbIntelligence (`objectListPreflight` no `export.json` / `import.json`; `gateContext` = `export` ou `import`). Homônimo ou índice inválido/ausente → **exit 35**. Objeto ausente no índice (`not_in_index`) → aviso e MSBuild segue (pode existir só na KB nativa). Não substitui inventário pós-pacote nem `exportTaskLabel`. Equivalências pós-import no log (`Panel`↔`SDPanel`) permanecem em `Read-MsBuildImportSignals.ps1`, distintas de `exportTaskLabel`.
 
 ## Critério de aceite (smoke)
 

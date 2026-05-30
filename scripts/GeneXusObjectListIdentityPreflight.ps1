@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Pré-validação de identidade Tipo:Nome contra índice KbIntelligence antes de export seletivo MSBuild.
+    Pré-validação de identidade Tipo:Nome contra índice KbIntelligence antes de export/import seletivo MSBuild.
 #>
 
 Set-StrictMode -Version Latest
@@ -11,6 +11,20 @@ if (-not (Test-Path -LiteralPath $catalogSupportPath -PathType Leaf)) {
     throw "Catalog support not found: $catalogSupportPath"
 }
 . $catalogSupportPath
+
+function Split-GeneXusMsBuildItemFilter {
+    param([string]$FilterText)
+
+    if ([string]::IsNullOrWhiteSpace($FilterText)) {
+        return @()
+    }
+
+    return @(
+        $FilterText -split ',|;|\r\n|\n' |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            ForEach-Object { $_.Trim() }
+    )
+}
 
 function Test-IsSelectiveGeneXusXpzExport {
     param(
@@ -22,6 +36,23 @@ function Test-IsSelectiveGeneXusXpzExport {
     if ($FullExportRequested) { return $false }
     if ($ExportAll -eq 'true') { return $false }
     return -not [string]::IsNullOrWhiteSpace($ObjectList)
+}
+
+function Test-IsSelectiveGeneXusXpzImport {
+    param([string]$IncludeItems)
+
+    return (@(Split-GeneXusMsBuildItemFilter -FilterText $IncludeItems)).Count -gt 0
+}
+
+function Convert-GeneXusMsBuildItemFilterToObjectListText {
+    param([string]$FilterText)
+
+    $parts = @(Split-GeneXusMsBuildItemFilter -FilterText $FilterText)
+    if ($parts.Count -eq 0) {
+        return ''
+    }
+
+    return ($parts -join ';')
 }
 
 function Resolve-GeneXusKbIntelligenceIndexPath {
@@ -290,35 +321,88 @@ function Get-GeneXusObjectListIdentityPreflightItem {
     }
 }
 
+function ConvertTo-GeneXusObjectListPreflightLogSection {
+    param($PreflightResult)
+
+    if ($null -eq $PreflightResult -or -not $PreflightResult.preflightEnabled) {
+        return $null
+    }
+
+    return [ordered]@{
+        gateContext         = $PreflightResult.gateContext
+        preflightEnabled    = $PreflightResult.preflightEnabled
+        preflightSkipped    = $PreflightResult.preflightSkipped
+        preflightSkipReason = $PreflightResult.preflightSkipReason
+        parallelKbRoot      = $PreflightResult.parallelKbRoot
+        lastIndexBuildAt    = $PreflightResult.lastIndexBuildAt
+        items               = @($PreflightResult.preflightItems)
+    }
+}
+
+function New-GeneXusObjectListPreflightSkippedResult {
+    param(
+        [string]$GateContext,
+        [string]$PreflightSkipReason,
+        [string]$ParallelKbRoot
+    )
+
+    return [pscustomobject]@{
+        gateContext         = $GateContext
+        preflightEnabled    = $false
+        preflightSkipped    = $true
+        preflightSkipReason = $PreflightSkipReason
+        block               = $false
+        exitCode            = 0
+        indexPath           = $null
+        parallelKbRoot      = $ParallelKbRoot
+        preflightItems      = @()
+        blockingReasons     = @()
+        warnings            = @()
+    }
+}
+
 function Invoke-GeneXusObjectListIdentityPreflight {
     param(
+        [ValidateSet('export', 'import')]
+        [string]$GateContext = 'export',
         [string]$ObjectList,
         [string]$ExportAll,
         [bool]$FullExportRequested,
+        [string]$IncludeItems,
         [string]$ParallelKbRoot,
         [string]$IndexPath,
         [string]$CatalogOverridePath,
         [string]$BaseCatalogPath
     )
 
-    $selective = Test-IsSelectiveGeneXusXpzExport `
-        -ObjectList $ObjectList `
-        -ExportAll $ExportAll `
-        -FullExportRequested $FullExportRequested
+    $itemListText = $null
+    $selective = $false
+    $skipReason = $null
+
+    if ($GateContext -eq 'import') {
+        $selective = Test-IsSelectiveGeneXusXpzImport -IncludeItems $IncludeItems
+        if ($selective) {
+            $itemListText = Convert-GeneXusMsBuildItemFilterToObjectListText -FilterText $IncludeItems
+        } else {
+            $skipReason = 'import_not_selective'
+        }
+    } else {
+        $selective = Test-IsSelectiveGeneXusXpzExport `
+            -ObjectList $ObjectList `
+            -ExportAll $ExportAll `
+            -FullExportRequested $FullExportRequested
+        if ($selective) {
+            $itemListText = $ObjectList
+        } else {
+            $skipReason = 'export_not_selective'
+        }
+    }
 
     if (-not $selective) {
-        return [pscustomobject]@{
-            preflightEnabled  = $false
-            preflightSkipped  = $true
-            preflightSkipReason = 'export_not_selective'
-            block             = $false
-            exitCode          = 0
-            indexPath         = $null
-            parallelKbRoot    = $ParallelKbRoot
-            preflightItems    = @()
-            blockingReasons   = @()
-            warnings          = @()
-        }
+        return (New-GeneXusObjectListPreflightSkippedResult `
+            -GateContext $GateContext `
+            -PreflightSkipReason $skipReason `
+            -ParallelKbRoot $ParallelKbRoot)
     }
 
     $resolvedParallel = if ([string]::IsNullOrWhiteSpace($ParallelKbRoot)) { $null } else { [System.IO.Path]::GetFullPath($ParallelKbRoot) }
@@ -326,6 +410,7 @@ function Invoke-GeneXusObjectListIdentityPreflight {
 
     if ([string]::IsNullOrWhiteSpace($resolvedIndex)) {
         return [pscustomobject]@{
+            gateContext         = $GateContext
             preflightEnabled    = $true
             preflightSkipped    = $false
             preflightSkipReason = $null
@@ -334,7 +419,7 @@ function Invoke-GeneXusObjectListIdentityPreflight {
             indexPath           = $null
             parallelKbRoot      = $resolvedParallel
             preflightItems      = @()
-            blockingReasons     = @('Export seletivo exige -ParallelKbRoot ou -IndexPath do índice KbIntelligence.')
+            blockingReasons     = @('Operação seletiva MSBuild com lista Tipo:Nome exige -ParallelKbRoot ou -IndexPath do índice KbIntelligence.')
             warnings            = @()
         }
     }
@@ -346,6 +431,7 @@ function Invoke-GeneXusObjectListIdentityPreflight {
 
     if (-not $indexReady.ok) {
         return [pscustomobject]@{
+            gateContext         = $GateContext
             preflightEnabled    = $true
             preflightSkipped    = $false
             preflightSkipReason = $null
@@ -365,7 +451,7 @@ function Invoke-GeneXusObjectListIdentityPreflight {
         -CatalogOverridePath $CatalogOverridePath `
         -ParallelKbRoot $resolvedParallel
 
-    $items = @(Read-GeneXusObjectListItemsFromText -Text $ObjectList)
+    $items = @(Read-GeneXusObjectListItemsFromText -Text $itemListText)
     $preflightItems = [System.Collections.Generic.List[object]]::new()
     $blockingReasons = [System.Collections.Generic.List[string]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
@@ -406,6 +492,7 @@ function Invoke-GeneXusObjectListIdentityPreflight {
     $block = $blockingReasons.Count -gt 0
 
     return [pscustomobject]@{
+        gateContext         = $GateContext
         preflightEnabled    = $true
         preflightSkipped    = $false
         preflightSkipReason = $null

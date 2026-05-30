@@ -852,14 +852,7 @@ try {
                 LogPath = $resolvedLogPath
                 KbIntelligenceIndexPath = $preflightResult.indexPath
             }
-            objectListPreflight = [ordered]@{
-                preflightEnabled = $preflightResult.preflightEnabled
-                preflightSkipped = $preflightResult.preflightSkipped
-                preflightSkipReason = $preflightResult.preflightSkipReason
-                parallelKbRoot = $preflightResult.parallelKbRoot
-                lastIndexBuildAt = $preflightResult.lastIndexBuildAt
-                items = @($preflightResult.preflightItems)
-            }
+            objectListPreflight = ConvertTo-GeneXusObjectListPreflightLogSection -PreflightResult $preflightResult
             pathActions = $probeStage.Diagnostic.pathActions
             artifacts = [ordered]@{
                 ProbeLogPath = $probeLogPath
@@ -1216,18 +1209,7 @@ try {
             LogPath = $resolvedLogPath
             KbIntelligenceIndexPath = if ($preflightResult.preflightEnabled) { $preflightResult.indexPath } else { $null }
         }
-        objectListPreflight = if ($preflightResult.preflightEnabled) {
-            [ordered]@{
-                preflightEnabled = $preflightResult.preflightEnabled
-                preflightSkipped = $preflightResult.preflightSkipped
-                preflightSkipReason = $preflightResult.preflightSkipReason
-                parallelKbRoot = $preflightResult.parallelKbRoot
-                lastIndexBuildAt = $preflightResult.lastIndexBuildAt
-                items = @($preflightResult.preflightItems)
-            }
-        } else {
-            $null
-        }
+        objectListPreflight = ConvertTo-GeneXusObjectListPreflightLogSection -PreflightResult $preflightResult
         pathActions = $probeStage.Diagnostic.pathActions
         artifacts = [ordered]@{
             ProbeLogPath = $probeLogPath

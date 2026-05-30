@@ -659,3 +659,14 @@ Prompt de agente na pasta paralela FabricaBrasil e frente P3+P4/P5: exit 48 e `e
 ### Decisão final
 
 Não bloquear só por `not_in_index` (objeto pode existir apenas na KB nativa antes do sync). Import espelhado (P1 v2) ficou fora desta entrega.
+
+## Pré-validação KbIntelligence no import seletivo (P1 v2)
+
+**Importância original:** alta (simetria com P1 export; homônimo antes do MSBuild Import)
+**Status:** concluída em 2026-05-30
+
+### Implementação
+
+- `GeneXusObjectListIdentityPreflight.ps1`: `GateContext` `export`|`import`; `Split-GeneXusMsBuildItemFilter`; disparo com `-IncludeItems`.
+- `Invoke-GeneXusXpzImport.ps1` e `Test-GeneXusXpzImportPreview.ps1`: `-ParallelKbRoot`, `-IndexPath`, `-CatalogOverridePath`; estágio `pre-import-identity`; `objectListPreflight` com `gateContext=import`.
+- Exit **35** estendido em `msbuild-exit-codes.catalog.json`; self-test ampliado; docs `02`, `08`, `10a`, `xpz-msbuild-import-export/SKILL.md`.
