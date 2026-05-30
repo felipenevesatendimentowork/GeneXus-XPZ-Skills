@@ -160,16 +160,26 @@ foreach ($selfTestPath in $selfTestChangedPaths) {
         }
     }
 
-    $motorMentioned = $false
+    $existingMotorCandidates = [System.Collections.Generic.List[string]]::new()
     foreach ($motorCandidate in $motorCandidates) {
+        $candidatePath = Join-Path (Join-Path $resolvedRoot 'scripts') $motorCandidate
+        if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+            $existingMotorCandidates.Add($motorCandidate) | Out-Null
+        }
+    }
+
+    $motorMentioned = $false
+    foreach ($motorCandidate in $existingMotorCandidates) {
         if ($publicTraceabilityText -match [regex]::Escape($motorCandidate)) {
             $motorMentioned = $true
             break
         }
     }
 
-    if ($publicTraceabilityText -match [regex]::Escape($selfTestBaseName) -and -not $motorMentioned) {
-        $motorList = ($motorCandidates -join ', ')
+    if ($existingMotorCandidates.Count -gt 0 -and
+        $publicTraceabilityText -match [regex]::Escape($selfTestBaseName) -and
+        -not $motorMentioned) {
+        $motorList = ($existingMotorCandidates -join ', ')
         Add-Finding -Target $findings -Code 'PUBLIC_TRACEABILITY_AGGREGATED_ROLE_RISK' -Path $selfTestPath -Message ("09 menciona a bateria {0}, mas nao menciona o motor correspondente ({1}); avaliar rastreabilidade agregada demais." -f $selfTestBaseName, $motorList)
     }
 }
