@@ -249,6 +249,29 @@ function New-PackageInventoryResult {
             $summary.requestedItemsMissing = @($delta.requestedItemsMissing | ForEach-Object {
                 if ($null -ne $_.typeName -and $null -ne $_.name) { '{0}:{1}' -f $_.typeName, $_.name }
             })
+            $aliasResolutionCount = 0
+            if ($null -ne $delta.PSObject.Properties['aliasResolutionCount']) {
+                $aliasResolutionCount = [int]$delta.aliasResolutionCount
+            } elseif ($null -ne $delta.PSObject.Properties['aliasResolutions']) {
+                $aliasResolutionCount = @($delta.aliasResolutions).Count
+            }
+            $summary.aliasResolutionCount = $aliasResolutionCount
+            if ($aliasResolutionCount -gt 0 -and $null -ne $delta.PSObject.Properties['aliasResolutions']) {
+                $aliasLines = @($delta.aliasResolutions | ForEach-Object {
+                    if ($null -ne $_.declaredTypeName -and $null -ne $_.declaredName -and $null -ne $_.inventoryTypeName) {
+                        '{0}:{1} -> {2}:{3}' -f $_.declaredTypeName, $_.declaredName, $_.inventoryTypeName, $_.declaredName
+                    }
+                })
+                if ($aliasResolutionCount -le 50) {
+                    $summary.aliasResolutions = @($aliasLines)
+                } else {
+                    $summary.aliasResolutions = @()
+                    $summary.aliasResolutionsTruncated = $true
+                }
+                if (-not [string]::IsNullOrWhiteSpace($result.packageInventoryPath)) {
+                    $summary.aliasResolutionsFullListAt = $result.packageInventoryPath
+                }
+            }
             $summary.extrasCount = [int]$delta.extraCount
             $summary.deltaStatus = [string]$delta.status
             $extrasLines = @($delta.extraObjects | ForEach-Object {

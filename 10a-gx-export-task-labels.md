@@ -8,12 +8,28 @@ Documento de divergências entre o vocabulário aceito pela task MSBuild `Export
 
 - Montar `-ObjectList` com o **rótulo da task Export**, não com o nome do tipo no catálogo ou no índice, quando existir divergência documentada abaixo.
 - Consultar `exportTaskLabel` em `scripts/gx-object-type-catalog.json` quando o consumidor montar lista a partir do catálogo ou de `search-objects` / `list-by-type`.
-- O inventário pós-export (`packageInventory`, `Get-GeneXusImportPackageObjectInventory.ps1`) classifica objetos pelo **catálogo/GUID** (`WorkWithForWeb` para `78cecefe-...`). Após export com `-ObjectList "WorkWith:Nome"`, o par no pacote aparece como `WorkWithForWeb:Nome` — isso **não** é falha de export; o confronto delta estrito `Tipo:Nome` pode marcar `requestedItemsMissing` para `WorkWith:Nome` mesmo com o objeto presente. Usar `package-inventory.json` (`nominalInventoryAt`), `objectsByType` ou comparar só o `Nome` quando o rótulo Export for conhecido; `extrasSample` cobre só extras de `<Objects>` no resumo JSON, não atributos top-level.
+- O inventário pós-export (`packageInventory`, `Get-GeneXusImportPackageObjectInventory.ps1`) classifica objetos pelo **catálogo/GUID** (`WorkWithForWeb` para `78cecefe-...`). Após export com `-ObjectList "WorkWith:Nome"`, o par no pacote aparece como `WorkWithForWeb:Nome` — isso **não** é falha de export. O motor de inventário reconcilia via `deltaComparison.aliasResolutions[]` quando existir `exportTaskLabel` no catálogo (regra `exportTaskLabel`: declarado `WorkWith:Nome` ↔ inventário `WorkWithForWeb:Nome`); `requestedItemsFound` / `missingCount` já refletem o alias. Resumo compacto em `packageInventory` (`aliasResolutionCount`, `aliasResolutions` ou `aliasResolutionsFullListAt` no sidecar).
 - Em importação, equivalências diferentes podem existir (ex.: `Panel` vs `SDPanel` em `itemAliasMatches` — ver `10-base-operacional-msbuild-headless.md`); não assumir que o mesmo alias vale na exportação.
+
+## Contrato `deltaComparison.aliasResolutions[]`
+
+Presente quando há delta declarado (`-DeclaredDeltaItems` / `-DeclaredDeltaPath`). Lista vazia `[]` quando nenhum par foi reconciliado por alias.
+
+Cada entrada (exemplo):
+
+| Campo | Exemplo |
+|-------|---------|
+| `declaredTypeName` / `declaredName` / `declaredKey` | `WorkWith`, `Cliente`, `workwith:cliente` |
+| `inventoryTypeName` / `inventoryName` / `inventoryKey` | `WorkWithForWeb`, `Cliente`, `workwithforweb:cliente` |
+| `rule` | `exportTaskLabel` |
+| `exportTaskLabel` | `WorkWith` |
+| `catalogTypeName` / `catalogTypeGuid` | `WorkWithForWeb`, `78cecefe-...` |
+
+Efeito: o declarado entra em `requestedItemsFound`; deixa `requestedItemsMissing`; a chave do inventário não conta como **extra** por divergência de rótulo. Não cobre homônimo nem fallback silencioso sem regra no catálogo.
 
 ## Fallback silencioso por nome vs divergência de rótulo
 
-- **Divergência de rótulo** (este documento): lista com `exportTaskLabel` da task (`WorkWith:Nome`) e pacote com tipo do catálogo (`WorkWithForWeb:Nome`) — export correto; `requestedItemsMissing` estrito é falso negativo até confronto por alias no inventário.
+- **Divergência de rótulo** (este documento): lista com `exportTaskLabel` da task (`WorkWith:Nome`) e pacote com tipo do catálogo (`WorkWithForWeb:Nome`) — export correto; o motor preenche `aliasResolutions[]` conforme tabela acima.
 - **Fallback silencioso por nome** (anti-padrão em `xpz-msbuild-import-export/SKILL.md`): a task GeneXus (ou camada equivalente) resolve por nome global ignorando o tipo pedido, ou entrega objeto homônimo de outro tipo, **sem** `invalidTypesRejected` / Categoria B — `exitCode=0` engana se o agente não confrontar identidade no inventário e, quando possível, no índice antes do MSBuild.
 - **Tipo inválido no log** (`WorkWithForWeb:Nome` com `error : ... is not a valid type`): **não** é silêncio — wrapper rebaixa para **exit 48**; ver Categorias A/B na skill MSBuild.
 
@@ -41,7 +57,7 @@ Para cada candidato em KB com instância real:
 
 - `invalidTypesRejected` vazio no top-level de `export.json`
 - Nenhuma linha `error : ... is not a valid type` em `msbuild.stdout.log` / `exportErrors`
-- Objeto alvo presente no XPZ (ver `objectsByType` / inventário; não depender só de `requestedItemsFound` quando o `Tipo` da lista for `WorkWith` e o pacote reportar `WorkWithForWeb`)
+- Objeto alvo presente no XPZ (ver `objectsByType` / inventário; com lista `WorkWith:Nome`, conferir `aliasResolutions[]` ou `requestedItemsFound` — não tratar `requestedItemsMissing` isolado como falha quando o alias estiver registrado)
 
 ## Referências
 

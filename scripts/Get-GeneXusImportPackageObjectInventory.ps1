@@ -273,6 +273,70 @@ function Get-ObjectsByTypeMap {
     return $map
 }
 
+function Resolve-GeneXusExportTaskLabelAliasMatches {
+    param(
+        [object[]]$DeclaredItems,
+        [object[]]$ObjectItems,
+        [System.Collections.Generic.HashSet[string]]$InventoryKeys,
+        [object[]]$AliasRules
+    )
+
+    $resolutions = [System.Collections.Generic.List[object]]::new()
+    $consumedInventoryKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($declared in @($DeclaredItems)) {
+        if ([string]::IsNullOrWhiteSpace($declared.key)) {
+            continue
+        }
+        if ($InventoryKeys.Contains($declared.key)) {
+            continue
+        }
+
+        foreach ($rule in @($AliasRules)) {
+            if (-not $declared.typeName.Equals($rule.exportTaskLabel, [System.StringComparison]::OrdinalIgnoreCase)) {
+                continue
+            }
+
+            $candidates = @(
+                $ObjectItems | Where-Object {
+                    -not [string]::IsNullOrWhiteSpace($_.identityKey) -and
+                    -not [string]::IsNullOrWhiteSpace($_.name) -and
+                    $_.typeName.Equals($rule.catalogTypeName, [System.StringComparison]::OrdinalIgnoreCase) -and
+                    $_.name.Equals($declared.name, [System.StringComparison]::OrdinalIgnoreCase)
+                }
+            )
+            if ($candidates.Count -ne 1) {
+                continue
+            }
+
+            $inventoryItem = $candidates[0]
+            if ($consumedInventoryKeys.Contains($inventoryItem.identityKey)) {
+                continue
+            }
+
+            [void]$consumedInventoryKeys.Add($inventoryItem.identityKey)
+            [void]$resolutions.Add([ordered]@{
+                declaredTypeName  = $declared.typeName
+                declaredName      = $declared.name
+                declaredKey       = $declared.key
+                inventoryTypeName = $inventoryItem.typeName
+                inventoryName     = $inventoryItem.name
+                inventoryKey      = $inventoryItem.identityKey
+                rule              = 'exportTaskLabel'
+                catalogTypeGuid   = $rule.catalogTypeGuid
+                catalogTypeName   = $rule.catalogTypeName
+                exportTaskLabel   = $rule.exportTaskLabel
+            })
+            break
+        }
+    }
+
+    return [pscustomobject]@{
+        Resolutions             = @($resolutions)
+        ConsumedInventoryKeys   = $consumedInventoryKeys
+    }
+}
+
 if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
     throw "BLOCK: InputPath nao encontrado: $InputPath"
 }
@@ -281,6 +345,7 @@ $catalogResolution = Resolve-GeneXusObjectTypeCatalogPaths -BaseCatalogPath $Cat
 $CatalogPath = $catalogResolution.BaseCatalogPath
 $guidMap = Get-GeneXusCatalogGuidToTypeMap -MergedCatalog $catalogResolution.MergedCatalog
 $catalogFolderMap = Get-GeneXusCatalogGuidToFolderMap -MergedCatalog $catalogResolution.MergedCatalog
+$exportTaskLabelAliasRules = @(Get-GeneXusExportTaskLabelAliasRules -MergedCatalog $catalogResolution.MergedCatalog)
 
 if (-not $PlatformObjectsCatalogPath) {
     $PlatformObjectsCatalogPath = Join-Path $PSScriptRoot 'gx-platform-objects.json'
@@ -364,12 +429,42 @@ if ($declaredItems.Count -gt 0) {
         }
     }
 
-    $extraKeys = @($inventoryKeys | Where-Object { -not $declaredKeys.Contains($_) } | Sort-Object)
-    $missingKeys = @($declaredKeys | Where-Object { -not $inventoryKeys.Contains($_) } | Sort-Object)
+    $aliasMatchResult = Resolve-GeneXusExportTaskLabelAliasMatches `
+        -DeclaredItems $declaredItems `
+        -ObjectItems $objectItems `
+        -InventoryKeys $inventoryKeys `
+        -AliasRules $exportTaskLabelAliasRules
+    $aliasResolutions = @($aliasMatchResult.Resolutions)
+    $aliasResolvedDeclaredKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($resolution in $aliasResolutions) {
+        if (-not [string]::IsNullOrWhiteSpace($resolution.declaredKey)) {
+            [void]$aliasResolvedDeclaredKeys.Add($resolution.declaredKey)
+        }
+    }
+
+    $extraKeys = @(
+        $inventoryKeys |
+            Where-Object {
+                -not $declaredKeys.Contains($_) -and
+                -not $aliasMatchResult.ConsumedInventoryKeys.Contains($_)
+            } |
+            Sort-Object
+    )
+    $missingKeys = @(
+        $declaredKeys |
+            Where-Object { -not $inventoryKeys.Contains($_) -and -not $aliasResolvedDeclaredKeys.Contains($_) } |
+            Sort-Object
+    )
     $extraObjects = @($objectItems | Where-Object { -not [string]::IsNullOrWhiteSpace($_.identityKey) -and $extraKeys -contains $_.identityKey })
     $uncomparableObjects = @($objectItems | Where-Object { [string]::IsNullOrWhiteSpace($_.identityKey) })
     $missingObjects = @($declaredItems | Where-Object { $missingKeys -contains $_.key })
-    $requestedItemsFound = @($declaredItems | Where-Object { -not [string]::IsNullOrWhiteSpace($_.key) -and $inventoryKeys.Contains($_.key) })
+    $requestedItemsFound = @(
+        $declaredItems | Where-Object {
+            -not [string]::IsNullOrWhiteSpace($_.key) -and (
+                $inventoryKeys.Contains($_.key) -or $aliasResolvedDeclaredKeys.Contains($_.key)
+            )
+        }
+    )
 
     $deltaStatus = if ($extraKeys.Count -eq 0 -and $missingKeys.Count -eq 0 -and $uncomparableObjects.Count -eq 0) { 'MATCH' } else { 'MISMATCH' }
     if ($deltaStatus -eq 'MISMATCH') {
@@ -393,6 +488,8 @@ if ($declaredItems.Count -gt 0) {
         missingObjects      = @($missingObjects)
         uncomparableObjects = @($uncomparableObjects)
         systemObjectsPresent = @($systemObjectsPresent)
+        aliasResolutions    = @($aliasResolutions)
+        aliasResolutionCount = $aliasResolutions.Count
     }
 }
 

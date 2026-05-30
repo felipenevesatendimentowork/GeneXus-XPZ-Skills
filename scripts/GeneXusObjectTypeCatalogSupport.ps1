@@ -150,6 +150,38 @@ function Get-GeneXusCatalogGuidToTypeMap {
     return $map
 }
 
+function Get-GeneXusExportTaskLabelAliasRules {
+    param([object]$MergedCatalog)
+
+    $rules = [System.Collections.Generic.List[object]]::new()
+    foreach ($property in $MergedCatalog.types.PSObject.Properties) {
+        $entry = $property.Value
+        if ($null -eq $entry.PSObject.Properties['exportTaskLabel']) {
+            continue
+        }
+
+        $exportTaskLabel = [string]$entry.exportTaskLabel
+        if ([string]::IsNullOrWhiteSpace($exportTaskLabel)) {
+            continue
+        }
+
+        $folderName = if ($null -ne $entry.PSObject.Properties['folderName'] -and -not [string]::IsNullOrWhiteSpace([string]$entry.folderName)) {
+            [string]$entry.folderName
+        } else {
+            [string]$property.Name
+        }
+
+        [void]$rules.Add([ordered]@{
+            exportTaskLabel = $exportTaskLabel.Trim()
+            catalogTypeName = [string]$property.Name
+            catalogTypeGuid = if ($null -ne $entry.objectTypeGuid) { [string]$entry.objectTypeGuid } else { $null }
+            folderName      = $folderName
+        })
+    }
+
+    return @($rules)
+}
+
 function Get-GeneXusCatalogOverrideSessionReminder {
     param(
         [string]$ParallelKbRoot,

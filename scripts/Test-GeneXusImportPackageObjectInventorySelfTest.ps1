@@ -14,6 +14,7 @@ $packagedModuleGuid = 'c88fffcd-b6f8-0000-8fec-00b5497e2117'
 $procedureGuid = '84a12160-f59b-4ad7-a683-ea4481ac23e9'
 $externalObjectGuid = 'c163e562-42c6-4158-ad83-5b21a14cf30e'
 $transactionGuid = '1db606f2-af09-4cf9-a3b5-b481519d28f6'
+$workWithForWebGuid = '78cecefe-be7d-4980-86ce-8d6e91fba04b'
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('gx-import-inventory-selftest-{0}' -f ([guid]::NewGuid().ToString('N')))
 [void](New-Item -ItemType Directory -Path $tempRoot -Force)
@@ -99,6 +100,49 @@ if (@($resultXpz.systemObjectsPresent).Count -ne 2) { throw 'systemObjectsPresen
 $full = (& $inventoryScript -InputPath $xmlPath -AsJson | ConvertFrom-Json)
 if ($full.selectiveExport) { throw 'selectiveExport deve ser false sem delta' }
 if ($null -ne $full.deltaComparison) { throw 'deltaComparison deve ser nulo sem delta' }
+
+$exportLabelXml = @"
+<ExportFile>
+  <Objects>
+    <Object type="$workWithForWebGuid" name="MainWW" guid="55555555-5555-5555-5555-555555555501" />
+    <Object type="$procedureGuid" name="ProcExtra" guid="55555555-5555-5555-5555-555555555502" />
+  </Objects>
+</ExportFile>
+"@
+$exportLabelPath = Join-Path $tempRoot 'package-export-label.import_file.xml'
+[System.IO.File]::WriteAllText($exportLabelPath, $exportLabelXml, [System.Text.UTF8Encoding]::new($false))
+$resultAlias = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW' -AsJson | ConvertFrom-Json)
+if ($resultAlias.status -ne 'DELTA_MISMATCH') {
+    throw "status esperado DELTA_MISMATCH (ProcExtra extra); obtido $($resultAlias.status)"
+}
+if ($resultAlias.deltaComparison.missingCount -ne 0) {
+    throw "missingCount esperado 0 com alias exportTaskLabel; obtido $($resultAlias.deltaComparison.missingCount)"
+}
+if ($resultAlias.deltaComparison.aliasResolutionCount -ne 1) {
+    throw "aliasResolutionCount esperado 1; obtido $($resultAlias.deltaComparison.aliasResolutionCount)"
+}
+$alias = @($resultAlias.deltaComparison.aliasResolutions)[0]
+if ($alias.rule -ne 'exportTaskLabel') { throw "alias rule esperado exportTaskLabel; obtido $($alias.rule)" }
+if ($alias.declaredTypeName -ne 'WorkWith' -or $alias.inventoryTypeName -ne 'WorkWithForWeb') {
+    throw 'alias deve ligar WorkWith declarado a WorkWithForWeb no inventario'
+}
+if ($alias.declaredName -ne 'MainWW' -or $alias.exportTaskLabel -ne 'WorkWith') {
+    throw 'alias deve preservar nome e exportTaskLabel'
+}
+if (@($resultAlias.deltaComparison.requestedItemsFound).Count -ne 1) {
+    throw 'requestedItemsFound esperado 1 via alias'
+}
+if (@($resultAlias.deltaComparison.requestedItemsMissing).Count -gt 0) {
+    throw 'requestedItemsMissing deve estar vazio quando alias resolve o pedido'
+}
+
+$resultAliasMatch = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW;Procedure:ProcExtra' -AsJson | ConvertFrom-Json)
+if ($resultAliasMatch.deltaComparison.status -ne 'MATCH') {
+    throw "delta status MATCH esperado com lista completa; obtido $($resultAliasMatch.deltaComparison.status)"
+}
+if ($resultAliasMatch.deltaComparison.aliasResolutionCount -ne 1) {
+    throw 'aliasResolutionCount esperado 1 na lista completa'
+}
 
 Remove-Item -LiteralPath $tempRoot -Recurse -Force
 Write-Output 'GENEXUS_PKG_INVENTORY_SELFTEST_OK'
