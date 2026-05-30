@@ -81,6 +81,7 @@ Eles nao substituem o acervo XML em `ObjetosDaKbEmXml` e nao provam comportament
 - rebuild do indice exige **Python 3.x utilizavel** no `PATH` (resolucao em `scripts/GeneXusPythonPrerequisite.ps1`, chamado por `Build-KbIntelligenceIndex.ps1`)
 - stub `WindowsApps` da Microsoft Store nao conta; ausencia retorna exit `8` com mensagem `PREREQUISITO AUSENTE`
 - falha do motor Python propaga stderr/saida capturada no `throw` do wrapper PowerShell
+- **rigor**: sync XPZ/XML oficial **nao** termina sem indice regenerado — a materializacao em `ObjetosDaKbEmXml` pode ja ter concluido; declarar **fluxo incompleto**, nao sync OK nem falha do pacote exportado; nao autorizar triagem ampla sem indice; ver `README.md`, `08-guia-para-agente-gpt.md` e `xpz-sync`
 
 ## Gerar indice
 
