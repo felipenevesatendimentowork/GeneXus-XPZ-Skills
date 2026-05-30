@@ -20,8 +20,21 @@ Catalogo tecnico canonico de tipos:
 
 - `inventoryEligible=true`: o tipo entra no inventario do indice (objeto listavel em `object-info`, `search-objects`, `list-by-type`) quando houver XML em subpasta de `ObjetosDaKbEmXml`.
 - `queryableByKbIntelligence=true`: consultas semânticas do indice (`who-uses`, `what-uses`, `impact-basic`, `functional-trace-basic`) sao **aptas** para o tipo com o extrator atual — o grafo tende a refletir dependencias tecnicas reais no acervo.
-- `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Exemplos atuais: `SmartDevicesPlus`, `DataStore`, `Generator`, `ThemeClass`, `ThemeColor`, `Folder`, `PatternSettings` (amostra multi-KB: `scripts/Invoke-ParallelKbEnvelopeScan.ps1`).
+- `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Lista canônica: cada entrada em `scripts/gx-object-type-catalog.json` (amostra multi-KB: `scripts/Invoke-ParallelKbEnvelopeScan.ps1`; grafo zero: consulta a `kb-intelligence.sqlite`).
 - `Query-KbIntelligenceIndex.py` recusa `who-uses`, `what-uses`, `impact-basic` e `functional-trace-basic` quando o tipo tem `queryableByKbIntelligence=false`: JSON com `blocked=true`, `reason=QUERY_NOT_SEMANTIC_FOR_TYPE`, exit `11`.
+
+### Tipos com grafo assimétrico (`queryableByKbIntelligence=true`)
+
+Estes tipos **permanecem** aptos a consultas semânticas; o grafo pode ser só de saída, só de entrada ou esparso — **nao** reclassificar como `false` só porque `incoming_relations=0` ou `outgoing_relations=0` em um lado.
+
+| Tipo | Comportamento típico no índice atual | Uso de `impact-basic` |
+| --- | --- | --- |
+| `API` | Quase sempre **origem** (chamadas em `Source`); raramente destino | Informa o que o API dispara |
+| `DataSelector` | Idem `API`, volume menor | Idem |
+| `WorkWithForWeb` | Forte **origem** (actions, links, transação); quase nunca `target_type` WorkWith | Informa dependências que o WW referencia |
+| `ExternalObject` | Pode receber entrada via `ATTCUSTOMTYPE` resolvido; esparsa por KB | `who-uses` pode achar referências; grafo vazio em KB pequena nao prova ausência global |
+
+Nao confundir com tipos `false` (ex.: `Image`, `Theme`, `SubTypeGroup`), em que o extrator **nunca** cria arestas para esse `target_type`.
 
 Escopo de inventario atual:
 

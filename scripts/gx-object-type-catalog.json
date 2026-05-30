@@ -33,18 +33,18 @@
       "rootKind": "Object",
       "folderName": "ColorPalette",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Paleta de cores."
+      "notes": "Paleta de cores (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "Dashboard": {
       "objectTypeGuid": "526aba9f-a725-4bc7-b1db-0b9f92ac9550",
       "rootKind": "Object",
       "folderName": "Dashboard",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Painel visual composto."
+      "notes": "Painel visual composto (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "DataProvider": {
       "objectTypeGuid": "2a9e9aba-d2de-4801-ae7f-5e3819222daf",
@@ -87,27 +87,27 @@
       "rootKind": "Object",
       "folderName": "DeploymentUnit",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Unidade de deploy."
+      "notes": "Unidade de deploy (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "DesignSystem": {
       "objectTypeGuid": "78b3fa0e-174c-4b2b-8716-718167a428b5",
       "rootKind": "Object",
       "folderName": "DesignSystem",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Sistema de design."
+      "notes": "Sistema de design (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "Document": {
       "objectTypeGuid": "faeb588c-dcce-4dad-9af3-cdd11b961a32",
       "rootKind": "Object",
       "folderName": "Document",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Documento GeneXus."
+      "notes": "Documento GeneXus (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "Domain": {
       "objectTypeGuid": "00972a17-9975-449e-aab1-d26165d51393",
@@ -132,9 +132,9 @@
       "rootKind": "Object",
       "folderName": "File",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Arquivo GeneXus."
+      "notes": "Arquivo GeneXus (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "Folder": {
       "objectTypeGuid": "00000000-0000-0000-0000-000000000008",
@@ -159,36 +159,36 @@
       "rootKind": "Object",
       "folderName": "Image",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Imagem."
+      "notes": "Imagem (Part; GUIDs em WW nao viram arestas no indice). queryableByKbIntelligence=false."
     },
     "Language": {
       "objectTypeGuid": "88313f43-5eb2-0000-0028-e8d9f5bf9588",
       "rootKind": "Object",
       "folderName": "Language",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Idioma."
+      "notes": "Idioma (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "Module": {
       "objectTypeGuid": "00000000-0000-0000-0000-000000000006",
       "rootKind": "Object",
       "folderName": "Module",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": true,
-      "notes": "Container de sistema."
+      "notes": "Container de sistema (Part; extrator nao modela dependencia de modulo). queryableByKbIntelligence=false."
     },
     "PackagedModule": {
       "objectTypeGuid": "c88fffcd-b6f8-0000-8fec-00b5497e2117",
       "rootKind": "Object",
       "folderName": "PackagedModule",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": true,
-      "notes": "Modulo empacotado."
+      "notes": "Modulo empacotado (Part; extrator nao modela dependencia). queryableByKbIntelligence=false."
     },
     "RootModule": {
       "objectTypeGuid": "afa47377-41d5-4ae8-9755-6f53150aa361",
@@ -204,9 +204,9 @@
       "rootKind": "Object",
       "folderName": "Panel",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Panel GeneXus."
+      "notes": "Panel GeneXus (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "PatternSettings": {
       "objectTypeGuid": "83476c1e-fa72-4229-9930-f51b954fca2d",
@@ -267,18 +267,18 @@
       "rootKind": "Object",
       "folderName": "Stencil",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Stencil."
+      "notes": "Stencil (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "SubTypeGroup": {
       "objectTypeGuid": "87313f43-5eb2-41d7-9b8c-e8d9f5bf9588",
       "rootKind": "Object",
       "folderName": "SubTypeGroup",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "SubTypeGroup."
+      "notes": "SubTypeGroup (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "Table": {
       "objectTypeGuid": "857ca50e-7905-0000-0007-c5d9ff2975ec",
@@ -294,9 +294,9 @@
       "rootKind": "Object",
       "folderName": "Theme",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Tema."
+      "notes": "Tema (Part; extrator nao modela grafo de Theme/ThemeClass). queryableByKbIntelligence=false."
     },
     "ThemeClass": {
       "objectTypeGuid": "d4876646-98dd-419b-8c1c-896f83c48368",
@@ -330,9 +330,9 @@
       "rootKind": "Object",
       "folderName": "UserControl",
       "inventoryEligible": true,
-      "queryableByKbIntelligence": true,
+      "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "User control."
+      "notes": "User control (Part; extrator atual nao gera arestas). queryableByKbIntelligence=false."
     },
     "WebPanel": {
       "objectTypeGuid": "c9584656-94b6-4ccd-890f-332d11fc2c25",
