@@ -21,6 +21,12 @@
 
 .PARAMETER FailOnValidationFailure
     Return a non-zero exit code when any validation case fails.
+
+.PARAMETER ParallelKbRoot
+    Raiz da pasta paralela da KB; resolve scripts/gx-object-type-catalog.override.json quando existir.
+
+.PARAMETER CatalogOverridePath
+    Caminho explicito do override local; prevalece sobre a deteccao automatica pela pasta paralela.
 #>
 
 param(
@@ -34,7 +40,11 @@ param(
 
     [string]$ValidationCasesPath,
 
-    [switch]$FailOnValidationFailure
+    [switch]$FailOnValidationFailure,
+
+    [string]$ParallelKbRoot,
+
+    [string]$CatalogOverridePath
 )
 
 $ErrorActionPreference = "Stop"
@@ -68,6 +78,12 @@ if ($ValidationCasesPath) {
 }
 if ($FailOnValidationFailure) {
     $arguments += "--fail-on-validation-failure"
+}
+if ($ParallelKbRoot) {
+    $arguments += @("--parallel-kb-root", $ParallelKbRoot)
+}
+if ($CatalogOverridePath) {
+    $arguments += @("--catalog-override-path", $CatalogOverridePath)
 }
 
 & $python.Source @arguments

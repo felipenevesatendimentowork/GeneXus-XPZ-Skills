@@ -12,6 +12,7 @@ O comando `impact-basic` resume dependentes e dependencias diretas do objeto. O 
 Catalogo tecnico canonico de tipos:
 
 - `scripts/gx-object-type-catalog.json`
+- `Regra operacional`: catalogo **efetivo** = base compartilhada + `scripts/gx-object-type-catalog.override.json` na pasta paralela quando existir (override prevalece por tipo canonico); `Build-KbIntelligenceIndex.py` mescla da mesma forma que `Sync-GeneXusXpzToXml.ps1`, com `--parallel-kb-root` ou deteccao automatica quando `--source-root` termina em `ObjetosDaKbEmXml`
 - `Regra operacional`: esse JSON e a fonte tecnica canonica para `Object/@type`, `rootKind`, pasta esperada e elegibilidade de inventario; os `.md` seguem como explicacao editorial e historica
 - `Regra operacional`: `Attribute` so deve ser classificado como tipo canonico do arquivo quando a raiz real for `<Attribute ...>`; ocorrencias inline de `<Attribute>` dentro de `Transaction`, `Table` ou outros XMLs nao redefinem o tipo do objeto
 

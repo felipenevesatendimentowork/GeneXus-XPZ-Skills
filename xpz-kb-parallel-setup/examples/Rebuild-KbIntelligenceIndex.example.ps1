@@ -92,6 +92,7 @@ $params = @{
     SourceRoot           = $SourceRoot
     OutputPath           = $OutputPath
     ValidationReportPath = $ValidationReportPath
+    ParallelKbRoot       = $repoRoot
 }
 
 if ($ValidationCasesPath) {

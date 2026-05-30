@@ -111,5 +111,22 @@ if ($namingJson.status -ne 'NAMING_OK') {
     throw "naming esperado NAMING_OK com override; obtido $($namingJson.status)"
 }
 
+$kbIntelDir = Join-Path $parallelRoot 'KbIntelligence'
+[void](New-Item -ItemType Directory -Path $kbIntelDir -Force)
+$sqlitePath = Join-Path $kbIntelDir 'kb-intelligence.sqlite'
+$validationPath = Join-Path $kbIntelDir 'kb-intelligence-validation.json'
+$indexScript = Join-Path $scriptDir 'Build-KbIntelligenceIndex.ps1'
+& $indexScript `
+    -SourceRoot $objetosPath `
+    -OutputPath $sqlitePath `
+    -ValidationReportPath $validationPath `
+    -ParallelKbRoot $parallelRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "Build-KbIntelligenceIndex com override deveria passar; exit $LASTEXITCODE"
+}
+if (-not (Test-Path -LiteralPath $sqlitePath -PathType Leaf)) {
+    throw 'SQLite do indice nao foi gerado com override'
+}
+
 Write-Output 'OK: Test-GeneXusUnknownTypeDiscoverySelfTest.ps1'
 exit 0
