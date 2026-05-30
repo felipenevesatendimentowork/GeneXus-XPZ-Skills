@@ -5,8 +5,9 @@
 
 .DESCRIPTION
     Coordena contexto git (commits pendentes, diff --check, arquivos alterados),
-    delega parse PowerShell a scripts/Test-PsScriptsParse.ps1 e classifica
-    arquivos do diff para insumo da fase semantica do agente.
+    delega parse PowerShell a scripts/Test-PsScriptsParse.ps1, parse Python
+    sem bytecode a scripts/Test-PyScriptsParse.ps1 e classifica arquivos do
+    diff para insumo da fase semantica do agente.
 
     Nao substitui busca de coerencia cruzada, regra em camadas de skills longas
     nem relatorio final ao usuario — ver 13-revisao-pre-push.md (AGENTS.md aponta para esse arquivo).
@@ -310,6 +311,15 @@ $parseGate = [ordered]@{
     findings   = @()
 }
 
+$pythonParseGate = [ordered]@{
+    script     = 'scripts/Test-PyScriptsParse.ps1'
+    status     = 'skipped'
+    exitCode   = $null
+    fileCount  = $null
+    errorCount = $null
+    findings   = @()
+}
+
 $traceabilityCoverageGate = [ordered]@{
     script   = 'scripts/Test-PrePushTraceabilityCoverage.ps1'
     status   = 'skipped'
@@ -352,6 +362,33 @@ if (-not $SkipParse) {
 
     if ($parseExitCode -ne 0) {
         [void]$mechanicalFailures.Add('parse')
+    }
+
+    $pythonParseScript = Join-Path $PSScriptRoot 'Test-PyScriptsParse.ps1'
+    if (Test-Path -LiteralPath $pythonParseScript -PathType Leaf) {
+        $previousErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        $pythonParseOutput = & $pythonParseScript -RootPath $resolvedRoot -AsJson 2>&1
+        $pythonParseExitCode = $LASTEXITCODE
+        $ErrorActionPreference = $previousErrorAction
+
+        $pythonParseJsonText = ($pythonParseOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+        $pythonParseObject = $null
+        if (-not [string]::IsNullOrWhiteSpace($pythonParseJsonText)) {
+            $pythonParseObject = $pythonParseJsonText | ConvertFrom-Json
+        }
+
+        $pythonParseGate.status = if ($pythonParseExitCode -eq 0) { 'pass' } else { 'fail' }
+        $pythonParseGate.exitCode = $pythonParseExitCode
+        if ($null -ne $pythonParseObject) {
+            $pythonParseGate.fileCount = $pythonParseObject.fileCount
+            $pythonParseGate.errorCount = $pythonParseObject.errorCount
+            $pythonParseGate.findings = @($pythonParseObject.findings)
+        }
+
+        if ($pythonParseExitCode -ne 0) {
+            [void]$mechanicalFailures.Add('pythonParse')
+        }
     }
 }
 
@@ -418,6 +455,7 @@ $intervalDiffDiagnosticOnly = ($commitsBehind -gt 0)
 $agentOperationalReminders = @(
     'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos; sem fetch, commitsBehind pode ficar 0 com remoto real ja adiantado.',
     'Parse (Test-PsScriptsParse.ps1) varre todo scripts/ e *.example.ps1 fora de historico/, nao apenas o diff do intervalo.',
+    'Parse Python (Test-PyScriptsParse.ps1) usa AST e nao gera __pycache__/*.pyc.',
     'Com commitsAhead=0 nao ha diff no intervalo; pre-push nao substitui revisao de alteracoes so na working tree (ver avisos de worktree).',
     'exit 0 mecanico nao autoriza push: ler PUSH_READINESS; com blocked, integrar remoto antes do push.',
     'Com PUSH_READINESS=blocked, diff/arquivos do intervalo sao diagnosticos; fase semantica sobre commits locais continua obrigatoria.',
@@ -522,6 +560,7 @@ $result = [ordered]@{
     }
     gates                  = [ordered]@{
         parse                = $parseGate
+        pythonParse          = $pythonParseGate
         traceabilityCoverage = $traceabilityCoverageGate
         msBuildProbeDocParity = $msBuildProbeDocParityGate
     }
@@ -575,6 +614,14 @@ if ($AsJson) {
         Write-Output ("PARSE_FILES={0} PARSE_ERRORS={1}" -f $parseGate.fileCount, $parseGate.errorCount)
         foreach ($finding in @($parseGate.findings)) {
             Write-Output ("PARSE_ERROR: {0}:{1}:{2}: {3}" -f $finding.file, $finding.line, $finding.column, $finding.message)
+        }
+    }
+
+    Write-Output ("PYTHON_PARSE_GATE={0}" -f $pythonParseGate.status)
+    if ($pythonParseGate.status -ne 'skipped') {
+        Write-Output ("PYTHON_PARSE_FILES={0} PYTHON_PARSE_ERRORS={1}" -f $pythonParseGate.fileCount, $pythonParseGate.errorCount)
+        foreach ($finding in @($pythonParseGate.findings)) {
+            Write-Output ("PY_PARSE_ERROR: {0}:{1}:{2}: {3}" -f $finding.file, $finding.line, $finding.column, $finding.message)
         }
     }
 

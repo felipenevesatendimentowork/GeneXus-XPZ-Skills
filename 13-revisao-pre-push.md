@@ -10,7 +10,7 @@ A rotina pré-push é de **análise, busca de coerência e relatório** ao usuá
 
 ## Passo mecânico inicial
 
-Executar `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` quando o chamador for agente). Por padrão o script compara a branch atual com `origin/main` — ou seja, **tudo que foi commitado localmente e ainda não foi enviado ao remoto** (desde o último push usual em `main`). Contagem de commits, lista de commits, arquivos alterados e `git diff --check` usam **o mesmo** intervalo (`BaseRef..HEAD`, com `BaseRef` default `origin/main`); não altere `-BaseRef` salvo necessidade explícita. O script classifica os arquivos **do diff desse intervalo** e delega parse a `scripts/Test-PsScriptsParse.ps1` — **sem** substituir a busca semântica abaixo. O orquestrador **avisa** (sem falhar o gate mecânico) se a branch não for `main` ou se a working tree tiver alterações não commitadas fora desse intervalo.
+Executar `scripts/Invoke-PrePushMechanicalChecks.ps1` em `pwsh` 7.4+ (`-AsJson` quando o chamador for agente). Por padrão o script compara a branch atual com `origin/main` — ou seja, **tudo que foi commitado localmente e ainda não foi enviado ao remoto** (desde o último push usual em `main`). Contagem de commits, lista de commits, arquivos alterados e `git diff --check` usam **o mesmo** intervalo (`BaseRef..HEAD`, com `BaseRef` default `origin/main`); não altere `-BaseRef` salvo necessidade explícita. O script classifica os arquivos **do diff desse intervalo**, delega parse PowerShell a `scripts/Test-PsScriptsParse.ps1` e parse Python sem bytecode a `scripts/Test-PyScriptsParse.ps1` — **sem** substituir a busca semântica abaixo. O orquestrador **avisa** (sem falhar o gate mecânico) se a branch não for `main` ou se a working tree tiver alterações não commitadas fora desse intervalo.
 
 ### Forma canônica de invocação do orquestrador
 
@@ -21,7 +21,8 @@ Usar **uma e apenas uma** destas formas literais:
 
 ### Limites do passo mecânico (evitar leituras erradas)
 
-- **Parse:** `Test-PsScriptsParse.ps1` varre **todo** o repositório ativo (`scripts/*.ps1` e `*.example.ps1` fora de `historico/`) — gate de saúde do repo, **não** limitado ao diff do intervalo. Pode falhar o mecânico com `commitsAhead=0` se houver script quebrado fora do que mudou.
+- **Parse PowerShell:** `Test-PsScriptsParse.ps1` varre **todo** o repositório ativo (`scripts/*.ps1` e `*.example.ps1` fora de `historico/`) — gate de saúde do repo, **não** limitado ao diff do intervalo. Pode falhar o mecânico com `commitsAhead=0` se houver script quebrado fora do que mudou.
+- **Parse Python:** `Test-PyScriptsParse.ps1` varre `scripts/*.py` e usa `ast.parse`, sem `py_compile` e sem gerar `__pycache__/*.pyc`; falha de escrita em bytecode não deve bloquear validação de sintaxe.
 - **Working tree:** com `commitsAhead=0` não há diff nem `git diff --check` no intervalo («nada commitado pendente de push»). A pré-push **não** substitui revisão de alterações **só** na working tree; o orquestrador avisa contagens, mas não analisa esses arquivos no intervalo.
 - **`exit 0` vs push:** `exit 0` do orquestrador **não** significa «pode dar push» nem pré-push concluída. Ler `PUSH_READINESS` (e `pushReadiness` no JSON): com `blocked`, push fica proibido até integrar o remoto, mesmo com parse/whitespace limpos.
 - **`pushReadiness=blocked`:** bloqueia **push** e torna diff/arquivos do intervalo apenas diagnósticos; **não** dispensa a fase semântica sobre os commits locais ainda pendentes — continuar o relatório de coerência cruzada.
@@ -129,6 +130,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | Script | Papel |
 | --- | --- |
 | `scripts/Invoke-PrePushMechanicalChecks.ps1` | Orquestrador mecânico (git, parse, avisos) |
+| `scripts/Test-PyScriptsParse.ps1` | Parse AST de `scripts/*.py` sem gerar bytecode |
 | `scripts/Test-PrePushTraceabilityCoverage.ps1` | Rastreabilidade editorial + paridade motor/doc (consultivo) |
 | `scripts/Test-PrePushMsBuildProbeDocParity.ps1` | Paridade MSBuild probe (quando aplicável) |
 
