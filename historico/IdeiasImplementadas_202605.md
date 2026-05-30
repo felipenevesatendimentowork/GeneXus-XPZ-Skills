@@ -638,3 +638,24 @@ Ideia em `999-ideias-pendentes.md` (`exportTaskLabel` para `DataView` e tipos SD
 ### Decisão final
 
 Fechar a ideia pendente de `DataView`/SDP sem label inventado: campanha executada; ausência de espécime ou de evidência de divergência permanece estado honesto. Reabrir só com KB que materialize instância ou falha MSBuild reproduzível.
+
+## Pré-validação KbIntelligence no export seletivo (P1)
+
+**Importância original:** alta (anti-padrão fallback silencioso por nome)
+**Status:** concluída em 2026-05-30
+
+### Origem
+
+Prompt de agente na pasta paralela FabricaBrasil e frente P3+P4/P5: exit 48 e `exportTaskLabel` não cobrem homônimo nem objeto ausente no acervo com MSBuild aparentemente limpo.
+
+### Implementação
+
+- `scripts/GeneXusObjectListIdentityPreflight.ps1`: parse `Tipo:Nome`, `object-info` + `search-objects`, vereditos `ok` / `ambiguous` / `not_in_index`.
+- `Invoke-GeneXusXpzExport.ps1`: parâmetros `-ParallelKbRoot`, `-IndexPath`, `-CatalogOverridePath`; export seletivo **exige** índice (Opção C); homônimo ou índice inválido → **exit 35**; `not_in_index` → aviso e segue MSBuild.
+- `objectListPreflight` no `export.json`; `scripts/msbuild-exit-codes.catalog.json` exit 35.
+- `Run-ExportTaskLabelMatrix.ps1` / campanha P5: repasse de `-ParallelKbRoot`.
+- `scripts/Test-GeneXusObjectListIdentityPreflightSelfTest.ps1`; alinhamento em `xpz-msbuild-import-export/SKILL.md`, `02`, `08`.
+
+### Decisão final
+
+Não bloquear só por `not_in_index` (objeto pode existir apenas na KB nativa antes do sync). Import espelhado (P1 v2) ficou fora desta entrega.

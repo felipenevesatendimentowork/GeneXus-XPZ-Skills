@@ -165,6 +165,21 @@
       "jsonHints": ["stage", "blockingReasons"]
     },
     {
+      "exit": 35,
+      "category": "artefato",
+      "summary": "Export seletivo: pre-validacao de identidade no indice KbIntelligence bloqueou (indice ausente/obrigatorio, indice invalido ou homonimia).",
+      "wrappers": ["Invoke-GeneXusXpzExport.ps1"],
+      "stage": "pre-export-identity",
+      "jsonHints": [
+        "objectListPreflight",
+        "objectListPreflight.items",
+        "resolvedPaths.KbIntelligenceIndexPath",
+        "requestedContext.ParallelKbRoot",
+        "requestedContext.IndexPath",
+        "blockingReasons"
+      ]
+    },
+    {
       "exit": 40,
       "category": "classificado-build",
       "summary": "BuildAll: KB inacessivel antes do build. SpecifyGenerate: KB inacessivel ou SpecifyAll nao iniciou.",

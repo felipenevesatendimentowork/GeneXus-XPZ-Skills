@@ -16,6 +16,8 @@ param(
 
     [string]$KbId = 'unknown',
 
+    [string]$ParallelKbRoot,
+
     [string]$OutputDirectory,
 
     [string]$GeneXusDir,
@@ -81,6 +83,7 @@ foreach ($objectList in $candidates) {
         ObjectList        = $objectList
         ExportAll         = 'false'
     }
+    if (-not [string]::IsNullOrWhiteSpace($ParallelKbRoot)) { $exportArgs.ParallelKbRoot = $ParallelKbRoot }
     if (-not [string]::IsNullOrWhiteSpace($GeneXusDir)) { $exportArgs.GeneXusDir = $GeneXusDir }
     if (-not [string]::IsNullOrWhiteSpace($MsBuildPath)) { $exportArgs.MsBuildPath = $MsBuildPath }
 

@@ -62,6 +62,7 @@ foreach ($typeRow in $testable) {
     $chosen = $typeRow.chosenSpecimen
     $kbId = [string]$chosen.kbId
     $kbPath = [string]$chosen.kbPath
+    $parallelKbRoot = [string]$chosen.parallelKbRoot
     $specimen = [string]$chosen.specimenName
 
     $safeType = ($catalogTypeName -replace '[^\w\-]', '_')
@@ -84,6 +85,7 @@ foreach ($typeRow in $testable) {
             SpecimenObjectName = $specimen
             KbPath             = $kbPath
             KbId               = $kbId
+            ParallelKbRoot     = $parallelKbRoot
             OutputDirectory    = $outDir
         }
         if (-not [string]::IsNullOrWhiteSpace($GeneXusDir)) { $matrixParams.GeneXusDir = $GeneXusDir }
