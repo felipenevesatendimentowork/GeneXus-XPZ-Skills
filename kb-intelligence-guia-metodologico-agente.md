@@ -46,13 +46,14 @@ O KB Intelligence pode reduzir custo de busca, orientar a trilha de leitura e or
 
 1. executar `object-info` para confirmar existencia e caminho do objeto
 2. se o nome ou tipo ainda estiver incerto, executar `search-objects`
-3. executar `impact-basic` para obter dependentes e dependencias diretas
-4. escolher apenas as relacoes que mudam a trilha de leitura
-5. executar `show-evidence` nessas relacoes
-6. abrir o XML oficial somente nos pontos necessarios
-7. responder separando evidencia direta, leitura adicional, inferencia forte e hipotese
+3. antes de `who-uses`, `what-uses`, `impact-basic` ou `functional-trace-basic`, conferir no catalogo efetivo (`scripts/gx-object-type-catalog.json` + override local da pasta paralela) se o tipo tem `queryableByKbIntelligence=true`; quando for `false`, o `Query-KbIntelligenceIndex` devolve exit `11` e `blocked=true` — **nao** tratar como zero dependencias; usar `object-info`, `search-objects`, `list-by-type` ou XML pontual
+4. executar `impact-basic` (ou `who-uses` / `what-uses`) **somente** quando o tipo for `queryableByKbIntelligence=true`, para obter dependentes e dependencias diretas; para grafo assimétrico esperado (`API`, `DataSelector`, `WorkWithForWeb`, `ExternalObject`), ver `scripts/README-kb-intelligence.md`
+5. escolher apenas as relacoes que mudam a trilha de leitura
+6. executar `show-evidence` nessas relacoes
+7. abrir o XML oficial somente nos pontos necessarios
+8. responder separando evidencia direta, leitura adicional, inferencia forte e hipotese
 
-Para perguntas funcionais curtas, `functional-trace-basic` pode substituir os passos 1 a 5, mas a resposta final continua exigindo separacao explicita de evidencia e limite.
+Para perguntas funcionais curtas, `functional-trace-basic` pode substituir os passos 1 a 6, respeitando o mesmo gate de `queryableByKbIntelligence` no passo 3; a resposta final continua exigindo separacao explicita de evidencia e limite.
 
 ### Ramo: gravabilidade ou atributo de Transaction (triagem leve)
 
