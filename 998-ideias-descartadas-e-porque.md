@@ -1319,3 +1319,21 @@ Um README agregado em `scripts/` duplicaria descrições já documentadas nas sk
 Para descoberta a partir da raiz, `07-open-points-e-checklist.md` lista os gates determinísticos da Fase 9 do xpz-builder por nome de script, apontando o contrato de uso para a skill `xpz-builder`. Esse já é o ponto de entrada agregado mínimo, sem criar README terciário.
 
 **Não reavaliar** salvo aparição de scripts órfãos sem skill consumidora documentando-os, ou mudança de público (consumo externo direto da pasta `scripts/` por agente que não carrega skill XPZ).
+
+---
+
+## Self-test de regressão com GUIDs Evo1 no catálogo compartilhado
+
+**Origem:** avaliação de prompts externos (KB Evo1, GeneXus 18 U13, pasta paralela remota), 2026-05-30.
+
+**O que era:** estender `Test-GeneXusUnknownTypeDiscoverySelfTest.ps1` (ou script irmão) com XML mínimo contendo os três `Object/@type` descobertos na Evo1 (`DataView`, `SmartDevicesApplication`, `SmartDevicesPlus`) e assert de que `Get-GeneXusUnknownObjectTypesFromExportFile` retorna zero tipos desconhecidos contra `scripts/gx-object-type-catalog.json` — regressão explícita do desbloqueio de sync XPZ/XML daquela KB.
+
+**Por que foi descartada:**
+
+O pedido operacional legítimo do agente remoto era **registrar tipos estáveis no catálogo upstream** (`gx-object-type-catalog.json`, linha em `01a-catalogo-e-padroes-empiricos.md`). Isso já foi atendido (commit `1866c52` e documentação associada). O self-test Evo1 seria camada diferente: fixture **acoplada a uma KB cliente** dentro de base metodológica **genérica** compartilhada.
+
+Precedente do repositório: self-tests em `scripts/` validam **mecanismo e contrato** (ex.: detecção de tipo desconhecido com GUID fictício, override local, schema de `gx-platform-objects.json`), não replay de pacotes reais de KB específica. Evidência Evo1 permanece em `01a` e `09-inventario-e-rastreabilidade-publica.md`; não vira fixture permanente em código.
+
+O risco que o teste Evo1 mitigaria — remoção acidental de entrada no JSON — é erro de **edição do catálogo**, não de lógica de descoberta (já coberta pelo self-test genérico). Um teste genérico de integridade do catálogo (GUIDs únicos, parse JSON, paridade opcional `01a`↔JSON) seria frente distinta e não KB-específica; não foi aberta nesta avaliação.
+
+**Não reavaliar** na forma Evo1-fixture. **Reavaliar apenas** se surgir frente genérica de integridade do catálogo compartilhado (sem nomes de KB, sem snippets de pacote cliente) ou se o mesmo GUID estável reaparecer como bloqueio em **segunda KB independente** após regressão confirmada no upstream.

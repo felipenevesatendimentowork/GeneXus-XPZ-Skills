@@ -185,6 +185,7 @@ Os wrappers seguem esta convenção de parâmetros:
 - quando `kb-source-metadata.md` for atualizado pelo sync, ele deve registrar `last_xpz_materialization_run_at` como horário do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudança material
 - se o `XPZ` vier com `Source` vazio, incompleto ou ausente, o wrapper deve preservar valores estáveis conhecidos e emitir warning de refresh parcial; isso não invalida o sync de objetos
 - depois de materialização XPZ/XML bem-sucedida em `ObjetosDaKbEmXml`, o wrapper local deve acionar compulsoriamente a regeneração/validação do índice derivado por wrapper local de `KbIntelligence`
+- rebuild do índice via `scripts/Build-KbIntelligenceIndex.ps1` exige **Python 3.x utilizável** no `PATH` (`scripts/GeneXusPythonPrerequisite.ps1`; stub da Microsoft Store em `WindowsApps` não conta). Ausência bloqueia o refresh com exit `8` e mensagem `PREREQUISITO AUSENTE` — **rigor**: sync normal **não** terminou; a materialização XPZ/XML pode já ter concluído, mas isso **não** equivale a sucesso do fluxo oficial nem autoriza triagem ampla sem índice. Não tratar como falha do pacote exportado; instalar Python 3.x e rerodar o rebuild (`Rebuild-*KbIntelligenceIndex.ps1`). Ver `README.md`, `02-regras-operacionais-e-runtime.md` e molde `Update-KbFromXpz.example.ps1`
 - evidência clara desse encadeamento significa declaração local explícita no `README.md`/`AGENTS.md` ou chamada observável no próprio wrapper local; não presumir essa capacidade apenas porque a base compartilhada a exige
 - se o wrapper local de regeneração do índice estiver ausente ou defasado, ou se o wrapper de materialização não encadear esse refresh, tratar como bloqueio operacional do sync normal e oferecer ao usuário atualização via `xpz-kb-parallel-setup` antes de seguir
 - não apresentar `sync` seguido de regeneração manual separada do índice como fluxo normal em pasta que adota `KbIntelligence`
@@ -259,6 +260,7 @@ Os wrappers seguem esta convenção de parâmetros:
     - se o rerun sem opcional repetir falha central ou expuser problema fora do
       escopo comparativo, tratar como bloqueio real do sync
 14. Se a materialização XPZ/XML em `ObjetosDaKbEmXml` foi concluída com sucesso e não era `VerifyOnly`, confirmar na saída do wrapper ou em evidência local clara que o refresh compulsório do índice derivado também foi executado
+    - se o rebuild falhar com `PREREQUISITO AUSENTE` / exit `8` do motor Python, declarar **fluxo incompleto** (XMLs possivelmente atualizados, índice pendente); não fechar como sync OK nem como defeito do XPZ
     - em pasta que adota `KbIntelligence`, ausência de evidência do refresh deve ser tratada como falha ou defasagem operacional do wrapper local
     - não compensar essa ausência com rebuild manual separado do índice como se fosse fluxo normal
     - se o wrapper não produzir evidência suficiente do refresh, encerrar com bloqueio de compatibilidade e oferecer atualização via `xpz-kb-parallel-setup`

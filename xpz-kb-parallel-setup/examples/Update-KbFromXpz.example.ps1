@@ -53,6 +53,16 @@ por vírgula para evitar ambiguidade de parser entre shells.
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parâmetro quando
 o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
+.NOTES
+Contrato de conclusao (rigor KbIntelligence; ver xpz-sync e README da base):
+- Sucesso: materializacao XPZ/XML em ObjetosDaKbEmXml e refresh do indice concluidos (exit 0).
+- Falha com mensagem PREREQUISITO AUSENTE: Python 3 utilizavel ausente no rebuild
+  (motor Build-KbIntelligenceIndex.ps1 retorna exit 8). A materializacao pode ter
+  concluido; o fluxo oficial ainda falhou porque o indice nao foi regenerado.
+  Nao tratar como falha do pacote exportado. Instalar Python 3.x e rerodar
+  Rebuild-KbIntelligenceIndex.ps1 antes de triagem ampla ou declaracao de sync OK.
+- Outras falhas: erro de materializacao ou do motor do indice (nao confundir com Python ausente).
+
 .EXAMPLE
 .\Update-KbFromXpz.ps1 -InputPath C:\Exports\MeuPacote.xpz -ExpectedItems 'Transaction:Cliente'
 
