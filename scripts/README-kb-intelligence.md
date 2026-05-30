@@ -16,6 +16,13 @@ Catalogo tecnico canonico de tipos:
 - `Regra operacional`: esse JSON e a fonte tecnica canonica para `Object/@type`, `rootKind`, pasta esperada e elegibilidade de inventario; os `.md` seguem como explicacao editorial e historica
 - `Regra operacional`: `Attribute` so deve ser classificado como tipo canonico do arquivo quando a raiz real for `<Attribute ...>`; ocorrencias inline de `<Attribute>` dentro de `Transaction`, `Table` ou outros XMLs nao redefinem o tipo do objeto
 
+### Flags `inventoryEligible` e `queryableByKbIntelligence`
+
+- `inventoryEligible=true`: o tipo entra no inventario do indice (objeto listavel em `object-info`, `search-objects`, `list-by-type`) quando houver XML em subpasta de `ObjetosDaKbEmXml`.
+- `queryableByKbIntelligence=true`: consultas semânticas do indice (`who-uses`, `what-uses`, `impact-basic`, `functional-trace-basic`) sao **aptas** para o tipo com o extrator atual — o grafo tende a refletir dependencias tecnicas reais no acervo.
+- `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Exemplo: `SmartDevicesPlus` (config global do addon SDP; so `Properties`).
+- Esses flags ainda nao sao enforced por `Query-KbIntelligenceIndex.py`; o contrato e documental ate a frente de validacao na query (ver discussao pendente).
+
 Escopo de inventario atual:
 
 - todos os tipos marcados como `inventoryEligible=true` no catalogo tecnico e presentes com XML em subpastas imediatas de `ObjetosDaKbEmXml`

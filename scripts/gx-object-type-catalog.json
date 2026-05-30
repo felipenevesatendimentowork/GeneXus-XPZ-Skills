@@ -64,6 +64,15 @@
       "containerType": false,
       "notes": "Seletor de dados."
     },
+    "DataView": {
+      "objectTypeGuid": "19abc6ff-2cd2-0000-0006-6d172bc2333b",
+      "rootKind": "Object",
+      "folderName": "DataView",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "notes": "Data View GeneXus (tabela externa; Part com DataViewAttribute e DataViewStructurePlatform)."
+    },
     "DataStore": {
       "objectTypeGuid": "dcdcdcdc-dfe0-4a57-ae8f-c6e31b0dcbc0",
       "rootKind": "Object",
@@ -234,6 +243,24 @@
       "queryableByKbIntelligence": true,
       "containerType": false,
       "notes": "Structured Data Type."
+    },
+    "SmartDevicesApplication": {
+      "objectTypeGuid": "9bdcc055-174e-4af6-96cb-a2ceef6c5f09",
+      "rootKind": "Object",
+      "folderName": "SmartDevicesApplication",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": true,
+      "containerType": false,
+      "notes": "Aplicacao Smart Devices (addon SmartDevicesPlus / WWPM); Part Dashboard e Source; distinto do tipo Dashboard do catalogo."
+    },
+    "SmartDevicesPlus": {
+      "objectTypeGuid": "c84ec0ea-d159-46e2-a118-2108860379bb",
+      "rootKind": "Object",
+      "folderName": "SmartDevicesPlus",
+      "inventoryEligible": true,
+      "queryableByKbIntelligence": false,
+      "containerType": false,
+      "notes": "Configuracao global do addon Smart Devices Plus (Properties sob Object; SDPlus_Settings_*); pai tipico RootModule. queryableByKbIntelligence=false: motor atual nao extrai relacoes; nao usar who-uses/what-uses/impact-basic/functional-trace-basic (grafos vazios enganam). Usar object-info, search-objects ou list-by-type."
     },
     "Stencil": {
       "objectTypeGuid": "624a8b31-36f0-4292-adba-2d270d1e3537",

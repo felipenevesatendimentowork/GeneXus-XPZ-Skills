@@ -174,6 +174,7 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - o gate do indice deve ser sequencial e atomico; nao testar caminho filho antes da camada pai, por exemplo `KbIntelligence\kb-intelligence.sqlite` antes de `KbIntelligence`
 - se o wrapper local documentado de consulta do indice estiver ausente, nao listar `scripts` nem procurar wrappers alternativos, backups ou nomes parecidos; tratar como defasagem da pasta paralela e oferecer atualizacao via setup
 - a triagem operacional deve consultar `object-info`, `who-uses`, `what-uses` e `show-evidence`, ou `impact-basic` quando esse comando estiver disponivel
+- antes de `who-uses`, `what-uses`, `impact-basic` ou `functional-trace-basic`, conferir em `scripts/gx-object-type-catalog.json` se o tipo tem `queryableByKbIntelligence=true`; quando for `false` (ex.: `SmartDevicesPlus`), **nao** usar essas consultas como evidencia de dependencia ou impacto — grafos vazios enganam; limitar-se a `object-info`, `search-objects`, `list-by-type` ou XML pontual
 - `impact-basic` e a triagem equivalente representam impacto tecnico direto baseado no indice; nao provam impacto runtime completo
 - `functional-trace-basic`, quando disponivel, pode empacotar a coleta inicial de triagem funcional, mas nao abre XML automaticamente, nao interpreta regra de negocio e nao substitui a resposta classificada do agente
 - o indice nao substitui `ObjetosDaKbEmXml`, que continua sendo a fonte normativa e somente leitura
