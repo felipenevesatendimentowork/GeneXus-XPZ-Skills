@@ -23,6 +23,82 @@ PROPERTY_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+CATALOG_PATH = Path(__file__).with_name("gx-object-type-catalog.json")
+SEMANTIC_QUERIES = frozenset(
+    {"who-uses", "what-uses", "impact-basic", "functional-trace-basic"}
+)
+EXIT_QUERY_NOT_SEMANTIC_FOR_TYPE = 11
+_CATALOG_TYPES_BY_NAME: dict[str, dict[str, object]] | None = None
+
+
+def load_catalog_types_by_name() -> dict[str, dict[str, object]]:
+    global _CATALOG_TYPES_BY_NAME
+    if _CATALOG_TYPES_BY_NAME is not None:
+        return _CATALOG_TYPES_BY_NAME
+
+    try:
+        catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"Object type catalog not found: {CATALOG_PATH}") from exc
+
+    raw_types = catalog.get("types")
+    if not isinstance(raw_types, dict):
+        raise RuntimeError(f"Invalid object type catalog format: {CATALOG_PATH}")
+
+    normalized: dict[str, dict[str, object]] = {}
+    for canonical_type, payload in raw_types.items():
+        if isinstance(payload, dict):
+            normalized[str(canonical_type)] = payload
+
+    _CATALOG_TYPES_BY_NAME = normalized
+    return _CATALOG_TYPES_BY_NAME
+
+
+def semantic_query_allowed(object_type: str) -> tuple[bool, dict[str, object] | None]:
+    """Return whether semantic index queries are allowed for this canonical type name."""
+    entry = load_catalog_types_by_name().get(object_type)
+    if entry is None:
+        return True, None
+    return bool(entry.get("queryableByKbIntelligence", True)), entry
+
+
+def build_semantic_blocked_result(
+    query: str,
+    object_type: str,
+    object_name: str,
+    entry: dict[str, object] | None,
+) -> dict[str, object]:
+    inventory_eligible = entry.get("inventoryEligible") if entry is not None else None
+    return {
+        "query": query,
+        "blocked": True,
+        "reason": "QUERY_NOT_SEMANTIC_FOR_TYPE",
+        "object": {"type": object_type, "name": object_name},
+        "catalog": {
+            "queryableByKbIntelligence": False,
+            "inventoryEligible": inventory_eligible,
+        },
+        "notice": (
+            "Tipo apto a inventario (object-info, search-objects, list-by-type), nao a "
+            "who-uses/what-uses/impact-basic/functional-trace-basic com o extrator atual. "
+            "Grafos vazios nao significam ausencia de impacto do addon ou da configuracao."
+        ),
+        "suggested_queries": ["object-info", "search-objects", "list-by-type"],
+    }
+
+
+def format_semantic_blocked_text(result: dict[str, object]) -> str:
+    obj = result.get("object")
+    if not isinstance(obj, dict):
+        obj = {}
+    lines = [
+        f"{result.get('query')}: BLOCKED ({result.get('reason')})",
+        f"object: {obj.get('type')}:{obj.get('name')}",
+        str(result.get("notice")),
+        "suggested_queries: " + ", ".join(result.get("suggested_queries", [])),
+    ]
+    return "\n".join(lines)
+
 
 def validate_schema_version(conn: sqlite3.Connection) -> None:
     row = conn.execute(
@@ -626,6 +702,9 @@ def show_evidence(
 
 
 def format_text(result: dict[str, object]) -> str:
+    if result.get("blocked") is True:
+        return format_semantic_blocked_text(result)
+
     lines: list[str] = []
     query = result.get("query")
     if query == "index-metadata":
@@ -835,6 +914,22 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
+    if args.query in SEMANTIC_QUERIES and args.object_type:
+        allowed, entry = semantic_query_allowed(args.object_type)
+        if not allowed:
+            blocked = build_semantic_blocked_result(
+                args.query,
+                args.object_type,
+                args.object_name or "",
+                entry,
+            )
+            if args.format == "text":
+                print(format_semantic_blocked_text(blocked))
+            else:
+                print(json.dumps(blocked, indent=2, ensure_ascii=False))
+            return EXIT_QUERY_NOT_SEMANTIC_FOR_TYPE
+
     if not args.index_path.exists():
         raise SystemExit(f"IndexPath not found: {args.index_path}")
 

@@ -21,7 +21,7 @@ Catalogo tecnico canonico de tipos:
 - `inventoryEligible=true`: o tipo entra no inventario do indice (objeto listavel em `object-info`, `search-objects`, `list-by-type`) quando houver XML em subpasta de `ObjetosDaKbEmXml`.
 - `queryableByKbIntelligence=true`: consultas semânticas do indice (`who-uses`, `what-uses`, `impact-basic`, `functional-trace-basic`) sao **aptas** para o tipo com o extrator atual — o grafo tende a refletir dependencias tecnicas reais no acervo.
 - `queryableByKbIntelligence=false`: o objeto pode estar no inventario, mas **nao** usar as consultas semânticas acima como prova de impacto ou dependencia; o motor atual nao extrai relacoes desse tipo (respostas vazias parecem “sem impacto”). Preferir `object-info`, `search-objects` ou leitura pontual do XML. Exemplo: `SmartDevicesPlus` (config global do addon SDP; so `Properties`).
-- Esses flags ainda nao sao enforced por `Query-KbIntelligenceIndex.py`; o contrato e documental ate a frente de validacao na query (ver discussao pendente).
+- `Query-KbIntelligenceIndex.py` recusa `who-uses`, `what-uses`, `impact-basic` e `functional-trace-basic` quando o tipo tem `queryableByKbIntelligence=false`: JSON com `blocked=true`, `reason=QUERY_NOT_SEMANTIC_FOR_TYPE`, exit `11`.
 
 Escopo de inventario atual:
 
