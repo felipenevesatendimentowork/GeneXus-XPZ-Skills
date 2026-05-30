@@ -11,6 +11,12 @@ Documento de divergências entre o vocabulário aceito pela task MSBuild `Export
 - O inventário pós-export (`packageInventory`, `Get-GeneXusImportPackageObjectInventory.ps1`) classifica objetos pelo **catálogo/GUID** (`WorkWithForWeb` para `78cecefe-...`). Após export com `-ObjectList "WorkWith:Nome"`, o par no pacote aparece como `WorkWithForWeb:Nome` — isso **não** é falha de export; o confronto delta estrito `Tipo:Nome` pode marcar `requestedItemsMissing` para `WorkWith:Nome` mesmo com o objeto presente. Usar `package-inventory.json` (`nominalInventoryAt`), `objectsByType` ou comparar só o `Nome` quando o rótulo Export for conhecido; `extrasSample` cobre só extras de `<Objects>` no resumo JSON, não atributos top-level.
 - Em importação, equivalências diferentes podem existir (ex.: `Panel` vs `SDPanel` em `itemAliasMatches` — ver `10-base-operacional-msbuild-headless.md`); não assumir que o mesmo alias vale na exportação.
 
+## Fallback silencioso por nome vs divergência de rótulo
+
+- **Divergência de rótulo** (este documento): lista com `exportTaskLabel` da task (`WorkWith:Nome`) e pacote com tipo do catálogo (`WorkWithForWeb:Nome`) — export correto; `requestedItemsMissing` estrito é falso negativo até confronto por alias no inventário.
+- **Fallback silencioso por nome** (anti-padrão em `xpz-msbuild-import-export/SKILL.md`): a task GeneXus (ou camada equivalente) resolve por nome global ignorando o tipo pedido, ou entrega objeto homônimo de outro tipo, **sem** `invalidTypesRejected` / Categoria B — `exitCode=0` engana se o agente não confrontar identidade no inventário e, quando possível, no índice antes do MSBuild.
+- **Tipo inválido no log** (`WorkWithForWeb:Nome` com `error : ... is not a valid type`): **não** é silêncio — wrapper rebaixa para **exit 48**; ver Categorias A/B na skill MSBuild.
+
 ## Tabela de divergências conhecidas
 
 | GUID | Catálogo / pasta / índice | `exportTaskLabel` (task Export) | Evidência | Notas |
@@ -40,6 +46,6 @@ Para cada candidato em KB com instância real:
 ## Referências
 
 - `scripts/gx-object-type-catalog.json` — campo `exportTaskLabel` por tipo
-- `xpz-msbuild-import-export/SKILL.md` — parâmetro `-ObjectList`, Categorias A/B e barragem `exitCode=48`
+- `xpz-msbuild-import-export/SKILL.md` — parâmetro `-ObjectList`, anti-padrão **fallback silencioso por nome**, Categorias A/B e barragem `exitCode=48`
 - `scripts/Invoke-GeneXusXpzExport.ps1` — `invalidTypesRejected`, inventário pós-export, `exportErrors` → exit 48
 - `scripts/msbuild-exit-codes.catalog.json` — código 48 (Categoria B)
