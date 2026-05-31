@@ -136,6 +136,7 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 - `Evidência direta`: a base deriva principalmente de XMLs extraidos de `XPZ`, mas esta trilha ja incorporou tambem testes documentados de importacao de `XPZ` montado fora da IDE do GeneXus.
 - `Inferência forte`: ela reduz bastante tentativa e erro de serializacao e empacotamento, mas ainda nao substitui validacao completa de comportamento de IDE, build ou runtime.
 - `Hipótese`: alguns padrões podem se repetir em outras KBs GeneXus 18, mas isso ainda precisa de validação externa.
+- `Regra operacional`: esta base documenta **rejeicoes e contratos XPZ** verificados pelos scripts e skills desta raiz (importacao, envelope, gates). O **uso correto** de rules, gatilhos e linguagem GeneXus cabe a documentacao de produto e skills dedicadas (ex.: **nexa**); **nao** se pretende catalogar aqui todas as formas possiveis de uso incorreto da linguagem.
 
 ## Dependencias entre documentos
 
