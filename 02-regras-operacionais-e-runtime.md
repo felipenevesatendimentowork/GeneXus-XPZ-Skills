@@ -165,6 +165,7 @@ Regras de uso:
 - `Regra operacional`: depois de regravar XML local, validar no arquivo final tanto o `lastUpdate` quanto a presenca real dos nos inseridos no ponto esperado.
 - `Regra operacional`: em XMLs GeneXus com blocos repetidos ou muito parecidos, localizar e validar cada ocorrencia antes de aplicar a mesma edicao.
 - `Regra operacional`: depois de editar XML local, validar nao so se o XML abre, mas se os nos novos aparecem em todos os pontos funcionais esperados do objeto, especialmente em `Transaction` e `WorkWithWeb`.
+- `Regra operacional`: para aplicar delta textual aprovado em XML de objeto GeneXus sem reserializar o arquivo, preferir `scripts/Edit-GeneXusXmlSurgical.ps1` com ancora literal validada (`-ExpectedAnchorCount`), `-DryRun` antes do apply, bump automatico de `lastUpdate` (escape `-PreserveLastUpdate` apenas para dependencia reenviada sem mudanca) e baseline do acervo via `-LastUpdateBaselinePath` quando existir; em falha de well-formedness apos gravacao, o motor restaura backup.
 
 ### Gravacao segura de XML grande
 
@@ -1299,6 +1300,7 @@ Regras de uso:
 - `Mecanismo (b) — strip silencioso por dead-code elimination`: o corpo do evento contem apenas operacoes que o gerador classifica estaticamente como no-op (ex: `&x = &x`, `&sdt.<m> = &sdt.<m>`, `&str = &str + ""`). O import passa, o build passa, sem erro nem warning; o handler do evento simplesmente nao aparece no `.cs` gerado, ou aparece com corpo vazio.
 - `Procedimento de diagnostico`: (1) conferir o `import.json` do wrapper `Invoke-GeneXusXpzImport`; `errors` presentes ou `exitCode != 0` indicam mecanismo (a) — ler a mensagem para identificar a funcao rejeitada. (2) se import OK mas o comportamento esperado nao aparece em UI, buscar no `.cs` gerado pelo nome do evento; zero ocorrencias indica strip por DCE (mecanismo b). (3) para escapar de (b), incluir no corpo do evento operacao opaca ao otimizador — tipicamente chamada a proc externa que escreva em variavel observada; `Refresh` sobrevive ao DCE mas tem outros limites (ver subsecao `WebPanel, Tab aninhada e re-bind de SDT em data attributes` para o caso em que `Refresh` mantem o handler mas nao inclui o SDT no `oparms`).
 - `Regra operacional`: ao investigar codigo de evento que parece nao executar, sempre identificar PRIMEIRO se o caso eh (a) ou (b) antes de mexer no source — a acao corretiva eh diferente em cada caso.
+- `Regra operacional`: para `Transaction` com sintoma de atributo que nao reflete na UI apos import OK e geracao disponivel, mapear atribuicoes no `.cs` web com `scripts/Find-CsAttributeAssignments.ps1` (`-CsPath` absoluto, `-Attribute`, `-AsJson`) antes de concluir que a rule foi eliminada; distinguir copias sem `AssignAttri` no mesmo metodo e padrao triplet do Specifier (`cascadeOrder` em `if/else if` mutuamente exclusivos). Nao substitui busca por nome de evento/handler em `WebPanel` (mecanismo b).
 
 ### Diagnostico de codigo gerado truncado por falha de generation
 
@@ -1330,6 +1332,7 @@ Regras de uso:
 - `Regra operacional`: nao confiar que o GeneXus criara automaticamente atributos implicitos a partir do `Level`; no caso validado, a ausencia explicita levou a erro de validacao.
 - `Evidência direta`: em trilha posterior validada na IDE, um pacote misto com `4` `Attribute` top-level, `1` `Transaction` e `1` `WorkWithForWeb` importou com sucesso e concluiu tambem a geracao do pattern associado.
 - `Regra operacional`: quando a alteracao de `Transaction` impactar atributos exibidos, filtros, abas ou navegacao do pattern web, revisar tambem o `WorkWithForWeb` associado antes de considerar a frente fechada.
+- `Regra operacional`: ao diagnosticar rule ou atributo `Transaction` no codigo gerado da camada web, usar `scripts/Find-CsAttributeAssignments.ps1` no `.cs` da transacao apos build ou `SpecifyGenerate` quando o artefato estiver disponivel; consumo complementar documentado em `xpz-msbuild-build/SKILL.md`.
 
 ### Politica para `API`
 
