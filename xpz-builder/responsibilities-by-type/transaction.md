@@ -32,10 +32,10 @@ Canonical policy (Portuguese): [02-regras-operacionais-e-runtime.md](../../02-re
 
 Every row in a consultable catalog here (`on <event>`, `Event` types, symptom→error) must carry **exactly one** label:
 
-| Label | Generation permission |
-|-------|-------------------------|
-| `confirmado-import` | Rejection/acceptance observed on MSBuild import with traceable message and `exitCode` — do not generate rejected syntax |
-| `confirmado-build` | Observed on `BuildAll`/`SpecifyGenerate` (e.g. `spc0150`) — same |
+| Label | Meaning | Generation permission |
+|-------|---------|-----------------------|
+| `confirmado-import` | Rejection/acceptance observed on MSBuild import with traceable message and `exitCode` | Rejected syntax: do not generate. Accepted syntax: may generate after remaining gates |
+| `confirmado-build` | Observed on `BuildAll`/`SpecifyGenerate` (e.g. `spc0150`) | Same |
 | `confirmado-acervo` | Real use in parallel KB XML (`ObjetosDaKbEmXml/...` after sync) or reproducible sanitized template in `01*` | May generate, subject to writability and coherence gates |
 | `padrao-gx-nao-verificado` | GeneXus convention/docs not tested in this base or parallel corpus in session | **Do not use as generation premise** — separate subsection only |
 | `nao-listar` | No minimum evidence | **Do not publish** in the catalog |
@@ -73,9 +73,10 @@ Do **not** generate from this list without **confirmado-import**, **confirmado-b
 |--------------------|--------|---------------------------|--------|
 | `Event Start`, `Event After Trn` | **Listed** | `padrao-gx-nao-verificado` until `confirmado-acervo` in parallel corpus for your KB | Confirm in `ObjetosDaKbEmXml/...` before first use in a generated delta |
 | `Event <Attribute>.ControlValueChanged` `[web]` | **Accepted pattern** | `confirmado-acervo` — parallel corpus examples adjust **control** surface (e.g. `.Caption`, `.Visible`, `.Enabled`), `SetFocus()`, not transaction attribute assignment | Do not copy as license to assign another attribute’s value |
-| `Event <Attribute>.IsValid` `[web]` | **Not listed** | No `confirmado-*` in this repository for Transaction Events | Verify in target KB before generating; do not assume from commented XML alone |
 | Assign to **transaction attribute** inside `Event` (`<Attribute> = <value>`) | **Rejected** | `confirmado-build` — `spc0150: Cannot update database. Changes to database are only allowed in procedures. (Transaction '<name>' Events, Line: <n>)` | Put persisted values in declarative `Rules`; use `Events` for UI, variables, `msg`/`Error`, external proc calls |
 | Control UI properties, `&var`, `msg`/`Error`, proc `.execute()`, `SetFocus` / `SetEmpty` on variables | **Allowed class** | `confirmado-acervo` for UI-only `ControlValueChanged` bodies in parallel corpus | Still run **9-TXW** if any assignment touches level attributes in `Rules` |
+
+`Event <Attribute>.IsValid` `[web]` stays `nao-listar` in this repository: there is no `confirmado-*` evidence here for Transaction Events. Verify in the target KB before generating; do not assume from commented XML alone.
 
 Architectural note (XPZ scope only): persisting a new attribute value **via `Event`** is structurally blocked by the Specifier message above; attribute values belong in declarative `Rules` (and writability gates), with `Events` limited to non-persisted UI and side effects allowed by the motor.
 
