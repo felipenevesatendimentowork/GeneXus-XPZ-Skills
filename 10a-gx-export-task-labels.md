@@ -77,7 +77,7 @@ KBs com índice KbIntelligence na campanha: FabricaBrasil18 (`C:\GxModels\Fabric
 ### Observações (não viraram campo `exportTaskLabel`)
 
 - **Inconclusos** (`Tipo:Nome` sem export limpo com o objeto no XPZ): `DataStore`, `PatternSettings`.
-- **Export limpo só com nome** (inventário degradado; não usar em automação — ver anti-patrão fallback silencioso): `CategoryDiagram`, `Dashboard`, `DeploymentUnit`, `Generator`, `Module`, `PackagedModule`, `Panel`, `SubTypeGroup`.
+- **Export limpo só com nome** (inventário degradado; não usar em automação — ver anti-padrão fallback silencioso): `CategoryDiagram`, `Dashboard`, `DeploymentUnit`, `Generator`, `Module`, `PackagedModule`, `Panel`, `SubTypeGroup`.
 
 Motores de manutenção da base (não são runtime público das skills em pastas paralelas): `scripts-maintenance/Build-ExportTaskLabelCoverageMap.ps1`, `scripts-maintenance/Run-ExportTaskLabelMatrix.ps1`, `scripts-maintenance/Invoke-ExportTaskLabelCampaign.ps1` (opção `-ParseOnly` reaproveita `export.json` já gerados), `scripts-maintenance/Merge-ExportTaskLabelCampaignResults.ps1`.
 
