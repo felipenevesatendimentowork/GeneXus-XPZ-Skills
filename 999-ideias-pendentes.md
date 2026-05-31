@@ -66,7 +66,7 @@ Implementar quando houver nova frente de testes de integração dos motores de e
 
 **Entrega:** `extract_attribute_formula_call_evidence` em `Build-KbIntelligenceIndex.py` (assinatura do extrator `3`); self-test `Test-KbIntelligenceAttributeFormulaExtractionSelfTest.ps1`; notas em `gx-object-type-catalog.json` e `scripts/README-kb-intelligence.md`.
 
-**Pendente operacional:** casos positivos na bateria `kb-intelligence-kbexemplo.validation-extraction-semantic.json` quando a KB laboratorio estiver acessivel; rebuild das pastas paralelas que ja tinham indice na versao `2`.
+**Pendente operacional:** rebuild das pastas paralelas cujo indice ainda esteja em extrator anterior a `3` (Formula em Attribute) ou `4` (gravabilidade materializada); validar com `Test-*KbIndexGate.ps1` e, quando aplicavel, `Test-GeneXusKbIntelligenceWritabilityParity.ps1`.
 
 ## Gravabilidade de atributos materializada no índice SQLite
 
@@ -75,13 +75,13 @@ Implementar quando houver nova frente de testes de integração dos motores de e
 
 **Origem:** validação pós-caso real de `Procedure` com `New` atribuindo atributo `Formula`, discutida em 2026-05-23.
 
-### Problema concreto que motiva a ideia
+### Problema concreto que motivou a ideia (contexto histórico)
 
-Hoje a consulta leve `transaction-writable-attributes` reduz abertura ampla de XMLs, mas ainda não materializa no SQLite a classificação completa usada pelos gates de gravabilidade. A decisão final continua dependendo de `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`, que recalculam sinais a partir do acervo XML no momento da validação.
+Antes da entrega (2026-05-31), a consulta `transaction-writable-attributes` reduzia abertura ampla de XMLs, mas **não** materializava no SQLite a classificação completa usada pelos gates de gravabilidade. A decisão final dependia de `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`, que reimplementavam o algoritmo em PowerShell a partir do acervo XML no momento da validação — com risco de divergência em relação ao indexador.
 
-Em KBs grandes, isso preserva segurança, mas ainda pode custar tempo e tokens quando o agente precisa explorar muitos atributos ou várias Transactions antes de decidir como gerar uma `Procedure`, `Transaction` ou lote de importação.
+Em KBs grandes, isso preservava segurança, mas ainda podia custar tempo e tokens quando o agente precisava explorar muitos atributos ou várias Transactions antes de decidir como gerar uma `Procedure`, `Transaction` ou lote de importação.
 
-### Ideia de melhoria
+### Ideia de melhoria (entregue)
 
 Evoluir o `KbIntelligence` para gravar, durante `Build-KbIntelligenceIndex.py`, uma tabela derivada de gravabilidade por `Transaction`/`Level`/`Attribute`, com campos como:
 
@@ -95,23 +95,20 @@ Evoluir o `KbIntelligence` para gravar, durante `Build-KbIntelligenceIndex.py`, 
 - `evidence`
 - `source_rule_version`
 
-A classificação deveria cobrir o mesmo contrato hoje usado pelos gates: `key-attribute`, `extended-parent-fk`, `formula`, `extended-subtype-key`, `extended-subtype-descriptive`, `extended-fk-key`, `extended-fk-descriptive`, `own-physical` e estados `unclassified-*`.
+A classificação cobre o mesmo contrato dos gates: `key-attribute`, `extended-parent-fk`, `formula`, `extended-subtype-key`, `extended-subtype-descriptive`, `extended-fk-key`, `extended-fk-descriptive`, `own-physical` e estados `unclassified-*`.
 
-### Benefício esperado
+### Benefícios obtidos
 
-- reduzir abertura repetida de XMLs do acervo
-- reduzir consumo de tokens em triagem de atributos
-- permitir consultas amplas sobre risco de `New`, `Formula`, atributos descritivos e campos não graváveis
-- tornar mais barato responder perguntas como "quais atributos desta Transaction posso atribuir em `New`?"
-- apoiar auditorias e relatórios sem depender de varredura completa em tempo de pergunta
+- redução de abertura repetida de XMLs do acervo na triagem
+- consultas amplas sobre risco de `New`, `Formula`, atributos descritivos e campos não graváveis via índice
+- paridade validada entre índice materializado e gates (`Test-GeneXusKbIntelligenceWritabilityParity.ps1`)
+- fonte canônica única: `GeneXusTransactionWritabilityCore.py` (build, consultas e gates PowerShell)
 
-### Riscos e decisões em aberto
+### Riscos e decisões remanescentes
 
-- a mudança provavelmente exige nova versão de schema do índice e rebuild das pastas paralelas
-- duplicar algoritmo entre gates e indexador pode gerar divergência; a implementação deve extrair lógica comum ou declarar claramente qual é a fonte canônica
-- é preciso decidir se a tabela será puramente derivada do snapshot oficial ou se pode considerar também XMLs de uma frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
-- a classificação de subtipo e FK recursiva precisa ser validada em KB real grande antes de virar gate de índice
-- o wrapper local `Query-*KbIntelligence.ps1` e os testes `Test-KbIntelligenceQueries.ps1` precisarão de novos casos de validação
+- escopo do snapshot: somente `ObjetosDaKbEmXml` — **não** materializa XML de frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- alteração do algoritmo exige atualizar o núcleo Python, bump de `writability_rule_version` / extrator e rebuild das pastas paralelas
+- novos casos de validação em `Test-KbIntelligenceQueries.ps1` podem ser acrescentados conforme KBs reais revelarem bordas
 
 ### Entrega (2026-05-31)
 

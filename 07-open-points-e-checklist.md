@@ -282,7 +282,7 @@ A skill `xpz-builder` extraiu seus gates da Fase 9 (`9-BC`, `9-WW`, `9-PSM`, `9-
 
 - `scripts/Test-GeneXusBCDependency.ps1` — gate `9-BC` (Procedures que escrevem em Transaction como Business Component)
 - `scripts/Test-GeneXusBatchDependencyOrdering.ps1` — gate `9-IDO` (ordem entre Procedure e Transaction no batch)
-- `scripts/Test-GeneXusNewWritableTargets.ps1` — gate `9-PNW` (atributos graváveis em comandos `New` de Procedure)
+- `scripts/Test-GeneXusNewWritableTargets.ps1` — gate `9-PNW` (atributos graváveis em comandos `New` de Procedure; fachada PowerShell sobre `GeneXusTransactionWritabilityCore.py`)
 - `scripts/Test-GeneXusProcedureSubPattern.ps1` — gate `9-PSM` (padrão dominante de Sub em Procedures)
-- `scripts/Test-GeneXusTransactionWritability.ps1` — gate `Writability` (Transactions efetivamente graváveis)
+- `scripts/Test-GeneXusTransactionWritability.ps1` — gate `Writability` (Transactions efetivamente graváveis; fachada PowerShell sobre `GeneXusTransactionWritabilityCore.py`)
 - `scripts/Test-GeneXusWorkWithWebApply.ps1` — gate `9-WW` (Apply em WorkWithForWeb, formas A e B)
