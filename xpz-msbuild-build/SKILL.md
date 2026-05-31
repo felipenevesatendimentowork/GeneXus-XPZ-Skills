@@ -185,6 +185,8 @@ Dois scripts PowerShell, seguindo o mesmo padrão de `xpz-msbuild-import-export`
 
 Barragem estrutural compartilhada: `scripts/GeneXusMsBuildCategoryBSupport.ps1` (exit **48** em `scripts/msbuild-exit-codes.catalog.json`). Antes de varrer stdout/stderr manualmente ou declarar sucesso com `executionEvidence.msBuildExitCode=0`, ler no **top-level** do JSON de resultado: `exitCode`, `msBuildCategoryBBlocked`, `operationalSubState`, `buildErrors` (em `BuildAll`) ou `specifyErrors` (em `SpecifyGenerate`) e `blockingReasons`. Com `exitCode=48`, reproduzir as linhas `error :` ao usuário e tratar o resultado como **não confiável** para handoff operacional — mesmo que a task MSBuild tenha concluído com sucesso aparente.
 
+- **`Transaction` `Events` + `spc0150`:** se `buildErrors`/`specifyErrors` ou o log trouxer `spc0150: Cannot update database. Changes to database are only allowed in procedures.` em `Transaction` `Events`, ver anti-padrão `transaction-event-attribute-assignment-rejected` em [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) e Catálogo 2 em [xpz-builder/responsibilities-by-type/transaction.md](../xpz-builder/responsibilities-by-type/transaction.md). Não atribuir atributos da `Transaction` dentro de `Event`; valores persistidos ficam em rules declarativas (escopo motor XPZ; modelagem GeneXus: **nexa**).
+
 ### Pós-processamento resiliente (BuildAll / SpecifyGenerate)
 
 Após a task `MSBuild` concluir, `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1` envolvem parse de stdout, montagem do diagnóstico e serialização JSON em `try/catch` (motor compartilhado `scripts/GeneXusMsBuildGamPlatformsSupport.ps1` para filtro GAM/NetCore).
