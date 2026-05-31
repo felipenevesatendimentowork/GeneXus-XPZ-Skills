@@ -5,9 +5,9 @@
 
 .DESCRIPTION
     Coordena contexto git (commits pendentes, diff --check, arquivos alterados),
-    delega parse PowerShell a scripts/Test-PsScriptsParse.ps1, parse Python
-    sem bytecode a scripts/Test-PyScriptsParse.ps1 e classifica arquivos do
-    diff para insumo da fase semantica do agente.
+    delega parse PowerShell a scripts/Test-PsScriptsParse.ps1 (inclui scripts/
+    e scripts-maintenance/), parse Python sem bytecode a scripts/Test-PyScriptsParse.ps1
+    e classifica arquivos do diff para insumo da fase semantica do agente.
 
     Nao substitui busca de coerencia cruzada, regra em camadas de skills longas
     nem relatorio final ao usuario — ver 13-revisao-pre-push.md (AGENTS.md aponta para esse arquivo).
@@ -137,6 +137,9 @@ function Get-ChangedFileKind {
     if ($normalized -match '^scripts/.+\.ps1$') {
         return 'scripts'
     }
+    if ($normalized -match '^scripts-maintenance/.+\.ps1$') {
+        return 'maintenanceScripts'
+    }
     if ($normalized -match '\.example\.ps1$') {
         return 'examples'
     }
@@ -164,6 +167,7 @@ function Add-ChangedFilesByKind {
 
     $byKind = [ordered]@{
         scripts   = @()
+        maintenanceScripts = @()
         skills    = @()
         baseDocs  = @()
         examples  = @()
@@ -454,7 +458,7 @@ $intervalDiffDiagnosticOnly = ($commitsBehind -gt 0)
 
 $agentOperationalReminders = @(
     'Antes da rotina, git fetch origin quando origin/main deve refletir o remoto atual; ref inexistente e ref desatualizada sao casos distintos; sem fetch, commitsBehind pode ficar 0 com remoto real ja adiantado.',
-    'Parse (Test-PsScriptsParse.ps1) varre todo scripts/ e *.example.ps1 fora de historico/, nao apenas o diff do intervalo.',
+    'Parse (Test-PsScriptsParse.ps1) varre todo scripts/, scripts-maintenance/ e *.example.ps1 fora de historico/, nao apenas o diff do intervalo.',
     'Parse Python (Test-PyScriptsParse.ps1) usa AST e nao gera __pycache__/*.pyc.',
     'Com commitsAhead=0 nao ha diff no intervalo; pre-push nao substitui revisao de alteracoes so na working tree (ver avisos de worktree).',
     'exit 0 mecanico nao autoriza push: ler PUSH_READINESS; com blocked, integrar remoto antes do push.',
@@ -478,6 +482,7 @@ $publicTraceabilityTriggers = [System.Collections.Generic.List[string]]::new()
 foreach ($changedPath in @($changedFiles)) {
     $normalizedChangedPath = ($changedPath -replace '\\', '/').Trim()
     if ($normalizedChangedPath -match '^scripts/.+\.(ps1|py|json)$' -or
+        $normalizedChangedPath -match '^scripts-maintenance/.+\.ps1$' -or
         $normalizedChangedPath -match '^xpz-[^/]+/SKILL\.md$' -or
         $normalizedChangedPath -match '^xpz-[^/]+/(quality-checklist|wwp-packaging)\.md$' -or
         $normalizedChangedPath -match '^xpz-[^/]+/responsibilities-by-type/.+\.md$' -or

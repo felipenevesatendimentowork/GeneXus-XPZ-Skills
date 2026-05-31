@@ -623,7 +623,7 @@ Ideia em `999-ideias-pendentes.md` (`exportTaskLabel` para `DataView` e tipos SD
 
 ### Implementação
 
-- Motores: `scripts/GeneXusExportTaskLabelSupport.ps1`, `Build-ExportTaskLabelCoverageMap.ps1`, `Run-ExportTaskLabelMatrix.ps1`, `Invoke-ExportTaskLabelCampaign.ps1` (`-ParseOnly`, `-Force`), `Merge-ExportTaskLabelCampaignResults.ps1` (`-ApplyCatalog`).
+- Motores de manutenção: `scripts-maintenance/GeneXusExportTaskLabelSupport.ps1`, `Build-ExportTaskLabelCoverageMap.ps1`, `Run-ExportTaskLabelMatrix.ps1`, `Invoke-ExportTaskLabelCampaign.ps1` (`-ParseOnly`, `-Force`), `Merge-ExportTaskLabelCampaignResults.ps1` (`-ApplyCatalog`).
 - Artefatos: `historico/export-task-label-matrix-20260530/` (33 matrizes, `consolidation-report.json`).
 - `10a-gx-export-task-labels.md`: seção campanha P5, anexos de tipos sem divergência, sem espécime e observações (inconclusos / só nome).
 - Correções de robustez: `packageInventory` nulo no `export.json`; relatório `catalogMatchesTask` sem perder campos em `[ordered]@{}`.

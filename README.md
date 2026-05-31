@@ -209,10 +209,11 @@ Se você quer entender a base rapidamente:
 - o script `scripts/Sync-GeneXusXpzToXml.ps1` faz parte da infraestrutura operacional desta base e nao deve ser removido do repositório público
 - esse script pode ser usado por projetos de produção que mantenham acervos versionados de XMLs extraidos de `XPZ`
 - a pasta `scripts/` existe como apoio operacional, analitico e editorial compartilhavel, mas nao e fonte normativa da documentacao consolidada da raiz
+- a pasta `scripts-maintenance/` concentra ferramentas de manutencao desta base, como campanhas empiricas para atualizar catalogos e documentacao; esses scripts nao sao runtime publico das skills em pastas paralelas de KB
 - os scripts públicos desta raiz devem operar por parâmetros explícitos de entrada e saída, sem depender de caminhos absolutos privados
 - os scripts públicos desta raiz têm contrato de runtime em `pwsh` com PowerShell 7.4 LTS ou superior; usar a versão LTS mais recente disponível é preferível; Windows PowerShell 5.1 (`powershell.exe`) não é runtime suportado para esses scripts
 - pontos de entrada públicos em `scripts/*.ps1` devem declarar `#requires -Version 7.4`; a exceção é `Test-XpzPowerShellRuntime.ps1`, que precisa continuar executável em Windows PowerShell 5.1 para localizar `pwsh` e emitir bloqueio claro
-- a validação automática de parse PowerShell da base é `scripts/Test-PsScriptsParse.ps1`, também executada pelo workflow `.github/workflows/parse-ps-scripts.yml`; ela verifica `scripts/*.ps1` e `.example.ps1` das skills fora de `historico/` sob o contrato `pwsh` 7.4+
+- a validação automática de parse PowerShell da base é `scripts/Test-PsScriptsParse.ps1`, também executada pelo workflow `.github/workflows/parse-ps-scripts.yml`; ela verifica `scripts/*.ps1`, `scripts-maintenance/*.ps1` e `.example.ps1` das skills fora de `historico/` sob o contrato `pwsh` 7.4+
 - a skill `xpz-kb-parallel-setup` deve criar/validar um wrapper local `Test-*KbPowerShellRuntime.ps1`; esse wrapper precisa barrar qualquer uso operacional da pasta paralela quando `pwsh` 7.4 LTS ou superior estiver ausente
 - a auditoria compartilhada `Test-XpzSetupAudit.ps1` detecta autonomamente `scripts/Test-*KbPowerShellRuntime.ps1` quando o caminho não é informado; se o wrapper estiver ausente, emite o caminho sugerido e o molde canônico, sem criar arquivo automaticamente
 - os `.example.ps1` publicados nas skills funcionam como exemplos metodologicos importantes para bootstrap tecnico e reconstrucao assistida de wrappers locais finais
@@ -422,10 +423,11 @@ Si quieres entender la base rápidamente:
 - el script `scripts/Sync-GeneXusXpzToXml.ps1` forma parte de la infraestructura operativa de esta base y no debe ser removido del repositorio público
 - ese script puede ser usado por proyectos de producción que mantengan acervos versionados de XML extraídos de `XPZ`
 - la carpeta `scripts/` existe como apoyo operativo, analítico y editorial compartible, pero no es fuente normativa de la documentación consolidada de la raíz
+- la carpeta `scripts-maintenance/` concentra herramientas de mantenimiento de esta base, como campañas empíricas para actualizar catálogos y documentación; esos scripts no son runtime público de las skills en carpetas paralelas de KB
 - los scripts públicos de esta raíz deben operar por parámetros explícitos de entrada y salida, sin depender de rutas absolutas privadas
 - los scripts públicos de esta raíz tienen contrato de runtime en `pwsh` con PowerShell 7.4 LTS o superior; usar la versión LTS más reciente disponible es preferible; Windows PowerShell 5.1 (`powershell.exe`) no es runtime soportado para esos scripts
 - los puntos de entrada públicos en `scripts/*.ps1` deben declarar `#requires -Version 7.4`; la excepción es `Test-XpzPowerShellRuntime.ps1`, que debe seguir ejecutándose en Windows PowerShell 5.1 para localizar `pwsh` y emitir un bloqueo claro
-- la validación automática de parse PowerShell de la base es `scripts/Test-PsScriptsParse.ps1`, también ejecutada por el workflow `.github/workflows/parse-ps-scripts.yml`; verifica `scripts/*.ps1` y `.example.ps1` de las skills fuera de `historico/` bajo el contrato `pwsh` 7.4+
+- la validación automática de parse PowerShell de la base es `scripts/Test-PsScriptsParse.ps1`, también ejecutada por el workflow `.github/workflows/parse-ps-scripts.yml`; verifica `scripts/*.ps1`, `scripts-maintenance/*.ps1` y `.example.ps1` de las skills fuera de `historico/` bajo el contrato `pwsh` 7.4+
 - la skill `xpz-kb-parallel-setup` debe crear/validar un wrapper local `Test-*KbPowerShellRuntime.ps1`; ese wrapper debe bloquear cualquier uso operativo de la carpeta paralela cuando falte `pwsh` 7.4 LTS o superior
 - la auditoría compartida `Test-XpzSetupAudit.ps1` detecta autónomamente `scripts/Test-*KbPowerShellRuntime.ps1` cuando no se informa la ruta; si falta el wrapper, emite la ruta sugerida y el molde canónico, sin crear el archivo automáticamente
 - los `.example.ps1` publicados en las skills funcionan como ejemplos metodológicos importantes para bootstrap técnico y reconstrucción asistida de wrappers locales finales
@@ -635,10 +637,11 @@ If you want to understand the repository quickly:
 - the script `scripts/Sync-GeneXusXpzToXml.ps1` is part of the operational infrastructure of this base and must not be removed from the public repository
 - that script can be used by production projects that keep versioned XML archives extracted from `XPZ`
 - the `scripts/` folder exists as shared operational, analytical, and editorial support, but it is not the normative source of the consolidated root documentation
+- the `scripts-maintenance/` folder holds maintenance tools for this base, such as empirical campaigns for updating catalogs and documentation; these scripts are not public skill runtime for parallel KB folders
 - the public scripts in this root must operate through explicit input and output parameters, without depending on private absolute paths
 - the public scripts in this root have a runtime contract of `pwsh` with PowerShell 7.4 LTS or newer; using the latest available LTS version is preferred; Windows PowerShell 5.1 (`powershell.exe`) is not a supported runtime for these scripts
 - public entry points in `scripts/*.ps1` must declare `#requires -Version 7.4`; the exception is `Test-XpzPowerShellRuntime.ps1`, which must remain executable in Windows PowerShell 5.1 to locate `pwsh` and emit a clear block
-- the base's automatic PowerShell parse validation is `scripts/Test-PsScriptsParse.ps1`, also run by the `.github/workflows/parse-ps-scripts.yml` workflow; it checks `scripts/*.ps1` and skill `.example.ps1` files outside `historico/` under the `pwsh` 7.4+ contract
+- the base's automatic PowerShell parse validation is `scripts/Test-PsScriptsParse.ps1`, also run by the `.github/workflows/parse-ps-scripts.yml` workflow; it checks `scripts/*.ps1`, `scripts-maintenance/*.ps1` and skill `.example.ps1` files outside `historico/` under the `pwsh` 7.4+ contract
 - the `xpz-kb-parallel-setup` skill must create/validate a local `Test-*KbPowerShellRuntime.ps1` wrapper; that wrapper must block any operational use of the parallel folder when `pwsh` 7.4 LTS or newer is missing
 - the shared `Test-XpzSetupAudit.ps1` audit detects `scripts/Test-*KbPowerShellRuntime.ps1` autonomously when no path is provided; if the wrapper is missing, it emits the suggested path and canonical template without creating the file automatically
 - the `.example.ps1` files published inside the skills act as important methodological examples for technical bootstrap and assisted reconstruction of final local wrappers

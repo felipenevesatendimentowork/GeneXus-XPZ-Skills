@@ -37,8 +37,8 @@ Na campanha P5 (2026-05-30), três KBs indexadas (FabricaBrasil18, wsEducacaoSpT
 Documentação de referência no repositório (se existir clone local):
 
 - `10a-gx-export-task-labels.md`
-- `scripts/Run-ExportTaskLabelMatrix.ps1`
-- `scripts/GeneXusExportTaskLabelSupport.ps1`
+- `scripts-maintenance/Run-ExportTaskLabelMatrix.ps1`
+- `scripts-maintenance/GeneXusExportTaskLabelSupport.ps1`
 
 ---
 
@@ -141,7 +141,7 @@ $MatrixRoot = Join-Path $HandoffRoot 'matrix'
 Para cada tipo com `specimens[tipo].first` não nulo:
 
 ```powershell
-$MatrixScript = Join-Path $RepoRoot 'scripts\Run-ExportTaskLabelMatrix.ps1'
+$MatrixScript = Join-Path $RepoRoot 'scripts-maintenance\Run-ExportTaskLabelMatrix.ps1'
 
 # Repetir bloco para DataView, SmartDevicesApplication, SmartDevicesPlus
 $CatalogTypeName = 'DataView'
@@ -304,7 +304,7 @@ FIM DO PROMPT
 python "$RepoRoot\scripts\Query-KbIntelligenceIndex.py" --query list-by-type --index-path $indexPath --object-type DataView --limit 3 --format json
 
 # Matriz (exemplo DataView)
-pwsh -NoProfile -File "$RepoRoot\scripts\Run-ExportTaskLabelMatrix.ps1" -CatalogTypeName DataView -SpecimenObjectName "<NOME>" -KbPath $KbPath -ParallelKbRoot $ParallelKbRoot -KbId $KbId -OutputDirectory "$MatrixRoot\$KbId\DataView"
+pwsh -NoProfile -File "$RepoRoot\scripts-maintenance\Run-ExportTaskLabelMatrix.ps1" -CatalogTypeName DataView -SpecimenObjectName "<NOME>" -KbPath $KbPath -ParallelKbRoot $ParallelKbRoot -KbId $KbId -OutputDirectory "$MatrixRoot\$KbId\DataView"
 ```
 
 Substituir `<NOME>` e repetir para `SmartDevicesApplication` e `SmartDevicesPlus`.

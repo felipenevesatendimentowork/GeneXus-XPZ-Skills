@@ -4,7 +4,7 @@
     Parses repository PowerShell scripts and reports syntax errors.
 
 .DESCRIPTION
-    Checks scripts/*.ps1 and every *.example.ps1 outside historico/.
+    Checks scripts/*.ps1, scripts-maintenance/*.ps1 and every *.example.ps1 outside historico/.
     This is a syntax-only gate for the repository runtime contract: pwsh 7.4+.
 #>
 
@@ -52,6 +52,7 @@ function Get-RelativeDisplayPath {
 
 $resolvedRoot = (Resolve-Path -LiteralPath $RootPath).Path
 $scriptsPath = Join-Path $resolvedRoot "scripts"
+$maintenanceScriptsPath = Join-Path $resolvedRoot "scripts-maintenance"
 $historicoPath = Join-Path $resolvedRoot "historico"
 
 if (-not (Test-Path -LiteralPath $scriptsPath -PathType Container)) {
@@ -59,10 +60,14 @@ if (-not (Test-Path -LiteralPath $scriptsPath -PathType Container)) {
 }
 
 $scriptFiles = @(Get-ChildItem -LiteralPath $scriptsPath -File -Filter "*.ps1" | Sort-Object FullName)
+$maintenanceScriptFiles = @()
+if (Test-Path -LiteralPath $maintenanceScriptsPath -PathType Container) {
+    $maintenanceScriptFiles = @(Get-ChildItem -LiteralPath $maintenanceScriptsPath -File -Filter "*.ps1" | Sort-Object FullName)
+}
 $exampleFiles = @(Get-ChildItem -LiteralPath $resolvedRoot -Recurse -File -Filter "*.example.ps1" |
     Where-Object { -not (Test-IsUnderPath -CandidatePath $_.FullName -ParentPath $historicoPath) } |
     Sort-Object FullName)
-$files = @($scriptFiles + $exampleFiles)
+$files = @($scriptFiles + $maintenanceScriptFiles + $exampleFiles)
 
 $findings = [System.Collections.Generic.List[object]]::new()
 

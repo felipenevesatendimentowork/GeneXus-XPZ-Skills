@@ -6,6 +6,9 @@
 
 Set-StrictMode -Version Latest
 
+$script:ExportTaskLabelRepositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+$script:ExportTaskLabelRuntimeScriptsPath = Join-Path $script:ExportTaskLabelRepositoryRoot 'scripts'
+
 $script:ExportTaskLabelKbRegistry = @(
     [ordered]@{
         id             = 'FabricaBrasil'
@@ -91,7 +94,7 @@ function Get-ExportTaskLabelKbRegistry {
 
 function Get-ExportTaskLabelCatalogTypes {
     param(
-        [string]$CatalogPath = (Join-Path $PSScriptRoot 'gx-object-type-catalog.json')
+        [string]$CatalogPath = (Join-Path $script:ExportTaskLabelRuntimeScriptsPath 'gx-object-type-catalog.json')
     )
 
     if (-not (Test-Path -LiteralPath $CatalogPath -PathType Leaf)) {
@@ -180,7 +183,7 @@ function Invoke-KbIntelligenceListByTypeFirst {
         [int]$Limit = 1
     )
 
-    $queryScript = Join-Path $PSScriptRoot 'Query-KbIntelligenceIndex.ps1'
+    $queryScript = Join-Path $script:ExportTaskLabelRuntimeScriptsPath 'Query-KbIntelligenceIndex.ps1'
     if (-not (Test-Path -LiteralPath $queryScript -PathType Leaf)) {
         throw "Query script not found: $queryScript"
     }
@@ -241,7 +244,7 @@ function Get-ExportTaskLabelMatrixResultFromExportLog {
     if ($null -ne $log.PSObject.Properties['resolvedPaths'] -and $null -ne $log.resolvedPaths.PSObject.Properties['XpzPath']) {
         $xpzPath = [string]$log.resolvedPaths.XpzPath
         if ((Test-Path -LiteralPath $xpzPath -PathType Leaf) -and $inventoryTypes.Count -eq 0) {
-            $inventoryScript = Join-Path $PSScriptRoot 'Get-GeneXusImportPackageObjectInventory.ps1'
+            $inventoryScript = Join-Path $script:ExportTaskLabelRuntimeScriptsPath 'Get-GeneXusImportPackageObjectInventory.ps1'
             if (Test-Path -LiteralPath $inventoryScript -PathType Leaf) {
                 $inv = & $inventoryScript -InputPath $xpzPath -AsJson | ConvertFrom-Json
                 foreach ($item in @($inv.inventory | Where-Object { $_.sourceBlock -eq 'Objects' -and $_.name -eq $ExpectedObjectName })) {

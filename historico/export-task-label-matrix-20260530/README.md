@@ -19,8 +19,8 @@ Campanha P5 (plano A+): cobertura multi-KB e matriz MSBuild por tipo com espéci
 ## Reproduzir consolidação sem MSBuild
 
 ```powershell
-pwsh -NoProfile -File scripts/Invoke-ExportTaskLabelCampaign.ps1 -ParseOnly -Force
-pwsh -NoProfile -File scripts/Merge-ExportTaskLabelCampaignResults.ps1 -ApplyCatalog
+pwsh -NoProfile -File scripts-maintenance/Invoke-ExportTaskLabelCampaign.ps1 -ParseOnly -Force
+pwsh -NoProfile -File scripts-maintenance/Merge-ExportTaskLabelCampaignResults.ps1 -ApplyCatalog
 ```
 
 Resumo editorial: `10a-gx-export-task-labels.md` (seção campanha P5).

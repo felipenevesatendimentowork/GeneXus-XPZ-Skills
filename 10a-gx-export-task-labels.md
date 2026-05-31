@@ -79,7 +79,7 @@ KBs com índice KbIntelligence na campanha: FabricaBrasil18 (`C:\GxModels\Fabric
 - **Inconclusos** (`Tipo:Nome` sem export limpo com o objeto no XPZ): `DataStore`, `PatternSettings`.
 - **Export limpo só com nome** (inventário degradado; não usar em automação — ver anti-patrão fallback silencioso): `CategoryDiagram`, `Dashboard`, `DeploymentUnit`, `Generator`, `Module`, `PackagedModule`, `Panel`, `SubTypeGroup`.
 
-Motores: `scripts/Build-ExportTaskLabelCoverageMap.ps1`, `scripts/Run-ExportTaskLabelMatrix.ps1`, `scripts/Invoke-ExportTaskLabelCampaign.ps1` (opção `-ParseOnly` reaproveita `export.json` já gerados), `scripts/Merge-ExportTaskLabelCampaignResults.ps1`.
+Motores de manutenção da base (não são runtime público das skills em pastas paralelas): `scripts-maintenance/Build-ExportTaskLabelCoverageMap.ps1`, `scripts-maintenance/Run-ExportTaskLabelMatrix.ps1`, `scripts-maintenance/Invoke-ExportTaskLabelCampaign.ps1` (opção `-ParseOnly` reaproveita `export.json` já gerados), `scripts-maintenance/Merge-ExportTaskLabelCampaignResults.ps1`.
 
 ## Pré-validação no índice (export/import seletivo, P1 / P1 v2)
 
@@ -100,4 +100,4 @@ Para cada candidato em KB com instância real:
 - `scripts/Invoke-GeneXusXpzExport.ps1` — `invalidTypesRejected`, inventário pós-export, `exportErrors` → exit 48
 - `scripts/msbuild-exit-codes.catalog.json` — código 48 (Categoria B)
 - `historico/export-task-label-matrix-20260530/` — campanha P5 (2026-05-30)
-- `scripts/GeneXusExportTaskLabelSupport.ps1`, `scripts/Build-ExportTaskLabelCoverageMap.ps1`, `scripts/Run-ExportTaskLabelMatrix.ps1`, `scripts/Invoke-ExportTaskLabelCampaign.ps1`, `scripts/Merge-ExportTaskLabelCampaignResults.ps1`
+- `scripts-maintenance/GeneXusExportTaskLabelSupport.ps1`, `scripts-maintenance/Build-ExportTaskLabelCoverageMap.ps1`, `scripts-maintenance/Run-ExportTaskLabelMatrix.ps1`, `scripts-maintenance/Invoke-ExportTaskLabelCampaign.ps1`, `scripts-maintenance/Merge-ExportTaskLabelCampaignResults.ps1`

@@ -35,7 +35,8 @@ $ErrorActionPreference = 'Stop'
 $supportPath = Join-Path $PSScriptRoot 'GeneXusExportTaskLabelSupport.ps1'
 . $supportPath
 
-$exportScript = Join-Path $PSScriptRoot 'Invoke-GeneXusXpzExport.ps1'
+$runtimeScriptsPath = Join-Path (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path 'scripts'
+$exportScript = Join-Path $runtimeScriptsPath 'Invoke-GeneXusXpzExport.ps1'
 if (-not (Test-Path -LiteralPath $exportScript -PathType Leaf)) {
     throw "Export script not found: $exportScript"
 }

@@ -9,7 +9,7 @@ param(
 
     [string]$CoverageMapPath = (Join-Path $PSScriptRoot '..\historico\export-task-label-matrix-20260530\coverage-map.json'),
 
-    [string]$CatalogPath = (Join-Path $PSScriptRoot 'gx-object-type-catalog.json'),
+    [string]$CatalogPath = (Join-Path (Join-Path (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path 'scripts') 'gx-object-type-catalog.json'),
 
     [string]$ReportPath = (Join-Path $PSScriptRoot '..\historico\export-task-label-matrix-20260530\consolidation-report.json'),
 
