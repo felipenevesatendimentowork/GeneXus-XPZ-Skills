@@ -95,7 +95,7 @@ Architectural note (XPZ scope only): persisting a new attribute value **via `Eve
 - [ ] For `Transaction`, every `DescriptionAttribute` present exists in the same `Level` and also in `<Attributes>`
 - [ ] For `Transaction`, no required `Attribute` was serialized as `Domain` or other object type under `<Objects>`
 - [ ] For `Transaction`, the primary edit block was declared before editing, any block transition was justified explicitly, and intended scope via web editing vs BC was stated when relevant
-- [ ] When the delta involves `Rules` or `Events` with attribute assignments, `Test-GeneXusTransactionWritability.ps1` was run and any `writable=false` attribute was excluded from assignments (or the assignment caused an explicit ABORT)
+- [ ] When the delta involves `Rules` or `Events` with attribute assignments, writability was closed with `Test-GeneXusTransactionWritability.ps1` for each affected Transaction **or** with `Test-GeneXusKbIntelligenceWritabilityParity.ps1` already passed on that parallel KB folder (index `schema_version=2`); `transaction-writable-attributes` may have been used for triage only — it does not replace that closure; any `writable=false` attribute was excluded from assignments (or the assignment caused an explicit ABORT); any `writable=null` (`unclassified-*`) was either resolved or explicitly documented as a classification gap before packaging
 - [ ] If the phase introduced a new FK sustained by `SubTypeGroup`, the corresponding `Table` was reviewed and the `Transaction + SubTypeGroup + Table` minimum review set was honored
 - [ ] Any new or updated catalog row in this file uses exactly one evidence label (`confirmado-import`, `confirmado-build`, `confirmado-acervo`, `padrao-gx-nao-verificado`); nothing was promoted to `confirmado-*` without import/build, parallel corpus XML, or sanitized template evidence
 - [ ] `padrao-gx-nao-verificado` items, if any, live in a clearly titled subsection separate from confirmed rows; no syntax was generated from unverified items alone
@@ -107,7 +107,7 @@ Type-agnostic gates and WORKFLOW steps that involve Transactions remain in the m
 
 - **9-BC (BC dependency preflight gate)** — `Test-GeneXusBCDependency.ps1`. Triggered when a Procedure in the batch references `bc:<Transaction>` or `bc:<Transaction>.<Sublevel>`.
 - **9-IDO (Import Dependency Ordering)** — `Test-GeneXusBatchDependencyOrdering.ps1`. Triggered when the batch has 2 or more distinct objects.
-- **9-TXW (Transaction Writability gate)** — `Test-GeneXusTransactionWritability.ps1`. Triggered when the delta involves `Rules` or `Events` with attribute assignments. See WORKFLOW step `9-TXW`.
+- **9-TXW (Transaction Writability gate)** — `Test-GeneXusTransactionWritability.ps1`, or `Test-GeneXusKbIntelligenceWritabilityParity.ps1` when index parity is already validated on the parallel KB folder. Triggered when the delta involves `Rules` or `Events` with attribute assignments. See WORKFLOW step `9-TXW`.
 - **Transaction Coherence pre-packaging gate** — `Test-GeneXusTransactionCoherence.ps1`. See WORKFLOW step `9-TWS`.
 - **Transaction semantic pre-import gate** (Level/Attribute@guid, DescriptionAttribute coherence). See WORKFLOW step in the validation block of the main `SKILL.md`.
 - **Package envelope rules and Attribute serialization rules**. See WORKFLOW steps 15 onward in the main `SKILL.md`.
