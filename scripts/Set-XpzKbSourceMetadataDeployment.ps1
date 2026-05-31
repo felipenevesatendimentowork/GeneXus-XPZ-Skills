@@ -137,8 +137,7 @@ $fieldsToWrite = [ordered]@{
 }
 
 $fileContext = Get-TextFileLineContext -Path $MetadataPath
-$fileLines = [System.Collections.Generic.List[string]]::new()
-$fileLines.AddRange([string[]]$fileContext.Lines)
+$fileLines = $fileContext.Lines
 
 foreach ($fieldName in $fieldsToWrite.Keys) {
     $newLine = '{0}: {1}' -f $fieldName, $fieldsToWrite[$fieldName]
@@ -154,22 +153,42 @@ foreach ($fieldName in $fieldsToWrite.Keys) {
 
     if (-not $updated) {
         $insertAt = -1
-        for ($i = 0; $i -lt $fileLines.Count; $i++) {
-            if ($fileLines[$i] -match '^\s*---\s*$') {
-                $insertAt = $i
-                break
+        $frontmatterClose = -1
+        $hasFrontmatter = ($fileLines.Count -gt 0 -and $fileLines[0].Trim() -eq '---')
+
+        if ($hasFrontmatter) {
+            for ($i = 1; $i -lt $fileLines.Count; $i++) {
+                if ($fileLines[$i].Trim() -eq '---') {
+                    $frontmatterClose = $i
+                    break
+                }
+            }
+
+            if ($frontmatterClose -gt 0) {
+                $insertAt = $frontmatterClose
+            }
+        } else {
+            for ($i = 0; $i -lt $fileLines.Count; $i++) {
+                if ($fileLines[$i] -match '^\s*##\s+') {
+                    $insertAt = $i
+                    break
+                }
+            }
+
+            if ($insertAt -lt 0) {
+                $insertAt = $fileLines.Count
             }
         }
 
-        if ($insertAt -ge 0) {
-            $fileLines.Insert($insertAt, $newLine)
-        } else {
-            $fileLines.Insert(0, $newLine)
+        if ($insertAt -lt 0) {
+            $insertAt = 0
         }
+
+        $fileLines.Insert($insertAt, $newLine)
     }
 }
 
-Write-TextFilePreservingEol -Path $MetadataPath -Lines $fileLines.ToArray() -DominantEol $fileContext.DominantEol -HadTrailingNewline $fileContext.HadTrailingNewline
+Write-TextFilePreservingEol -Path $MetadataPath -FileContext $fileContext
 
 $result = [ordered]@{
     status                        = 'KB_DEPLOYMENT_METADATA_OK'
