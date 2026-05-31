@@ -142,6 +142,7 @@ Do NOT use esta skill para:
   [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md),
   seção `Diagnostico de codigo gerado truncado por falha de generation`.
 - Quando o contexto vier de `xpz-msbuild-import-export` com import OK (`importação real efetiva provada` ou equivalente) mas o evento GeneXus não surtir efeito na UI, ou quando o usuário pedir inspeção pós-build do `.cs` por suspeita de **mecanismo (b)** (strip silencioso por DCE), tratar como frente de **conteúdo gerado**, não como falha do wrapper de build nem como reabertura do sub-estado de import. Após build ou `SpecifyGenerate` concluído com artefato gerado disponível, buscar no `.cs` referenciado pelo nome do evento; zero ocorrências ou handler com corpo vazio/sem efeito observável reforça hipótese (b). Ver [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md), seção `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`; para verificação estrutural de `oparms` e `ajax_rsp_assign_sdt_attri` em `WebPanel`, ver também subseção `WebPanel, Tab aninhada e re-bind de SDT em data attributes` no mesmo `02`.
+- Para **Transaction** e sintomas do tipo “rule não dispara” ou “valor não chega no browser” após import OK com geração pendente ou concluída, complementar a busca por evento com `scripts/Find-CsAttributeAssignments.ps1` no `.cs` web da transação (`-CsPath` absoluto, `-Attribute` com ou sem prefixo `A<n>`, `-AsJson`): mapeia cópias da atribuição por método (`OnLoadActions*`, `CheckExtendedTable*`, `Valid_*`, etc.), indica `AssignAttri` no mesmo método e detecta triplet típico (override INS/`Insert_*`, default por proc, fallback ternário) com `cascadeOrder` para diagnóstico de `if/else if` mutuamente exclusivos.
 - **Mecanismo (a) — rejeição na importação:** se o sintoma for `Unknown function '<nome>'`, `src0294` (ou similar) ou `exitCode != 0` / `errors` no `import.json` de importação, **não** investigar o `.cs` gerado como causa primária nesta skill; classificar como frente de import/source e handoff para `xpz-msbuild-import-export` ou correção no XPZ antes de novo build.
 - **Mecanismo (b) — strip por DCE:** sucesso operacional de build **não** prova que o evento foi preservado no `.cs`; a correção típica é tornar o corpo do evento observável ao gerador (ex.: operação opaca via proc externa), conforme `02` — não ajustar parâmetros do wrapper de build nem presumir envelope/XML inválido.
 
@@ -196,6 +197,20 @@ Após a task `MSBuild` concluir, `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXu
 - `environmentRemediationHints` é **omitido** quando não houve ruído GAM filtrado; falha ao montar hints com stdout limpo não deve derrubar o pós-processamento inteiro (`Get-GamPlatformsStdoutPostFilterResult`).
 
 Contrato transversal ampliado (import/export/preview): `10-base-operacional-msbuild-headless.md` e `xpz-msbuild-import-export/SKILL.md`.
+
+### Find-CsAttributeAssignments.ps1
+
+Motor compartilhado de **diagnóstico** no `.cs` gerado (camada web), complementar aos wrappers MSBuild — não substitui classificação de import nem prova sucesso de build.
+
+**Quando usar:** import OK (`importação real efetiva provada` ou equivalente) com geração pendente ou concluída, e sintomas em **Transaction** do tipo “rule não dispara” ou “valor não chega no browser”; também após `SpecifyGenerate`/`BuildAll` quando o `.cs` da transação estiver disponível. Para **WebPanel** e mecanismo **(b)** (evento/handler/DCE), priorizar busca pelo nome do evento conforme `02`; este script não mapeia handlers de evento.
+
+**Parâmetros:**
+
+- `-CsPath` (obrigatório) — caminho absoluto do `.cs` (ex.: `<KbPath>\<Environment>\web\<transaction>.cs`)
+- `-Attribute` (obrigatório) — nome com ou sem prefixo `A<n>`; o motor normaliza para a forma canônica no arquivo
+- `-AsJson` (opcional) — saída estruturada (`methods[]`, `totals`, `tripletPattern.cascadeOrder`, `hasAssignAttriInMethod`)
+
+**Regressão:** `scripts/Test-FindCsAttributeAssignmentsContract.ps1` (sentinela `FIND_CS_ATTRIBUTE_ASSIGNMENTS_CONTRACT_OK`).
 
 ### Invoke-GeneXusKbSpecifyGenerate.ps1
 
