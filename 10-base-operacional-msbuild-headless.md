@@ -682,6 +682,7 @@ Parâmetros transversais esperados:
 - `-MsBuildPath`
 - `-VersionName`
 - `-EnvironmentName`
+- `-ParallelKbRoot` / `-KbMetadataPath` (somente `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`: leem `kb_environment_count`, `deployment_environment_name` e `kb_environment_names` de `kb-source-metadata.md` **sem** inventariar pastas da KB nativa em cada execução; ver `scripts/GeneXusKbDeploymentEnvironmentSupport.ps1` e `xpz-kb-parallel-setup`)
 - `-WorkingDirectory`
 - `-LogPath`
 - `-VerboseLog`

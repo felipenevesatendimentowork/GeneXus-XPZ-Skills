@@ -44,7 +44,16 @@ Caminho explícito do MSBuild.exe. Quando omitido, usa fallback do probe.
 Nome opcional da versão a posicionar antes do build.
 
 .PARAMETER EnvironmentName
-Nome opcional do Environment a posicionar antes do build.
+Nome opcional do Environment a posicionar antes do build. Em KB com kb_environment_count maior que 1
+em kb-source-metadata.md, e obrigatorio (direto ou via deployment_environment_name gravado pelo
+xpz-kb-parallel-setup). Omitir so e valido quando kb_environment_count for 1 no metadata.
+
+.PARAMETER ParallelKbRoot
+Raiz da pasta paralela da KB para resolver kb-source-metadata.md (campos deployment_environment_name,
+kb_environment_count, kb_environment_names). Nao dispara inventario de environments na KB nativa.
+
+.PARAMETER KbMetadataPath
+Caminho explicito para kb-source-metadata.md; prevalece sobre -ParallelKbRoot.
 
 .PARAMETER ForceRebuild
 Quando true, força a regeneração de TODOS os objetos da KB, independentemente de mudança.
@@ -194,7 +203,11 @@ param(
     [ValidateRange(30, 3600)]
     [int]$WatcherSilenceThresholdSeconds = 120,
 
-    [switch]$VerboseLog
+    [switch]$VerboseLog,
+
+    [string]$ParallelKbRoot,
+
+    [string]$KbMetadataPath
 )
 
 Set-StrictMode -Version Latest
@@ -217,6 +230,12 @@ if (-not (Test-Path -LiteralPath $gamPlatformsSupportPath -PathType Leaf)) {
     throw "GAM Platforms support script not found: $gamPlatformsSupportPath"
 }
 . $gamPlatformsSupportPath
+
+$deploymentEnvironmentSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusKbDeploymentEnvironmentSupport.ps1'
+if (-not (Test-Path -LiteralPath $deploymentEnvironmentSupportPath -PathType Leaf)) {
+    throw "Deployment environment support script not found: $deploymentEnvironmentSupportPath"
+}
+. $deploymentEnvironmentSupportPath
 
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
@@ -578,6 +597,7 @@ $script:PathEnrichment  = [ordered]@{
     subdirsSkipped = @()
 }
 $script:WatcherContext  = New-GeneXusMsBuildWatcherContext -StartWatcherRequested $StartWatcher.IsPresent
+$script:DeploymentEnvironmentContext = $null
 $confirmReorgMode       = $null
 $confirmWideRebuildMode = $null
 
@@ -829,6 +849,85 @@ try {
         }
         Write-Output $blockedJson
         exit 46
+    }
+
+    $envResolution = Resolve-GeneXusKbValidationEnvironment -EnvironmentName $EnvironmentName -KbMetadataPath $KbMetadataPath -ParallelKbRoot $ParallelKbRoot
+    $script:DeploymentEnvironmentContext = $envResolution.Context
+
+    if (-not $envResolution.Proceed) {
+        foreach ($reason in $envResolution.BlockingReasons) {
+            Add-BlockingReason -Reason $reason
+        }
+
+        $blocked = [ordered]@{
+            status           = 'bloqueado por politica de seguranca'
+            summary          = $envResolution.Summary
+            exitCode         = 46
+            stage            = 'pre-build'
+            requestedContext = [ordered]@{
+                Configuration                 = $Configuration
+                ForceRebuild                  = $ForceRebuild
+                FailIfReorg                   = $FailIfReorg
+                DoNotExecuteReorg             = $DoNotExecuteReorg
+                EnvironmentName               = $EnvironmentName
+                ParallelKbRoot                = $ParallelKbRoot
+                KbMetadataPath                = $KbMetadataPath
+                AllowReorgRequested           = $AllowReorg.IsPresent
+                AllowReorgConfirmed           = $false
+                ConfirmReorgMode              = $confirmReorgMode
+                AllowWideRebuildRequested     = $AllowWideRebuild.IsPresent
+                AllowWideRebuildConfirmed     = $false
+                ConfirmWideRebuildMode        = $confirmWideRebuildMode
+                StartWatcherRequested         = $StartWatcher.IsPresent
+                deploymentEnvironmentContext  = $envResolution.Context
+            }
+            observedContext  = [ordered]@{
+                KbOpen            = $false
+                BuildAllDone      = $false
+                ReorgDetected     = $false
+                TimedOut          = $false
+                MsBuildExitCode   = $null
+                pathEnrichment    = $script:PathEnrichment
+            }
+            resolvedPaths    = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $KbPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath          = $resolvedLogPath
+                KbMetadataPath   = $envResolution.Context.kbSourceMetadataPath
+                ParallelKbRoot   = (Get-FullPathSafe -PathValue $ParallelKbRoot)
+            }
+            pathActions      = [ordered]@{ WorkingDirectory = 'blocked-policy' }
+            artifacts        = [ordered]@{
+                ProbeLogPath     = $null
+                MsBuildFilePath  = $null
+                StdOutPath       = $null
+                StdErrPath       = $null
+                ExecutionLogPath = $resolvedLogPath
+            }
+            watcherContext   = $script:WatcherContext
+            blockingReasons  = @($script:BlockingReasons)
+            warnings         = @($script:Warnings)
+            strategyTrace    = @($script:StrategyTrace)
+        }
+        $blocked['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($envResolution.EnvironmentName)) {
+        $EnvironmentName = $envResolution.EnvironmentName
+        if ($envResolution.Context.deploymentEnvironmentSource -eq 'kb-source-metadata') {
+            Add-StrategyTrace -Message 'EnvironmentName aplicado a partir de deployment_environment_name em kb-source-metadata.md.'
+        }
     }
 
     # Gate de segurança: -StartWatcher requer -MonitorLogPath
@@ -1471,6 +1570,9 @@ try {
         requestedContext = [ordered]@{
             VersionName                = $VersionName
             EnvironmentName            = $EnvironmentName
+            ParallelKbRoot             = $ParallelKbRoot
+            KbMetadataPath             = $KbMetadataPath
+            deploymentEnvironmentContext = $script:DeploymentEnvironmentContext
             ForceRebuild               = $ForceRebuild
             CompileMains               = $CompileMains
             DetailedNavigation         = $DetailedNavigation
@@ -1535,6 +1637,13 @@ try {
 
     if ($null -ne $environmentRemediationHints) {
         $diagnostic['environmentRemediationHints'] = $environmentRemediationHints
+    }
+
+    if ($null -ne $script:DeploymentEnvironmentContext) {
+        if (-not (Test-GeneXusKbActiveEnvironmentMatchesValidation -ActiveEnvironment $activeEnvironmentOutput -DeploymentEnvironmentContext $script:DeploymentEnvironmentContext)) {
+            $expectedEnv = $script:DeploymentEnvironmentContext['validationEnvironmentResolved']
+            Add-WarningMessage -Message ("ActiveEnvironment observado ('{0}') diverge do environment de validacao resolvido ('{1}'). Nao tratar compilou limpo como validacao deploy nesse environment." -f $activeEnvironmentOutput, $expectedEnv)
+        }
     }
 
     $diagnostic['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath

@@ -19,6 +19,10 @@ Campos retornados e sua origem em kb-source-metadata.md:
                                     (GUID da KB -- nao o GUID da versao em ## Source/Version;
                                     implementacoes que lerem source_guid de ## Source/Version
                                     serao semanticamente incorretas mesmo com parse valido)
+  deployment_environment_name     : frontmatter — identificador MSBuild do environment de
+                                    validacao/deploy (ex.: NETPostgreSQL); gravado por setup
+  kb_environment_count            : frontmatter — contagem de environments (inventario no setup)
+  kb_environment_names            : frontmatter — lista separada por virgula (inventario no setup)
 
 Campos ausentes sao indicados com "(ausente)" em vez de falha silenciosa.
 
@@ -116,10 +120,17 @@ if (-not $sourceGuid) {
     $sourceGuid = Get-MarkdownTableValue -Lines $lines -SectionName 'Source' -FieldName 'kb (GUID)'
 }
 
+$deploymentEnvironment = Get-DirectFieldValue -Lines $lines -FieldName 'deployment_environment_name'
+$kbEnvironmentCount = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_count'
+$kbEnvironmentNames = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_names'
+
 $values = [ordered]@{
     last_xpz_materialization_run_at = $lastMaterialization
     kb_name = $kbName
     source_guid = $sourceGuid
+    deployment_environment_name = $deploymentEnvironment
+    kb_environment_count = $kbEnvironmentCount
+    kb_environment_names = $kbEnvironmentNames
 }
 
 foreach ($field in $values.Keys) {

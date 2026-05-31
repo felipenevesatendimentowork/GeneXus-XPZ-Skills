@@ -305,6 +305,12 @@
           "condition": "FailIfReorg=false (ou equivalente) sem -AllowReorg e confirmacao.",
           "wrappers": ["Invoke-GeneXusKbBuildAll.ps1"],
           "jsonHints": ["requestedContext.FailIfReorg", "requestedContext.AllowReorgRequested"]
+        },
+        {
+          "id": "environment-validacao-indefinido",
+          "condition": "KB multi-environment (kb_environment_count > 1 no metadata) sem -EnvironmentName e sem deployment_environment_name; ou metadata de environments ausente; ou chamada sem -ParallelKbRoot/-KbMetadataPath e sem -EnvironmentName.",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+          "jsonHints": ["requestedContext.deploymentEnvironmentContext", "blockingReasons", "resolvedPaths.KbMetadataPath"]
         }
       ]
     },

@@ -95,7 +95,7 @@ function Get-WrapperFields {
 
     $result = @{}
     foreach ($line in $OutputLines) {
-        $match = [regex]::Match($line, '^\s*(?<key>last_xpz_materialization_run_at|kb_name|source_guid)\s*[:=]\s*(?<value>.*)\s*$')
+        $match = [regex]::Match($line, '^\s*(?<key>last_xpz_materialization_run_at|kb_name|source_guid|deployment_environment_name|kb_environment_count|kb_environment_names)\s*[:=]\s*(?<value>.*)\s*$')
         if ($match.Success) {
             $result[$match.Groups['key'].Value] = $match.Groups['value'].Value.Trim()
         }
@@ -118,6 +118,9 @@ $expected = [ordered]@{
     last_xpz_materialization_run_at = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'last_xpz_materialization_run_at')
     kb_name = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'kb_name')
     source_guid = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'source_guid')
+    deployment_environment_name = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'deployment_environment_name')
+    kb_environment_count = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'kb_environment_count')
+    kb_environment_names = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'kb_environment_names')
 }
 
 if (-not $expected.kb_name) {
@@ -166,10 +169,16 @@ $outputLines = @($wrapperOutput | ForEach-Object { $_.ToString() })
 $actual = Get-WrapperFields -OutputLines $outputLines
 $failures = New-Object System.Collections.Generic.List[string]
 
-foreach ($field in @('last_xpz_materialization_run_at', 'kb_name', 'source_guid')) {
+$requiredWrapperFields = @('last_xpz_materialization_run_at', 'kb_name', 'source_guid')
+$optionalWrapperFields = @('deployment_environment_name', 'kb_environment_count', 'kb_environment_names')
+
+foreach ($field in ($requiredWrapperFields + $optionalWrapperFields)) {
     $expectedValue = $expected[$field]
 
     if (-not $expectedValue) {
+        if ($optionalWrapperFields -contains $field) {
+            continue
+        }
         "PENDENTE_DE_DADOS: $field ausente no metadata"
         continue
     }

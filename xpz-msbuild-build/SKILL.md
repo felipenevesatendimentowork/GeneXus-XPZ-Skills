@@ -69,7 +69,7 @@ Use esta skill para:
 - configurar o modo de build antes de `BuildAll` via `SetConfiguration` (valores: `Release`, `Debug`, `Performance Test`)
 - classificar resultado de build em categorias operacionais explícitas
 - apoiar decisão do usuário sobre o próximo passo após import
-- resolver sub-estado `importação real efetiva provada, geração de runtime pendente` declarado por `xpz-msbuild-import-export` — quando import está provado mas artefatos de runtime ainda refletem versão anterior, executar build é o passo que atualiza os artefatos gerados; `specify e generate concluídos` ou `compilou limpo` confirmam que o runtime passou a refletir a versão importada; quando persistir dúvida após build confirmado, `Test-GeneXusRuntimeFreshness.ps1` (base compartilhada) pode ser usado como confirmação adicional somente leitura — verifica `nav_objs.xml` e timestamps dos artefatos gerados sem abrir KB ou invocar MSBuild
+- resolver sub-estado `importação real efetiva provada, geração de runtime pendente` declarado por `xpz-msbuild-import-export` — quando import está provado mas artefatos de runtime ainda refletem versão anterior, executar build é o passo que atualiza os artefatos gerados no **environment usado no build**; `specify e generate concluídos` ou `compilou limpo` confirmam sucesso operacional **nesse** environment — em KB multi-environment **não** equivalem sozinhos a “a aplicação em IIS/self-host refletiu o import” sem `-EnvironmentName`/`deployment_environment_name` alinhados ao deploy; quando persistir dúvida após build confirmado, `Test-GeneXusRuntimeFreshness.ps1` (base compartilhada) pode ser usado como confirmação adicional somente leitura — verifica `nav_objs.xml` e timestamps em `CSharpModel\web` (compartilhado entre environments), sem substituir checagem do environment de deploy
 
 Do NOT use esta skill para:
 - executar reorg sem autorização explícita do usuário
@@ -131,7 +131,25 @@ Do NOT use esta skill para:
 - Quando `SetActiveVersion` ou `SetActiveEnvironment` falhar, tratar como bloqueio
   operacional explícito: a versão ou o `Environment` solicitado não existe na KB. O
   diagnóstico deve orientar omitir `-VersionName` ou `-EnvironmentName` para usar o
-  contexto ativo, quando esse for o objetivo.
+  contexto ativo **somente** quando `kb_environment_count` em `kb-source-metadata.md` for
+  `1` (ou quando o objetivo for explicitamente o environment ativo da IDE). Em KB
+  multi-environment (`kb_environment_count` > 1), **nunca** omitir `-EnvironmentName` na
+  validação pós-import alinhada ao deploy — usar parâmetro explícito ou
+  `deployment_environment_name` gravado pelo `xpz-kb-parallel-setup`.
+- **Validação deploy (objetivo A)** vs **fix completo multi-environment (objetivo B)**:
+  - **A:** um build (`BuildAll` ou `SpecifyGenerate`) com `-EnvironmentName` igual ao
+    environment que serve a aplicação (campo `deployment_environment_name` no metadata, ou
+    parâmetro). Conferir `observedContext.ActiveEnvironment` no JSON — deve coincidir com o
+    environment de validação resolvido (`deploymentEnvironmentContext` no JSON).
+  - **B:** quando a frente exigir fechamento em todos os generators ativos, seguir
+    [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) (seção
+    «Saída do gerador GeneXus por environment»): **uma rodada por environment** listado em
+    `kb_environment_names` no metadata, com `-EnvironmentName` em cada chamada e conferência
+    do `.cs` em `<KbPath>\<Env>\web\`. Não confundir uma rodada A bem-sucedida com B completo.
+- Ao chamar `Invoke-GeneXusKbBuildAll.ps1` ou `Invoke-GeneXusKbSpecifyGenerate.ps1` a partir
+  de pasta paralela, passar `-ParallelKbRoot` (ou `-KbMetadataPath`). Os wrappers **leem**
+  `kb_environment_count`, `deployment_environment_name` e `kb_environment_names` do metadata —
+  **não** inventariam environments na KB nativa em cada build.
 - Quando o build falhar com erros C# compatíveis com arquivo gerado truncado, como
   `CS1010` (newline em constante) e `CS1513` (`}` esperada) repetidos no mesmo `.cs`,
   verificar primeiro se o artefato gerado termina abruptamente, sem string/funcao
@@ -791,6 +809,13 @@ Campos relevantes:
     - confirmar que o valor é `Release`, `Debug` ou `Performance Test`
     - emitir `SetConfiguration` como step imediatamente anterior ao `BuildAll`
     - registrar o valor emitido no log e no diagnóstico
+4b. **Environment de validação/deploy (objetivo A):** antes de `BuildAll`/`SpecifyGenerate`,
+    confirmar `kb_environment_count` em `kb-source-metadata.md` (via `-ParallelKbRoot` ou
+    `-KbMetadataPath`). Se `kb_environment_count` > 1: `-EnvironmentName` obrigatório **ou**
+    `deployment_environment_name` preenchido no metadata (setup). Se campos ausentes, bloquear
+    e orientar `xpz-kb-parallel-setup` + `Set-XpzKbSourceMetadataDeployment.ps1`. Se a frente
+    exigir **objetivo B**, planejar uma rodada por nome em `kb_environment_names` (checklist em
+    RESPONSIBILITIES) — não uma única rodada sem `-EnvironmentName`.
 5. Validar explicitamente `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory`,
    `LogPath` e existência de `Genexus.Tasks.targets`
 6. Resolver `GeneXusDir` e `MsBuildPath` por ordem explícita de precedência e fallback,
@@ -879,6 +904,10 @@ Campos relevantes:
 - [ ] Quando o sintoma for Transaction (“rule não dispara” ou valor não chega no browser) após import OK com geração disponível, `scripts/Find-CsAttributeAssignments.ps1` foi executado no `.cs` web (`-CsPath` absoluto, `-Attribute`, `-AsJson`); cópias por método, `AssignAttri` e `tripletDetected`/`cascadeOrder` foram considerados antes de concluir
 - [ ] `watcherContext.watcherLaunched` foi verificado no JSON de resultado; se `false`, a ausência foi documentada e justificada explicitamente
 - [ ] Quando `environmentRemediationHints` estiver presente, a oferta `icacls` foi apresentada como consultiva e opcional, sem confundir com warning nem com falha de build
+- [ ] `kb_environment_count` e `deployment_environment_name` foram lidos do metadata (ou `-EnvironmentName` explícito) antes do build de validação
+- [ ] Com `kb_environment_count` > 1, `-ParallelKbRoot`/`-KbMetadataPath` foi passado e o environment de deploy foi resolvido
+- [ ] `ActiveEnvironment` no JSON foi comparado ao environment de validação resolvido antes de declarar validação deploy OK
+- [ ] Quando a frente exigiu fix completo multi-environment (objetivo B), houve rodada **por** environment em `kb_environment_names`
 
 ---
 
@@ -918,5 +947,7 @@ Campos relevantes:
 - NEVER executar `Invoke-GeneXusDbReorg.ps1` sem confirmação interativa explícita do usuário, mesmo quando `ImpactDatabaseOnly` já foi executado na mesma sessão
 - NEVER emitir `FromModel` ou `Model` em `ImpactDatabaseOnly` sem validação empírica prévia do comportamento desses parâmetros nesta instalação
 - NEVER emitir `SetConfiguration` implicitamente ou inferir o valor de configuração desejado
-- ABORT se `KbPath`, versão, `Environment` ou destino de logs estiverem ambíguos
+- ABORT se `KbPath`, versão, `Environment` de validação/deploy ou destino de logs estiverem ambíguos
+- NEVER executar `BuildAll`/`SpecifyGenerate` de validação pós-import em KB com `kb_environment_count` > 1 sem `-EnvironmentName` resolvido (parâmetro ou `deployment_environment_name` no metadata) — o wrapper bloqueia (exit 46)
+- NEVER tratar `compilou limpo` como prova de que o IIS/self-host refletiu o import quando `ActiveEnvironment` divergir de `deploymentEnvironmentContext.validationEnvironmentResolved`
 - ABORT se não houver ambiente controlado compatível com a fase solicitada
