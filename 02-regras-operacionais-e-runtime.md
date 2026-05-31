@@ -1334,6 +1334,27 @@ Regras de uso:
 - `Regra operacional`: quando a alteracao de `Transaction` impactar atributos exibidos, filtros, abas ou navegacao do pattern web, revisar tambem o `WorkWithForWeb` associado antes de considerar a frente fechada.
 - `Regra operacional`: ao diagnosticar rule ou atributo `Transaction` no codigo gerado da camada web, usar `scripts/Find-CsAttributeAssignments.ps1` no `.cs` da transacao apos build ou `SpecifyGenerate` quando o artefato estiver disponivel; consumo complementar documentado em `xpz-msbuild-build/SKILL.md`.
 
+#### Politica de evidencia para catalogos `Transaction` (geracao XPZ)
+
+Esta subsecao complementa os **niveis de confianca de fonte** do inicio deste documento (`Evidencia direta`, `Inferencia forte`, etc.) com rotulos **especificos de permissao de geracao** para catalogos consultaveis de `Rules`/`Events` em `Transaction` (fonte canônica do catalogo: `xpz-builder/responsibilities-by-type/transaction.md`). Os rotulos abaixo respondem: *o agente pode materializar esta sintaxe no XML/XPZ agora?*
+
+| Rotulo | Significado | Permissao de geracao |
+|--------|-------------|----------------------|
+| `confirmado-import` | Aceitacao ou rejeicao observada na importacao MSBuild/Specifier, com mensagem e `exitCode` rastreaveis | Sintaxe rejeitada: **nao gerar**. Sintaxe aceita: pode gerar apos demais gates |
+| `confirmado-build` | Observado em `BuildAll`/`SpecifyGenerate` (ex.: `spc0150`), com mensagem rastreavel | Idem |
+| `confirmado-acervo` | Uso real no XML da pasta paralela (`ObjetosDaKbEmXml/...`) apos sync recente, ou molde sanitizado reproduzivel nesta base (`01*`) | Pode gerar a sintaxe listada, sujeito a gates de writability e coerencia |
+| `padrao-gx-nao-verificado` | Convencao ou documentacao GeneXus sem teste nesta base nem no acervo paralelo da sessao | **Nao usar como premissa de geracao**; leitura humana ou pesquisa antes de testar |
+| `nao-listar` | Sem evidencia minima | **Nao entra** no catalogo publicado |
+
+Regras de uso:
+
+- `Regra operacional`: cada linha de catalogo `Transaction` (clausula `on <evento>`, tipo de `Event`, sintoma→erro) deve trazer **exatamente um** rotulo da tabela acima.
+- `Regra operacional`: **so gerar** sintaxe com rotulo `confirmado-import`, `confirmado-build` ou `confirmado-acervo`. Itens `padrao-gx-nao-verificado` ficam em subsecao separada, titulada de forma explicita (ex.: «Padrao GeneXus — nao verificado nesta base»), e nunca misturados na mesma tabela que itens confirmados.
+- `Regra operacional`: nao promover item a `confirmado-*` apenas por relato de outro agente, lista do prompt ou documentacao offline; exige import/build reproduzivel na KB alvo **ou** leitura do XML no acervo paralelo **ou** molde sanitizado versionado nesta raiz.
+- `Regra operacional`: mensagens de erro do Specifier com texto literal estavel (ex.: `src0056: Missed ';' at the end of the rule`, `spc0150: Cannot update database`) podem constar com `confirmado-import` ou `confirmado-build` **sem** hospedar o XML da `Transaction` neste repositorio — a evidencia e o contrato motor + classificacao MSBuild, nao o objeto de negocio.
+- `Regra operacional`: citacoes por nome de arquivo (ex.: `Animal.xml`, `VendaPedidoItens.xml`) com `confirmado-acervo` devem indicar que o artefato esta na **pasta paralela da KB** (`ObjetosDaKbEmXml/...` apos sync), salvo quando o exemplo for **molde sanitizado** em `01*` com rastreabilidade em `09`/`GeneXus-XPZ-PrivateMap`; nao tratar esses paths como arquivos desta raiz `GeneXus-XPZ-Skills`.
+- `Regra operacional`: completude aparente de catalogo e risco operacional — listas longas sem rotulo honesto induzem o agente a tentar sintaxe nao validada; preferir catalogo menor e rotulado a checklist aparentemente exaustiva.
+
 ### Politica para `API`
 
 - `Evidência direta`: a base observa apenas `1` `API` real nesta KB.

@@ -26,6 +26,28 @@ This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entr
 - Also review the corresponding `Table`, focusing on `Transaction coupling and physical context` and `Secondary indexes and embedded index members`.
 - If the new FK depends on later physical materialization or on an embedded index in the `Table`, treat `Transaction`, `SubTypeGroup`, and `Table` as the minimum review set for that phase.
 
+### Evidence labels for Transaction catalogs (XPZ generation)
+
+Canonical policy (Portuguese): [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md), subsection **Politica de evidencia para catalogos `Transaction` (geracao XPZ)** under **Politica para `Transaction`**.
+
+Every row in a consultable catalog here (`on <event>`, `Event` types, symptom→error) must carry **exactly one** label:
+
+| Label | Generation permission |
+|-------|-------------------------|
+| `confirmado-import` | Rejection/acceptance observed on MSBuild import with traceable message and `exitCode` — do not generate rejected syntax |
+| `confirmado-build` | Observed on `BuildAll`/`SpecifyGenerate` (e.g. `spc0150`) — same |
+| `confirmado-acervo` | Real use in parallel KB XML (`ObjetosDaKbEmXml/...` after sync) or reproducible sanitized template in `01*` | May generate, subject to writability and coherence gates |
+| `padrao-gx-nao-verificado` | GeneXus convention/docs not tested in this base or parallel corpus in session | **Do not use as generation premise** — separate subsection only |
+| `nao-listar` | No minimum evidence | **Do not publish** in the catalog |
+
+Operational rules:
+
+- **Generate only** syntax labeled `confirmado-import`, `confirmado-build`, or `confirmado-acervo`.
+- Do not promote to `confirmado-*` from another agent’s report or an offline list alone; require reproducible import/build on the target KB, XML read in the parallel corpus, or a versioned sanitized template in this repo.
+- Stable Specifier messages (e.g. `src0056`, `spc0150` with full text) may be documented under `confirmado-import` / `confirmado-build` without copying business `Transaction` XML into this repository.
+- File-name examples (`Animal.xml`, etc.) with `confirmado-acervo` must state **parallel KB folder** (`ObjetosDaKbEmXml/...`) unless the example is a sanitized template in `01*`.
+- Future catalog sections in this file (rules `on <event>`, `Events` restrictions) must follow these labels; do not duplicate the full policy in other skills — cross-reference only.
+
 ## Quality Checklist
 
 - [ ] For `Transaction`, every `Level/Attribute@guid` exists in `<Attributes>/Attribute@guid`
@@ -35,6 +57,8 @@ This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entr
 - [ ] For `Transaction`, the primary edit block was declared before editing, any block transition was justified explicitly, and intended scope via web editing vs BC was stated when relevant
 - [ ] When the delta involves `Rules` or `Events` with attribute assignments, `Test-GeneXusTransactionWritability.ps1` was run and any `writable=false` attribute was excluded from assignments (or the assignment caused an explicit ABORT)
 - [ ] If the phase introduced a new FK sustained by `SubTypeGroup`, the corresponding `Table` was reviewed and the `Transaction + SubTypeGroup + Table` minimum review set was honored
+- [ ] Any new or updated catalog row in this file uses exactly one evidence label (`confirmado-import`, `confirmado-build`, `confirmado-acervo`, `padrao-gx-nao-verificado`); nothing was promoted to `confirmado-*` without import/build, parallel corpus XML, or sanitized template evidence
+- [ ] `padrao-gx-nao-verificado` items, if any, live in a clearly titled subsection separate from confirmed rows; no syntax was generated from unverified items alone
 
 ## Related gates and WORKFLOW links
 

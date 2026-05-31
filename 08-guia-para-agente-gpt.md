@@ -684,6 +684,8 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - usar `Events` como bloco inicial para comportamento via interface, acao do usuario e fluxo via edicao web
 - usar `Execution context` como bloco inicial quando a duvida central for a diferenca entre via edicao web e via BC
 - usar `Identity and container` como bloco inicial para `parent`, `module`, `fullyQualifiedName`, origem estrutural e risco de clonagem
+- ao materializar ou estender catalogo de `Rules`/`Events` em `Transaction`, aplicar os rotulos de evidencia e permissao de geracao em `02-regras-operacionais-e-runtime.md` (**Politica de evidencia para catalogos `Transaction` (geracao XPZ)**) e em `xpz-builder/responsibilities-by-type/transaction.md` (**Evidence labels for Transaction catalogs**); so gerar sintaxe com `confirmado-import`, `confirmado-build` ou `confirmado-acervo`
+- exemplos por nome de arquivo no acervo real (`ObjetosDaKbEmXml/...` na pasta paralela) ou molde sanitizado em `01*` — nao presumir que o XML esta versionado nesta raiz `GeneXus-XPZ-Skills`
 
 ### Regra adicional para revisao de `WebPanel`
 
