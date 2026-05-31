@@ -176,6 +176,7 @@ Para as consultas mais frequentes, o wrapper `Query-*KbIntelligence.ps1` aceita 
 - **list-by-type**: `-ObjectType` (obrigatório, tipo exato, ex: `Procedure`), `-Limit` (opcional); lista todos os objetos de um tipo sem necessidade de nome — use quando o usuário perguntar "quais são os X da KB"
 - **object-info**: `-ObjectType` (obrigatório, tipo exato, ex: `Procedure`), `-ObjectName` (obrigatório, nome exato do objeto)
 - **attribute-info**: `-ObjectName` (obrigatório, nome exato do atributo); retorna sinais leves como `Formula` e `idBasedOn` sem varrer o acervo inteiro
+- **who-uses** / **what-uses** em `Procedure` (e alvos resolvidos em `Formula` de `Attribute`): o índice inclui dependências via `Property Formula` quando o padrão de chamada coincide com `Source` efetivo; para semântica da expressão ou funções não indexadas, abrir o XML do atributo
 - **transaction-attributes** / **transaction-writable-attributes**: `-ObjectName` (obrigatório, nome exato da Transaction); lista atributos por Level e sinais leves de gravabilidade; para decisão final de geração, use os gates completos da skill `xpz-builder`
 
 A documentação completa de todas as consultas e seus parâmetros está em [scripts/README-kb-intelligence.md](../scripts/README-kb-intelligence.md).

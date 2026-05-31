@@ -1,0 +1,21 @@
+{
+  "description": "Attribute Formula extraction validation for FabricaBrasil production parallel KB (C:\\Dev\\Prod\\Gx_FabricaBrasil).",
+  "cases": [
+    {
+      "id": "fabricabrasil-attribute-formula-abate-ordem-em-animal",
+      "source": "Attribute:AbateOrdemJaUsadaEmAnimal",
+      "target": "Procedure:procAbateOrdemEmAnimal",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "expectation": "procAbateOrdemEmAnimal(...) in Property Formula"
+    },
+    {
+      "id": "fabricabrasil-attribute-formula-resumo-atualizacao",
+      "source": "Attribute:AbateOrdemResumoAtualizacao",
+      "target": "Procedure:procResumoAtualizacao",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "expectation": "procResumoAtualizacao(...) in Property Formula"
+    }
+  ]
+}

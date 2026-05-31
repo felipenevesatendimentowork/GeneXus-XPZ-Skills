@@ -1,0 +1,21 @@
+{
+  "description": "Attribute Formula extraction validation for wsEducacaoSpTeste production parallel KB (C:\\Dev\\Prod\\Gx_wsEducacaoSpTeste).",
+  "cases": [
+    {
+      "id": "wseducacao-attribute-formula-guia-ped-resumo-lotes",
+      "source": "Attribute:GuiaPedResumoLotes",
+      "target": "Procedure:procGuiaPedResumoLotes",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "expectation": "procGuiaPedResumoLotes(...) in Property Formula"
+    },
+    {
+      "id": "wseducacao-attribute-formula-guia-ped-validade-lotes",
+      "source": "Attribute:GuiaPedResumoValidadeDeLotes",
+      "target": "Procedure:procGuiaPedResumoValidadeDeLotes",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "expectation": "procGuiaPedResumoValidadeDeLotes(...) in Property Formula"
+    }
+  ]
+}

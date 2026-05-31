@@ -57,6 +57,19 @@ Criar uma fixture mínima que execute `Build-GeneXusImportFileEnvelope.ps1` com:
 
 Implementar quando houver nova frente de testes de integração dos motores de envelope ou quando outra mudança em `Build-GeneXusImportFileEnvelope.ps1` aumentar o risco de regressão nesse gate.
 
+## Extrator de `Property Formula` em `Attribute` (grafo who-uses)
+
+**Importância:** alta
+**Maturidade:** implementado (2026-05-31)
+
+**Origem:** lacuna confirmada em pasta paralela — procedures usadas só em atributo calculado eram invisíveis a `who-uses`.
+
+**Entrega:** `extract_attribute_formula_call_evidence` em `Build-KbIntelligenceIndex.py` (assinatura do extrator `3`); self-test `Test-KbIntelligenceAttributeFormulaExtractionSelfTest.ps1`; notas em `gx-object-type-catalog.json` e `scripts/README-kb-intelligence.md`.
+
+**Pendente operacional:** casos positivos na bateria `kb-intelligence-kbexemplo.validation-extraction-semantic.json` quando a KB laboratorio estiver acessivel; rebuild das pastas paralelas que ja tinham indice na versao `2`.
+
+**Frente 2 (ainda ideia):** gravabilidade completa materializada no SQLite — ver secao abaixo.
+
 ## Gravabilidade de atributos materializada no índice SQLite
 
 **Importância:** alta

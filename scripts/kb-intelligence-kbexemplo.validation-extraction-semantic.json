@@ -1,5 +1,5 @@
 {
-  "description": "Validation cases for KB Intelligence Phase 5 semantic relation increments using the KBExemplo parallel KB.",
+  "description": "Validation cases for KB Intelligence Phase 5 semantic relation increments. Most cases target the KBExemplo parallel KB; cases phase5-case-65..68 are positive Attribute Formula extractions confirmed on production parallel KBs (FabricaBrasil / wsEducacaoSpTeste) and must be validated with those inventories — see kb-intelligence-fabricabrasil.validation-extraction-attribute-formula.json and kb-intelligence-wseducacaospteste.validation-extraction-attribute-formula.json.",
   "cases": [
     {
       "id": "phase5-case-1-transaction-attcustomtype-resolves-sdt-context",
@@ -512,6 +512,42 @@
       "expected_rule": "attcustomtype_resolved_object",
       "should_exist": false,
       "expectation": "Top-level ATTCUSTOMTYPE with bas: prefix in SDT must not create a resolved SDT relation"
+    },
+    {
+      "id": "phase5-case-65-fabricabrasil-attribute-formula-abate-ordem-em-animal",
+      "source": "Attribute:AbateOrdemJaUsadaEmAnimal",
+      "target": "Procedure:procAbateOrdemEmAnimal",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "laboratory_kb": "FabricaBrasil",
+      "expectation": "procAbateOrdemEmAnimal(...) in Property Formula on FabricaBrasil parallel KB"
+    },
+    {
+      "id": "phase5-case-66-fabricabrasil-attribute-formula-resumo-atualizacao",
+      "source": "Attribute:AbateOrdemResumoAtualizacao",
+      "target": "Procedure:procResumoAtualizacao",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "laboratory_kb": "FabricaBrasil",
+      "expectation": "procResumoAtualizacao(...) in Property Formula on FabricaBrasil parallel KB"
+    },
+    {
+      "id": "phase5-case-67-wseducacao-attribute-formula-guia-ped-resumo-lotes",
+      "source": "Attribute:GuiaPedResumoLotes",
+      "target": "Procedure:procGuiaPedResumoLotes",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "laboratory_kb": "wsEducacaoSpTeste",
+      "expectation": "procGuiaPedResumoLotes(...) in Property Formula on wsEducacaoSpTeste parallel KB"
+    },
+    {
+      "id": "phase5-case-68-wseducacao-attribute-formula-guia-ped-validade-lotes",
+      "source": "Attribute:GuiaPedResumoValidadeDeLotes",
+      "target": "Procedure:procGuiaPedResumoValidadeDeLotes",
+      "expected_rule": "attribute_formula_procedure_direct_call",
+      "should_exist": true,
+      "laboratory_kb": "wsEducacaoSpTeste",
+      "expectation": "procGuiaPedResumoValidadeDeLotes(...) in Property Formula on wsEducacaoSpTeste parallel KB"
     }
   ]
 }

@@ -21,6 +21,7 @@ Current scope:
 - Source Business Component Delete calls with receiver resolved by variable ATTCUSTOMTYPE
 - Source Business Component Check calls with receiver resolved by variable ATTCUSTOMTYPE
 - Source simple Business Component Insert and Update calls with receiver resolved by variable ATTCUSTOMTYPE
+- Attribute Formula property references to Procedure, WebPanel and DataProvider when resolvable in the local inventory
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ from pathlib import Path
 from typing import Iterable
 
 # Incrementar quando a cobertura ou regras do indexador mudarem de forma material (nao em refator inerte).
-EXTRACTOR_SIGNATURE_VERSION = "2"
+EXTRACTOR_SIGNATURE_VERSION = "3"
 
 
 def compute_extractor_signature_hash() -> str:
@@ -88,6 +89,10 @@ ATTCOLLECTION_PROPERTY_RE = re.compile(
 )
 IDBASEDON_PROPERTY_RE = re.compile(
     r"<Property>\s*<Name>idBasedOn</Name>\s*<Value>(?P<value>.*?)</Value>\s*</Property>",
+    re.IGNORECASE | re.DOTALL,
+)
+FORMULA_PROPERTY_RE = re.compile(
+    r"<Property>\s*<Name>Formula</Name>\s*<Value>(?P<value>.*?)</Value>\s*</Property>",
     re.IGNORECASE | re.DOTALL,
 )
 OBJECT_TYPE_GUID_RE = re.compile(r'<Object\b[^>]*\btype="([^"]+)"')
@@ -442,6 +447,116 @@ def direct_call_pattern(names: set[str]) -> re.Pattern[str] | None:
         return None
     alternatives = "|".join(re.escape(name) for name in sorted(names, key=len, reverse=True))
     return re.compile(rf"\b(?P<name>{alternatives})\s*\(", re.IGNORECASE)
+
+
+def append_call_evidences_from_expression(
+    evidences: list[Evidence],
+    *,
+    source: ObjectInfo,
+    xml_text: str,
+    expression: str,
+    expression_start: int,
+    evidence_role: str,
+    procedure_lookup: dict[str, str],
+    webpanel_lookup: dict[str, str],
+    data_provider_lookup: dict[str, str],
+    data_provider_direct_re: re.Pattern[str] | None,
+    relation_kind_procedure: str,
+    relation_kind_webpanel_link: str,
+    relation_kind_webpanel_create: str,
+    relation_kind_dataprovider: str,
+    extractor_rule_procedure_direct: str,
+    extractor_rule_procedure_dot: str,
+    extractor_rule_webpanel_link: str,
+    extractor_rule_webpanel_create: str,
+    extractor_rule_dataprovider_direct: str,
+) -> None:
+    line_no = line_number_at(xml_text, expression_start)
+    for match in PROCEDURE_DOT_CALL_RE.finditer(expression):
+        matched_name = match.group("name")
+        target_name = procedure_lookup.get(matched_name.lower())
+        if target_name:
+            add_evidence(
+                evidences,
+                source=source,
+                target_type="Procedure",
+                target_name=target_name,
+                relation_kind=relation_kind_procedure,
+                line=line_no,
+                column=match.start("name") + 1,
+                snippet=expression,
+                extractor_rule=extractor_rule_procedure_dot,
+                evidence_role=evidence_role,
+            )
+
+    for match in PROCEDURE_DIRECT_RE.finditer(expression):
+        matched_name = match.group("name")
+        target_name = procedure_lookup.get(matched_name.lower())
+        if target_name:
+            add_evidence(
+                evidences,
+                source=source,
+                target_type="Procedure",
+                target_name=target_name,
+                relation_kind=relation_kind_procedure,
+                line=line_no,
+                column=match.start("name") + 1,
+                snippet=expression,
+                extractor_rule=extractor_rule_procedure_direct,
+                evidence_role=evidence_role,
+            )
+
+    for match in WEBPANEL_DOT_LINK_RE.finditer(expression):
+        matched_name = match.group("name")
+        target_name = webpanel_lookup.get(matched_name.lower())
+        if target_name:
+            add_evidence(
+                evidences,
+                source=source,
+                target_type="WebPanel",
+                target_name=target_name,
+                relation_kind=relation_kind_webpanel_link,
+                line=line_no,
+                column=match.start("name") + 1,
+                snippet=expression,
+                extractor_rule=extractor_rule_webpanel_link,
+                evidence_role=evidence_role,
+            )
+
+    for match in WEBPANEL_DOT_CREATE_RE.finditer(expression):
+        matched_name = match.group("name")
+        target_name = webpanel_lookup.get(matched_name.lower())
+        if target_name:
+            add_evidence(
+                evidences,
+                source=source,
+                target_type="WebPanel",
+                target_name=target_name,
+                relation_kind=relation_kind_webpanel_create,
+                line=line_no,
+                column=match.start("name") + 1,
+                snippet=expression,
+                extractor_rule=extractor_rule_webpanel_create,
+                evidence_role=evidence_role,
+            )
+
+    if data_provider_direct_re:
+        for match in data_provider_direct_re.finditer(expression):
+            matched_name = match.group("name")
+            target_name = data_provider_lookup.get(matched_name.lower())
+            if target_name:
+                add_evidence(
+                    evidences,
+                    source=source,
+                    target_type="DataProvider",
+                    target_name=target_name,
+                    relation_kind=relation_kind_dataprovider,
+                    line=line_no,
+                    column=match.start("name") + 1,
+                    snippet=expression,
+                    extractor_rule=extractor_rule_dataprovider_direct,
+                    evidence_role=evidence_role,
+                )
 
 
 def extract_evidence(
@@ -1369,6 +1484,48 @@ def extract_attribute_idbasedon_domain_evidence(
     return evidences
 
 
+def extract_attribute_formula_call_evidence(
+    source_objects: Iterable[ObjectInfo],
+    procedure_names: set[str],
+    webpanel_names: set[str],
+    data_provider_names: set[str],
+) -> list[Evidence]:
+    evidences: list[Evidence] = []
+    procedure_lookup = case_insensitive_lookup(procedure_names, "Procedure")
+    webpanel_lookup = case_insensitive_lookup(webpanel_names, "WebPanel")
+    data_provider_lookup = case_insensitive_lookup(data_provider_names, "DataProvider")
+    data_provider_direct_re = direct_call_pattern(data_provider_names)
+    for source in source_objects:
+        xml_text = read_text(source.path)
+        for match in FORMULA_PROPERTY_RE.finditer(xml_text):
+            raw_value = match.group("value")
+            expression = html.unescape(raw_value).strip()
+            if not expression:
+                continue
+            append_call_evidences_from_expression(
+                evidences,
+                source=source,
+                xml_text=xml_text,
+                expression=expression,
+                expression_start=match.start("value"),
+                evidence_role="Property Formula",
+                procedure_lookup=procedure_lookup,
+                webpanel_lookup=webpanel_lookup,
+                data_provider_lookup=data_provider_lookup,
+                data_provider_direct_re=data_provider_direct_re,
+                relation_kind_procedure="formula_calls_procedure",
+                relation_kind_webpanel_link="formula_calls_webpanel",
+                relation_kind_webpanel_create="formula_creates_webcomponent",
+                relation_kind_dataprovider="formula_calls_dataprovider",
+                extractor_rule_procedure_direct="attribute_formula_procedure_direct_call",
+                extractor_rule_procedure_dot="attribute_formula_procedure_dot_call",
+                extractor_rule_webpanel_link="attribute_formula_webpanel_dot_link",
+                extractor_rule_webpanel_create="attribute_formula_webpanel_dot_create",
+                extractor_rule_dataprovider_direct="attribute_formula_dataprovider_direct_call",
+            )
+    return evidences
+
+
 def extract_transaction_level_attribute_evidence(
     source_objects: Iterable[ObjectInfo],
     attribute_names: set[str],
@@ -1873,6 +2030,12 @@ def main() -> int:
         attributes.values(),
         domain_names=set(objects_by_type.get("Domain", {})),
     )
+    attribute_formula_call_evidences = extract_attribute_formula_call_evidence(
+        attributes.values(),
+        procedure_names=set(procedures),
+        webpanel_names=set(webpanels),
+        data_provider_names=set(data_providers),
+    )
     transaction_level_attribute_evidences = extract_transaction_level_attribute_evidence(
         transactions.values(),
         attribute_names=set(attributes),
@@ -1908,6 +2071,7 @@ def main() -> int:
         *resolved_custom_type_evidences,
         *sdt_item_attcustomtype_resolved_sdt_evidences,
         *attribute_idbasedon_domain_evidences,
+        *attribute_formula_call_evidences,
         *transaction_level_attribute_evidences,
         *transaction_level_table_evidences,
         *table_key_attribute_evidences,

@@ -17,7 +17,7 @@
       "inventoryEligible": true,
       "queryableByKbIntelligence": true,
       "containerType": false,
-      "notes": "Envelope proprio com raiz <Attribute>."
+      "notes": "Envelope proprio com raiz <Attribute>. O indice materializa idBasedOn para Domain e chamadas resolviveis em Property Formula para Procedure, WebPanel e DataProvider (mesmos padroes de Source efetivo); nao cobre semantica completa da expressao nem funcoes de dominio nao mapeadas como objeto local."
     },
     "CategoryDiagram": {
       "objectTypeGuid": "280c149c-48b2-4284-a532-0c999df9e006",
