@@ -141,11 +141,13 @@ Do NOT use esta skill para:
     environment que serve a aplicação (campo `deployment_environment_name` no metadata, ou
     parâmetro). Conferir `observedContext.ActiveEnvironment` no JSON — deve coincidir com o
     environment de validação resolvido (`deploymentEnvironmentContext` no JSON).
-  - **B:** quando a frente exigir fechamento em todos os generators ativos, seguir
+  - **B:** quando a frente exigir fechamento em mais de um generator ativo — **opt-in**, não
+    gate pós-import automático. Prática usual: após A no environment de deploy, **Build na IDE**
+    nos demais environments que a frente ainda cobre (consultar `kb_environment_names` no metadata);
+    falha no segundo environment após A bem-sucedido é **rara**. Headless repetido com
+    `-EnvironmentName` por env é **opcional**, não padrão. Ver
     [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md) (seção
-    «Saída do gerador GeneXus por environment»): **uma rodada por environment** listado em
-    `kb_environment_names` no metadata, com `-EnvironmentName` em cada chamada e conferência
-    do `.cs` em `<KbPath>\<Env>\web\`. Não confundir uma rodada A bem-sucedida com B completo.
+    «Saída do gerador GeneXus por environment»). Não confundir A bem-sucedido com B completo.
 - Ao chamar `Invoke-GeneXusKbBuildAll.ps1` ou `Invoke-GeneXusKbSpecifyGenerate.ps1` a partir
   de pasta paralela, passar `-ParallelKbRoot` (ou `-KbMetadataPath`). Os wrappers **leem**
   `kb_environment_count`, `deployment_environment_name` e `kb_environment_names` do metadata —
@@ -815,8 +817,8 @@ Campos relevantes:
     `-KbMetadataPath`). Se `kb_environment_count` > 1: `-EnvironmentName` obrigatório **ou**
     `deployment_environment_name` preenchido no metadata (setup). Se campos ausentes, bloquear
     e orientar `xpz-kb-parallel-setup` + `Set-XpzKbSourceMetadataDeployment.ps1`. Se a frente
-    exigir **objetivo B**, planejar uma rodada por nome em `kb_environment_names` (checklist em
-    RESPONSIBILITIES) — não uma única rodada sem `-EnvironmentName`.
+    exigir **objetivo B** (opt-in), orientar Build na IDE nos environments secundários ao
+    encerrar — não loop headless automático por `kb_environment_names`.
 5. Validar explicitamente `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory`,
    `LogPath` e existência de `Genexus.Tasks.targets`
 6. Resolver `GeneXusDir` e `MsBuildPath` por ordem explícita de precedência e fallback,
@@ -908,7 +910,7 @@ Campos relevantes:
 - [ ] `kb_environment_count` e `deployment_environment_name` foram lidos do metadata (ou `-EnvironmentName` explícito) antes do build de validação
 - [ ] Com `kb_environment_count` > 1, `-ParallelKbRoot`/`-KbMetadataPath` foi passado e o environment de deploy foi resolvido
 - [ ] `ActiveEnvironment` no JSON foi comparado ao environment de validação resolvido antes de declarar validação deploy OK
-- [ ] Quando a frente exigiu fix completo multi-environment (objetivo B), houve rodada **por** environment em `kb_environment_names`
+- [ ] Quando a frente exigiu objetivo B (opt-in): deploy validado (A) **e** Build na IDE nos environments secundários que a frente cobre — ou headless repetido documentado como exceção
 - [ ] Validação deploy pós-import usou `-PostImportDeployValidation` (ou `-StrictDeployBinCheck`) com `deployment_hosting_kind` no metadata; `deployBinFreshness`/`deployBinCheck` foram lidos — **não** declarar deploy OK com `compilou-mas-dll-destino-desatualizada` ou exit **49**
 
 ---
