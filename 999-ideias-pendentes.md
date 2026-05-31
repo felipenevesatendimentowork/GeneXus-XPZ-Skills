@@ -119,6 +119,7 @@ A classificação deveria cobrir o mesmo contrato hoje usado pelos gates: `key-a
 - tabela `transaction_attribute_writability` no SQLite (`schema_version=2`, extrator `4`)
 - consultas `transaction-attributes` / `transaction-writable-attributes` leem a tabela materializada
 - paridade obrigatoria: `scripts/Test-GeneXusKbIntelligenceWritabilityParity.ps1` (validado em wsEducacaoSpTeste e FabricaBrasil)
+- gates PowerShell `Test-GeneXusTransactionWritability.ps1` e `Test-GeneXusNewWritableTargets.ps1` delegam ao nucleo via `GeneXusTransactionWritabilitySupport.ps1` (sem algoritmo duplicado)
 - `Test-GeneXusNewWritableTargets.ps1` permanece obrigatorio para blocos `New` em `Procedure`
 
 ### Limiar para evoluir de novo

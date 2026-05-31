@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -546,3 +549,171 @@ def build_corpus_writability(
             )
         )
     return rows
+
+
+def load_transaction_type_guid(catalog_path: Path) -> str:
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8-sig"))
+    types = catalog.get("types", {})
+    if not isinstance(types, dict):
+        raise ValueError("Invalid catalog: missing types map")
+    return get_transaction_type_guid(types)
+
+
+def attribute_writability_to_gate_row(row: AttributeWritability) -> dict[str, object]:
+    return {
+        "levelName": row.level_name,
+        "attributeName": row.attribute_name,
+        "key": row.key,
+        "isRedundant": row.is_redundant,
+        "classification": row.classification,
+        "writable": row.writable,
+        "evidence": row.evidence,
+    }
+
+
+def attribute_writability_to_map_entry(row: AttributeWritability) -> dict[str, object]:
+    return {
+        "attributeName": row.attribute_name,
+        "levelName": row.level_name,
+        "key": row.key,
+        "isRedundant": row.is_redundant,
+        "classification": row.classification,
+        "writable": row.writable,
+        "evidence": row.evidence,
+    }
+
+
+def classify_transaction_gate_payload(
+    transaction_path: Path,
+    corpus_folder: Path,
+    transaction_type_guid: str,
+) -> dict[str, object]:
+    transaction_path = transaction_path.resolve()
+    corpus_folder = corpus_folder.resolve()
+    if not transaction_path.is_file():
+        raise ValueError(f"TransactionPath not found: {transaction_path}")
+    if not corpus_folder.is_dir():
+        raise ValueError(f"CorpusFolder not found: {corpus_folder}")
+    meta = get_transaction_metadata(transaction_path, transaction_type_guid)
+    if meta is None:
+        raise ValueError(f"TransactionPath is not a valid Transaction XML: {transaction_path}")
+    tx_name, _ = meta
+    rows = classify_transaction_attributes(transaction_path, corpus_folder, transaction_type_guid)
+    return {
+        "status": "pass",
+        "transactionName": tx_name,
+        "transactionPath": str(transaction_path),
+        "coverage": "complete-1.5.a-1.5.b-1.5.c",
+        "writabilityRuleVersion": WRITABILITY_RULE_VERSION,
+        "levelAttributes": [attribute_writability_to_gate_row(row) for row in rows],
+    }
+
+
+def classify_transactions_batch_payload(
+    transaction_paths: list[Path],
+    corpus_folder: Path,
+    transaction_type_guid: str,
+) -> dict[str, object]:
+    corpus_folder = corpus_folder.resolve()
+    if not corpus_folder.is_dir():
+        raise ValueError(f"CorpusFolder not found: {corpus_folder}")
+    subtype_index = build_subtype_index(corpus_folder)
+    pk_attr_set = build_primary_key_attribute_set(corpus_folder, transaction_type_guid)
+    transaction_level_index = build_transaction_level_index(corpus_folder, transaction_type_guid)
+    transactions: dict[str, dict[str, object]] = {}
+    for raw_path in transaction_paths:
+        transaction_path = Path(raw_path).resolve()
+        if not transaction_path.is_file():
+            raise ValueError(f"TransactionPath not found: {transaction_path}")
+        meta = get_transaction_metadata(transaction_path, transaction_type_guid)
+        if meta is None:
+            continue
+        tx_name, _ = meta
+        rows = classify_transaction_attributes(
+            transaction_path,
+            corpus_folder,
+            transaction_type_guid,
+            subtype_index=subtype_index,
+            pk_attr_set=pk_attr_set,
+            transaction_level_index=transaction_level_index,
+        )
+        attributes: dict[str, dict[str, object]] = {}
+        for row in rows:
+            attributes[row.attribute_name.lower()] = attribute_writability_to_map_entry(row)
+        transactions[tx_name.lower()] = {
+            "transactionName": tx_name,
+            "transactionPath": str(transaction_path),
+            "attributes": attributes,
+        }
+    return {
+        "writabilityRuleVersion": WRITABILITY_RULE_VERSION,
+        "transactions": transactions,
+    }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="GeneXus Transaction writability core (canonical classifier).")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    single = subparsers.add_parser(
+        "classify-transaction",
+        help="Classify one Transaction XML (Test-GeneXusTransactionWritability.ps1 contract).",
+    )
+    single.add_argument("--transaction-path", type=Path, required=True)
+    single.add_argument("--corpus-folder", type=Path, required=True)
+    single.add_argument(
+        "--catalog-path",
+        type=Path,
+        default=Path(__file__).resolve().parent / "gx-object-type-catalog.json",
+    )
+
+    batch = subparsers.add_parser(
+        "classify-batch",
+        help="Classify multiple Transaction XML files into attribute maps keyed by transaction/attribute.",
+    )
+    batch.add_argument("--corpus-folder", type=Path, required=True)
+    batch.add_argument(
+        "--transaction-paths-file",
+        type=Path,
+        required=True,
+        help="JSON array of absolute Transaction XML paths.",
+    )
+    batch.add_argument(
+        "--catalog-path",
+        type=Path,
+        default=Path(__file__).resolve().parent / "gx-object-type-catalog.json",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    catalog_path = args.catalog_path.resolve()
+    transaction_type_guid = load_transaction_type_guid(catalog_path)
+    try:
+        if args.command == "classify-transaction":
+            payload = classify_transaction_gate_payload(
+                args.transaction_path,
+                args.corpus_folder,
+                transaction_type_guid,
+            )
+        elif args.command == "classify-batch":
+            raw_paths = json.loads(args.transaction_paths_file.read_text(encoding="utf-8-sig"))
+            if not isinstance(raw_paths, list):
+                raise ValueError("transaction-paths-file must contain a JSON array of paths")
+            payload = classify_transactions_batch_payload(
+                [Path(str(item)) for item in raw_paths],
+                args.corpus_folder,
+                transaction_type_guid,
+            )
+        else:
+            raise ValueError(f"Unsupported command: {args.command}")
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

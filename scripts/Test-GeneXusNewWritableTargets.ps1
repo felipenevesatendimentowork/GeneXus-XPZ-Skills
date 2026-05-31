@@ -39,26 +39,8 @@ $RxNewBlock = [regex]::new('\bNew\b(?<body>.*?)\bEndNew\b',
     [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 $RxAssignment = [regex]::new('(?m)^\s*(?<lhs>[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)\s*=',
     [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxLevelOpen = [regex]::new('<Level\s+[^>]*name="(?<name>[^"]+)"[^>]*>',
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxAttribute = [regex]::new('<Attribute\s+(?<attrs>[^>]*?)>(?<name>[^<]+)</Attribute>',
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxKeyAttr = [regex]::new('\bkey\s*=\s*"(?<v>[^"]*)"', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxIsRedundant = [regex]::new('\bisRedundant\s*=\s*"(?<v>[^"]*)"', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxFormulaProperty = [regex]::new(
-    '<Property>\s*<Name>Formula</Name>\s*<Value>(?<v>.*?)</Value>\s*</Property>',
-    [System.Text.RegularExpressions.RegexOptions]::Singleline -bor
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxSubtypeBlock = [regex]::new(
-    '<Subtype\b[^>]*>\s*<Name>(?<sub>[^<]+)</Name>\s*<Supertype\b[^>]*>(?<sup>[^<]+)</Supertype>\s*</Subtype>',
-    [System.Text.RegularExpressions.RegexOptions]::Singleline -bor
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxDuplicateIndex = [regex]::new(
-    '<Index\b[^>]*\bType\s*=\s*"Duplicate"[^>]*>(?<body>.*?)</Index>',
-    [System.Text.RegularExpressions.RegexOptions]::Singleline -bor
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-$RxMember = [regex]::new('<Member\b[^>]*>(?<n>[^<]+)</Member>',
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+
+. (Join-Path $PSScriptRoot 'GeneXusTransactionWritabilitySupport.ps1')
 
 function New-Finding {
     param(
@@ -83,27 +65,6 @@ function New-Finding {
         newBlockIndex  = $NewBlockIndex
         attributeName  = $AttributeName
         transactionName = $TransactionName
-        classification = $Classification
-        writable       = $Writable
-        evidence       = $Evidence
-    }
-}
-
-function New-AttrInfo {
-    param(
-        [string]$AttributeName,
-        [string]$LevelName,
-        [bool]$Key,
-        [bool]$IsRedundant,
-        [string]$Classification,
-        [object]$Writable,
-        [string]$Evidence
-    )
-    return [pscustomobject]@{
-        attributeName  = $AttributeName
-        levelName      = $LevelName
-        key            = $Key
-        isRedundant    = $IsRedundant
         classification = $Classification
         writable       = $Writable
         evidence       = $Evidence
@@ -155,260 +116,6 @@ function Get-ProcedureSource {
     $match = $RxSourcePart.Match($text)
     if (-not $match.Success) { return '' }
     return $match.Groups['src'].Value
-}
-
-function Find-AttributeXmlPath {
-    param([string]$AttributeName, [string]$CorpusFolder)
-    $candidate = Join-Path $CorpusFolder (Join-Path 'Attribute' "$AttributeName.xml")
-    if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
-    return $null
-}
-
-function Test-AttributeHasFormula {
-    param([string]$AttributeXmlPath)
-    $text = Get-Content -LiteralPath $AttributeXmlPath -Raw -Encoding UTF8
-    return $RxFormulaProperty.IsMatch($text)
-}
-
-function Build-SubtypeIndex {
-    param([string]$CorpusFolder)
-    $idx = @{}
-    $stgFolder = Join-Path $CorpusFolder 'SubTypeGroup'
-    if (-not (Test-Path -LiteralPath $stgFolder -PathType Container)) { return $idx }
-    foreach ($xml in (Get-ChildItem -LiteralPath $stgFolder -Filter *.xml -File)) {
-        $text = Get-Content -LiteralPath $xml.FullName -Raw -Encoding UTF8
-        foreach ($m in $RxSubtypeBlock.Matches($text)) {
-            $subName = $m.Groups['sub'].Value.Trim()
-            $supName = $m.Groups['sup'].Value.Trim()
-            if ([string]::IsNullOrEmpty($subName) -or [string]::IsNullOrEmpty($supName)) { continue }
-            $key = $subName.ToLowerInvariant()
-            if (-not $idx.ContainsKey($key)) { $idx[$key] = $supName }
-        }
-    }
-    return $idx
-}
-
-function Get-LevelsAndAttributes {
-    param([string]$TransactionXml)
-    $results = @()
-    $levelMatches = $RxLevelOpen.Matches($TransactionXml)
-    if ($levelMatches.Count -eq 0) { return ,@() }
-    for ($i = 0; $i -lt $levelMatches.Count; $i++) {
-        $start = $levelMatches[$i].Index + $levelMatches[$i].Length
-        if ($i + 1 -lt $levelMatches.Count) {
-            $end = $levelMatches[$i + 1].Index
-        } else {
-            $end = $TransactionXml.Length
-        }
-        $chunk = $TransactionXml.Substring($start, $end - $start)
-        $levelName = $levelMatches[$i].Groups['name'].Value
-        foreach ($am in $RxAttribute.Matches($chunk)) {
-            $attrsStr = $am.Groups['attrs'].Value
-            $name = $am.Groups['name'].Value.Trim()
-            if ([string]::IsNullOrEmpty($name)) { continue }
-            $keyMatch = $RxKeyAttr.Match($attrsStr)
-            $isKey = ($keyMatch.Success -and $keyMatch.Groups['v'].Value -eq 'True')
-            $redMatch = $RxIsRedundant.Match($attrsStr)
-            $isRedundant = ($redMatch.Success -and $redMatch.Groups['v'].Value -eq 'True')
-            $results += [pscustomobject]@{
-                LevelName = $levelName
-                AttributeName = $name
-                Key = $isKey
-                IsRedundant = $isRedundant
-            }
-        }
-    }
-    return ,@($results)
-}
-
-function Build-PrimaryKeyAttributeSet {
-    param([string[]]$TransactionPaths)
-    $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($path in $TransactionPaths) {
-        $text = Get-Content -LiteralPath $path -Raw -Encoding UTF8
-        foreach ($la in (Get-LevelsAndAttributes -TransactionXml $text)) {
-            if ($la.Key) { [void]$set.Add($la.AttributeName) }
-        }
-    }
-    return ,$set
-}
-
-function Build-TransactionLevelIndex {
-    param([string[]]$TransactionPaths)
-    $idx = @{}
-    foreach ($path in $TransactionPaths) {
-        $meta = Get-ObjectMetadata -XmlPath $path
-        if ($null -eq $meta -or $meta.TypeGuid -ne $TransactionTypeGuid -or [string]::IsNullOrEmpty($meta.Name)) { continue }
-        $text = Get-Content -LiteralPath $path -Raw -Encoding UTF8
-        $levels = Get-LevelsAndAttributes -TransactionXml $text
-        $pkAttrs = @()
-        $nonKeyAttrs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        foreach ($la in $levels) {
-            if ($la.Key) {
-                $pkAttrs += $la.AttributeName
-            } else {
-                [void]$nonKeyAttrs.Add($la.AttributeName)
-            }
-        }
-        $idx[$meta.Name.ToLowerInvariant()] = @{
-            Name = $meta.Name
-            PKAttrs = @($pkAttrs)
-            NonKeyAttrs = $nonKeyAttrs
-        }
-    }
-    return $idx
-}
-
-function Find-TableXmlPath {
-    param([string]$TransactionName, [string]$CorpusFolder)
-    $candidate = Join-Path $CorpusFolder (Join-Path 'Table' "$TransactionName.xml")
-    if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
-    return $null
-}
-
-function Get-DuplicateIndexesFromTable {
-    param([string]$TableXmlPath)
-    $result = @()
-    $text = Get-Content -LiteralPath $TableXmlPath -Raw -Encoding UTF8
-    foreach ($idxMatch in $RxDuplicateIndex.Matches($text)) {
-        $members = @()
-        foreach ($mm in $RxMember.Matches($idxMatch.Groups['body'].Value)) {
-            $members += $mm.Groups['n'].Value.Trim()
-        }
-        if ($members.Count -gt 0) {
-            $result += [pscustomobject]@{ Members = @($members) }
-        }
-    }
-    return ,@($result)
-}
-
-function Find-FKEntityForIndex {
-    param([string[]]$Members, [hashtable]$TransactionLevelIndex)
-    foreach ($k in $TransactionLevelIndex.Keys) {
-        $entry = $TransactionLevelIndex[$k]
-        $pk = @($entry.PKAttrs)
-        if ($pk.Count -ne $Members.Count) { continue }
-        $allMatch = $true
-        for ($i = 0; $i -lt $pk.Count; $i++) {
-            if (-not [string]::Equals($pk[$i], $Members[$i], [System.StringComparison]::OrdinalIgnoreCase)) {
-                $allMatch = $false
-                break
-            }
-        }
-        if ($allMatch) { return $entry }
-    }
-    return $null
-}
-
-function Test-AttributeInFKEntityRecursive {
-    param(
-        [string]$AttributeName,
-        [string]$TableXmlPath,
-        [hashtable]$TransactionLevelIndex,
-        [string]$CorpusFolder,
-        [int]$MaxDepth,
-        [System.Collections.Generic.HashSet[string]]$VisitedTables
-    )
-    if ($MaxDepth -le 0) { return $false }
-    if ($VisitedTables.Contains($TableXmlPath)) { return $false }
-    [void]$VisitedTables.Add($TableXmlPath)
-    foreach ($dup in (Get-DuplicateIndexesFromTable -TableXmlPath $TableXmlPath)) {
-        $fkEntity = Find-FKEntityForIndex -Members $dup.Members -TransactionLevelIndex $TransactionLevelIndex
-        if ($null -eq $fkEntity) { continue }
-        if ($fkEntity.NonKeyAttrs.Contains($AttributeName)) { return $true }
-        $fkTablePath = Find-TableXmlPath -TransactionName $fkEntity.Name -CorpusFolder $CorpusFolder
-        if ($null -eq $fkTablePath) { continue }
-        if (Test-AttributeInFKEntityRecursive -AttributeName $AttributeName -TableXmlPath $fkTablePath `
-            -TransactionLevelIndex $TransactionLevelIndex -CorpusFolder $CorpusFolder `
-            -MaxDepth ($MaxDepth - 1) -VisitedTables $VisitedTables) {
-            return $true
-        }
-    }
-    return $false
-}
-
-function Get-TransactionWritableMap {
-    param(
-        [pscustomobject]$TransactionMeta,
-        [string]$CorpusFolder,
-        [hashtable]$SubtypeIndex,
-        [System.Collections.Generic.HashSet[string]]$PkAttrSet,
-        [hashtable]$TransactionLevelIndex
-    )
-    $text = Get-Content -LiteralPath $TransactionMeta.Path -Raw -Encoding UTF8
-    $levelAttrs = Get-LevelsAndAttributes -TransactionXml $text
-    $tableXmlPath = Find-TableXmlPath -TransactionName $TransactionMeta.Name -CorpusFolder $CorpusFolder
-    $dupIndexes = @()
-    if ($null -ne $tableXmlPath) {
-        $dupIndexes = @(Get-DuplicateIndexesFromTable -TableXmlPath $tableXmlPath)
-    }
-    $map = @{}
-    foreach ($la in $levelAttrs) {
-        $info = $null
-        if ($la.Key) {
-            $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $true -IsRedundant $la.IsRedundant `
-                -Classification 'key-attribute' -Writable $true -Evidence "key=`"True`" no Level '$($la.LevelName)'"
-        } elseif ($la.IsRedundant) {
-            $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $true `
-                -Classification 'extended-parent-fk' -Writable $false -Evidence "isRedundant=`"True`" no Level '$($la.LevelName)'"
-        } else {
-            $attrPath = Find-AttributeXmlPath -AttributeName $la.AttributeName -CorpusFolder $CorpusFolder
-            if ($null -eq $attrPath) {
-                $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                    -Classification 'unclassified-attribute-not-found' -Writable $null -Evidence "Attribute XML '$($la.AttributeName).xml' nao encontrado em CorpusFolder/Attribute/"
-            } elseif (Test-AttributeHasFormula -AttributeXmlPath $attrPath) {
-                $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                    -Classification 'formula' -Writable $false -Evidence "Property Formula presente em $attrPath"
-            } else {
-                $key = $la.AttributeName.ToLowerInvariant()
-                if ($SubtypeIndex.ContainsKey($key)) {
-                    $supertypeName = $SubtypeIndex[$key]
-                    if ($PkAttrSet.Contains($supertypeName)) {
-                        $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                            -Classification 'extended-subtype-key' -Writable $true -Evidence "membro de SubTypeGroup com Supertype '$supertypeName' que e PK em alguma Transaction"
-                    } else {
-                        $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                            -Classification 'extended-subtype-descriptive' -Writable $false -Evidence "membro de SubTypeGroup com Supertype '$supertypeName' que nao e PK em nenhuma Transaction"
-                    }
-                } elseif ($null -eq $tableXmlPath) {
-                    $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                        -Classification 'unclassified-table-not-found' -Writable $null -Evidence "Table XML correspondente ('$($TransactionMeta.Name).xml') nao encontrado em CorpusFolder/Table/"
-                } else {
-                    $foundInDuplicate = $false
-                    foreach ($dup in $dupIndexes) {
-                        foreach ($m in $dup.Members) {
-                            if ([string]::Equals($m, $la.AttributeName, [System.StringComparison]::OrdinalIgnoreCase)) {
-                                $foundInDuplicate = $true
-                                break
-                            }
-                        }
-                        if ($foundInDuplicate) { break }
-                    }
-                    if ($foundInDuplicate) {
-                        $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                            -Classification 'extended-fk-key' -Writable $true -Evidence "atributo aparece como Member em Duplicate index da Table '$($TransactionMeta.Name)'"
-                    } else {
-                        $visitedTables = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-                        $isFkDescriptive = Test-AttributeInFKEntityRecursive -AttributeName $la.AttributeName `
-                            -TableXmlPath $tableXmlPath -TransactionLevelIndex $TransactionLevelIndex `
-                            -CorpusFolder $CorpusFolder -MaxDepth 10 -VisitedTables $visitedTables
-                        if ($isFkDescriptive) {
-                            $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                                -Classification 'extended-fk-descriptive' -Writable $false -Evidence "atributo aparece como key=False em alguma FK entity"
-                        } else {
-                            $info = New-AttrInfo -AttributeName $la.AttributeName -LevelName $la.LevelName -Key $false -IsRedundant $false `
-                                -Classification 'own-physical' -Writable $true -Evidence "atributo ausente em FK entities exploradas; proprio da tabela fisica desta Transaction"
-                        }
-                    }
-                }
-            }
-        }
-        $attrKey = $la.AttributeName.ToLowerInvariant()
-        if (-not $map.ContainsKey($attrKey)) {
-            $map[$attrKey] = $info
-        }
-    }
-    return $map
 }
 
 function Get-NewBlockAssignments {
@@ -500,16 +207,12 @@ foreach ($meta in $frontTransactionMetas) {
 }
 
 $transactionPaths = @($transactionMetasByName.Values | ForEach-Object { $_.Path })
-$subtypeIndex = Build-SubtypeIndex -CorpusFolder $CorpusFolder
-$pkAttrSet = Build-PrimaryKeyAttributeSet -TransactionPaths $transactionPaths
-$transactionLevelIndex = Build-TransactionLevelIndex -TransactionPaths $transactionPaths
-
-$transactionWritableMaps = @{}
-foreach ($key in $transactionMetasByName.Keys) {
-    $meta = $transactionMetasByName[$key]
-    $transactionWritableMaps[$key] = Get-TransactionWritableMap -TransactionMeta $meta -CorpusFolder $CorpusFolder `
-        -SubtypeIndex $subtypeIndex -PkAttrSet $pkAttrSet -TransactionLevelIndex $transactionLevelIndex
-}
+$catalogPath = Join-Path $PSScriptRoot 'gx-object-type-catalog.json'
+$batchPayload = Invoke-GeneXusTransactionWritabilityBatch `
+    -TransactionPaths $transactionPaths `
+    -CorpusFolder $CorpusFolder `
+    -CatalogPath $catalogPath
+$transactionWritableMaps = ConvertFrom-GeneXusWritabilityBatchPayload -Payload $batchPayload
 
 $findings = @()
 $newBlocksScanned = 0
