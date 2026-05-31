@@ -251,7 +251,7 @@ Para consulta leve de atributo, sem varrer XMLs em massa:
   -Format text
 ```
 
-Para listar atributos de uma Transaction com sinais basicos de gravabilidade:
+Para listar atributos de uma Transaction com classificacao **materializada** de gravabilidade (paridade com o gate; exige indice `schema_version=2`):
 
 ```powershell
 .\scripts\Query-KbIntelligenceIndex.ps1 `
@@ -265,9 +265,9 @@ As consultas `transaction-attributes` e `transaction-writable-attributes` leem a
 
 As consultas `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` dependem do `source_root` gravado no `index-metadata` e leem no disco os XMLs apontados pelo indice. Se o snapshot materializado foi movido, apagado ou regenerado fora desse caminho, a consulta pode falhar com `Indexed XML file not found`; nesse caso, restaurar o snapshot no caminho esperado ou regenerar o indice a partir do `ObjetosDaKbEmXml` atual antes de repetir a consulta.
 
-## Validar consultas leves de atributo e gravabilidade
+## Validar consultas de atributo e gravabilidade transacional
 
-Depois de gerar ou localizar um indice SQLite com `source_root` valido e snapshot materializado no caminho esperado, valide `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` com:
+Depois de gerar ou localizar um indice SQLite com `source_root` valido, snapshot materializado no caminho esperado e `schema_version=2`, valide `attribute-info` (leve), `transaction-attributes` e `transaction-writable-attributes` (materializadas) com:
 
 ```powershell
 .\scripts\Test-KbIntelligenceQueries.ps1 `
@@ -277,7 +277,7 @@ Depois de gerar ou localizar um indice SQLite com `source_root` valido e snapsho
   -FailOnValidationFailure
 ```
 
-Esses casos conferem dispatch, inexistencia e leitura file-backed pontual. Eles nao substituem `Test-GeneXusTransactionWritability.ps1` nem `Test-GeneXusNewWritableTargets.ps1` para classificacao completa antes de gerar atribuicoes.
+Esses casos conferem dispatch, inexistencia e leitura file-backed pontual. `attribute-info` nao substitui gates de gravabilidade. `transaction-writable-attributes` reflete classificacao materializada com paridade ao gate, mas blocos `New` em `Procedure` ainda exigem `Test-GeneXusNewWritableTargets.ps1` antes de empacotar.
 
 Como esses casos validam consultas e trazem `query`, eles pertencem ao executor `Test-KbIntelligenceQueries.ps1`, nao ao fluxo de regeneracao via `Build-KbIntelligenceIndex.ps1`.
 

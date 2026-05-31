@@ -1,5 +1,5 @@
 {
-  "description": "Casos para validar dispatch, inexistencia e leitura file-backed das consultas leves de atributo e gravabilidade na KBExemplo.",
+  "description": "Casos para validar dispatch, inexistencia e leitura file-backed de attribute-info (leve) e transaction-attributes/transaction-writable-attributes (materializadas) na KBExemplo.",
   "cases": [
     {
       "id": "attribute-info-missing",

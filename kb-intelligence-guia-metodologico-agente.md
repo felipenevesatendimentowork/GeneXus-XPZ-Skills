@@ -55,13 +55,17 @@ O KB Intelligence pode reduzir custo de busca, orientar a trilha de leitura e or
 
 Para perguntas funcionais curtas, `functional-trace-basic` pode substituir os passos 1 a 6, respeitando o mesmo gate de `queryableByKbIntelligence` no passo 3; a resposta final continua exigindo separacao explicita de evidencia e limite.
 
-### Ramo: gravabilidade ou atributo de Transaction (triagem leve)
+### Ramo: atributo ou gravabilidade de Transaction (triagem via indice)
 
-Use este ramo somente quando a pergunta for **triagem tecnica** sobre atributos ou sinais leves de gravabilidade — nao quando o objetivo for **gerar ou empacotar** XML/XPZ.
+Use este ramo somente quando a pergunta for **triagem tecnica** sobre atributos ou gravabilidade — nao quando o objetivo for **gerar ou empacotar** XML/XPZ.
 
-1. escolher a consulta minima conforme `xpz-index-triage` (**QUERY PARAMETER REFERENCE**): `attribute-info` para um atributo; `transaction-attributes` ou `transaction-writable-attributes` para uma Transaction
+1. escolher a consulta minima conforme `xpz-index-triage` (**QUERY PARAMETER REFERENCE**):
+   - `attribute-info` — um atributo; sinais **leves** (`Formula`, `idBasedOn`, etc.)
+   - `transaction-attributes` ou `transaction-writable-attributes` — uma Transaction; classificacao **materializada** no indice (`schema_version=2`), com paridade contra `Test-GeneXusTransactionWritability.ps1`
 2. registrar o comando, o objeto e os sinais retornados como **evidencia direta**
-3. declarar explicitamente que a consulta e **leve** (`key`, `isRedundant`, `Formula`, atributo ausente) e **nao** substitui classificacao completa
+3. declarar explicitamente o **tipo de consulta**:
+   - `attribute-info`: leve; **nao** substitui classificacao completa de gravabilidade
+   - `transaction-writable-attributes`: classificacao completa materializada; **nao** substitui empacote nem blocos `New` em `Procedure` (`Test-GeneXusNewWritableTargets.ps1`)
 4. se a pergunta evoluir para geracao de atribuicao em `Rules`, `Events`, `New` ou empacotamento, **parar a triagem** e encaminhar para `xpz-builder` com `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1` (fachadas sobre `GeneXusTransactionWritabilityCore.py`)
 
 Para sintaxe, parametros e validacao operacional das consultas, preferir `scripts/README-kb-intelligence.md`; este guia nao duplica esse catalogo.
@@ -76,7 +80,7 @@ Parar no indice quando a pergunta pedir apenas:
 - quais objetos cercam tecnicamente um objeto
 - qual relacao tecnica justifica abrir determinado XML
 - qual trilha minima de leitura deve ser seguida
-- quais atributos de uma Transaction merecem leitura primeiro ou quais sinais leves de gravabilidade o indice expoe (sem fechar ainda regra de negocio nem autorizar geracao)
+- quais atributos de uma Transaction merecem leitura primeiro, quais sinais leves (`attribute-info`) ou quais classificacoes materializadas de gravabilidade (`transaction-writable-attributes`) o indice expoe (sem fechar ainda regra de negocio nem autorizar geracao)
 
 Nesses casos, declarar que se trata de triagem tecnica direta, nao de prova funcional completa.
 
@@ -93,7 +97,7 @@ Abrir o XML oficial quando a pergunta depender de:
 - cadeia imediata de chamadas
 - tipo de variavel, `ATTCUSTOMTYPE`, BC, `SDT`, `Domain` ou `ExternalObject`
 - interpretacao de efeito funcional, validacao, persistencia, navegacao ou regra de negocio
-- classificacao completa de gravabilidade, subtipo ou FK recursiva necessaria para **gerar** atribuicoes (a consulta leve do indice so orienta a trilha)
+- empacotamento ou blocos `New` em `Procedure` que exijam gate dedicado (`Test-GeneXusNewWritableTargets.ps1`), mesmo quando `transaction-writable-attributes` ja trouxe classificacao materializada no indice
 
 ---
 
