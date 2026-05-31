@@ -68,12 +68,10 @@ Implementar quando houver nova frente de testes de integração dos motores de e
 
 **Pendente operacional:** casos positivos na bateria `kb-intelligence-kbexemplo.validation-extraction-semantic.json` quando a KB laboratorio estiver acessivel; rebuild das pastas paralelas que ja tinham indice na versao `2`.
 
-**Frente 2 (ainda ideia):** gravabilidade completa materializada no SQLite — ver secao abaixo.
-
 ## Gravabilidade de atributos materializada no índice SQLite
 
 **Importância:** alta
-**Maturidade:** ideia
+**Maturidade:** implementado (2026-05-31)
 
 **Origem:** validação pós-caso real de `Procedure` com `New` atribuindo atributo `Formula`, discutida em 2026-05-23.
 
@@ -115,9 +113,17 @@ A classificação deveria cobrir o mesmo contrato hoje usado pelos gates: `key-a
 - a classificação de subtipo e FK recursiva precisa ser validada em KB real grande antes de virar gate de índice
 - o wrapper local `Query-*KbIntelligence.ps1` e os testes `Test-KbIntelligenceQueries.ps1` precisarão de novos casos de validação
 
-### Limiar para implementar
+### Entrega (2026-05-31)
 
-Implementar quando houver uma frente dedicada de evolução do índice com rebuild planejado, validação em pelo menos uma KB real grande e comparação explícita entre a saída do índice e os gates `Test-GeneXusTransactionWritability.ps1` / `Test-GeneXusNewWritableTargets.ps1`.
+- nucleo canonico: `scripts/GeneXusTransactionWritabilityCore.py` (`writability_rule_version=1`)
+- tabela `transaction_attribute_writability` no SQLite (`schema_version=2`, extrator `4`)
+- consultas `transaction-attributes` / `transaction-writable-attributes` leem a tabela materializada
+- paridade obrigatoria: `scripts/Test-GeneXusKbIntelligenceWritabilityParity.ps1` (validado em wsEducacaoSpTeste e FabricaBrasil)
+- `Test-GeneXusNewWritableTargets.ps1` permanece obrigatorio para blocos `New` em `Procedure`
+
+### Limiar para evoluir de novo
+
+Reabrir apenas se o algoritmo dos gates PowerShell mudar sem atualizacao do nucleo Python, ou se for necessario materializar tambem XML de frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus` (fora do escopo atual: somente `ObjetosDaKbEmXml`).
 
 ## LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual
 

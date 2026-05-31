@@ -156,7 +156,7 @@ O gate `Test-*KbIndexGate.ps1` (molde em `xpz-kb-parallel-setup/examples/Test-Kb
 
 ## Schema e versionamento
 
-O indice armazena `schema_version` na tabela `metadata`. O valor atual e `"1"`.
+O indice armazena `schema_version` na tabela `metadata`. O valor atual e `"2"` (inclui tabela `transaction_attribute_writability` e `writability_rule_version`).
 
 O design e deliberado: o indice e artefato derivado e sempre regeneravel. Por isso nao existe caminho de migracao de schema — qualquer mudanca estrutural no motor exige rebuild completo.
 
@@ -261,7 +261,7 @@ Para listar atributos de uma Transaction com sinais basicos de gravabilidade:
   -Format text
 ```
 
-Essa consulta usa o indice para localizar a `Transaction` e os `Attribute` pontuais. Ela cobre sinais leves (`key`, `isRedundant`, `Formula`, atributo ausente). Para classificacao completa de subtipo e FK recursiva antes de gerar atribuicoes, use `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`.
+As consultas `transaction-attributes` e `transaction-writable-attributes` leem a classificacao **materializada** no build (`transaction_attribute_writability`), com paridade obrigatoria contra `Test-GeneXusTransactionWritability.ps1` (`Test-GeneXusKbIntelligenceWritabilityParity.ps1`). Atributos `unclassified-*` (`writable=null`) exigem leitura adicional do XML antes de `New` ou atribuicoes. Para validar assignments dentro de blocos `New` em `Procedure`, use `Test-GeneXusNewWritableTargets.ps1`.
 
 As consultas `attribute-info`, `transaction-attributes` e `transaction-writable-attributes` dependem do `source_root` gravado no `index-metadata` e leem no disco os XMLs apontados pelo indice. Se o snapshot materializado foi movido, apagado ou regenerado fora desse caminho, a consulta pode falhar com `Indexed XML file not found`; nesse caso, restaurar o snapshot no caminho esperado ou regenerar o indice a partir do `ObjetosDaKbEmXml` atual antes de repetir a consulta.
 

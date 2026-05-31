@@ -1,0 +1,22 @@
+{
+  "description": "Paridade de gravabilidade materializada — wsEducacaoSpTeste (rebuild indice v4 antes de Test-KbIntelligenceQueries).",
+  "cases": [
+    {
+      "id": "wseducacao-transaction-writable-guia-ped-formula-attribute",
+      "query": "transaction-writable-attributes",
+      "object": "Transaction:GuiaPed",
+      "should_exist": true,
+      "min_attributes": 1,
+      "expected_attributes": [
+        "GuiaPedResumoLotes"
+      ],
+      "expected_classifications": {
+        "GuiaPedResumoLotes": "formula"
+      },
+      "expected_writable": {
+        "GuiaPedResumoLotes": false
+      },
+      "expectation": "Formula attribute must be non-writable in materialized index"
+    }
+  ]
+}

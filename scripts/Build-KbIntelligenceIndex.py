@@ -38,7 +38,7 @@ from pathlib import Path
 from typing import Iterable
 
 # Incrementar quando a cobertura ou regras do indexador mudarem de forma material (nao em refator inerte).
-EXTRACTOR_SIGNATURE_VERSION = "3"
+EXTRACTOR_SIGNATURE_VERSION = "4"
 
 
 def compute_extractor_signature_hash() -> str:
@@ -102,6 +102,11 @@ from GeneXusObjectTypeCatalogCore import (  # noqa: E402
     build_type_guid_index,
     load_gx_object_type_catalog,
     resolve_effective_object_type_catalog,
+)
+from GeneXusTransactionWritabilityCore import (  # noqa: E402
+    WRITABILITY_RULE_VERSION,
+    build_corpus_writability,
+    get_transaction_type_guid,
 )
 
 
@@ -1661,6 +1666,7 @@ def extract_table_index_member_attribute_evidence(
 def create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
+        DROP TABLE IF EXISTS transaction_attribute_writability;
         DROP TABLE IF EXISTS relations;
         DROP TABLE IF EXISTS evidence;
         DROP TABLE IF EXISTS objects;
@@ -1707,8 +1713,107 @@ def create_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX idx_objects_type_name ON objects(type, name);
         CREATE INDEX idx_relations_target ON relations(target_type, target_name);
         CREATE INDEX idx_relations_source ON relations(source_object_id);
+
+        CREATE TABLE transaction_attribute_writability (
+            writability_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            transaction_object_id INTEGER NOT NULL,
+            transaction_name TEXT NOT NULL,
+            level_name TEXT NOT NULL,
+            attribute_name TEXT NOT NULL,
+            key_in_level INTEGER NOT NULL,
+            is_redundant INTEGER NOT NULL,
+            classification TEXT NOT NULL,
+            writable INTEGER,
+            can_assign_in_new INTEGER,
+            reason TEXT NOT NULL,
+            evidence TEXT NOT NULL,
+            writability_rule_version TEXT NOT NULL,
+            FOREIGN KEY(transaction_object_id) REFERENCES objects(object_id)
+        );
+
+        CREATE INDEX idx_writability_transaction ON transaction_attribute_writability(transaction_name);
+        CREATE INDEX idx_writability_transaction_object ON transaction_attribute_writability(transaction_object_id);
+        CREATE INDEX idx_writability_attribute ON transaction_attribute_writability(attribute_name);
         """
     )
+
+
+def resolve_transaction_object_id(
+    object_ids: dict[tuple[str, str], int],
+    transaction_objects: dict[str, ObjectInfo],
+    transaction_name: str,
+) -> int | None:
+    direct = object_ids.get(("Transaction", transaction_name))
+    if direct is not None:
+        return direct
+    for obj in transaction_objects.values():
+        if obj.name.lower() == transaction_name.lower():
+            return object_ids.get(("Transaction", obj.name))
+    return None
+
+
+def insert_corpus_writability(
+    conn: sqlite3.Connection,
+    source_root: Path,
+    object_ids: dict[tuple[str, str], int],
+    transaction_objects: dict[str, ObjectInfo],
+) -> int:
+    transaction_type_guid = get_transaction_type_guid(GX_TYPE_CATALOG_BY_NAME)
+    writability_rows = build_corpus_writability(source_root, transaction_type_guid)
+    inserted = 0
+    for row in writability_rows:
+        transaction_object_id = resolve_transaction_object_id(
+            object_ids,
+            transaction_objects,
+            row.transaction_name,
+        )
+        if transaction_object_id is None:
+            continue
+        writable_value: int | None
+        if row.writable is None:
+            writable_value = None
+        else:
+            writable_value = 1 if row.writable else 0
+        can_assign_value: int | None
+        if row.can_assign_in_new is None:
+            can_assign_value = None
+        else:
+            can_assign_value = 1 if row.can_assign_in_new else 0
+        conn.execute(
+            """
+            INSERT INTO transaction_attribute_writability(
+                transaction_object_id,
+                transaction_name,
+                level_name,
+                attribute_name,
+                key_in_level,
+                is_redundant,
+                classification,
+                writable,
+                can_assign_in_new,
+                reason,
+                evidence,
+                writability_rule_version
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                transaction_object_id,
+                row.transaction_name,
+                row.level_name,
+                row.attribute_name,
+                1 if row.key else 0,
+                1 if row.is_redundant else 0,
+                row.classification,
+                writable_value,
+                can_assign_value,
+                row.reason,
+                row.evidence,
+                WRITABILITY_RULE_VERSION,
+            ),
+        )
+        inserted += 1
+    return inserted
 
 
 def write_index(
@@ -1733,7 +1838,8 @@ def write_index(
             [
                 ("last_index_build_run_at", index_build_run_at),
                 ("source_root", str(source_root)),
-                ("schema_version", "1"),
+                ("schema_version", "2"),
+                ("writability_rule_version", WRITABILITY_RULE_VERSION),
                 ("extractor_signature_version", EXTRACTOR_SIGNATURE_VERSION),
                 ("extractor_signature_hash", extractor_signature_hash),
                 ("scope", ",".join(sorted(set(obj.object_type for obj in objects)))),
@@ -1788,6 +1894,20 @@ def write_index(
                     evidence.confidence,
                 ),
             )
+
+        transaction_objects = {
+            obj.name: obj for obj in objects if obj.object_type == "Transaction"
+        }
+        writability_written = insert_corpus_writability(
+            conn,
+            source_root.resolve(),
+            object_ids,
+            transaction_objects,
+        )
+        conn.execute(
+            "INSERT INTO metadata(key, value) VALUES (?, ?)",
+            ("writability_rows_written", str(writability_written)),
+        )
 
         conn.commit()
     finally:

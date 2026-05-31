@@ -18,7 +18,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 from GeneXusObjectTypeCatalogCore import resolve_effective_object_type_catalog_for_query  # noqa: E402
 
 
-EXPECTED_SCHEMA_VERSION = "1"
+EXPECTED_SCHEMA_VERSION = "2"
 LEVEL_RE = re.compile(r"<Level\b(?P<attrs>[^>]*)>(?P<body>.*?)</Level>", re.IGNORECASE | re.DOTALL)
 LEVEL_ATTRIBUTE_RE = re.compile(
     r"<Attribute\b(?P<attrs>[^>]*)>(?P<name>.*?)</Attribute>",
@@ -295,63 +295,75 @@ def attribute_info(conn: sqlite3.Connection, attribute_name: str) -> dict[str, o
     }
 
 
+def nullable_bool_from_sqlite(value: object) -> bool | None:
+    if value is None:
+        return None
+    return bool(int(value))
+
+
+def fetch_materialized_writability_rows(
+    conn: sqlite3.Connection,
+    transaction_name: str,
+) -> list[dict[str, object]]:
+    materialized = fetch_all(
+        conn,
+        """
+        SELECT
+            w.transaction_name,
+            w.level_name,
+            w.attribute_name,
+            w.key_in_level,
+            w.is_redundant,
+            w.classification,
+            w.writable,
+            w.can_assign_in_new,
+            w.reason,
+            w.evidence,
+            w.writability_rule_version,
+            o.file_path AS attribute_file
+        FROM transaction_attribute_writability w
+        JOIN objects o_tx ON o_tx.object_id = w.transaction_object_id
+        LEFT JOIN objects o ON o.type = 'Attribute' AND LOWER(o.name) = LOWER(w.attribute_name)
+        WHERE LOWER(o_tx.name) = LOWER(?)
+        ORDER BY w.level_name, w.attribute_name
+        """,
+        (transaction_name,),
+    )
+    rows: list[dict[str, object]] = []
+    for row in materialized:
+        attr_name = str(row["attribute_name"])
+        attr_payload = attribute_info(conn, attr_name)
+        is_formula = bool(attr_payload.get("isFormula")) if attr_payload.get("found") else None
+        writable = nullable_bool_from_sqlite(row.get("writable"))
+        rows.append(
+            {
+                "transaction": row["transaction_name"],
+                "levelName": row["level_name"],
+                "attribute": attr_name,
+                "key": bool(row["key_in_level"]),
+                "isRedundant": bool(row["is_redundant"]),
+                "isFormula": is_formula,
+                "formulaExpression": attr_payload.get("formulaExpression"),
+                "classification": row["classification"],
+                "writable": writable,
+                "canAssignInNew": nullable_bool_from_sqlite(row.get("can_assign_in_new")),
+                "reason": row["reason"],
+                "evidence": row["evidence"],
+                "writabilityRuleVersion": row["writability_rule_version"],
+                "attributeFile": row.get("attribute_file"),
+            }
+        )
+    return rows
+
+
 def transaction_attribute_rows(conn: sqlite3.Connection, transaction_name: str) -> tuple[dict[str, object] | None, list[dict[str, object]]]:
     obj = fetch_object(conn, "Transaction", transaction_name)
     if obj is None:
         return None, []
-    xml_text = read_indexed_text(conn, obj["file_path"])
-    rows: list[dict[str, object]] = []
-    for level_match in LEVEL_RE.finditer(xml_text):
-        level_attrs = parse_xml_attrs(level_match.group("attrs"))
-        level_name = level_attrs.get("name") or level_attrs.get("Name") or ""
-        for attr_match in LEVEL_ATTRIBUTE_RE.finditer(level_match.group("body")):
-            attr_name = html.unescape(attr_match.group("name")).strip()
-            if not attr_name:
-                continue
-            attr_attrs = parse_xml_attrs(attr_match.group("attrs"))
-            key = attr_attrs.get("key", attr_attrs.get("Key", "")).lower() == "true"
-            is_redundant = attr_attrs.get("isRedundant", attr_attrs.get("IsRedundant", "")).lower() == "true"
-            attr_payload = attribute_info(conn, attr_name)
-            is_formula = bool(attr_payload.get("isFormula")) if attr_payload.get("found") else None
-            classification = "own-physical"
-            writable: bool | None = True
-            reason = "own-physical"
-            if key:
-                classification = "key-attribute"
-                reason = "key"
-            elif is_redundant:
-                classification = "extended-parent-fk"
-                writable = False
-                reason = "isRedundant"
-            elif is_formula:
-                classification = "formula"
-                writable = False
-                reason = "formula"
-            elif attr_payload.get("found") is False:
-                classification = "unclassified-attribute-not-found"
-                writable = None
-                reason = "attribute-not-found"
-            rows.append(
-                {
-                    "transaction": obj["name"],
-                    "levelName": level_name,
-                    "attribute": attr_name,
-                    "key": key,
-                    "isRedundant": is_redundant,
-                    "isFormula": is_formula,
-                    "formulaExpression": attr_payload.get("formulaExpression"),
-                    "classification": classification,
-                    "writable": writable,
-                    "canAssignInNew": writable,
-                    "reason": reason,
-                    "attributeFile": (
-                        attr_payload.get("object", {}).get("file_path")
-                        if isinstance(attr_payload.get("object"), dict)
-                        else None
-                    ),
-                }
-            )
-    return obj, rows
+    rows = fetch_materialized_writability_rows(conn, transaction_name)
+    if rows:
+        return obj, rows
+    return obj, []
 
 
 def transaction_attributes(conn: sqlite3.Connection, transaction_name: str) -> dict[str, object]:
@@ -385,7 +397,10 @@ def transaction_writable_attributes(conn: sqlite3.Connection, transaction_name: 
         "found": True,
         "total": len(rows),
         "results": rows,
-        "notice": "Consulta leve baseada no indice e nos XMLs pontuais da Transaction/Attribute. Para classificacao completa de subtipo e FK recursiva, use Test-GeneXusTransactionWritability.ps1.",
+        "notice": (
+            "Classificacao materializada no indice (paridade com Test-GeneXusTransactionWritability.ps1). "
+            "Atributos unclassified-* exigem leitura adicional do XML antes de gerar New ou atribuicoes."
+        ),
     }
 
 

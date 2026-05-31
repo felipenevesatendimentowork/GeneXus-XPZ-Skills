@@ -181,6 +181,7 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - para tipos que permanecem `queryableByKbIntelligence=true` com grafo assimétrico (`API`, `DataSelector`, `WorkWithForWeb`, `ExternalObject`), ver `scripts/README-kb-intelligence.md` — `impact-basic` pode mostrar só saidas ou entradas esparsas; isso e esperado, nao falha do indice
 - `impact-basic` e a triagem equivalente representam impacto tecnico direto baseado no indice; nao provam impacto runtime completo
 - `who-uses` em `Procedure` passa a incluir `Attribute` cujo `Property Formula` chama a procedure com os mesmos padroes de `Source` efetivo; ainda nao cobre funcoes de dominio, literais ambiguos nem expressoes fora desses padroes — nesses casos abrir o XML do atributo
+- para triagem de gravabilidade e risco de `New` em atributos de `Transaction`, preferir `transaction-writable-attributes` no indice apos rebuild (`schema_version=2`); tratar como gate de triagem quando a paridade da pasta paralela estiver validada. Nao usar como unica prova para blocos `New` dentro de `Source` — manter `Test-GeneXusNewWritableTargets.ps1` no empacote
 - `functional-trace-basic`, quando disponivel, pode empacotar a coleta inicial de triagem funcional, mas nao abre XML automaticamente, nao interpreta regra de negocio e nao substitui a resposta classificada do agente
 - o indice nao substitui `ObjetosDaKbEmXml`, que continua sendo a fonte normativa e somente leitura
 - se a mudanca exigir semantica GeneXus, o agente deve abrir o XML oficial e revisar o trecho relevante antes de concluir
