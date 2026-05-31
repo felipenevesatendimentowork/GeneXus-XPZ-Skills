@@ -868,6 +868,7 @@ Campos relevantes:
 - [ ] `Invoke-GeneXusDbReorg.ps1` recebeu confirmação interativa explícita, mesmo quando precedida de `ImpactDatabaseOnly`
 - [ ] `stdout`, `stderr`, `exitCode`, `.msbuild` e log foram registrados
 - [ ] `msBuildCategoryBBlocked`, `operationalSubState` e `buildErrors`/`specifyErrors` no top-level do JSON foram lidos antes de declarar sucesso; com `exitCode=48`, a rodada foi tratada como Categoria B e as linhas `error :` foram reproduzidas ao usuário
+- [ ] Com `spc0150` … `only allowed in procedures` em `Transaction` `Events`, foi aplicado o anti-padrão `transaction-event-attribute-assignment-rejected` e o Catálogo 2 em [xpz-builder/responsibilities-by-type/transaction.md](../xpz-builder/responsibilities-by-type/transaction.md) — atribuição a atributo da transação no `Event` não é correção válida
 - [ ] `executionEvidence.msBuildExitCode` foi registrado como local canônico do valor bruto da task MSBuild; `msBuildExitCode` top-level, quando existir, foi tratado apenas como compatibilidade transitória e duplicação do valor canônico
 - [ ] `observedContext.pathEnrichment` registrou o enriquecimento preventivo do `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`)
 - [ ] O resultado foi classificado em categoria explícita

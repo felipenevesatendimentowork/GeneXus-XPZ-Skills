@@ -336,6 +336,7 @@ Permitir escolha repetivel de template interno real, reduzindo risco de vazament
 - confirmar se existem variaveis `Context`, `TrnContext` e `TrnContextAtt`
 - se existirem, validar os `ATTCUSTOMTYPE` correspondentes no alvo
 - revisar eventos, regras e defaults apenas depois que a camada de atributos e contexto estiver coerente
+- ao editar `Rules` ou `Events` no XPZ (nao apenas estrutura/familia), consultar antes o catalogo motor em `xpz-builder/responsibilities-by-type/transaction.md` (secao **Catalog: `on <event>` clauses…**) e anti-padroes em `02-regras-operacionais-e-runtime.md`; linguagem GeneXus correta: skill **nexa**
 
 ## Diagnostico operacional do erro
 

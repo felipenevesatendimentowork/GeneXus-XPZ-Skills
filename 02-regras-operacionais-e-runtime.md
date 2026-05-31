@@ -1115,7 +1115,7 @@ Regras de uso:
 - `src0212 invalid control`: suspeitar primeiro do layout; revisar o shape do `Part c414ed00-8cc4-4f44-8820-4baf93547173`, `Bands`, `PrintBlock`, `ReportLabel`, `ReportAttribute` e a coerencia entre bloco impresso e bloco materializado.
 - `src0201 output_file invalid type`: suspeitar primeiro de `Source` ou de mistura de camadas; revisar assinatura usada em `Output_file`, tipo dos parametros e se o comando ficou realmente no `Source`.
 - `src0119 ';' not longer supported`: suspeitar primeiro de `Source`; revisar transplante indevido de sintaxe de `Rules`, legado de dialeto ou terminador herdado.
-- `src0056 Missed ';' at the end of the rule`: suspeitar primeiro de `Rules`; revisar fechamento de `parm(...)` e demais regras, sem deslocar o diagnostico para o layout.
+- `src0056 Missed ';' at the end of the rule`: suspeitar primeiro de `Rules`; revisar fechamento de `parm(...)` e demais regras, sem deslocar o diagnostico para o layout; em `Transaction` `Rules`, ver tambem anti-padrao `transaction-rule-on-event-with-attribute-parameter` (clausula `on <evento>(...)` rejeitada na importacao).
 - erro citando `printBlock`, `ReportLabel`, `ReportAttribute` ou `invalid control`: suspeitar primeiro do layout.
 - erro citando `parm`, `rule`, `end of the rule` ou assinatura: suspeitar primeiro de `Rules`.
 - erro citando `For each`, `Header`, `Footer`, `Output_file` ou comando procedural: suspeitar primeiro de `Source`.
