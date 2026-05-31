@@ -1355,6 +1355,26 @@ Regras de uso:
 - `Regra operacional`: citacoes por nome de arquivo (ex.: `Animal.xml`, `VendaPedidoItens.xml`) com `confirmado-acervo` devem indicar que o artefato esta na **pasta paralela da KB** (`ObjetosDaKbEmXml/...` apos sync), salvo quando o exemplo for **molde sanitizado** em `01*` com rastreabilidade em `09`/`GeneXus-XPZ-PrivateMap`; nao tratar esses paths como arquivos desta raiz `GeneXus-XPZ-Skills`.
 - `Regra operacional`: completude aparente de catalogo e risco operacional — listas longas sem rotulo honesto induzem o agente a tentar sintaxe nao validada; preferir catalogo menor e rotulado a checklist aparentemente exaustiva.
 
+#### Anti-padroes nomeados (`Transaction` — motor XPZ)
+
+Catalogo consultavel (sintaxe aceita/rejeitada): `xpz-builder/responsibilities-by-type/transaction.md`, secao **Catalog: `on <event>` clauses…**. Uso correto de rules e gatilhos GeneXus: documentacao de produto e skill **nexa** — nao duplicar aqui.
+
+Nao confundir `src0056` em `Transaction` `Rules` com o playbook de `Procedure` de relatorio no mesmo `02` (la o sintoma costuma ser fechamento de `parm(...)` ou terminador de rule no relatorio).
+
+##### `transaction-rule-on-event-with-attribute-parameter`
+
+- **Sintoma observado**: import MSBuild/Specifier falha na `Transaction` com mensagem de pontuacao na rule; o agente tenta “corrigir `;`” ou reordenar a expressao sem remover o gatilho com parametro.
+- **Erro exato (Specifier)**: `src0056: Missed ';' at the end of the rule. (Transaction '<nome>' Rules, Linha: <n>, Char: <c>)` — `confirmado-import` na trilha XPZ (GeneXus 18).
+- **Causa raiz**: forma `on <evento>(<atributo>)` ou `on AfterValidate(<Attribute>)` em rule declarativa de `Transaction` **nao e aceita** pelo motor testado; o `(` apos o evento e token inesperado e o diagnostico aponta o fim da rule anterior.
+- **Correcao idiomatica**: nao tratar como erro generico de `;`. Remover o parametro entre parenteses; nao gerar essa forma no XPZ. Usar apenas clausulas `on <evento>` sem parametros conforme catalogo 1 no satelite `transaction.md`. Para “depois de validar este campo” ou timing de field-out, consultar **nexa**/produto — nao simular com `on (...)` na rule.
+
+##### `transaction-event-attribute-assignment-rejected`
+
+- **Sintoma observado**: import pode ter passado; `BuildAll`/`SpecifyGenerate` falha na `Transaction` ao atribuir valor a atributo da transacao dentro de `Events` (ex.: reacao “na hora” a mudanca de outro campo).
+- **Erro exato (Specifier)**: `spc0150: Cannot update database. Changes to database are only allowed in procedures. (Transaction '<nome>' Events, Linha: <n>)` — `confirmado-build` na trilha XPZ.
+- **Causa raiz**: atribuicao a atributo da propria `Transaction` no bloco `Events` e tratada como atualizacao de base; o Specifier rejeita — persistencia de valor de atributo pertence a rules declarativas (e a gates de writability), nao a `Event`.
+- **Correcao idiomatica**: mover a logica de valor para `Rules`; no `Event`, limitar-se a superficie UI (`.Caption`, `.Visible`, `.Enabled`), variaveis, `msg`/`Error`, chamadas a procedure, `SetFocus` — ver catalogo 2 no satelite. Nao repetir a mesma atribuicao no `Event` apos `spc0150`.
+
 ### Politica para `API`
 
 - `Evidência direta`: a base observa apenas `1` `API` real nesta KB.
