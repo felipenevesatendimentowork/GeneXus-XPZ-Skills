@@ -511,7 +511,7 @@ pwsh -NoProfile -File scripts/Invoke-GeneXusXpzImport.ps1 `
    - em import real ou preview, ler `importErrors`/`previewErrors` no top-level; com `exitCode=48`, tratar como Categoria B e não declarar conclusão limpa
    - quando aplicável, acumular também o marcador narrativo `ensaio metodológico/experimental`, sem substituir a classificação operacional principal
 13. Recomendar o próximo passo seguro; quando o sub-estado for `importação real efetiva provada` e o usuário quiser evidência complementar, apresentar as duas opções em paralelo:
-   - acionar `xpz-msbuild-build` (headless) com `-ParallelKbRoot` e `-EnvironmentName` alinhado a `deployment_environment_name` no metadata (ou valor explícito do usuário) — `compilou limpo` ou `specify e generate concluídos` reforçam o handoff **no environment usado**; em KB multi-environment não substituem sozinhos validação do IIS/self-host sem environment de deploy explícito
+   - acionar `xpz-msbuild-build` (headless) com `-ParallelKbRoot`, `-PostImportDeployValidation` e `-EnvironmentName` alinhado a `deployment_environment_name` no metadata (ou valor explícito do usuário) — `compilou limpo` ou `specify e generate concluídos` reforçam o handoff **no environment usado**; exit **49** ou status `compilou-mas-dll-destino-desatualizada` indicam `web\bin` de deploy desatualizado — **não** declarar IIS/self-host OK
    - abrir a KB na IDE e executar o build por lá
    Recomendar reabertura da KB na IDE quando o teste exigir observação posterior, independentemente da opção de build escolhida
    Se o sub-estado for `importação real efetiva provada` e o usuário não observar o efeito esperado na IDE, diferenciar explicitamente as hipóteses:

@@ -66,6 +66,7 @@ function Read-GeneXusKbDeploymentMetadataFields {
         MetadataPath                  = $MetadataPath
         MetadataFound                 = $false
         deployment_environment_name   = $null
+        deployment_hosting_kind       = $null
         kb_environment_count          = $null
         kb_environment_names          = @()
     }
@@ -79,6 +80,10 @@ function Read-GeneXusKbDeploymentMetadataFields {
 
     $result.deployment_environment_name = Normalize-GeneXusKbMetadataScalar (
         Get-GeneXusKbSourceMetadataDirectField -Lines $lines -FieldName 'deployment_environment_name'
+    )
+
+    $result.deployment_hosting_kind = Normalize-GeneXusKbMetadataScalar (
+        Get-GeneXusKbSourceMetadataDirectField -Lines $lines -FieldName 'deployment_hosting_kind'
     )
 
     $countRaw = Normalize-GeneXusKbMetadataScalar (

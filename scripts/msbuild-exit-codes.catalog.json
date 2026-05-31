@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-05-26",
+  "lastUpdated": "2026-05-31",
   "legend": {
     "exitCode": "Valor classificado pelo wrapper GeneXus XPZ; e tambem o exit code do processo PowerShell.",
     "executionEvidence.msBuildExitCode": "Codigo bruto retornado pela invocacao MSBuild/task GeneXus; nao substitui exitCode quando o wrapper reclassifica (ex.: 48, 32, 41-45).",
@@ -320,6 +320,20 @@
       "summary": "Usuario nao confirmou frase de wide rebuild/reorg em modo interativo (distinto de bloqueio 46).",
       "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
       "jsonHints": ["confirmWideRebuildMode", "confirmReorgMode", "summary"]
+    },
+    {
+      "exit": 49,
+      "category": "politica",
+      "summary": "Build MSBuild concluiu (exit 0) mas web\\bin do environment de deploy nao reflete o build — gate pos-import ou StrictDeployBinCheck.",
+      "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+      "jsonHints": [
+        "status",
+        "deployBinFreshness",
+        "deployBinCheck",
+        "requestedContext.PostImportDeployValidation",
+        "requestedContext.StrictDeployBinCheck",
+        "blockingReasons"
+      ]
     },
     {
       "exit": 48,

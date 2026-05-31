@@ -46,6 +46,15 @@ Raiz da pasta paralela da KB para resolver kb-source-metadata.md sem inventario 
 .PARAMETER KbMetadataPath
 Caminho explicito para kb-source-metadata.md; prevalece sobre -ParallelKbRoot.
 
+.PARAMETER PostImportDeployValidation
+Quando presente, ativa gate de validacao deploy pos-import sobre web\bin (exit 49 se desatualizado).
+
+.PARAMETER SkipDeployBinCheck
+Pula a checagem de web\bin do environment de deploy.
+
+.PARAMETER StrictDeployBinCheck
+Forca gate de web\bin mesmo fora do fluxo pos-import.
+
 .PARAMETER ForceRebuild
 Quando true, força a regeneração de TODOS os objetos da KB, independentemente de mudança.
 Equivale a "Rebuild All" da IDE (não a "Build All"): muda a semântica de SpecifyAll/GenerateOnly
@@ -135,7 +144,13 @@ param(
 
     [string]$ParallelKbRoot,
 
-    [string]$KbMetadataPath
+    [string]$KbMetadataPath,
+
+    [switch]$PostImportDeployValidation,
+
+    [switch]$SkipDeployBinCheck,
+
+    [switch]$StrictDeployBinCheck
 )
 
 Set-StrictMode -Version Latest
@@ -164,6 +179,12 @@ if (-not (Test-Path -LiteralPath $deploymentEnvironmentSupportPath -PathType Lea
     throw "Deployment environment support script not found: $deploymentEnvironmentSupportPath"
 }
 . $deploymentEnvironmentSupportPath
+
+$deployBinSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusKbDeployBinSupport.ps1'
+if (-not (Test-Path -LiteralPath $deployBinSupportPath -PathType Leaf)) {
+    throw "Deploy bin support script not found: $deployBinSupportPath"
+}
+. $deployBinSupportPath
 
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
@@ -1139,6 +1160,67 @@ try {
         }
     }
 
+    $script:DeployBinClassification = $null
+    if ($null -ne $buildStatus -and $msBuildExitCode -eq 0) {
+        $validationEnvForDeployBin = $EnvironmentName
+        if ($null -ne $script:DeploymentEnvironmentContext) {
+            $ctxResolvedDeploy = $script:DeploymentEnvironmentContext['validationEnvironmentResolved']
+            if (-not [string]::IsNullOrWhiteSpace($ctxResolvedDeploy)) {
+                $validationEnvForDeployBin = $ctxResolvedDeploy
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($validationEnvForDeployBin)) {
+            $validationEnvForDeployBin = $activeEnvironmentOutput
+        }
+
+        $buildStartedAtDeploy = [DateTimeOffset]::UtcNow
+        if ($script:TimingLog.Contains('msbuildStart') -and -not [string]::IsNullOrWhiteSpace($script:TimingLog['msbuildStart'])) {
+            try {
+                $buildStartedAtDeploy = [DateTimeOffset]::Parse($script:TimingLog['msbuildStart'])
+            }
+            catch {
+                Add-WarningMessage -Message ('BuildStartedAt para deploy bin nao parseavel: {0}' -f $script:TimingLog['msbuildStart'])
+            }
+        }
+
+        $metadataPathDeploy = $null
+        if ($null -ne $script:DeploymentEnvironmentContext) {
+            $metadataPathDeploy = $script:DeploymentEnvironmentContext['kbSourceMetadataPath']
+        }
+
+        $script:DeployBinClassification = Invoke-GeneXusKbDeployBinPostBuildClassification `
+            -KbPath $resolvedKbPath `
+            -ValidationEnvironmentName $validationEnvForDeployBin `
+            -MetadataPath $metadataPathDeploy `
+            -DeploymentHostingKind $null `
+            -BuildStartedAt $buildStartedAtDeploy `
+            -BuildSuccessStatus $buildStatus.Status `
+            -PostImportDeployValidation:$PostImportDeployValidation `
+            -SkipDeployBinCheck:$SkipDeployBinCheck `
+            -StrictDeployBinCheck:$StrictDeployBinCheck `
+            -OperationLabel 'SpecifyGenerate'
+
+        foreach ($warn in $script:DeployBinClassification.warnings) {
+            Add-WarningMessage -Message $warn
+        }
+        foreach ($reason in $script:DeployBinClassification.blockingReasons) {
+            Add-BlockingReason -Reason $reason
+        }
+
+        if ($script:DeployBinClassification.statusReclassified) {
+            $reclassifiedExit = if ($null -ne $script:DeployBinClassification.newExitCode) {
+                $script:DeployBinClassification.newExitCode
+            } else {
+                $buildStatus.ExitCode
+            }
+            $buildStatus = [ordered]@{
+                Status   = $script:DeployBinClassification.newStatus
+                Summary  = $script:DeployBinClassification.newSummary
+                ExitCode = $reclassifiedExit
+            }
+        }
+    }
+
     $diagnostic = [ordered]@{
         status           = $buildStatus.Status
         summary          = $buildStatus.Summary
@@ -1156,6 +1238,9 @@ try {
             EnvironmentName            = $EnvironmentName
             ParallelKbRoot             = $ParallelKbRoot
             KbMetadataPath             = $KbMetadataPath
+            PostImportDeployValidation = $PostImportDeployValidation.IsPresent
+            SkipDeployBinCheck         = $SkipDeployBinCheck.IsPresent
+            StrictDeployBinCheck       = $StrictDeployBinCheck.IsPresent
             deploymentEnvironmentContext = $script:DeploymentEnvironmentContext
             ForceRebuild               = $ForceRebuild
             DetailedNavigation         = $DetailedNavigation
@@ -1208,6 +1293,11 @@ try {
         strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
         postProcessingFailed = $postProcessingFailed
         postProcessingError  = $postProcessingError
+    }
+
+    if ($null -ne $script:DeployBinClassification) {
+        $diagnostic['deployBinFreshness'] = $script:DeployBinClassification.deployBinFreshness
+        $diagnostic['deployBinCheck'] = $script:DeployBinClassification.deployBinCheck
     }
 
     if ($null -ne $environmentRemediationHints) {

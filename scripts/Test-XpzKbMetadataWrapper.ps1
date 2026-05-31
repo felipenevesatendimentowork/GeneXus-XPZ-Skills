@@ -95,7 +95,7 @@ function Get-WrapperFields {
 
     $result = @{}
     foreach ($line in $OutputLines) {
-        $match = [regex]::Match($line, '^\s*(?<key>last_xpz_materialization_run_at|kb_name|source_guid|deployment_environment_name|kb_environment_count|kb_environment_names)\s*[:=]\s*(?<value>.*)\s*$')
+        $match = [regex]::Match($line, '^\s*(?<key>last_xpz_materialization_run_at|kb_name|source_guid|deployment_environment_name|deployment_hosting_kind|kb_environment_count|kb_environment_names)\s*[:=]\s*(?<value>.*)\s*$')
         if ($match.Success) {
             $result[$match.Groups['key'].Value] = $match.Groups['value'].Value.Trim()
         }
@@ -119,6 +119,7 @@ $expected = [ordered]@{
     kb_name = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'kb_name')
     source_guid = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'source_guid')
     deployment_environment_name = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'deployment_environment_name')
+    deployment_hosting_kind = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'deployment_hosting_kind')
     kb_environment_count = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'kb_environment_count')
     kb_environment_names = Normalize-MetadataValue (Get-DirectFieldValue -Lines $metadataLines -FieldName 'kb_environment_names')
 }
@@ -170,7 +171,7 @@ $actual = Get-WrapperFields -OutputLines $outputLines
 $failures = New-Object System.Collections.Generic.List[string]
 
 $requiredWrapperFields = @('last_xpz_materialization_run_at', 'kb_name', 'source_guid')
-$optionalWrapperFields = @('deployment_environment_name', 'kb_environment_count', 'kb_environment_names')
+$optionalWrapperFields = @('deployment_environment_name', 'deployment_hosting_kind', 'kb_environment_count', 'kb_environment_names')
 
 foreach ($field in ($requiredWrapperFields + $optionalWrapperFields)) {
     $expectedValue = $expected[$field]

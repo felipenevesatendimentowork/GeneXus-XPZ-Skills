@@ -4,8 +4,8 @@
     Grava campos de environment/deploy em kb-source-metadata.md (autoridade: xpz-kb-parallel-setup).
 
 .DESCRIPTION
-    Atualiza ou insere somente deployment_environment_name, kb_environment_count e
-    kb_environment_names no frontmatter, preservando o restante do arquivo.
+    Atualiza ou insere deployment_environment_name, deployment_hosting_kind,
+    kb_environment_count e kb_environment_names no frontmatter, preservando o restante do arquivo.
 
     Inventario da KB nativa (pastas com web\) so ocorre quando -InventoryFromKbNativePath
     for passado explicitamente nesta rotina de setup — nunca em build/import.
@@ -18,6 +18,9 @@
 
 .PARAMETER DeploymentEnvironmentName
     Identificador MSBuild do environment de validacao/deploy (ex.: NETPostgreSQL).
+
+.PARAMETER DeploymentHostingKind
+    Tipo de hospedagem do environment de deploy: dotnet-core-self-host ou dotnet-framework-iis.
 
 .PARAMETER KbEnvironmentNames
     Lista de nomes de environments conhecidos na KB.
@@ -40,6 +43,10 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]$DeploymentEnvironmentName,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('dotnet-core-self-host', 'dotnet-framework-iis')]
+    [string]$DeploymentHostingKind,
 
     [string[]]$KbEnvironmentNames,
 
@@ -69,6 +76,11 @@ if (-not (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
 $deploymentName = $DeploymentEnvironmentName.Trim()
 if ($deploymentName.Length -eq 0) {
     throw 'BLOCK: DeploymentEnvironmentName vazio.'
+}
+
+$hostingKind = $DeploymentHostingKind.Trim()
+if ($hostingKind.Length -eq 0) {
+    throw 'BLOCK: DeploymentHostingKind vazio.'
 }
 
 $environmentNames = New-Object System.Collections.Generic.List[string]
@@ -119,6 +131,7 @@ $namesJoined = ($environmentNames | Sort-Object) -join ', '
 
 $fieldsToWrite = [ordered]@{
     deployment_environment_name = $deploymentName
+    deployment_hosting_kind     = $hostingKind
     kb_environment_count        = [string]$count
     kb_environment_names        = $namesJoined
 }
@@ -162,6 +175,7 @@ $result = [ordered]@{
     status                        = 'KB_DEPLOYMENT_METADATA_OK'
     metadataPath                  = $MetadataPath
     deployment_environment_name   = $deploymentName
+    deployment_hosting_kind       = $hostingKind
     kb_environment_count          = $count
     kb_environment_names          = @($environmentNames | Sort-Object)
     inventoryFromKbNativePath     = $InventoryFromKbNativePath.IsPresent

@@ -12,6 +12,7 @@ rotina de setup — nao em build/import.
 .\Set-KbSourceMetadataDeployment.ps1 `
     -KbParallelRoot "C:\Dev\Prod\Gx_FabricaBrasil" `
     -DeploymentEnvironmentName "NETPostgreSQL" `
+    -DeploymentHostingKind "dotnet-core-self-host" `
     -InventoryFromKbNativePath `
     -KbNativePath "C:\GxModels\FabricaBrasil18"
 #>
@@ -23,6 +24,10 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]$DeploymentEnvironmentName,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('dotnet-core-self-host', 'dotnet-framework-iis')]
+    [string]$DeploymentHostingKind,
 
     [string[]]$KbEnvironmentNames,
 
@@ -45,6 +50,7 @@ if (-not (Test-Path -LiteralPath $engineScript -PathType Leaf)) {
 
 $invokeArgs = @{
     DeploymentEnvironmentName = $DeploymentEnvironmentName
+    DeploymentHostingKind     = $DeploymentHostingKind
 }
 if ($KbParallelRoot) { $invokeArgs['KbParallelRoot'] = $KbParallelRoot }
 if ($MetadataPath) { $invokeArgs['MetadataPath'] = $MetadataPath }

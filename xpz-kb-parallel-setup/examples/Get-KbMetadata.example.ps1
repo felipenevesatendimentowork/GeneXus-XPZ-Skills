@@ -21,6 +21,7 @@ Campos retornados e sua origem em kb-source-metadata.md:
                                     serao semanticamente incorretas mesmo com parse valido)
   deployment_environment_name     : frontmatter — identificador MSBuild do environment de
                                     validacao/deploy (ex.: NETPostgreSQL); gravado por setup
+  deployment_hosting_kind         : frontmatter — dotnet-core-self-host ou dotnet-framework-iis
   kb_environment_count            : frontmatter — contagem de environments (inventario no setup)
   kb_environment_names            : frontmatter — lista separada por virgula (inventario no setup)
 
@@ -121,6 +122,7 @@ if (-not $sourceGuid) {
 }
 
 $deploymentEnvironment = Get-DirectFieldValue -Lines $lines -FieldName 'deployment_environment_name'
+$deploymentHostingKind = Get-DirectFieldValue -Lines $lines -FieldName 'deployment_hosting_kind'
 $kbEnvironmentCount = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_count'
 $kbEnvironmentNames = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_names'
 
@@ -129,6 +131,7 @@ $values = [ordered]@{
     kb_name = $kbName
     source_guid = $sourceGuid
     deployment_environment_name = $deploymentEnvironment
+    deployment_hosting_kind = $deploymentHostingKind
     kb_environment_count = $kbEnvironmentCount
     kb_environment_names = $kbEnvironmentNames
 }

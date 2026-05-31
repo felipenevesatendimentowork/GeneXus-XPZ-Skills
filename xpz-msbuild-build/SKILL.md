@@ -69,7 +69,7 @@ Use esta skill para:
 - configurar o modo de build antes de `BuildAll` via `SetConfiguration` (valores: `Release`, `Debug`, `Performance Test`)
 - classificar resultado de build em categorias operacionais explícitas
 - apoiar decisão do usuário sobre o próximo passo após import
-- resolver sub-estado `importação real efetiva provada, geração de runtime pendente` declarado por `xpz-msbuild-import-export` — quando import está provado mas artefatos de runtime ainda refletem versão anterior, executar build é o passo que atualiza os artefatos gerados no **environment usado no build**; `specify e generate concluídos` ou `compilou limpo` confirmam sucesso operacional **nesse** environment — em KB multi-environment **não** equivalem sozinhos a “a aplicação em IIS/self-host refletiu o import” sem `-EnvironmentName`/`deployment_environment_name` alinhados ao deploy; quando persistir dúvida após build confirmado, `Test-GeneXusRuntimeFreshness.ps1` (base compartilhada) pode ser usado como confirmação adicional somente leitura — verifica `nav_objs.xml` e timestamps em `CSharpModel\web` (compartilhado entre environments), sem substituir checagem do environment de deploy
+- resolver sub-estado `importação real efetiva provada, geração de runtime pendente` declarado por `xpz-msbuild-import-export` — quando import está provado mas artefatos de runtime ainda refletem versão anterior, executar build é o passo que atualiza os artefatos gerados no **environment usado no build**; `specify e generate concluídos` ou `compilou limpo` confirmam sucesso operacional **nesse** environment — em KB multi-environment **não** equivalem sozinhos a “a aplicação em IIS/self-host refletiu o import” sem `-EnvironmentName`/`deployment_environment_name` alinhados ao deploy; após build de validação deploy, passar `-PostImportDeployValidation` para gate de `web\bin` (exit **49** se desatualizado); `Test-GeneXusRuntimeFreshness.ps1` verifica `CSharpModel\web` (compartilhado) — complementar, não substituto; `Test-GeneXusDeployBinFreshness.ps1` diagnostica só `web\bin` do environment de deploy
 
 Do NOT use esta skill para:
 - executar reorg sem autorização explícita do usuário
@@ -404,6 +404,7 @@ e confirmação explícita** por frase exata.
 
 - `falha operacional com rejeicao MSBuild no log` — Categoria B: `executionEvidence.msBuildExitCode=0` mas `buildErrors` populado; `exitCode=48`, `msBuildCategoryBBlocked=true`, `operationalSubState` tipicamente `build com errors do MSBuild — resultado não confiável`; reproduzir linhas `error :` ao usuário; **não** declarar `compilou limpo`
 - `compilou limpo` — `BuildAll` concluiu com exitCode 0 (classificado pelo wrapper, **sem** Categoria B), sem reorg detectada, stderr vazio após filtro de ruído estrutural conhecido e stdout sem padrões de erro após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo)
+- `compilou-mas-dll-destino-desatualizada` — MSBuild concluiu com exit 0, mas `web\bin` do environment de deploy (`deployment_environment_name` + `deployment_hosting_kind` no metadata) não reflete o build; ver `deployBinFreshness`/`deployBinCheck` no JSON. Com `-PostImportDeployValidation` ou `-StrictDeployBinCheck`, o wrapper usa **exit 49**; sem gate, `exitCode` MSBuild permanece 0 mas **não** declarar validação deploy OK
 - `compilou com erros` — `BuildAll` falhou por erro de compilação
 - `reorg necessária detectada` — `FailIfReorg=true` bloqueou o build; reorg gerada mas
   não executada; usuário deve decidir o próximo passo
@@ -908,12 +909,13 @@ Campos relevantes:
 - [ ] Com `kb_environment_count` > 1, `-ParallelKbRoot`/`-KbMetadataPath` foi passado e o environment de deploy foi resolvido
 - [ ] `ActiveEnvironment` no JSON foi comparado ao environment de validação resolvido antes de declarar validação deploy OK
 - [ ] Quando a frente exigiu fix completo multi-environment (objetivo B), houve rodada **por** environment em `kb_environment_names`
+- [ ] Validação deploy pós-import usou `-PostImportDeployValidation` (ou `-StrictDeployBinCheck`) com `deployment_hosting_kind` no metadata; `deployBinFreshness`/`deployBinCheck` foram lidos — **não** declarar deploy OK com `compilou-mas-dll-destino-desatualizada` ou exit **49**
 
 ---
 
 ## CONSTRAINTS
 
-- Ao interpretar `exitCode` do processo ou do JSON (`46`, `47`, `40`–`45`, `48`, …), consultar `scripts/msbuild-exit-codes.catalog.json` — especialmente o anexo `causes[]` do **46**; não inferir causa só pelo número no terminal
+- Ao interpretar `exitCode` do processo ou do JSON (`46`, `47`, `49`, `40`–`45`, `48`, …), consultar `scripts/msbuild-exit-codes.catalog.json` — especialmente o anexo `causes[]` do **46** e exit **49** (`deployBinFreshness`); não inferir causa só pelo número no terminal
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER executar `icacls` nem qualquer concessão NTFS na instalação do GeneXus — apenas oferecer comandos em `environmentRemediationHints` para o usuário executar uma vez, por conta própria, se quiser silenciar o ruído GAM filtrado
 - NEVER recomendar elevar o build MSBuild a cada execução como substituto do filtro de ruído GAM; a única elevação mencionada é terminal administrativo **one-time** para o usuário rodar `icacls` sugerido
@@ -950,4 +952,5 @@ Campos relevantes:
 - ABORT se `KbPath`, versão, `Environment` de validação/deploy ou destino de logs estiverem ambíguos
 - NEVER executar `BuildAll`/`SpecifyGenerate` de validação pós-import em KB com `kb_environment_count` > 1 sem `-EnvironmentName` resolvido (parâmetro ou `deployment_environment_name` no metadata) — o wrapper bloqueia (exit 46)
 - NEVER tratar `compilou limpo` como prova de que o IIS/self-host refletiu o import quando `ActiveEnvironment` divergir de `deploymentEnvironmentContext.validationEnvironmentResolved`
+- NEVER declarar validação deploy OK quando `status` for `compilou-mas-dll-destino-desatualizada`, `deployBinFreshness=stale` ou `exitCode=49` — investigar `deployBinCheck.interpretation` e paths em `<KbNative>\<EnvDeploy>\web\bin`
 - ABORT se não houver ambiente controlado compatível com a fase solicitada
