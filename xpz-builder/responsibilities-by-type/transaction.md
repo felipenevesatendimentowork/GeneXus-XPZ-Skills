@@ -46,7 +46,46 @@ Operational rules:
 - Do not promote to `confirmado-*` from another agent’s report or an offline list alone; require reproducible import/build on the target KB, XML read in the parallel corpus, or a versioned sanitized template in this repo.
 - Stable Specifier messages (e.g. `src0056`, `spc0150` with full text) may be documented under `confirmado-import` / `confirmado-build` without copying business `Transaction` XML into this repository.
 - File-name examples (`Animal.xml`, etc.) with `confirmado-acervo` must state **parallel KB folder** (`ObjetosDaKbEmXml/...`) unless the example is a sanitized template in `01*`.
-- Future catalog sections in this file (rules `on <event>`, `Events` restrictions) must follow these labels; do not duplicate the full policy in other skills — cross-reference only.
+- Other skills must cross-reference this catalog section instead of duplicating it; see [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md) for repository scope (XPZ motor rejections vs GeneXus language documentation such as **nexa**).
+
+## Catalog: `on <event>` clauses in declarative `Rules` and `Events` restrictions
+
+Consult **before** generating or editing `Rules` or `Events` in a `Transaction` XPZ delta. This section records what the **XPZ import/build trail** has accepted or rejected — not correct GeneXus usage in general (**nexa** and product documentation own that).
+
+### Catalog 1 — `on <event>` in declarative `Transaction` `Rules`
+
+| Construct | Status | Specifier / motor evidence | Short example |
+|-----------|--------|---------------------------|---------------|
+| `on AfterValidate(<Attribute>)` or any `on <event>(<parameter>)` | **Rejected** | `confirmado-import` — `src0056: Missed ';' at the end of the rule. (Transaction '<name>' Rules, Line: <n>)` on MSBuild import (GeneXus 18) | `AttrB = expr if cond on AfterValidate(AttrA);` — **do not generate** |
+| `on AfterValidate` (no parameters) | **Accepted** | `confirmado-acervo` — real use in parallel KB XML after sync (e.g. `Animal.xml`, `Carga.xml`, `PedidoCompraProdutoItem.xml` under `ObjetosDaKbEmXml/...`) | Level validation timing on commit path — **not** a per-field leave hook |
+| `on BeforeInsert` | **Accepted** | `confirmado-import` on controlled trail; `confirmado-acervo` in parallel corpus | `Attr = expr on BeforeInsert;` |
+| `on BeforeUpdate` | **Accepted** | `confirmado-import` on controlled trail (same frente as parameterized rejection) | `Attr = expr on BeforeUpdate;` |
+
+#### GeneXus standard — not verified in this base (`padrao-gx-nao-verificado`)
+
+Do **not** generate from this list without **confirmado-import**, **confirmado-build**, or **confirmado-acervo** on the target KB. Keep separate from the table above.
+
+`on BeforeDelete`, `on AfterDelete`, `on BeforeValidate`, `on BeforeComplete`, `on AfterInsert`, `on AfterUpdate`, `on AfterComplete`, and other lifecycle triggers described in GeneXus product documentation or **nexa** (`common-rules.md` TRIGGERS, including `AfterLevel [level <attribute>]` for level-scoped timing — distinct from `on AfterValidate(<Attribute>)`).
+
+### Catalog 2 — `Events` in `Transaction` (web scope unless noted)
+
+| Construct / action | Status | Specifier / motor evidence | Notes |
+|--------------------|--------|---------------------------|--------|
+| `Event Start`, `Event After Trn` | **Listed** | `padrao-gx-nao-verificado` until `confirmado-acervo` in parallel corpus for your KB | Confirm in `ObjetosDaKbEmXml/...` before first use in a generated delta |
+| `Event <Attribute>.ControlValueChanged` `[web]` | **Accepted pattern** | `confirmado-acervo` — parallel corpus examples adjust **control** surface (e.g. `.Caption`, `.Visible`, `.Enabled`), `SetFocus()`, not transaction attribute assignment | Do not copy as license to assign another attribute’s value |
+| `Event <Attribute>.IsValid` `[web]` | **Not listed** | No `confirmado-*` in this repository for Transaction Events | Verify in target KB before generating; do not assume from commented XML alone |
+| Assign to **transaction attribute** inside `Event` (`<Attribute> = <value>`) | **Rejected** | `confirmado-build` — `spc0150: Cannot update database. Changes to database are only allowed in procedures. (Transaction '<name>' Events, Line: <n>)` | Put persisted values in declarative `Rules`; use `Events` for UI, variables, `msg`/`Error`, external proc calls |
+| Control UI properties, `&var`, `msg`/`Error`, proc `.execute()`, `SetFocus` / `SetEmpty` on variables | **Allowed class** | `confirmado-acervo` for UI-only `ControlValueChanged` bodies in parallel corpus | Still run **9-TXW** if any assignment touches level attributes in `Rules` |
+
+Architectural note (XPZ scope only): persisting a new attribute value **via `Event`** is structurally blocked by the Specifier message above; attribute values belong in declarative `Rules` (and writability gates), with `Events` limited to non-persisted UI and side effects allowed by the motor.
+
+### Catalog 3 — Symptom → likely cause → idiom (motor-focused)
+
+| Symptom | Likely cause | Idiom |
+|---------|--------------|--------|
+| Import fails: `src0056` … `end of the rule` in `Transaction` `Rules` | Parameterized `on <event>(…)` (e.g. `on AfterValidate(<Attribute>)`) not accepted in declarative `Transaction` `Rules` on tested GX18 import | Remove the parameter; use only forms from Catalog 1; for per-field timing see **nexa** / product docs — do not reintroduce via `Event` attribute assignment |
+| Build fails: `spc0150` … `only allowed in procedures` in `Transaction` `Events` | Transaction attribute assignment inside `Event` | Move value logic to declarative `Rules`; keep `Event` to UI / variables / proc calls (Catalog 2) |
+| Rule present in XML, import OK, field value on screen unchanged when another field changes | Mixing **business timing** with motor-blocked shortcuts | Do **not** “fix” with Catalog 1 rejected forms or Catalog 2 attribute assignment; diagnose evaluation path in target KB — correct GeneXus modeling is **not** duplicated here |
 
 ## Quality Checklist
 
@@ -59,6 +98,7 @@ Operational rules:
 - [ ] If the phase introduced a new FK sustained by `SubTypeGroup`, the corresponding `Table` was reviewed and the `Transaction + SubTypeGroup + Table` minimum review set was honored
 - [ ] Any new or updated catalog row in this file uses exactly one evidence label (`confirmado-import`, `confirmado-build`, `confirmado-acervo`, `padrao-gx-nao-verificado`); nothing was promoted to `confirmado-*` without import/build, parallel corpus XML, or sanitized template evidence
 - [ ] `padrao-gx-nao-verificado` items, if any, live in a clearly titled subsection separate from confirmed rows; no syntax was generated from unverified items alone
+- [ ] Before editing `Rules` or `Events`, the agent consulted **Catalog: `on <event>` clauses…** above and did not generate Catalog 1 rejected forms or Catalog 2 attribute assignments in `Events`
 
 ## Related gates and WORKFLOW links
 
