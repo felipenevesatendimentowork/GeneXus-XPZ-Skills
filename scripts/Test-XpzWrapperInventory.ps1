@@ -244,6 +244,20 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
                 $customized.Add(('{0}(reason=requires_version_mismatch: local={1} canonical={2})' -f $standardLocalName, $localLabel, $canonicalRequiresVersion))
             }
         }
+
+        if ($baseName -ieq 'Set-KbSourceMetadataDeployment') {
+            $exampleText = [System.IO.File]::ReadAllText($examplePath)
+            $localText = [System.IO.File]::ReadAllText($standardPath)
+            if ($localText -match 'InventoryFromKbNativePath|InventoryFromGeneXusMsBuild') {
+                $customized.Add(('{0}(reason=uses_removed_inventory_discovery)' -f $standardLocalName))
+            } elseif ($exampleText -match 'KbEnvironmentNames' -and $localText -notmatch 'KbEnvironmentNames') {
+                $customized.Add(('{0}(reason=missing_KbEnvironmentNames)' -f $standardLocalName))
+            } elseif ($exampleText -match 'KbNativePath' -and $localText -notmatch 'KbNativePath') {
+                $customized.Add(('{0}(reason=missing_KbNativePath_for_msbuild_validation)' -f $standardLocalName))
+            } elseif ($exampleText -match 'InventoryWorkingDirectory' -and $localText -notmatch 'InventoryWorkingDirectory') {
+                $customized.Add(('{0}(reason=missing_InventoryWorkingDirectory_for_msbuild_validation)' -f $standardLocalName))
+            }
+        }
     } elseif ($shortExists) {
         $shortNaming.Add($standardLocalName)
     } elseif ($optionalBaseNames.Contains($baseName)) {

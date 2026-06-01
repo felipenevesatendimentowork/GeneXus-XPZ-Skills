@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Inventario de environments da KB nativa ocorre somente via xpz-kb-parallel-setup
-    (Set-XpzKbSourceMetadataDeployment.ps1 com -InventoryFromGeneXusMsBuild). Build/import apenas leem o metadata gravado.
+    (Set-XpzKbSourceMetadataDeployment.ps1 com -KbEnvironmentNames declarado pelo usuario). Build/import apenas leem o metadata gravado.
 #>
 
 Set-StrictMode -Version Latest
@@ -307,4 +307,154 @@ function Test-GeneXusKbActiveEnvironmentMatchesValidation {
     }
 
     return ($ActiveEnvironment.Trim() -ieq $resolved.Trim())
+}
+
+function Split-GeneXusKbDeploymentMetadataEnvironmentNames {
+    param([AllowNull()][string]$NamesRaw)
+
+    if ([string]::IsNullOrWhiteSpace($NamesRaw)) {
+        return @()
+    }
+
+    return @(
+        $NamesRaw -split '[,;]' |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_.Length -gt 0 }
+    )
+}
+
+function Get-GeneXusKbDeploymentMetadataLegacyPollutionReason {
+    param([string]$EnvironmentName)
+
+    if ([string]::IsNullOrWhiteSpace($EnvironmentName)) {
+        return 'nome vazio'
+    }
+
+    $trimmed = $EnvironmentName.Trim()
+
+    $prefixExcluded = @(
+        'CSharpModel'
+        'CSharp'
+        'Data'
+        'DATA'
+        'backup'
+        'Backup'
+        'Temp'
+        'temp'
+    )
+
+    foreach ($prefix in $prefixExcluded) {
+        if ($trimmed.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+            return ("prefixo legado/estrutural '{0}' (tipico de scan por pastas web\\, nao environment GeneXus)" -f $prefix)
+        }
+    }
+
+    return $null
+}
+
+function Test-GeneXusKbDeploymentMetadataPlausibility {
+    param(
+        [string]$MetadataPath,
+        [scriptblock]$GetLegacyPollutionReason
+    )
+
+    if ($null -eq $GetLegacyPollutionReason) {
+        $GetLegacyPollutionReason = { param($Name) Get-GeneXusKbDeploymentMetadataLegacyPollutionReason -EnvironmentName $Name }
+    }
+
+    $result = [ordered]@{
+        status                     = 'unknown'
+        metadataPath               = $MetadataPath
+        deploymentFieldsPresent    = $false
+        failures                   = @()
+        warnings                   = @()
+        kb_environment_names       = @()
+        kb_environment_count       = $null
+        deployment_environment_name = $null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($MetadataPath) -or -not (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
+        $result.status = 'BLOCK'
+        $result.failures = @("kb-source-metadata.md nao encontrado: $MetadataPath")
+        return [pscustomobject]$result
+    }
+
+    $fields = Read-GeneXusKbDeploymentMetadataFields -MetadataPath $MetadataPath
+    $hasAnyDeploymentField = (
+        $fields.deployment_environment_name -or
+        $fields.deployment_hosting_kind -or
+        ($null -ne $fields.kb_environment_count) -or
+        ($fields.kb_environment_names.Count -gt 0)
+    )
+
+    $result.deploymentFieldsPresent = $hasAnyDeploymentField
+    $result.deployment_environment_name = $fields.deployment_environment_name
+    $result.kb_environment_count = $fields.kb_environment_count
+    $result.kb_environment_names = @($fields.kb_environment_names)
+
+    if (-not $hasAnyDeploymentField) {
+        $result.status = 'PENDENTE'
+        $result.warnings = @('Campos de environment/deploy ausentes em kb-source-metadata.md — executar Set-*KbSourceMetadataDeployment com -KbEnvironmentNames (confirmado pelo usuario) e validacao MSBuild no setup.')
+        return [pscustomobject]$result
+    }
+
+    $failures = New-Object System.Collections.Generic.List[string]
+
+    if ([string]::IsNullOrWhiteSpace($fields.deployment_environment_name)) {
+        $failures.Add('deployment_environment_name ausente enquanto outros campos de deploy estao preenchidos.') | Out-Null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($fields.deployment_hosting_kind)) {
+        $failures.Add('deployment_hosting_kind ausente enquanto outros campos de deploy estao preenchidos.') | Out-Null
+    }
+
+    if ($null -eq $fields.kb_environment_count) {
+        $failures.Add('kb_environment_count ausente enquanto kb_environment_names ou deployment_environment_name estao preenchidos.') | Out-Null
+    }
+
+    if ($fields.kb_environment_names.Count -eq 0) {
+        $failures.Add('kb_environment_names ausente ou vazio enquanto outros campos de deploy estao preenchidos.') | Out-Null
+    }
+
+    if ($fields.kb_environment_count -lt 1) {
+        $failures.Add("kb_environment_count invalido: $($fields.kb_environment_count).") | Out-Null
+    }
+
+    if ($fields.kb_environment_names.Count -gt 0 -and $null -ne $fields.kb_environment_count) {
+        if ($fields.kb_environment_count -ne $fields.kb_environment_names.Count) {
+            $failures.Add(
+                ("kb_environment_count ({0}) diverge da lista kb_environment_names ({1} nomes)." -f $fields.kb_environment_count, $fields.kb_environment_names.Count)
+            ) | Out-Null
+        }
+    }
+
+    foreach ($name in $fields.kb_environment_names) {
+        $excludeReason = & $GetLegacyPollutionReason $name
+        if ($excludeReason) {
+            $failures.Add(
+                ("kb_environment_names contem '{0}' — {1}." -f $name, $excludeReason)
+            ) | Out-Null
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($fields.deployment_environment_name) -and ($fields.kb_environment_names.Count -gt 0)) {
+        $known = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        foreach ($name in $fields.kb_environment_names) {
+            [void]$known.Add($name)
+        }
+        if (-not $known.Contains($fields.deployment_environment_name)) {
+            $failures.Add(
+                ("deployment_environment_name '{0}' nao consta em kb_environment_names ({1})." -f $fields.deployment_environment_name, ($fields.kb_environment_names -join ', '))
+            ) | Out-Null
+        }
+    }
+
+    $result.failures = $failures.ToArray()
+    if ($failures.Count -gt 0) {
+        $result.status = 'BLOCK'
+        return [pscustomobject]$result
+    }
+
+    $result.status = 'OK'
+    return [pscustomobject]$result
 }

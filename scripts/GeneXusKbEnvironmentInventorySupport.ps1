@@ -1,11 +1,12 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Inventario de environments GeneXus via MSBuild (SetActiveEnvironment), com pre-filtro de pastas legadas na KB nativa.
+    Inventario de environments GeneXus via MSBuild (SetActiveEnvironment) sobre lista explicita.
 
 .DESCRIPTION
-    Substitui a heuristica removida de pastas com web\ (CSharpModel, Data*, backups, etc.).
-    Candidatos: subpastas de primeiro nivel da KB nativa fora de denylist; validacao: GeneXus aceita SetActiveEnvironment.
+    Valida nomes declarados pelo usuario com SetActiveEnvironment headless.
+    Scan automatico de pastas da KB nativa foi removido (superestimava environments _bad, hotfix, etc.).
+    Get-GeneXusKbNativeFolderEnvironmentProbeExcludeReason permanece para gates de metadata legado.
 #>
 
 Set-StrictMode -Version Latest
@@ -345,9 +346,8 @@ function Get-GeneXusKbRegisteredEnvironmentNamesFromMsBuild {
 
         [string]$MsBuildPath,
 
+        [Parameter(Mandatory = $true)]
         [string[]]$CandidateNames,
-
-        [string[]]$AdditionalCandidateNames,
 
         [string]$DatabaseUser,
 
@@ -369,22 +369,25 @@ function Get-GeneXusKbRegisteredEnvironmentNamesFromMsBuild {
     }
 
     $candidatePack = $null
-    if ($CandidateNames -and $CandidateNames.Count -gt 0) {
-        $candidateSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-        foreach ($name in $CandidateNames) {
-            if (-not [string]::IsNullOrWhiteSpace($name)) {
-                [void]$candidateSet.Add($name.Trim())
-            }
+    if (-not $CandidateNames -or $CandidateNames.Count -eq 0) {
+        throw 'BLOCK: informe -CandidateNames com a lista explicita de environments declarados pelo usuario. Scan de pastas da KB nativa foi removido.'
+    }
+
+    $candidateSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($name in $CandidateNames) {
+        if (-not [string]::IsNullOrWhiteSpace($name)) {
+            [void]$candidateSet.Add($name.Trim())
         }
-        $candidatePack = [pscustomobject][ordered]@{
-            kbNativePath = [System.IO.Path]::GetFullPath($KbNativePath)
-            candidates   = @($candidateSet | Sort-Object)
-            excluded     = @()
-        }
-    } else {
-        $candidatePack = Get-GeneXusKbEnvironmentNameCandidatesFromNativePath `
-            -KbNativePath $KbNativePath `
-            -AdditionalCandidateNames $AdditionalCandidateNames
+    }
+
+    if ($candidateSet.Count -eq 0) {
+        throw 'BLOCK: -CandidateNames vazio ou invalido.'
+    }
+
+    $candidatePack = [pscustomobject][ordered]@{
+        kbNativePath = [System.IO.Path]::GetFullPath($KbNativePath)
+        candidates   = @($candidateSet | Sort-Object)
+        excluded     = @()
     }
 
     if ($candidatePack.candidates.Count -eq 0) {
@@ -427,7 +430,7 @@ function Get-GeneXusKbRegisteredEnvironmentNamesFromMsBuild {
     }
 
     if ($registeredNames.Count -eq 0) {
-        throw 'BLOCK: inventario MSBuild nao encontrou nenhum environment GeneXus registrado entre os candidatos filtrados.'
+        throw 'BLOCK: validacao MSBuild nao confirmou nenhum environment declarado. Verifique nomes com o usuario ou indisponibilidade da sondagem headless.'
     }
 
     return [pscustomobject][ordered]@{

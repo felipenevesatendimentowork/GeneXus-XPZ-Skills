@@ -4,8 +4,9 @@
     Inventaria environments GeneXus registrados na KB via MSBuild (somente leitura).
 
 .DESCRIPTION
-    Pre-filtra pastas legadas na KB nativa (CSharpModel, Data*, backups, etc.) e valida cada
-    candidato restante com SetActiveEnvironment. Substitui a heuristica removida de pastas com web\.
+    Inventario automatico por scan de pastas da KB nativa foi removido. Informe -CandidateNames
+    com a lista explicita declarada pelo usuario; o script valida cada nome via SetActiveEnvironment
+    headless (nao descobre candidatos por pasta).
 
 .PARAMETER KbNativePath
     Caminho da KB nativa GeneXus (ex.: C:\GxModels\FabricaBrasil18).
@@ -23,10 +24,8 @@
     Caminho do MSBuild.exe (opcional — resolvido pelo probe).
 
 .PARAMETER CandidateNames
-    Quando informado, pula o scan de pastas e valida apenas estes nomes via MSBuild.
-
-.PARAMETER AdditionalCandidateNames
-    Nomes extras a incluir no scan (ex.: environment ainda sem pasta na KB nativa).
+    Lista explicita de environments declarados pelo usuario. Obrigatorio. Cada nome e validado
+    via SetActiveEnvironment headless; nao ha scan de pastas da KB nativa.
 
 .PARAMETER DatabaseUser
     Usuario de banco para abertura headless (opcional).
@@ -52,9 +51,8 @@ param(
 
     [string]$MsBuildPath,
 
+    [Parameter(Mandatory = $true)]
     [string[]]$CandidateNames,
-
-    [string[]]$AdditionalCandidateNames,
 
     [string]$DatabaseUser,
 
@@ -77,7 +75,6 @@ $result = Get-GeneXusKbRegisteredEnvironmentNamesFromMsBuild `
     -GeneXusDir $GeneXusDir `
     -MsBuildPath $MsBuildPath `
     -CandidateNames $CandidateNames `
-    -AdditionalCandidateNames $AdditionalCandidateNames `
     -DatabaseUser $DatabaseUser `
     -DatabasePassword $DatabasePassword `
     -VerboseLog:$VerboseLog

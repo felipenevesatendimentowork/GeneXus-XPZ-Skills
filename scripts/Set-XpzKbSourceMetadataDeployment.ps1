@@ -7,8 +7,13 @@
     Atualiza ou insere deployment_environment_name, deployment_hosting_kind,
     kb_environment_count e kb_environment_names no frontmatter, preservando o restante do arquivo.
 
-    Inventario de environments ocorre somente no setup via -InventoryFromGeneXusMsBuild
-    (validacao SetActiveEnvironment) ou -KbEnvironmentNames explicito — nunca por pastas com web\.
+    A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames declarado pelo usuario
+    (ou agente apos confirmacao explicita). Scan de pastas da KB nativa e inventario automatico
+    foram removidos.
+
+    Por padrao valida cada nome informado via SetActiveEnvironment headless (MSBuild).
+    Use -SkipEnvironmentNamesMsBuildValidation apenas quando a sondagem MSBuild estiver
+    indisponivel por infraestrutura (GeneXus/MSBuild/KB headless inacessivel nesta sessao).
 
 .PARAMETER KbParallelRoot
     Raiz da pasta paralela da KB.
@@ -23,34 +28,38 @@
     Tipo de hospedagem do environment de deploy: dotnet-core-self-host ou dotnet-framework-iis.
 
 .PARAMETER KbEnvironmentNames
-    Lista explicita de environments (excecao quando MSBuild indisponivel no setup).
+    Lista explicita de environments GeneXus (nomes exatos como na IDE / SetActiveEnvironment).
+
+.PARAMETER KbNativePath
+    Caminho da KB nativa GeneXus. Obrigatorio salvo -SkipEnvironmentNamesMsBuildValidation.
+
+.PARAMETER InventoryWorkingDirectory
+    Diretorio de trabalho para validacao MSBuild. Obrigatorio salvo -SkipEnvironmentNamesMsBuildValidation.
+
+.PARAMETER InventoryLogPath
+    Log JSON opcional da sondagem MSBuild de validacao.
+
+.PARAMETER SkipEnvironmentNamesMsBuildValidation
+    Pula validacao SetActiveEnvironment quando a sondagem MSBuild estiver indisponivel.
+    Deve ser excecao documentada no handoff; nao usar para contornar nome rejeitado pelo GeneXus.
 
 .PARAMETER InventoryFromGeneXusMsBuild
-    Inventaria environments registrados na KB via SetActiveEnvironment headless.
+    REMOVIDO — emite BLOCK (inventario automatico por pastas da KB nativa).
 
 .PARAMETER InventoryFromKbNativePath
     REMOVIDO — emite BLOCK (heuristica web\ incluia CSharpModel, Data* e pastas legadas).
 
-.PARAMETER KbNativePath
-    Caminho da KB nativa GeneXus. Obrigatorio com -InventoryFromGeneXusMsBuild.
-
-.PARAMETER InventoryWorkingDirectory
-    Diretorio de trabalho para probe/inventario MSBuild. Obrigatorio com -InventoryFromGeneXusMsBuild.
-
-.PARAMETER InventoryLogPath
-    Log JSON opcional do probe MSBuild do inventario.
-
 .PARAMETER GeneXusDir
-    Instalacao GeneXus (opcional — resolvida pelo probe).
+    Instalacao GeneXus (opcional — resolvida pela sondagem).
 
 .PARAMETER MsBuildPath
-    Caminho do MSBuild.exe (opcional — resolvido pelo probe).
+    Caminho do MSBuild.exe (opcional — resolvido pela sondagem).
 
 .PARAMETER DatabaseUser
-    Usuario de banco para abertura headless do inventario (opcional).
+    Usuario de banco para abertura headless da validacao (opcional).
 
 .PARAMETER DatabasePassword
-    Senha de banco para abertura headless do inventario (opcional).
+    Senha de banco para abertura headless da validacao (opcional).
 
 .PARAMETER AsJson
     Emite JSON em vez de texto simples.
@@ -69,17 +78,20 @@ param(
     [ValidateSet('dotnet-core-self-host', 'dotnet-framework-iis')]
     [string]$DeploymentHostingKind,
 
+    [Parameter(Mandatory = $true)]
     [string[]]$KbEnvironmentNames,
-
-    [switch]$InventoryFromGeneXusMsBuild,
-
-    [switch]$InventoryFromKbNativePath,
 
     [string]$KbNativePath,
 
     [string]$InventoryWorkingDirectory,
 
     [string]$InventoryLogPath,
+
+    [switch]$SkipEnvironmentNamesMsBuildValidation,
+
+    [switch]$InventoryFromGeneXusMsBuild,
+
+    [switch]$InventoryFromKbNativePath,
 
     [string]$GeneXusDir,
 
@@ -97,7 +109,13 @@ $ErrorActionPreference = 'Stop'
 
 if ($InventoryFromKbNativePath.IsPresent) {
     throw @'
-BLOCK: -InventoryFromKbNativePath foi removido. Pastas com web\ na KB nativa incluem legado (CSharpModel, Data*, backups de environment) e nao representam a lista de environments GeneXus. Use -InventoryFromGeneXusMsBuild com -KbNativePath e -InventoryWorkingDirectory, ou -KbEnvironmentNames explicito como excecao documentada.
+BLOCK: -InventoryFromKbNativePath foi removido. Pastas com web\ na KB nativa incluem legado (CSharpModel, Data*, backups de environment) e nao representam a lista operacional de environments. Informe -KbEnvironmentNames explicito (confirmado pelo usuario) e valide via MSBuild.
+'@
+}
+
+if ($InventoryFromGeneXusMsBuild.IsPresent) {
+    throw @'
+BLOCK: -InventoryFromGeneXusMsBuild foi removido. Inventario automatico por pastas da KB nativa superestima environments (restos _bad, hotfix, etc.). Informe -KbEnvironmentNames explicito (confirmado pelo usuario) e valide cada nome via SetActiveEnvironment headless.
 '@
 }
 
@@ -125,15 +143,38 @@ if ($hostingKind.Length -eq 0) {
 }
 
 $environmentNames = New-Object System.Collections.Generic.List[string]
-$inventoryFromGeneXusMsBuild = $false
-$inventoryExcludedNativeFolders = @()
+foreach ($name in $KbEnvironmentNames) {
+    if (-not [string]::IsNullOrWhiteSpace($name)) {
+        $environmentNames.Add($name.Trim()) | Out-Null
+    }
+}
 
-if ($InventoryFromGeneXusMsBuild.IsPresent) {
+if ($environmentNames.Count -eq 0) {
+    throw 'BLOCK: -KbEnvironmentNames vazio ou invalido.'
+}
+
+$nameSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($name in $environmentNames) {
+    [void]$nameSet.Add($name)
+}
+
+$environmentNamesList = @($nameSet | Sort-Object)
+$environmentNames = New-Object System.Collections.Generic.List[string]
+foreach ($name in $environmentNamesList) {
+    $environmentNames.Add($name) | Out-Null
+}
+
+$msBuildValidationSkipped = $false
+$msBuildValidationPerformed = $false
+$msBuildRejectedNames = @()
+$msBuildValidationProbeResults = @()
+
+if (-not $SkipEnvironmentNamesMsBuildValidation.IsPresent) {
     if ([string]::IsNullOrWhiteSpace($KbNativePath)) {
-        throw 'BLOCK: -InventoryFromGeneXusMsBuild exige -KbNativePath.'
+        throw 'BLOCK: validacao MSBuild de environments exige -KbNativePath. Se a sondagem headless estiver indisponivel nesta sessao, use -SkipEnvironmentNamesMsBuildValidation com excecao documentada no handoff.'
     }
     if ([string]::IsNullOrWhiteSpace($InventoryWorkingDirectory)) {
-        throw 'BLOCK: -InventoryFromGeneXusMsBuild exige -InventoryWorkingDirectory.'
+        throw 'BLOCK: validacao MSBuild de environments exige -InventoryWorkingDirectory. Se a sondagem headless estiver indisponivel nesta sessao, use -SkipEnvironmentNamesMsBuildValidation com excecao documentada no handoff.'
     }
 
     . (Join-Path $PSScriptRoot 'GeneXusKbEnvironmentInventorySupport.ps1')
@@ -144,28 +185,30 @@ if ($InventoryFromGeneXusMsBuild.IsPresent) {
         -LogPath $InventoryLogPath `
         -GeneXusDir $GeneXusDir `
         -MsBuildPath $MsBuildPath `
+        -CandidateNames @($environmentNames) `
         -DatabaseUser $DatabaseUser `
         -DatabasePassword $DatabasePassword
 
-    foreach ($name in $inventoryResult.kb_environment_names) {
-        $environmentNames.Add($name) | Out-Null
+    $registeredSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($registeredName in $inventoryResult.kb_environment_names) {
+        [void]$registeredSet.Add($registeredName)
     }
 
-    $inventoryFromGeneXusMsBuild = $true
-    $inventoryExcludedNativeFolders = @($inventoryResult.excludedNativeFolders)
-} elseif ($KbEnvironmentNames -and $KbEnvironmentNames.Count -gt 0) {
-    foreach ($name in $KbEnvironmentNames) {
-        if (-not [string]::IsNullOrWhiteSpace($name)) {
-            $environmentNames.Add($name.Trim()) | Out-Null
+    $rejected = New-Object System.Collections.Generic.List[string]
+    foreach ($declaredName in $environmentNames) {
+        if (-not $registeredSet.Contains($declaredName)) {
+            $rejected.Add($declaredName) | Out-Null
         }
     }
-} else {
-    throw 'BLOCK: informe -InventoryFromGeneXusMsBuild (-KbNativePath e -InventoryWorkingDirectory) ou -KbEnvironmentNames explicito.'
-}
 
-$nameSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-foreach ($name in $environmentNames) {
-    [void]$nameSet.Add($name)
+    if ($rejected.Count -gt 0) {
+        throw ("BLOCK: GeneXus rejeitou environment(s) declarado(s): {0}. Corrija os nomes com o usuario; nao use -SkipEnvironmentNamesMsBuildValidation para contornar rejeicao." -f ($rejected -join ', '))
+    }
+
+    $msBuildValidationPerformed = $true
+    $msBuildValidationProbeResults = @($inventoryResult.probeResults)
+} else {
+    $msBuildValidationSkipped = $true
 }
 
 if (-not $nameSet.Contains($deploymentName)) {
@@ -239,18 +282,22 @@ foreach ($fieldName in $fieldsToWrite.Keys) {
 Write-TextFilePreservingEol -Path $MetadataPath -FileContext $fileContext
 
 $result = [ordered]@{
-    status                        = 'KB_DEPLOYMENT_METADATA_OK'
-    metadataPath                  = $MetadataPath
-    deployment_environment_name   = $deploymentName
-    deployment_hosting_kind       = $hostingKind
-    kb_environment_count          = $count
-    kb_environment_names          = @($environmentNames | Sort-Object)
-    inventoryFromGeneXusMsBuild   = $inventoryFromGeneXusMsBuild
-    inventoryExcludedNativeFolders = $inventoryExcludedNativeFolders
+    status                              = 'KB_DEPLOYMENT_METADATA_OK'
+    metadataPath                        = $MetadataPath
+    deployment_environment_name         = $deploymentName
+    deployment_hosting_kind             = $hostingKind
+    kb_environment_count                = $count
+    kb_environment_names                = @($environmentNames | Sort-Object)
+    environmentNamesSource              = 'user_declared'
+    msBuildValidationPerformed          = $msBuildValidationPerformed
+    msBuildValidationSkipped            = $msBuildValidationSkipped
+    msBuildRejectedNames                = $msBuildRejectedNames
+    msBuildValidationProbeResults       = $msBuildValidationProbeResults
 }
 
 if ($AsJson) {
-    $result | ConvertTo-Json -Depth 6
+    $result | ConvertTo-Json -Depth 8
 } else {
-    Write-Output "KB_DEPLOYMENT_METADATA_OK: deployment=$deploymentName count=$count names=$namesJoined"
+    $validationLabel = if ($msBuildValidationSkipped) { 'msbuild_validation=skipped' } else { 'msbuild_validation=ok' }
+    Write-Output ("KB_DEPLOYMENT_METADATA_OK: deployment=$deploymentName count=$count names=$namesJoined $validationLabel")
 }

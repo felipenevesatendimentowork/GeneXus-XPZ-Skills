@@ -224,6 +224,33 @@ try {
     }
 }
 
+$deploymentMetadataRaw = $null
+$deploymentMetadataStatus = $null
+$deploymentMetadataScriptPath = Join-Path $scriptDir 'Test-XpzKbDeploymentMetadata.ps1'
+if (Test-Path -LiteralPath $deploymentMetadataScriptPath -PathType Leaf) {
+    try {
+        $deploymentMetadataRaw = (& $deploymentMetadataScriptPath -MetadataPath $metadataPath 2>&1 |
+            ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+        if ($deploymentMetadataRaw -match '\bDEPLOYMENT_METADATA_PLAUSIBILITY_OK\b') {
+            $deploymentMetadataStatus = 'OK'
+        } elseif ($deploymentMetadataRaw -match '\bDEPLOYMENT_METADATA_PENDENTE\b') {
+            $deploymentMetadataStatus = 'PENDENTE'
+        } else {
+            $deploymentMetadataStatus = 'BLOCK'
+        }
+    } catch {
+        $deploymentMetadataRaw = $_.Exception.Message.Trim()
+        if ($deploymentMetadataRaw -match '\bPENDENTE:') {
+            $deploymentMetadataStatus = 'PENDENTE'
+        } else {
+            $deploymentMetadataStatus = 'BLOCK'
+        }
+    }
+} else {
+    $deploymentMetadataRaw = 'Test-XpzKbDeploymentMetadata.ps1 ausente no motor compartilhado'
+    $deploymentMetadataStatus = 'PENDENTE'
+}
+
 $syncStatus = if ($lastMaterialization) { 'OK' } else { 'PENDENTE' }
 $syncEvidence = if ($lastMaterialization) {
     "last_xpz_materialization_run_at=$lastMaterialization"
@@ -331,12 +358,14 @@ if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
 
 $hasInventoryMethodologyPendencies = $inventoryStatus -match '\b(INVENTORY_GAPS|INVENTORY_SHORT_NAMING|INVENTORY_CUSTOMIZED|INVENTORY_LEGACY_ORPHANS)\b'
 $hasMetadataWrapperPendencies = $metadataWrapperStatus -ne 'OK'
+$hasDeploymentMetadataPendencies = $deploymentMetadataStatus -in @('BLOCK', 'PENDENTE')
 
 $suggestedState = switch ($true) {
     ($powerShellRuntimeStatus -ne 'OK') { 'runtime_powershell_bloqueado'; break }
     ($syncStatus -eq 'PENDENTE') { 'pronto_para_primeira_materializacao'; break }
     ($namingStatus -eq 'DIVERGENT') { 'naming_objetos_da_kb_pendente'; break }
     ($hasMetadataWrapperPendencies) { 'atualizacao_metodologica_pendente'; break }
+    ($hasDeploymentMetadataPendencies) { 'atualizacao_metodologica_pendente'; break }
     ($hasInventoryMethodologyPendencies) { 'atualizacao_metodologica_pendente'; break }
     ($hasDeclarativeDrift) { 'atualizacao_metodologica_pendente'; break }
     ($syncStatus -eq 'OK' -and $gateStatus -eq 'OK' -and $inventorySemanticStatus -eq 'OK' -and $packageAuditStatus -eq 'OK') { 'materializado_e_indice_validado'; break }
@@ -358,6 +387,8 @@ Emit-Line -Key 'indice/semantica' -Value $inventorySemanticStatus
 Emit-Line -Key 'indice/semantica.evidencia' -Value $(if ($gateRaw) { $gateRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'metadata wrapper' -Value $metadataWrapperStatus
 Emit-Line -Key 'metadata wrapper.evidencia' -Value $(if ($metadataWrapperRaw) { $metadataWrapperRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
+Emit-Line -Key 'metadata/deploy' -Value $deploymentMetadataStatus
+Emit-Line -Key 'metadata/deploy.evidencia' -Value $(if ($deploymentMetadataRaw) { $deploymentMetadataRaw.Replace([Environment]::NewLine, ' | ') } else { '(sem saida)' })
 Emit-Line -Key 'empacotamento local' -Value $packageAuditStatus
 Emit-Line -Key 'empacotamento local.evidencia' -Value $packageEvidence
 Emit-Line -Key 'declarativo/timestamps' -Value $declarativeStatus
