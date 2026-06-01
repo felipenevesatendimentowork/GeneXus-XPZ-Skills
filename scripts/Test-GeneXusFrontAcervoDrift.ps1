@@ -8,14 +8,16 @@
     Para cada <Object> na pasta da frente, busca o XML correspondente no acervo
     (ObjetosDaKbEmXml) por GUID ou por nome, e compara:
       - lastUpdate: se o acervo e mais recente que a frente, emite finding.
-      - presenca: se o objeto existe no acervo mas nao na frente, ou vice-versa.
+      - presenca no acervo: se o objeto da frente nao existe no acervo, classifica
+        como objeto novo presumido. O gate nao enumera objetos do acervo ausentes
+        da frente, porque a frente e o escopo operacional do empacotamento.
 
     Codigo de severidade por finding:
-      info    — nao ha drift (acervo e frente tem mesmo lastUpdate, ou objeto so existe
+      info    — nao ha bloqueio (frente mais recente que acervo, ou objeto so existe
                  na frente = objeto novo)
-      warn    — drift de lastUpdate (frente mais antiga que acervo)
-      fail    — drift critico proibido pela metodologia (acervo editado quando deveria
-                 ser read-only, ou frente com lastUpdate mais antigo que acervo)
+      warn    — revisao obrigatoria antes de empacotar (frente com mesmo lastUpdate
+                 do acervo, ou lastUpdate nao parseavel)
+      fail    — frente com lastUpdate mais antigo que acervo
 
 .PARAMETER FrontFolder
     Caminho da pasta da frente (ObjetosGeradosParaImportacaoNaKbNoGenexus/<NomeCurto_GUID_YYYYMMDD>).

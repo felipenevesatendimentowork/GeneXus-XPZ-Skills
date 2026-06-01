@@ -12,8 +12,8 @@
 
     Quando -AcervoPath e fornecido, executa o gate de drift frente-vs-acervo
     (Test-GeneXusFrontAcervoDrift.ps1) ANTES de chamar o motor Python. Se o gate
-    retornar status fail, o empacotamento e abortado com erro. Alertas de drift
-    sao propagados no resultado.
+    retornar status fail ou alert, o empacotamento e abortado com erro. Findings
+    warn exigem confirmacao explicita ou resolucao antes de nova tentativa.
 
 .PARAMETER RepoRoot
     Raiz da pasta paralela da KB.
@@ -36,7 +36,9 @@
     Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Quando fornecido,
     executa o gate de drift frente-vs-acervo antes do empacotamento. Se o gate
     detectar que um XML da frente esta mais antigo que o homonimo no acervo
-    (front-older-than-acervo), o empacotamento e abortado.
+    (front-older-than-acervo), o empacotamento e abortado. Findings warn
+    (front-equals-acervo ou lastupdate-unparseable) tambem bloqueiam esta
+    chamada automatica ate confirmacao/resolucao fora do wrapper.
 
 .PARAMETER AsJson
     Retorna saída JSON estruturada, incluindo warnings e information de Panel.
@@ -90,6 +92,11 @@ if (-not [string]::IsNullOrWhiteSpace($AcervoPath)) {
         $failFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'fail' })
         $blockMsgs = @($failFindings | ForEach-Object { $_.message })
         throw "BLOCK: gate de drift frente-vs-acervo falhou ($($blockMsgs.Count) finding(s) fatal(is)): $($blockMsgs -join '; ')"
+    }
+    if ($driftResult.status -eq 'alert') {
+        $warnFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'warn' })
+        $warnMsgs = @($warnFindings | ForEach-Object { $_.message })
+        throw "BLOCK: gate de drift frente-vs-acervo retornou alerta ($($warnMsgs.Count) finding(s) warn): confirmacao explicita ou resolucao manual requerida antes de empacotar. $($warnMsgs -join '; ')"
     }
 }
 
