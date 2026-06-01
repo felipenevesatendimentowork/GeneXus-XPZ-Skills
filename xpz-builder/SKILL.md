@@ -318,7 +318,7 @@ Reference files and when to load them:
    - `not-applicable` (no Object XMLs in the front) → proceed normally
    - `pass` (only `info` findings) → proceed normally
    - `alert` (one or more `warn` findings) → present each `warn` finding to the user; for `front-equals-acervo` confirm whether the lastUpdate was intentionally preserved (dependency re-sent without change) or needs updating; for `lastupdate-unparseable` resolve manually before packaging
-- `fail` (any `fail` finding) → **ABORT** packaging; report each finding and the corrective action:
+   - `fail` (any `fail` finding) → **ABORT** packaging; report each finding and the corrective action:
       - `front-older-than-acervo`: the XML in the front has an older `lastUpdate` than the corresponding XML in the official corpus — use `Copy-GeneXusAcervoToFront.ps1` (`& ..\scripts\Copy-GeneXusAcervoToFront.ps1 -FrontFolder <pasta-da-frente> -AcervoFolder <ObjetosDaKbEmXml> -AsJson`) to copy the newer version from the corpus to the front with automatic `lastUpdate` bump, or copy manually and bump the `lastUpdate`; after resolution, re-run the 9-FD gate to confirm the drift is cleared
    - When using `New-XpzImportPackage.ps1` (the front-based packaging wrapper) with `-AcervoPath`, this gate runs automatically before the Python motor is invoked; `fail` and `alert` both block automatic packaging, because `warn` findings require explicit acknowledgment or resolution before another packaging attempt
    - This gate does **not** replace 12 (check for improper local changes in `ObjetosDaKbEmXml`); 9-FD compares front vs. corpus content, while 12 detects direct edits in the read-only corpus
