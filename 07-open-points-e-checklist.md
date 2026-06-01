@@ -286,3 +286,5 @@ A skill `xpz-builder` extraiu seus gates da Fase 9 (`9-BC`, `9-WW`, `9-PSM`, `9-
 - `scripts/Test-GeneXusProcedureSubPattern.ps1` — gate `9-PSM` (padrão dominante de Sub em Procedures)
 - `scripts/Test-GeneXusTransactionWritability.ps1` — gate `Writability` (Transactions efetivamente graváveis; fachada PowerShell sobre `GeneXusTransactionWritabilityCore.py`)
 - `scripts/Test-GeneXusWorkWithWebApply.ps1` — gate `9-WW` (Apply em WorkWithForWeb, formas A e B)
+- `scripts/Test-GeneXusFrontAcervoDrift.ps1` — gate `9-FD` (drift frente-vs-acervo: compara `lastUpdate` de cada XML da frente contra o homônimo no acervo; findings `front-older-than-acervo` bloqueiam empacotamento)
+- `scripts/Copy-GeneXusAcervoToFront.ps1` — motor de resolução de drift: copia XMLs do acervo para a frente com bump automático de `lastUpdate`; resolve o anti-padrão "editar acervo esperando que o pacote pegue"
