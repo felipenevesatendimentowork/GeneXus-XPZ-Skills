@@ -7,8 +7,8 @@
     Atualiza ou insere deployment_environment_name, deployment_hosting_kind,
     kb_environment_count e kb_environment_names no frontmatter, preservando o restante do arquivo.
 
-    Inventario da KB nativa (pastas com web\) so ocorre quando -InventoryFromKbNativePath
-    for passado explicitamente nesta rotina de setup — nunca em build/import.
+    Inventario de environments ocorre somente no setup via -InventoryFromGeneXusMsBuild
+    (validacao SetActiveEnvironment) ou -KbEnvironmentNames explicito — nunca por pastas com web\.
 
 .PARAMETER KbParallelRoot
     Raiz da pasta paralela da KB.
@@ -23,13 +23,34 @@
     Tipo de hospedagem do environment de deploy: dotnet-core-self-host ou dotnet-framework-iis.
 
 .PARAMETER KbEnvironmentNames
-    Lista de nomes de environments conhecidos na KB.
+    Lista explicita de environments (excecao quando MSBuild indisponivel no setup).
+
+.PARAMETER InventoryFromGeneXusMsBuild
+    Inventaria environments registrados na KB via SetActiveEnvironment headless.
 
 .PARAMETER InventoryFromKbNativePath
-    Quando presente, enumera subpastas de KbNativePath que contem web\ e usa como KbEnvironmentNames.
+    REMOVIDO — emite BLOCK (heuristica web\ incluia CSharpModel, Data* e pastas legadas).
 
 .PARAMETER KbNativePath
-    Caminho da KB nativa GeneXus (ex.: C:\GxModels\FabricaBrasil18). Obrigatorio com -InventoryFromKbNativePath.
+    Caminho da KB nativa GeneXus. Obrigatorio com -InventoryFromGeneXusMsBuild.
+
+.PARAMETER InventoryWorkingDirectory
+    Diretorio de trabalho para probe/inventario MSBuild. Obrigatorio com -InventoryFromGeneXusMsBuild.
+
+.PARAMETER InventoryLogPath
+    Log JSON opcional do probe MSBuild do inventario.
+
+.PARAMETER GeneXusDir
+    Instalacao GeneXus (opcional — resolvida pelo probe).
+
+.PARAMETER MsBuildPath
+    Caminho do MSBuild.exe (opcional — resolvido pelo probe).
+
+.PARAMETER DatabaseUser
+    Usuario de banco para abertura headless do inventario (opcional).
+
+.PARAMETER DatabasePassword
+    Senha de banco para abertura headless do inventario (opcional).
 
 .PARAMETER AsJson
     Emite JSON em vez de texto simples.
@@ -50,15 +71,35 @@ param(
 
     [string[]]$KbEnvironmentNames,
 
+    [switch]$InventoryFromGeneXusMsBuild,
+
     [switch]$InventoryFromKbNativePath,
 
     [string]$KbNativePath,
+
+    [string]$InventoryWorkingDirectory,
+
+    [string]$InventoryLogPath,
+
+    [string]$GeneXusDir,
+
+    [string]$MsBuildPath,
+
+    [string]$DatabaseUser,
+
+    [string]$DatabasePassword,
 
     [switch]$AsJson
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if ($InventoryFromKbNativePath.IsPresent) {
+    throw @'
+BLOCK: -InventoryFromKbNativePath foi removido. Pastas com web\ na KB nativa incluem legado (CSharpModel, Data*, backups de environment) e nao representam a lista de environments GeneXus. Use -InventoryFromGeneXusMsBuild com -KbNativePath e -InventoryWorkingDirectory, ou -KbEnvironmentNames explicito como excecao documentada.
+'@
+}
 
 if ([string]::IsNullOrWhiteSpace($MetadataPath)) {
     if ([string]::IsNullOrWhiteSpace($KbParallelRoot)) {
@@ -84,27 +125,34 @@ if ($hostingKind.Length -eq 0) {
 }
 
 $environmentNames = New-Object System.Collections.Generic.List[string]
+$inventoryFromGeneXusMsBuild = $false
+$inventoryExcludedNativeFolders = @()
 
-if ($InventoryFromKbNativePath.IsPresent) {
+if ($InventoryFromGeneXusMsBuild.IsPresent) {
     if ([string]::IsNullOrWhiteSpace($KbNativePath)) {
-        throw 'BLOCK: -InventoryFromKbNativePath exige -KbNativePath.'
+        throw 'BLOCK: -InventoryFromGeneXusMsBuild exige -KbNativePath.'
+    }
+    if ([string]::IsNullOrWhiteSpace($InventoryWorkingDirectory)) {
+        throw 'BLOCK: -InventoryFromGeneXusMsBuild exige -InventoryWorkingDirectory.'
     }
 
-    $nativeRoot = [System.IO.Path]::GetFullPath($KbNativePath)
-    if (-not (Test-Path -LiteralPath $nativeRoot -PathType Container)) {
-        throw "BLOCK: KbNativePath invalido: $nativeRoot"
+    . (Join-Path $PSScriptRoot 'GeneXusKbEnvironmentInventorySupport.ps1')
+
+    $inventoryResult = Get-GeneXusKbRegisteredEnvironmentNamesFromMsBuild `
+        -KbNativePath $KbNativePath `
+        -WorkingDirectory $InventoryWorkingDirectory `
+        -LogPath $InventoryLogPath `
+        -GeneXusDir $GeneXusDir `
+        -MsBuildPath $MsBuildPath `
+        -DatabaseUser $DatabaseUser `
+        -DatabasePassword $DatabasePassword
+
+    foreach ($name in $inventoryResult.kb_environment_names) {
+        $environmentNames.Add($name) | Out-Null
     }
 
-    foreach ($child in Get-ChildItem -LiteralPath $nativeRoot -Directory) {
-        $webPath = Join-Path $child.FullName 'web'
-        if (Test-Path -LiteralPath $webPath -PathType Container) {
-            $environmentNames.Add($child.Name) | Out-Null
-        }
-    }
-
-    if ($environmentNames.Count -eq 0) {
-        throw "BLOCK: nenhum environment com pasta web\ encontrado em $nativeRoot"
-    }
+    $inventoryFromGeneXusMsBuild = $true
+    $inventoryExcludedNativeFolders = @($inventoryResult.excludedNativeFolders)
 } elseif ($KbEnvironmentNames -and $KbEnvironmentNames.Count -gt 0) {
     foreach ($name in $KbEnvironmentNames) {
         if (-not [string]::IsNullOrWhiteSpace($name)) {
@@ -112,7 +160,7 @@ if ($InventoryFromKbNativePath.IsPresent) {
         }
     }
 } else {
-    throw 'BLOCK: informe -KbEnvironmentNames ou -InventoryFromKbNativePath com -KbNativePath.'
+    throw 'BLOCK: informe -InventoryFromGeneXusMsBuild (-KbNativePath e -InventoryWorkingDirectory) ou -KbEnvironmentNames explicito.'
 }
 
 $nameSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
@@ -197,11 +245,12 @@ $result = [ordered]@{
     deployment_hosting_kind       = $hostingKind
     kb_environment_count          = $count
     kb_environment_names          = @($environmentNames | Sort-Object)
-    inventoryFromKbNativePath     = $InventoryFromKbNativePath.IsPresent
+    inventoryFromGeneXusMsBuild   = $inventoryFromGeneXusMsBuild
+    inventoryExcludedNativeFolders = $inventoryExcludedNativeFolders
 }
 
 if ($AsJson) {
-    $result | ConvertTo-Json -Depth 4
+    $result | ConvertTo-Json -Depth 6
 } else {
     Write-Output "KB_DEPLOYMENT_METADATA_OK: deployment=$deploymentName count=$count names=$namesJoined"
 }

@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Inventario de environments da KB nativa ocorre somente via xpz-kb-parallel-setup
-    (Set-XpzKbSourceMetadataDeployment.ps1). Build/import apenas leem o metadata gravado.
+    (Set-XpzKbSourceMetadataDeployment.ps1 com -InventoryFromGeneXusMsBuild). Build/import apenas leem o metadata gravado.
 #>
 
 Set-StrictMode -Version Latest

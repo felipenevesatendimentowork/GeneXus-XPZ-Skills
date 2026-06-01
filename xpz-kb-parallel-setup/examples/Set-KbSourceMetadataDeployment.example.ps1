@@ -5,16 +5,16 @@ Wrapper local para gravar campos de environment/deploy em kb-source-metadata.md.
 
 .DESCRIPTION
 Delega a scripts/Set-XpzKbSourceMetadataDeployment.ps1 no repositorio GeneXus-XPZ-Skills.
-Inventario de environments na KB nativa (-InventoryFromKbNativePath) ocorre somente nesta
-rotina de setup — nao em build/import.
+Inventario obrigatorio no setup via -InventoryFromGeneXusMsBuild (SetActiveEnvironment headless).
 
 .EXAMPLE
 .\Set-KbSourceMetadataDeployment.ps1 `
     -KbParallelRoot "C:\Dev\Prod\Gx_FabricaBrasil" `
     -DeploymentEnvironmentName "NETPostgreSQL" `
     -DeploymentHostingKind "dotnet-core-self-host" `
-    -InventoryFromKbNativePath `
-    -KbNativePath "C:\GxModels\FabricaBrasil18"
+    -InventoryFromGeneXusMsBuild `
+    -KbNativePath "C:\GxModels\FabricaBrasil18" `
+    -InventoryWorkingDirectory "C:\Dev\Prod\Gx_FabricaBrasil\Temp\msbuild-inventory"
 #>
 
 param(
@@ -31,9 +31,23 @@ param(
 
     [string[]]$KbEnvironmentNames,
 
+    [switch]$InventoryFromGeneXusMsBuild,
+
     [switch]$InventoryFromKbNativePath,
 
     [string]$KbNativePath,
+
+    [string]$InventoryWorkingDirectory,
+
+    [string]$InventoryLogPath,
+
+    [string]$GeneXusDir,
+
+    [string]$MsBuildPath,
+
+    [string]$DatabaseUser,
+
+    [string]$DatabasePassword,
 
     [switch]$AsJson
 )
@@ -55,8 +69,15 @@ $invokeArgs = @{
 if ($KbParallelRoot) { $invokeArgs['KbParallelRoot'] = $KbParallelRoot }
 if ($MetadataPath) { $invokeArgs['MetadataPath'] = $MetadataPath }
 if ($KbEnvironmentNames) { $invokeArgs['KbEnvironmentNames'] = $KbEnvironmentNames }
+if ($InventoryFromGeneXusMsBuild.IsPresent) { $invokeArgs['InventoryFromGeneXusMsBuild'] = $true }
 if ($InventoryFromKbNativePath.IsPresent) { $invokeArgs['InventoryFromKbNativePath'] = $true }
 if ($KbNativePath) { $invokeArgs['KbNativePath'] = $KbNativePath }
+if ($InventoryWorkingDirectory) { $invokeArgs['InventoryWorkingDirectory'] = $InventoryWorkingDirectory }
+if ($InventoryLogPath) { $invokeArgs['InventoryLogPath'] = $InventoryLogPath }
+if ($GeneXusDir) { $invokeArgs['GeneXusDir'] = $GeneXusDir }
+if ($MsBuildPath) { $invokeArgs['MsBuildPath'] = $MsBuildPath }
+if ($DatabaseUser) { $invokeArgs['DatabaseUser'] = $DatabaseUser }
+if ($DatabasePassword) { $invokeArgs['DatabasePassword'] = $DatabasePassword }
 if ($AsJson.IsPresent) { $invokeArgs['AsJson'] = $true }
 
 & $engineScript @invokeArgs

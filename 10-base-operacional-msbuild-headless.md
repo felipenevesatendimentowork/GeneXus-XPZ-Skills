@@ -682,7 +682,7 @@ Parâmetros transversais esperados:
 - `-MsBuildPath`
 - `-VersionName`
 - `-EnvironmentName`
-- `-ParallelKbRoot` / `-KbMetadataPath` (somente `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`: leem `kb_environment_count`, `deployment_environment_name`, `deployment_hosting_kind` e `kb_environment_names` de `kb-source-metadata.md` **sem** inventariar pastas da KB nativa em cada execução; ver `scripts/GeneXusKbDeploymentEnvironmentSupport.ps1`, `scripts/GeneXusKbDeployBinSupport.ps1` e `xpz-kb-parallel-setup`)
+- `-ParallelKbRoot` / `-KbMetadataPath` (somente `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`: leem `kb_environment_count`, `deployment_environment_name`, `deployment_hosting_kind` e `kb_environment_names` de `kb-source-metadata.md` **sem** inventariar pastas da KB nativa em cada execução; inventario MSBuild (`Get-GeneXusKbEnvironmentNames.ps1` / `-InventoryFromGeneXusMsBuild` no setup) e obrigatorio apenas em `xpz-kb-parallel-setup`; ver `scripts/GeneXusKbDeploymentEnvironmentSupport.ps1`, `scripts/GeneXusKbEnvironmentInventorySupport.ps1`, `scripts/GeneXusKbDeployBinSupport.ps1`)
 - `-PostImportDeployValidation` / `-SkipDeployBinCheck` / `-StrictDeployBinCheck` (mesmos wrappers: checagem pos-build de publicacao em `web\bin` do environment de deploy — DLL de objeto ou `*.config`, nao `GxNetCoreStartup.dll` sozinha; gate exit **49** quando `-PostImportDeployValidation` ou `-StrictDeployBinCheck`; diagnostico somente leitura via `scripts/Test-GeneXusDeployBinFreshness.ps1`)
 - `-WorkingDirectory`
 - `-LogPath`
