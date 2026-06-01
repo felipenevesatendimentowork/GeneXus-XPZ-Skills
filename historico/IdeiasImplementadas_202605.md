@@ -670,3 +670,138 @@ Não bloquear só por `not_in_index` (objeto pode existir apenas na KB nativa an
 - `GeneXusObjectListIdentityPreflight.ps1`: `GateContext` `export`|`import`; `Split-GeneXusMsBuildItemFilter`; disparo com `-IncludeItems`.
 - `Invoke-GeneXusXpzImport.ps1` e `Test-GeneXusXpzImportPreview.ps1`: `-ParallelKbRoot`, `-IndexPath`, `-CatalogOverridePath`; estágio `pre-import-identity`; `objectListPreflight` com `gateContext=import`.
 - Exit **35** estendido em `msbuild-exit-codes.catalog.json`; self-test ampliado; docs `02`, `08`, `10a`, `xpz-msbuild-import-export/SKILL.md`.
+
+## Extrator de `Property Formula` em `Attribute` (grafo who-uses)
+
+**Importância original:** alta
+**Status:** concluída em 2026-05-31
+
+### Origem
+
+Lacuna confirmada em pasta paralela: procedures usadas somente em atributo calculado eram invisíveis a `who-uses`.
+
+### Implementação
+
+- `Build-KbIntelligenceIndex.py`: extrator `extract_attribute_formula_call_evidence`, com assinatura do extrator `3`.
+- `Test-KbIntelligenceAttributeFormulaExtractionSelfTest.ps1`: self-test dedicado.
+- `gx-object-type-catalog.json` e `scripts/README-kb-intelligence.md`: notas de contrato e operação.
+
+### Pendência operacional externa à ideia
+
+Pastas paralelas com índice gerado por extrator anterior a `3` precisam de rebuild para enxergar chamadas em `Property Formula` de `Attribute`. Quando aplicável, validar também extrator `4` e paridade de gravabilidade com `Test-*KbIndexGate.ps1` e `Test-GeneXusKbIntelligenceWritabilityParity.ps1`.
+
+### Rastreabilidade
+
+- Commit: `fdb4b3f` (`Indexa chamadas em Property Formula de Attribute para who-uses (extrator v3).`)
+
+## Gravabilidade de atributos materializada no índice SQLite
+
+**Importância original:** alta
+**Status:** concluída em 2026-05-31
+
+### Origem
+
+Validação pós-caso real de `Procedure` com `New` atribuindo atributo `Formula`, discutida em 2026-05-23.
+
+### Problema concreto que motivou a ideia
+
+Antes da entrega, a consulta `transaction-writable-attributes` reduzia abertura ampla de XMLs, mas não materializava no SQLite a classificação completa usada pelos gates de gravabilidade. A decisão final dependia de `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1`, que reimplementavam o algoritmo em PowerShell a partir do acervo XML no momento da validação, com risco de divergência em relação ao indexador.
+
+Em KBs grandes, isso preservava segurança, mas ainda podia custar tempo e tokens quando o agente precisava explorar muitos atributos ou várias Transactions antes de decidir como gerar uma `Procedure`, `Transaction` ou lote de importação.
+
+### Implementação
+
+O `KbIntelligence` passou a gravar, durante `Build-KbIntelligenceIndex.py`, uma tabela derivada de gravabilidade por `Transaction`/`Level`/`Attribute`, com campos como:
+
+- `transaction_name`
+- `level_name`
+- `attribute_name`
+- `classification`
+- `writable`
+- `canAssignInNew`
+- `reason`
+- `evidence`
+- `source_rule_version`
+
+A classificação cobre o mesmo contrato dos gates: `key-attribute`, `extended-parent-fk`, `formula`, `extended-subtype-key`, `extended-subtype-descriptive`, `extended-fk-key`, `extended-fk-descriptive`, `own-physical` e estados `unclassified-*`.
+
+### Benefícios obtidos
+
+- redução de abertura repetida de XMLs do acervo na triagem
+- consultas amplas sobre risco de `New`, `Formula`, atributos descritivos e campos não graváveis via índice
+- paridade validada entre índice materializado e gates (`Test-GeneXusKbIntelligenceWritabilityParity.ps1`)
+- fonte canônica única: `GeneXusTransactionWritabilityCore.py` (build, consultas e gates PowerShell)
+
+### Limites e decisões remanescentes
+
+- escopo do snapshot: somente `ObjetosDaKbEmXml`; não materializa XML de frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- alteração do algoritmo exige atualizar o núcleo Python, bump de `writability_rule_version` / extrator e rebuild das pastas paralelas
+- novos casos de validação em `Test-KbIntelligenceQueries.ps1` podem ser acrescentados conforme KBs reais revelarem bordas
+- reabrir apenas se o algoritmo dos gates PowerShell mudar sem atualização do núcleo Python, ou se for necessário materializar também XML de frente em `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+
+### Entrega
+
+- núcleo canônico: `scripts/GeneXusTransactionWritabilityCore.py` (`writability_rule_version=1`)
+- tabela `transaction_attribute_writability` no SQLite (`schema_version=2`, extrator `4`)
+- consultas `transaction-attributes` / `transaction-writable-attributes` leem a tabela materializada
+- paridade obrigatória: `scripts/Test-GeneXusKbIntelligenceWritabilityParity.ps1` (validado em wsEducacaoSpTeste e FabricaBrasil)
+- gates PowerShell `Test-GeneXusTransactionWritability.ps1` e `Test-GeneXusNewWritableTargets.ps1` delegam ao núcleo via `GeneXusTransactionWritabilitySupport.ps1`, sem algoritmo duplicado
+- `Test-GeneXusNewWritableTargets.ps1` permanece obrigatório para blocos `New` em `Procedure`
+
+### Rastreabilidade
+
+- Commit: `a9e9bc9` (`Materializa gravabilidade de Transaction no indice SQLite (schema 2, extrator 4).`)
+- Commit: `76f11a6` (`Delega gates de gravabilidade ao nucleo Python canonico.`)
+- Commit: `4e34051` (`Alinha documentacao com gravabilidade materializada e gates Python.`)
+
+## `Update-KbSourceMetadata` preserva campos fora de escopo e EOL no `xpz-sync`
+
+**Importância original:** alta
+**Status:** concluída em 2026-05-28
+
+### Origem
+
+Incidente real em pasta paralela FabricaBrasil18, reportado por agente externo. A função legada `Update-KbSourceMetadata` em `Sync-GeneXusXpzToXml.ps1` regerava `kb-source-metadata.md` inteiro e apagava `last_setup_audit_run_at` após setup bem-sucedido, forçando `AUDIT_REQUIRED` na sessão seguinte.
+
+### Incidente
+
+1. **Autoridade de campo violada:** o template do sync só incluía campos de materialização; `last_setup_audit_run_at` (setup) sumia a cada materialização oficial.
+2. **EOL:** reescrita total não preservava EOL dominante nem newline final do arquivo existente (CRLF/misto em pastas com política local divergente).
+
+### Implementação
+
+| Commit | Entrega |
+|---|---|
+| `7402e58` | Pré-requisito: `XpzTextFileEolSupport.ps1`, `Set-XpzSetupAuditTimestamp.ps1`, `Update-XpzKbSourceMetadataIdentity.ps1`, `Test-XpzSetupAuditTimestampEolSelfTest.ps1`. |
+| `20e9e49` | Etapa A: `scripts/XpzKbSourceMetadataEditSupport.ps1` com `Update-XpzKbSourceMetadataFromSync`; `Sync-GeneXusXpzToXml.ps1` deixa de regerar o arquivo; `Test-XpzSyncKbMetadataSelfTest.ps1` (sentinela `XPZ_SYNC_KB_METADATA_SELFTEST_OK`). |
+| `06eba2e` | Etapa B: `09-inventario-e-rastreabilidade-publica.md`, `xpz-sync/SKILL.md` (autoridade por campo + atualização cirúrgica). |
+| `f759971` | `README.md` trilíngue + ajustes finais de redação em `xpz-sync/SKILL.md` (handoff sem "reescrito"). |
+
+Comportamento atual quando `-KbMetadataPath` está ativo:
+
+| Campo / bloco | Ação |
+|---|---|
+| `updated`, `last_xpz_materialization_run_at`, `source_xpz`, `source_refresh_status` | atualizar ou inserir no frontmatter |
+| Tabelas `## KMW`, `## Source`, `## Source/Version` | atualizar valores (merge pacote/baseline de tabela inalterado) |
+| `last_setup_audit_run_at` e demais frontmatter/seções fora do escopo | preservar intactos |
+| EOL e newline final | `Write-TextFilePreservingEol` via `XpzTextFileEolSupport.ps1` |
+| Arquivo ausente | template completo (`Write-NewKbSourceMetadataTemplate`), sem carimbo de setup até o setup gravar |
+
+### Decisões registradas
+
+- **Criação do arquivo ausente:** manter template completo (equivalente ao legado), não minimal; setup continua responsável por identidade estável depois.
+- **Frontmatter desconhecido futuro:** preservar genericamente tudo que não for dos quatro campos de materialização do sync; não whitelist fechada além do que o motor já não toca.
+- **Self-test:** bateria dedicada `Test-XpzSyncKbMetadataSelfTest.ps1`, em vez de estender só o self-test do carimbo de setup.
+
+### Follow-ups opcionais não mantidos como pendência desta entrada
+
+- `Get-KbSourceMetadataSnapshot` ainda lê apenas tabelas Markdown e ignora frontmatter de materialização; avaliar em nova entrada própria se refresh parcial futuro precisar ler `source_xpz` / `source_refresh_status` do YAML.
+- XML do acervo em `Write-ItemToDestination`: `WriteAllText` sem preservar EOL do XML existente; frente separada, risco menor enquanto XMLs são gerados do zero com LF na raiz.
+- Rename `kb-source-metadata.md` -> `kb-parallel-state.md` já permanece como entrada separada em `999-ideias-pendentes.md`.
+
+### Rastreabilidade
+
+- Commit: `7402e58` (`Preserva EOL ao mutar kb-source-metadata.md no Windows.`)
+- Commit: `20e9e49` (`Sync: atualização cirúrgica de kb-source-metadata (etapa A).`)
+- Commit: `06eba2e` (`Sync: documenta mutação cirúrgica de metadata e fecha frente E (etapa B).`)
+- Commit: `f759971` (`Docs: alinha README trilíngue e xpz-sync à autoridade de kb-source-metadata.`)
