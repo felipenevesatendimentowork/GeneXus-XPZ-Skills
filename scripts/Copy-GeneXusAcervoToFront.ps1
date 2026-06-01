@@ -233,11 +233,8 @@ if (-not (Test-Path -LiteralPath $AcervoFolder -PathType Container)) {
 $FrontFolder  = (Resolve-Path -LiteralPath $FrontFolder).Path
 $AcervoFolder = (Resolve-Path -LiteralPath $AcervoFolder).Path
 
-# Carregar motor de lastUpdate
-$lastUpdateEngine = Join-Path $PSScriptRoot 'Get-GeneXusXpzLastUpdate.ps1'
-if (-not (Test-Path -LiteralPath $lastUpdateEngine -PathType Leaf)) {
-    throw "Motor Get-GeneXusXpzLastUpdate.ps1 nao encontrado: $lastUpdateEngine"
-}
+# Sem dependencia de motor externo: o bump de lastUpdate e feito inline por
+# Format-GeneXusLastUpdate / max(UtcNow + margin, acervoLastUpdate + margin)
 
 # 1. Enumerar XMLs na pasta da frente
 $findings = @()
