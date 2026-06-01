@@ -1637,6 +1637,13 @@ try {
         }
     }
 
+    if ($null -ne $script:DeploymentEnvironmentContext) {
+        if (-not (Test-GeneXusKbActiveEnvironmentMatchesValidation -ActiveEnvironment $activeEnvironmentOutput -DeploymentEnvironmentContext $script:DeploymentEnvironmentContext)) {
+            $expectedEnv = $script:DeploymentEnvironmentContext['validationEnvironmentResolved']
+            Add-WarningMessage -Message ("ActiveEnvironment observado ('{0}') diverge do environment de validacao resolvido ('{1}'). Nao tratar compilou limpo como validacao deploy nesse environment." -f $activeEnvironmentOutput, $expectedEnv)
+        }
+    }
+
     $diagnostic = [ordered]@{
         status           = $buildStatus.Status
         summary          = $buildStatus.Summary
@@ -1727,13 +1734,6 @@ try {
 
     if ($null -ne $environmentRemediationHints) {
         $diagnostic['environmentRemediationHints'] = $environmentRemediationHints
-    }
-
-    if ($null -ne $script:DeploymentEnvironmentContext) {
-        if (-not (Test-GeneXusKbActiveEnvironmentMatchesValidation -ActiveEnvironment $activeEnvironmentOutput -DeploymentEnvironmentContext $script:DeploymentEnvironmentContext)) {
-            $expectedEnv = $script:DeploymentEnvironmentContext['validationEnvironmentResolved']
-            Add-WarningMessage -Message ("ActiveEnvironment observado ('{0}') diverge do environment de validacao resolvido ('{1}'). Nao tratar compilou limpo como validacao deploy nesse environment." -f $activeEnvironmentOutput, $expectedEnv)
-        }
     }
 
     $diagnostic['timing'] = Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath
