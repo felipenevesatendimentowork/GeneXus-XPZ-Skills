@@ -1,4 +1,4 @@
----
+﻿---
 name: xpz-kb-parallel-setup
 description: Prepara e valida a estrutura inicial da pasta paralela da KB para carga inicial, sync de XPZ, indice derivado e artefatos de importacao
 ---
@@ -455,6 +455,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - [New-KbFront.example.ps1](examples/New-KbFront.example.ps1)
   - [Get-KbLastUpdate.example.ps1](examples/Get-KbLastUpdate.example.ps1)
   - [New-KbImportPackage.example.ps1](examples/New-KbImportPackage.example.ps1)
+  - [Copy-KbAcervoToFront.example.ps1](examples/Copy-KbAcervoToFront.example.ps1)
   - [Notify-TaskComplete.example.ps1](examples/Notify-TaskComplete.example.ps1)
   - [Test-KbPowerShellRuntime.example.ps1](examples/Test-KbPowerShellRuntime.example.ps1)
   - [Test-KbObjetosDaKbNaming.example.ps1](examples/Test-KbObjetosDaKbNaming.example.ps1)
