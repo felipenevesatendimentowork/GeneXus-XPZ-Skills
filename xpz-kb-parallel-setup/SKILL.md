@@ -1,4 +1,4 @@
-﻿---
+---
 name: xpz-kb-parallel-setup
 description: Prepara e valida a estrutura inicial da pasta paralela da KB para carga inicial, sync de XPZ, indice derivado e artefatos de importacao
 ---
