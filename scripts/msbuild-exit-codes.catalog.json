@@ -324,12 +324,15 @@
     {
       "exit": 49,
       "category": "politica",
-      "summary": "Build MSBuild concluiu (exit 0) mas web\\bin do environment de deploy nao reflete o build — gate pos-import ou StrictDeployBinCheck.",
+      "summary": "Build MSBuild concluiu (exit 0) mas web\\bin do environment de deploy nao mostra publicacao fresca (DLL de objeto ou config) — gate pos-import ou StrictDeployBinCheck; GxNetCoreStartup.dll sozinha nao dispara este exit.",
       "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
       "jsonHints": [
         "status",
         "deployBinFreshness",
         "deployBinCheck",
+        "publicationFreshSinceBuild",
+        "objectDllMaxWriteTime",
+        "configMaxWriteTime",
         "requestedContext.PostImportDeployValidation",
         "requestedContext.StrictDeployBinCheck",
         "blockingReasons"
