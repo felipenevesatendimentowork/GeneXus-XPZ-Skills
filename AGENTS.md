@@ -41,7 +41,7 @@
 - Após cada gravação, reler o início do arquivo, a seção alterada e a transição para a seção seguinte.
 - Se uma edição automática produzir resultado inesperado, parar e voltar para uma estratégia mais localizada.
 - Quando precisar inspecionar encoding, EOL, BOM ou whitespace visível antes de uma edição cirúrgica, usar `scripts/Show-FileWhitespace.ps1` (modos `whitespace`, `encoding`, `mixed`; opção `-AsJson`).
-- Nunca gravar arquivo de texto com BOM UTF-8 a menos que o formato do arquivo exija. Em PowerShell, `[System.Text.Encoding]::UTF8` emite BOM por padrão; usar `New-Object System.Text.UTF8Encoding($false)` ou a ferramenta `edit` (que preserva o encoding original).对于 para`.md` e `.ps1` deste repositório, UTF-8 sem BOM é o padrão.
+- Nunca gravar arquivo de texto com BOM UTF-8 a menos que o formato do arquivo exija. Em PowerShell, `[System.Text.Encoding]::UTF8` emite BOM por padrão; usar `New-Object System.Text.UTF8Encoding($false)` ou a ferramenta `edit` (que preserva o encoding original). Para `.md` e `.ps1` deste repositório, UTF-8 sem BOM é o padrão.
 
 ## Alinhamento entre documentos
 
