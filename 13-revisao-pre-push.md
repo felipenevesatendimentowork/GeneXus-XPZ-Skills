@@ -26,7 +26,7 @@ Usar **uma e apenas uma** destas formas literais:
 - **Working tree:** com `commitsAhead=0` não há diff nem `git diff --check` no intervalo («nada commitado pendente de push»). A pré-push **não** substitui revisão de alterações **só** na working tree; o orquestrador avisa contagens, mas não analisa esses arquivos no intervalo.
 - **`exit 0` vs push:** `exit 0` do orquestrador **não** significa «pode dar push» nem pré-push concluída. Ler `PUSH_READINESS` (e `pushReadiness` no JSON): com `blocked`, push fica proibido até integrar o remoto, mesmo com parse/whitespace limpos.
 - **`pushReadiness=blocked`:** bloqueia **push** e torna diff/arquivos do intervalo apenas diagnósticos; **não** dispensa a fase semântica sobre os commits locais ainda pendentes — continuar o relatório de coerência cruzada.
-- **Gates consultivos:** `Test-PrePushTraceabilityCoverage.ps1` e similares apontam riscos objetivos; **não** substituem a fase semântica nem autorizam concluir a pré-push sozinhos.
+- **Gates consultivos:** `Test-PrePushTraceabilityCoverage.ps1` e `Test-GeneXusUnexpectedCharacter.ps1` apontam riscos objetivos; **não** substituem a fase semântica nem autorizam concluir a pré-push sozinhos.
 
 ### Referência remota fresca
 
@@ -133,6 +133,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | `scripts/Test-PyScriptsParse.ps1` | Parse AST de `scripts/*.py` sem gerar bytecode |
 | `scripts/Test-PrePushTraceabilityCoverage.ps1` | Rastreabilidade editorial + paridade motor/doc (consultivo) |
 | `scripts/Test-PrePushMsBuildProbeDocParity.ps1` | Paridade MSBuild probe (quando aplicável) |
+| `scripts/Test-GeneXusUnexpectedCharacter.ps1` | Caracteres Unicode inesperados em .md/.ps1 (consultivo) |
 
 ## Espelho em outros documentos
 

@@ -336,6 +336,12 @@ $msBuildProbeDocParityGate = [ordered]@{
     findings = @()
 }
 
+$unexpectedCharGate = [ordered]@{
+    script   = 'scripts/Test-GeneXusUnexpectedCharacter.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -451,6 +457,30 @@ if (Test-Path -LiteralPath $msBuildProbeDocParityScript -PathType Leaf) {
     }
 }
 
+$unexpectedCharScript = Join-Path $PSScriptRoot 'Test-GeneXusUnexpectedCharacter.ps1'
+if (Test-Path -LiteralPath $unexpectedCharScript -PathType Leaf) {
+    $unexpectedCharOutput = & $unexpectedCharScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $unexpectedCharExitCode = $LASTEXITCODE
+    $unexpectedCharJsonText = ($unexpectedCharOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $unexpectedCharObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($unexpectedCharJsonText)) {
+        $unexpectedCharObject = $unexpectedCharJsonText | ConvertFrom-Json
+    }
+
+    if ($unexpectedCharExitCode -eq 0 -and $null -ne $unexpectedCharObject) {
+        $unexpectedCharGate.status = $unexpectedCharObject.status
+        $unexpectedCharGate.findings = @($unexpectedCharObject.findings)
+    } else {
+        $unexpectedCharGate.status = 'warn'
+        $unexpectedCharGate.findings = @([pscustomobject][ordered]@{
+            code     = 'UNEXPECTED_CHARACTER_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-GeneXusUnexpectedCharacter.ps1'
+            message  = "Falha consultiva ao executar Test-GeneXusUnexpectedCharacter.ps1: $unexpectedCharJsonText"
+        })
+    }
+}
+
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
 $pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
@@ -526,6 +556,11 @@ foreach ($msBuildParityFinding in @($msBuildProbeDocParityGate.findings)) {
         ("{0} ({1}): {2}" -f $prefix, $msBuildParityFinding.code, $msBuildParityFinding.message)
     )
 }
+foreach ($unexpectedCharFinding in @($unexpectedCharGate.findings)) {
+    [void]$agentWarnings.Add(
+        ("Caractere inesperado ({0}): {1}" -f $unexpectedCharFinding.code, $unexpectedCharFinding.message)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
@@ -568,6 +603,7 @@ $result = [ordered]@{
         pythonParse          = $pythonParseGate
         traceabilityCoverage = $traceabilityCoverageGate
         msBuildProbeDocParity = $msBuildProbeDocParityGate
+        unexpectedChar       = $unexpectedCharGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -638,6 +674,11 @@ if ($AsJson) {
     Write-Output ("MSBUILD_PROBE_DOC_PARITY_GATE={0}" -f $msBuildProbeDocParityGate.status)
     foreach ($finding in @($msBuildProbeDocParityGate.findings)) {
         Write-Output ("MSBUILD_PROBE_DOC_PARITY_FINDING: {0} [{1}]: {2}" -f $finding.code, $finding.severity, $finding.message)
+    }
+
+    Write-Output ("UNEXPECTED_CHAR_GATE={0}" -f $unexpectedCharGate.status)
+    foreach ($finding in @($unexpectedCharGate.findings)) {
+        Write-Output ("UNEXPECTED_CHAR_FINDING: {0}: {1}" -f $finding.code, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {
