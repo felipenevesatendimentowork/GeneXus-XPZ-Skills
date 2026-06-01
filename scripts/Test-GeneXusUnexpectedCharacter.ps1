@@ -8,7 +8,9 @@
     Varre linhas adicionadas (ou modificadas) no intervalo BaseRef..HEAD em
     arquivos .md e .ps1 (excluindo historico/), procurando caracteres que nao
     pertencem aos alfabetos de pt-BR, es e en (CJK, Cirilico, Arabic, etc.).
-    Para .md, linhas dentro de code blocks cercados (``` ... ```) sao ignoradas.
+    Para .md, linhas dentro de code blocks cercados (``` ... ```) sao ignoradas
+    com base no arquivo atual completo, preservando o numero real da linha no
+    arquivo novo.
 
     O gate e consultivo: emite findings com severity='warn' e sempre exita 0.
     O agente revisa os findings e decide se sao falsos positivos.
@@ -113,7 +115,7 @@ function Invoke-RepoGit {
     }
 }
 
-function Get-AddedLinesFromDiff {
+function Get-AddedLineRecordsFromDiff {
     param(
         [Parameter(Mandatory = $true)]
         [string]$RepositoryRoot,
@@ -130,34 +132,72 @@ function Get-AddedLinesFromDiff {
         return ,[string[]]@()
     }
 
-    $addedLines = [System.Collections.Generic.List[string]]::new()
+    $addedLines = [System.Collections.Generic.List[pscustomobject]]::new()
+    $newLineNumber = 0
     foreach ($line in $diffResult.Lines) {
-        if ($line.StartsWith('+') -and -not $line.StartsWith('+++')) {
-            $addedLines.Add($line.Substring(1))
+        if ($line.StartsWith('@@')) {
+            $match = [regex]::Match($line, '\+(\d+)(?:,(\d+))?')
+            if ($match.Success) {
+                $newLineNumber = [int]$match.Groups[1].Value
+            }
+            continue
+        }
+
+        if ($line.StartsWith('+++')) {
+            continue
+        }
+
+        if ($line.StartsWith('+')) {
+            $addedLines.Add([pscustomobject]@{
+                Text       = $line.Substring(1)
+                LineNumber = $newLineNumber
+            })
+            $newLineNumber++
+            continue
+        }
+
+        if ($line.StartsWith(' ')) {
+            $newLineNumber++
         }
     }
 
-    return ,[string[]]@($addedLines)
+    return ,[pscustomobject[]]@($addedLines)
 }
 
-function Remove-CodeBlocksFromMd {
-    param([string[]]$Lines)
+function Test-MarkdownLineInsideCodeBlock {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepositoryRoot,
 
-    $result = [System.Collections.Generic.List[string]]::new()
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+
+        [Parameter(Mandatory = $true)]
+        [int]$LineNumber
+    )
+
+    $fullPath = Join-Path $RepositoryRoot $RelativePath
+    if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+        return $false
+    }
+
+    $lines = [System.IO.File]::ReadAllLines($fullPath)
+    $maxIndex = [Math]::Min($LineNumber - 1, $lines.Length - 1)
+    if ($maxIndex -lt 0) {
+        return $false
+    }
+
     $inCodeBlock = $false
 
-    foreach ($line in $Lines) {
+    for ($idx = 0; $idx -le $maxIndex; $idx++) {
+        $line = $lines[$idx]
         $trimmed = $line.TrimStart()
         if ($trimmed.StartsWith('```')) {
             $inCodeBlock = -not $inCodeBlock
-            continue
-        }
-        if (-not $inCodeBlock) {
-            $result.Add($line)
         }
     }
 
-    return ,[string[]]@($result)
+    return $inCodeBlock
 }
 
 function Find-UnexpectedCharacters {
@@ -175,9 +215,21 @@ function Find-UnexpectedCharacters {
     $findings = [System.Collections.Generic.List[pscustomobject]]::new()
 
     for ($i = 0; $i -lt $Line.Length; $i++) {
-        $cp = [int][char]$Line[$i]
+        $currentChar = $Line[$i]
+        if ([char]::IsHighSurrogate($currentChar) -and ($i + 1) -lt $Line.Length -and [char]::IsLowSurrogate($Line[$i + 1])) {
+            $cp = [char]::ConvertToUtf32($currentChar, $Line[$i + 1])
+            $character = [string]::new(@($currentChar, $Line[$i + 1]))
+            $advanceExtra = $true
+        } else {
+            $cp = [int][char]$currentChar
+            $character = [string]$currentChar
+            $advanceExtra = $false
+        }
 
         if ($cp -le 0x007E) {
+            if ($advanceExtra) {
+                $i++
+            }
             continue
         }
 
@@ -186,7 +238,7 @@ function Find-UnexpectedCharacters {
             $start = [Math]::Max(0, $i - 30)
             $end = [Math]::Min($Line.Length, $i + 31)
             $context = $Line.Substring($start, $end - $start)
-            $msg = "Caractere U+{0:X4} ({1}) na linha {2} de {3} pertence ao bloco '{4}', inesperado em conteudo pt-BR/es/en." -f $cp, $Line[$i], $LineNumber, $RelativePath, $rangeName
+            $msg = "Caractere U+{0:X4} ({1}) na linha {2} de {3} pertence ao bloco '{4}', inesperado em conteudo pt-BR/es/en." -f $cp, $character, $LineNumber, $RelativePath, $rangeName
             $cpStr = 'U+{0:X4}' -f $cp
 
             $findings.Add([pscustomobject]@{
@@ -196,10 +248,14 @@ function Find-UnexpectedCharacters {
                 file      = $RelativePath
                 line      = $LineNumber
                 codepoint = $cpStr
-                character = $Line[$i]
+                character = $character
                 blockName = $rangeName
                 context   = $context
             })
+        }
+
+        if ($advanceExtra) {
+            $i++
         }
     }
 
@@ -250,24 +306,22 @@ $allFindings = [System.Collections.Generic.List[pscustomobject]]::new()
 $filesScanned = 0
 
 foreach ($relPath in @($relevantFiles)) {
-    $addedLines = Get-AddedLinesFromDiff -RepositoryRoot $resolvedRoot -BaseRef $BaseRef -RelativePath $relPath
-    if ($addedLines.Count -eq 0) {
+    $addedLineRecords = Get-AddedLineRecordsFromDiff -RepositoryRoot $resolvedRoot -BaseRef $BaseRef -RelativePath $relPath
+    if ($addedLineRecords.Count -eq 0) {
         continue
     }
 
     $filesScanned++
 
-    $linesToScan = @($addedLines)
-    if ($relPath -match '\.md$') {
-        $linesToScan = Remove-CodeBlocksFromMd -Lines $addedLines
-    }
-
-    for ($lineIdx = 0; $lineIdx -lt $linesToScan.Count; $lineIdx++) {
-        $lineContent = $linesToScan[$lineIdx]
+    foreach ($lineRecord in @($addedLineRecords)) {
+        $lineContent = [string]$lineRecord.Text
         if ([string]::IsNullOrWhiteSpace($lineContent)) {
             continue
         }
-        $lineNumber = $lineIdx + 1
+        $lineNumber = [int]$lineRecord.LineNumber
+        if ($relPath -match '\.md$' -and (Test-MarkdownLineInsideCodeBlock -RepositoryRoot $resolvedRoot -RelativePath $relPath -LineNumber $lineNumber)) {
+            continue
+        }
 
         $charFindings = Find-UnexpectedCharacters -Line $lineContent -LineNumber $lineNumber -RelativePath $relPath
         foreach ($f in $charFindings) {
