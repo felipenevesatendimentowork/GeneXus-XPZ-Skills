@@ -138,6 +138,72 @@ Write-Output "optional"
     Assert-Contains -Text $output -Pattern 'New-DemoKbImportPackage\.ps1' -Message 'pacote import_file deve recomendar wrapper de pacote'
     Assert-Contains -Text $output -Pattern 'Resolve-DemoKbIdentity\.ps1' -Message 'metadata de identidade deve recomendar wrapper de identidade'
 
+    @'
+#requires -Version 7.4
+param(
+    [Parameter(Mandatory = $true)][string[]]$KbEnvironmentNames,
+    [string]$KbNativePath,
+    [string]$InventoryWorkingDirectory
+)
+Write-Output "deployment"
+'@ | Set-Content -LiteralPath (Join-Path $examplesPath 'Set-KbSourceMetadataDeployment.example.ps1') -Encoding utf8NoBOM
+
+    $deploymentStandardPath = Join-Path $scriptsPath 'Set-DemoKbSourceMetadataDeployment.ps1'
+
+    @'
+#requires -Version 7.4
+param(
+    [switch]$InventoryFromKbNativePath,
+    [string[]]$KbEnvironmentNames,
+    [string]$KbNativePath,
+    [string]$InventoryWorkingDirectory
+)
+'@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Set-DemoKbSourceMetadataDeployment\.ps1\(reason=uses_removed_inventory_discovery\)' -Message 'wrapper com InventoryFromKbNativePath deve ser sinalizado como descoberta automatica removida'
+
+    @'
+#requires -Version 7.4
+param(
+    [string]$KbNativePath,
+    [string]$InventoryWorkingDirectory
+)
+'@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Set-DemoKbSourceMetadataDeployment\.ps1\(reason=missing_KbEnvironmentNames\)' -Message 'wrapper sem KbEnvironmentNames deve ser sinalizado'
+
+    @'
+#requires -Version 7.4
+param(
+    [string[]]$KbEnvironmentNames,
+    [string]$InventoryWorkingDirectory
+)
+'@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Set-DemoKbSourceMetadataDeployment\.ps1\(reason=missing_KbNativePath_for_msbuild_validation\)' -Message 'wrapper sem KbNativePath deve ser sinalizado'
+
+    @'
+#requires -Version 7.4
+param(
+    [string[]]$KbEnvironmentNames,
+    [string]$KbNativePath
+)
+'@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Set-DemoKbSourceMetadataDeployment\.ps1\(reason=missing_InventoryWorkingDirectory_for_msbuild_validation\)' -Message 'wrapper sem InventoryWorkingDirectory deve ser sinalizado'
+
     Write-Output 'WRAPPER_INVENTORY_SELFTEST_OK'
 } finally {
     if ($tempRoot.StartsWith([System.IO.Path]::GetTempPath(), [System.StringComparison]::OrdinalIgnoreCase) -and
