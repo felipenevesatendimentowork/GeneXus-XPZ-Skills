@@ -212,7 +212,7 @@ Do NOT use this skill for:
 - Quando a inspecao local da pasta contradisser contexto indireto do ambiente, da sessao ou de hooks, confiar primeiro na inspecao local e seguir com verificacao curta e objetiva, sem narrativa longa de especulacao
 - Explicar a funcao de cada subpasta
 - Tratar `ObjetosDaKbEmXml` como snapshot oficial somente leitura para agentes
-- `ObjetosDaKbEmXml` é o snapshot oficial da KB e agentes não o editam manualmente
+- `ObjetosDaKbEmXml` é o snapshot oficial da KB e agentes não o editam manualmente (editar o acervo esperando que o pacote use essa versão é anti-padrão; ver `02-regras-operacionais-e-runtime.md`, anti-padrão "editar acervo esperando que o pacote pegue")
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus` é a área intermediária de trabalho anterior ao retorno oficial da KB e não atualiza diretamente o acervo oficial
 - Preview ou importação bem-sucedida na IDE não atualizam, por si sós, `ObjetosDaKbEmXml`
 - `ObjetosDaKbEmXml` só é atualizado depois que a KB devolve `XPZ` oficial e o `xpz-sync` materializa esse retorno

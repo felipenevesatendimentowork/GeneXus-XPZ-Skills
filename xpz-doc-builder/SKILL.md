@@ -128,6 +128,7 @@ Se o repositório ainda mantiver wrappers especializados, eles devem ser tratado
 - NUNCA reescrever uma seção sem identificar corretamente o título-alvo
 - NUNCA esconder que o conteúdo foi gerado a partir de XMLs sanitizados ou acervo real quando isso for relevante
 - NUNCA tratar `ObjetosGeradosParaImportacaoNaKbNoGenexus` como se fosse snapshot oficial da KB sem rotulagem explícita
+- NUNCA editar `ObjetosDaKbEmXml` esperando que a documentação ou o empacotamento use essa versão; o acervo é somente leitura para agentes (ver `02-regras-operacionais-e-runtime.md`, anti-padrão "editar acervo esperando que o pacote pegue")
 - NUNCA documentar uma linha de `parm(...)` do objeto chamado como se fosse o ponto de chamada no objeto chamador
 - NUNCA tratar o SQLite do KB Intelligence como prova funcional ou runtime; ele é índice técnico derivado de evidências extraídas
 - NUNCA escolher o executor de validação do KB Intelligence só pelo nome da fase; o formato do caso (`expected_rule` versus `query`) é que define o executor compatível

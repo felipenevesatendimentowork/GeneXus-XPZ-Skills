@@ -84,7 +84,7 @@ Os nomes exatos dos wrappers são definidos por cada repositório. Consulte o `R
 
 Quando o usuário não informar nomes alternativos, adotar estas subpastas na raiz da KB:
 
-- `ObjetosDaKbEmXml`: acervo oficial somente leitura para agentes
+- `ObjetosDaKbEmXml`: acervo oficial somente leitura para agentes (editar o acervo esperando que o pacote use essa versão é anti-padrão; ver `02-regras-operacionais-e-runtime.md`, anti-padrão "editar acervo esperando que o pacote pegue")
 - `XpzExportadosPelaIDE`: entrada dos `.xpz` exportados pela IDE
 - `scripts`: wrappers `.ps1` que tratam `XPZ`
 - `Temp`: destino de artefatos efêmeros de execução, como diretórios temporários de wrappers, logs auxiliares e saídas intermediárias
