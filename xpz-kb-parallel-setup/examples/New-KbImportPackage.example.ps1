@@ -10,8 +10,12 @@ le
 `ObjetosGeradosParaImportacaoNaKbNoGenexus\<FrontName>` e grava o pacote em
 `PacotesGeradosParaImportacaoNaKbNoGenexus`.
 
-Este wrapper é recomendado quando a pasta paralela adota empacotamento local
-recorrente e precisa de comando curto, auditável e aderente a allowlist.
+Este wrapper e recomendado quando a pasta paralela adota empacotamento local
+recorrente e precisa de comando curto, auditavel e aderente a allowlist.
+
+Quando -AcervoPath e fornecido, o gate de drift frente-vs-acervo
+(Test-GeneXusFrontAcervoDrift.ps1) executa antes do empacotamento para detectar
+XMLs na frente com lastUpdate mais antigo que o homonimo no acervo.
 
 .PARAMETER FrontName
 Nome da subpasta da frente no formato `NomeCurto_GUID_YYYYMMDD`.
@@ -20,7 +24,7 @@ Nome da subpasta da frente no formato `NomeCurto_GUID_YYYYMMDD`.
 Rodada curta pretendida para o pacote. Default: 01.
 
 .PARAMETER AsJson
-Retorna saída JSON estruturada.
+Retorna saida JSON estruturada.
 
 .PARAMETER TemplatePackagePath
 Pacote import_file.xml ou XPZ real comparavel para clonar KMW, Source,
@@ -28,6 +32,12 @@ Dependencies e ObjectsIdentityMapping. Quando o template trouxer Attributes de
 topo e a frente nao trouxer atributos explicitos, o motor preserva esses
 Attributes. Quando omitido, o motor usa envelope minimo derivado de
 kb-source-metadata.md.
+
+.PARAMETER AcervoPath
+Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Quando fornecido,
+executa o gate de drift frente-vs-acervo antes do empacotamento. Se o gate
+detectar que um XML da frente esta mais antigo que o homonimo no acervo,
+o empacotamento e abortado.
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
@@ -43,6 +53,8 @@ param(
     [string]$NN = '01',
 
     [string]$TemplatePackagePath,
+
+    [string]$AcervoPath,
 
     [switch]$AsJson,
 
@@ -71,6 +83,10 @@ if ($AsJson) {
 
 if (-not [string]::IsNullOrWhiteSpace($TemplatePackagePath)) {
     $argsForEngine.TemplatePackagePath = $TemplatePackagePath
+}
+
+if (-not [string]::IsNullOrWhiteSpace($AcervoPath)) {
+    $argsForEngine.AcervoPath = $AcervoPath
 }
 
 & $enginePath @argsForEngine

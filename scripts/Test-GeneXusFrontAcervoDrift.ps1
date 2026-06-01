@@ -1,0 +1,312 @@
+#requires -Version 7.4
+
+<#
+.SYNOPSIS
+    Compara cada XML da frente contra o homonimo no acervo e emite findings de drift.
+
+.DESCRIPTION
+    Para cada <Object> na pasta da frente, busca o XML correspondente no acervo
+    (ObjetosDaKbEmXml) por GUID ou por nome, e compara:
+      - lastUpdate: se o acervo e mais recente que a frente, emite finding.
+      - presenca: se o objeto existe no acervo mas nao na frente, ou vice-versa.
+
+    Codigo de severidade por finding:
+      info    — nao ha drift (acervo e frente tem mesmo lastUpdate, ou objeto so existe
+                 na frente = objeto novo)
+      warn    — drift de lastUpdate (frente mais antiga que acervo)
+      fail    — drift critico proibido pela metodologia (acervo editado quando deveria
+                 ser read-only, ou frente com lastUpdate mais antigo que acervo)
+
+.PARAMETER FrontFolder
+    Caminho da pasta da frente (ObjetosGeradosParaImportacaoNaKbNoGenexus/<NomeCurto_GUID_YYYYMMDD>).
+
+.PARAMETER AcervoFolder
+    Caminho da pasta do acervo oficial (ObjetosDaKbEmXml).
+
+.PARAMETER AsJson
+    Emite resultado estruturado em JSON.
+
+.EXAMPLE
+    .\Test-GeneXusFrontAcervoDrift.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml -AsJson
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$FrontFolder,
+
+    [Parameter(Mandatory = $true)]
+    [string]$AcervoFolder,
+
+    [switch]$AsJson
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Format-GeneXusLastUpdate {
+    param([Parameter(Mandatory = $true)][DateTime]$Value)
+    return $Value.ToUniversalTime().ToString(
+        "yyyy-MM-dd'T'HH:mm:ss'.0000000Z'",
+        [System.Globalization.CultureInfo]::InvariantCulture
+    )
+}
+
+function Read-ObjectLastUpdateSafe {
+    param(
+        [Parameter(Mandatory = $true)][System.Xml.XmlElement]$Root
+    )
+    $raw = $Root.GetAttribute("lastUpdate")
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        return $null
+    }
+    $parsed = [DateTimeOffset]::MinValue
+    $ok = [DateTimeOffset]::TryParse(
+        $raw,
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [System.Globalization.DateTimeStyles]::AssumeUniversal,
+        [ref]$parsed
+    )
+    if (-not $ok) {
+        return $null
+    }
+    return $parsed.UtcDateTime
+}
+
+function New-Finding {
+    param(
+        [string]$Severity,
+        [string]$Code,
+        [string]$Message,
+        [string]$ObjectName,
+        [string]$ObjectGuid,
+        [string]$ObjectFile,
+        [string]$AcervoFile,
+        [string]$FrontLastUpdate,
+        [string]$AcervoLastUpdate
+    )
+    return [pscustomobject]@{
+        severity         = $Severity
+        code             = $Code
+        message          = $Message
+        objectName       = $ObjectName
+        objectGuid       = $ObjectGuid
+        objectFile       = $ObjectFile
+        acervoFile       = $AcervoFile
+        frontLastUpdate  = $FrontLastUpdate
+        acervoLastUpdate = $AcervoLastUpdate
+    }
+}
+
+function Get-ObjectMetadata {
+    param([string]$XmlPath)
+    try {
+        [xml]$doc = Get-Content -LiteralPath $XmlPath -Raw -Encoding UTF8
+    } catch {
+        return $null
+    }
+    $root = $doc.DocumentElement
+    if ($null -eq $root -or $root.LocalName -ne 'Object') { return $null }
+    $objType = $root.GetAttribute('type')
+    $objName = ''
+    foreach ($prop in $doc.SelectNodes('/Object/Properties/Property')) {
+        if ($prop.Name -eq 'Name') { $objName = $prop.Value; break }
+    }
+    $objGuid = $root.GetAttribute('guid')
+    $objFqn = $root.GetAttribute('fullyQualifiedName')
+    $lastUpdate = Read-ObjectLastUpdateSafe $root
+    return [pscustomobject]@{
+        Path       = $XmlPath
+        Name       = $objName
+        TypeGuid   = $objType
+        Guid       = $objGuid
+        Fqn        = $objFqn
+        LastUpdate = $lastUpdate
+    }
+}
+
+function Find-AcervoObjectXml {
+    param(
+        [Parameter(Mandatory = $true)][string]$RootPath,
+        [Parameter(Mandatory = $true)][pscustomobject]$FrontMeta
+    )
+
+    if (-not (Test-Path -LiteralPath $RootPath -PathType Container)) {
+        return $null
+    }
+
+    $candidateFiles = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
+
+    foreach ($attrName in @('fullyQualifiedName', 'name')) {
+        $value = $null
+        if ($attrName -eq 'fullyQualifiedName') { $value = $FrontMeta.Fqn }
+        elseif ($attrName -eq 'name') { $value = $FrontMeta.Name }
+        if ([string]::IsNullOrWhiteSpace($value)) { continue }
+
+        $leaf = "$value.xml"
+        $found = @(Get-ChildItem -LiteralPath $RootPath -Recurse -File -Filter $leaf -ErrorAction SilentlyContinue)
+        foreach ($f in $found) {
+            $candidateFiles.Add($f) | Out-Null
+        }
+    }
+
+    if ($candidateFiles.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($FrontMeta.Guid)) {
+        $guidHits = @(Get-ChildItem -LiteralPath $RootPath -Recurse -File -Filter '*.xml' -ErrorAction SilentlyContinue |
+            Select-String -SimpleMatch $FrontMeta.Guid |
+            ForEach-Object { $_.Path } |
+            Sort-Object -Unique |
+            ForEach-Object { Get-Item -LiteralPath $_ })
+        foreach ($f in $guidHits) {
+            $candidateFiles.Add($f) | Out-Null
+        }
+    }
+
+    foreach ($file in @($candidateFiles | Sort-Object FullName -Unique)) {
+        try {
+            [xml]$doc = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8
+        } catch {
+            continue
+        }
+        $baseRoot = $doc.DocumentElement
+        if ($null -eq $baseRoot -or $baseRoot.LocalName -ne 'Object') { continue }
+
+        $matched = $false
+        $baseGuid = $baseRoot.GetAttribute('guid')
+        if (-not [string]::IsNullOrWhiteSpace($FrontMeta.Guid) -and $FrontMeta.Guid -eq $baseGuid) {
+            $matched = $true
+        }
+        if (-not $matched) {
+            $baseFqn = $baseRoot.GetAttribute('fullyQualifiedName')
+            if (-not [string]::IsNullOrWhiteSpace($FrontMeta.Fqn) -and $FrontMeta.Fqn -eq $baseFqn) {
+                $matched = $true
+            }
+        }
+        if (-not $matched) {
+            $baseName = $baseRoot.GetAttribute('name')
+            if (-not [string]::IsNullOrWhiteSpace($FrontMeta.Name) -and $FrontMeta.Name -eq $baseName) {
+                $matched = $true
+            }
+        }
+
+        if ($matched) {
+            $baseMeta = Get-ObjectMetadata $file.FullName
+            if ($null -ne $baseMeta) {
+                return $baseMeta
+            }
+        }
+    }
+
+    return $null
+}
+
+# Validar parametros
+if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
+    throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
+}
+if (-not (Test-Path -LiteralPath $AcervoFolder -PathType Container)) {
+    throw "AcervoFolder nao encontrado ou nao e diretorio: $AcervoFolder"
+}
+$FrontFolder  = (Resolve-Path -LiteralPath $FrontFolder).Path
+$AcervoFolder = (Resolve-Path -LiteralPath $AcervoFolder).Path
+
+# 1. Enumerar XMLs na pasta da frente
+$findings = @()
+$frontXmls = @(Get-ChildItem -LiteralPath $FrontFolder -File -Filter '*.xml')
+$frontMetas = @()
+foreach ($xml in $frontXmls) {
+    $meta = Get-ObjectMetadata $xml.FullName
+    if ($null -ne $meta -and -not [string]::IsNullOrWhiteSpace($meta.Name)) {
+        $frontMetas += $meta
+    }
+}
+
+$objectsScanned = $frontMetas.Count
+
+if ($objectsScanned -eq 0 -and $frontXmls.Count -eq 0) {
+    $status = 'not-applicable'
+} else {
+    # 2. Para cada objeto da frente, buscar homonimo no acervo e comparar
+    foreach ($fMeta in $frontMetas) {
+        $fRel = [System.IO.Path]::GetRelativePath($FrontFolder, $fMeta.Path)
+        $aMeta = Find-AcervoObjectXml -RootPath $AcervoFolder -FrontMeta $fMeta
+
+        if ($null -eq $aMeta) {
+            $findings += New-Finding -Severity 'info' -Code 'front-only-new-object' `
+                -Message "Objeto '$($fMeta.Name)' existe na frente mas nao no acervo; presumido novo (nao copiado do acervo)." `
+                -ObjectName $fMeta.Name -ObjectGuid $fMeta.Guid `
+                -ObjectFile $fRel -AcervoFile '' `
+                -FrontLastUpdate $(if ($null -ne $fMeta.LastUpdate) { Format-GeneXusLastUpdate $fMeta.LastUpdate } else { '' }) `
+                -AcervoLastUpdate ''
+            continue
+        }
+
+        $aRel = [System.IO.Path]::GetRelativePath($AcervoFolder, $aMeta.Path)
+
+        $fLastStr = if ($null -ne $fMeta.LastUpdate) { Format-GeneXusLastUpdate $fMeta.LastUpdate } else { '' }
+        $aLastStr = if ($null -ne $aMeta.LastUpdate) { Format-GeneXusLastUpdate $aMeta.LastUpdate } else { '' }
+
+        if ($null -eq $fMeta.LastUpdate -or $null -eq $aMeta.LastUpdate) {
+            $findings += New-Finding -Severity 'warn' -Code 'lastupdate-unparseable' `
+                -Message "Objeto '$($fMeta.Name)' com lastUpdate nao parseavel (frente='$fLastStr', acervo='$aLastStr'). Comparacao manual necessaria." `
+                -ObjectName $fMeta.Name -ObjectGuid $fMeta.Guid `
+                -ObjectFile $fRel -AcervoFile $aRel `
+                -FrontLastUpdate $fLastStr -AcervoLastUpdate $aLastStr
+            continue
+        }
+
+        if ($fMeta.LastUpdate -lt $aMeta.LastUpdate) {
+            $findings += New-Finding -Severity 'fail' -Code 'front-older-than-acervo' `
+                -Message "Objeto '$($fMeta.Name)' na frente tem lastUpdate ($fLastStr) anterior ao acervo ($aLastStr). A frente esta desatualizada — copiar do acervo antes de empacotar." `
+                -ObjectName $fMeta.Name -ObjectGuid $fMeta.Guid `
+                -ObjectFile $fRel -AcervoFile $aRel `
+                -FrontLastUpdate $fLastStr -AcervoLastUpdate $aLastStr
+        } elseif ($fMeta.LastUpdate -eq $aMeta.LastUpdate) {
+            $findings += New-Finding -Severity 'warn' -Code 'front-equals-acervo' `
+                -Message "Objeto '$($fMeta.Name)' na frente preserva lastUpdate igual ao acervo ($fLastStr). Se o objeto foi modificado na frente, o lastUpdate deveria ser mais recente." `
+                -ObjectName $fMeta.Name -ObjectGuid $fMeta.Guid `
+                -ObjectFile $fRel -AcervoFile $aRel `
+                -FrontLastUpdate $fLastStr -AcervoLastUpdate $aLastStr
+        } else {
+            $findings += New-Finding -Severity 'info' -Code 'front-newer-than-acervo' `
+                -Message "Objeto '$($fMeta.Name)' na frente tem lastUpdate ($fLastStr) mais recente que o acervo ($aLastStr). Consistente com edicao na frente." `
+                -ObjectName $fMeta.Name -ObjectGuid $fMeta.Guid `
+                -ObjectFile $fRel -AcervoFile $aRel `
+                -FrontLastUpdate $fLastStr -AcervoLastUpdate $aLastStr
+        }
+    }
+
+    # 3. Status agregado
+    $hasFail = $findings | Where-Object { $_.severity -eq 'fail' } | Select-Object -First 1
+    $hasWarn  = $findings | Where-Object { $_.severity -eq 'warn' } | Select-Object -First 1
+    if ($hasFail) { $status = 'fail' }
+    elseif ($hasWarn) { $status = 'alert' }
+    else { $status = 'pass' }
+}
+
+# 4. Emitir resultado
+$result = [pscustomobject]@{
+    status          = $status
+    frontFolder     = $FrontFolder
+    acervoFolder    = $AcervoFolder
+    objectsScanned  = $objectsScanned
+    findings        = $findings
+}
+
+if ($AsJson) {
+    $result | ConvertTo-Json -Depth 6
+} else {
+    Write-Output "status: $status"
+    Write-Output "frontFolder: $FrontFolder"
+    Write-Output "acervoFolder: $AcervoFolder"
+    Write-Output "objectsScanned: $objectsScanned"
+    if ($findings.Count -eq 0) {
+        Write-Output "findings: (none)"
+    } else {
+        Write-Output "findings:"
+        foreach ($f in $findings) {
+            Write-Output "  - [$($f.severity)] $($f.code): $($f.message)"
+            Write-Output "    object: $($f.objectName) ($($f.objectFile))"
+            Write-Output "    acervoFile: $($f.acervoFile)"
+        }
+    }
+}

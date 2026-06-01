@@ -10,6 +10,11 @@
     confirmado pelo template comparavel e warnings quando o par nao e confirmado
     ou nao ha template comparavel.
 
+    Quando -AcervoPath e fornecido, executa o gate de drift frente-vs-acervo
+    (Test-GeneXusFrontAcervoDrift.ps1) ANTES de chamar o motor Python. Se o gate
+    retornar status fail, o empacotamento e abortado com erro. Alertas de drift
+    sao propagados no resultado.
+
 .PARAMETER RepoRoot
     Raiz da pasta paralela da KB.
 
@@ -27,6 +32,12 @@
     kb-source-metadata.md. Para Panel, especialmente Panel SD, preferir template
     real exportado pela IDE da mesma KB; par confirmado e reportado em information.
 
+.PARAMETER AcervoPath
+    Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Quando fornecido,
+    executa o gate de drift frente-vs-acervo antes do empacotamento. Se o gate
+    detectar que um XML da frente esta mais antigo que o homonimo no acervo
+    (front-older-than-acervo), o empacotamento e abortado.
+
 .PARAMETER AsJson
     Retorna saída JSON estruturada, incluindo warnings e information de Panel.
 #>
@@ -43,6 +54,8 @@ param(
 
     [string]$TemplatePackagePath,
 
+    [string]$AcervoPath,
+
     [switch]$AsJson
 )
 
@@ -57,6 +70,27 @@ if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
 $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
 if ($null -eq $pythonCommand) {
     throw 'BLOCK: python nao encontrado no PATH para executar New-XpzImportPackage.py'
+}
+
+# Gate de drift frente-vs-acervo (antes do empacotamento)
+$driftResult = $null
+if (-not [string]::IsNullOrWhiteSpace($AcervoPath)) {
+    $acervoResolved = (Resolve-Path -LiteralPath $AcervoPath -ErrorAction Stop).Path
+    $frontDir = Join-Path $RepoRoot 'ObjetosGeradosParaImportacaoNaKbNoGenexus' $FrontName
+    if (-not (Test-Path -LiteralPath $frontDir -PathType Container)) {
+        throw "Pasta da frente nao encontrada: $frontDir"
+    }
+    $driftGatePath = Join-Path $PSScriptRoot 'Test-GeneXusFrontAcervoDrift.ps1'
+    if (-not (Test-Path -LiteralPath $driftGatePath -PathType Leaf)) {
+        throw "BLOCK: gate de drift nao encontrado: $driftGatePath"
+    }
+    $driftOutput = & $driftGatePath -FrontFolder $frontDir -AcervoFolder $acervoResolved -AsJson 2>&1
+    $driftResult = $driftOutput | ConvertFrom-Json
+    if ($driftResult.status -eq 'fail') {
+        $failFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'fail' })
+        $blockMsgs = @($failFindings | ForEach-Object { $_.message })
+        throw "BLOCK: gate de drift frente-vs-acervo falhou ($($blockMsgs.Count) finding(s) fatal(is)): $($blockMsgs -join '; ')"
+    }
 }
 
 $engineArgs = @(
@@ -88,6 +122,12 @@ if (-not [string]::IsNullOrWhiteSpace([string]$result.outputPath)) {
     $result | Add-Member -NotePropertyName packageInventory -NotePropertyValue $inventoryBlock.packageInventory -Force
     $result | Add-Member -NotePropertyName inventoryDegraded -NotePropertyValue $inventoryBlock.inventoryDegraded -Force
     $result | Add-Member -NotePropertyName inventoryError -NotePropertyValue $inventoryBlock.inventoryError -Force
+}
+
+if ($null -ne $driftResult) {
+    $result | Add-Member -NotePropertyName driftStatus -NotePropertyValue $driftResult.status -Force
+    $result | Add-Member -NotePropertyName driftFindings -NotePropertyValue $driftResult.findings -Force
+    $result | Add-Member -NotePropertyName driftObjectsScanned -NotePropertyValue $driftResult.objectsScanned -Force
 }
 
 if ($AsJson) {

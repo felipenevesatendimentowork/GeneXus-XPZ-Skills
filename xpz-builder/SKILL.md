@@ -70,6 +70,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - Treat manually rounded timestamps, copied timestamps from another file, copied baseline `lastUpdate` on a modified object, or arbitrary future values as invalid `lastUpdate` generation
 - Treat `ObjetosDaKbEmXml` as official snapshot and read-only for agents
 - Treat any detected or intended edit in `ObjetosDaKbEmXml` for a delta that has not yet returned by official KB re-export as an explicit process error, not as a mere operational detail
+- Editing `ObjetosDaKbEmXml` does **not** affect the packaging output — the packaging motor reads from the front folder (`ObjetosGeradosParaImportacaoNaKbNoGenexus/<Frente>/`), never from the corpus; if the agent edits the corpus expecting the package to pick up that version, the package will use the stale version from the front; this is an anti-pattern that the 9-FD gate detects
 - If the object has not yet returned from the KB by official export, perform the work only in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
 - When creating an altered copy of GeneXus XML in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, preserve the source XML outside the approved functional delta; the default operation is surgical editing, not broad reconstruction or full-file reserialization
 - Outside the approved delta, preserve comments, `CDATA`, indentation, blank lines, node order, line endings, and inherited whitespace; do not introduce trailing spaces or tabs on new or modified lines
@@ -312,6 +313,15 @@ Reference files and when to load them:
    - `fail` (`fail` finding `ido-cycle-detected`) → **ABORT** packaging: present the cycle (listed in the finding) to the user and require resolution before re-running
    - When the batch contains `WorkWithForWeb` objects, the script also emits an `info` finding with code `ido-ww-detection-pending` — the WorkWithForWeb → linked Transaction dependency detection is **not** yet wired into this script, even though the 9-WW gate itself now reads both structural forms. When this info finding is present and the batch mixes a WorkWithForWeb and its linked Transaction, the agent must verify ordering manually (read the linked Transaction from the WorkWithForWeb XML using the 9-WW form detection rules, then check whether that Transaction is in the batch) before packaging
    - Detection scope: (a) Procedure with `bc:<X>` → Transaction X when X is in the batch; (b) Procedure A → Procedure B when A calls B in its Source and B is new in this delta (not in `ObjetosDaKbEmXml`). Procedure → Procedure detection is best-effort scan of Source — false positives may be filtered by user review
+9-FD. Front-Acervo drift gate — run before any packaging when `ObjetosDaKbEmXml` exists as the official corpus:
+   - Run `& ..\scripts\Test-GeneXusFrontAcervoDrift.ps1 -FrontFolder <pasta-da-frente> -AcervoFolder <ObjetosDaKbEmXml> -AsJson`
+   - `not-applicable` (no Object XMLs in the front) → proceed normally
+   - `pass` (only `info` findings) → proceed normally
+   - `alert` (one or more `warn` findings) → present each `warn` finding to the user; for `front-equals-acervo` confirm whether the lastUpdate was intentionally preserved (dependency re-sent without change) or needs updating; for `lastupdate-unparseable` resolve manually before packaging
+   - `fail` (any `fail` finding) → **ABORT** packaging; report each finding and the corrective action:
+     - `front-older-than-acervo`: the XML in the front has an older `lastUpdate` than the corresponding XML in the official corpus — copy the newer version from the corpus to the front before packaging, or document why the front version is intentionally older
+   - When using `New-XpzImportPackage.ps1` (the front-based packaging wrapper) with `-AcervoPath`, this gate runs automatically before the Python motor is invoked; `fail` blocks the packaging and `alert` propagates as `driftStatus` and `driftFindings` in the result
+   - This gate does **not** replace 12 (check for improper local changes in `ObjetosDaKbEmXml`); 9-FD compares front vs. corpus content, while 12 detects direct edits in the read-only corpus
 12. Check for improper local changes in `ObjetosDaKbEmXml`:
    - If detected, treat this as an explicit process error
    - Preserve those XMLs in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, restore `ObjetosDaKbEmXml` to the official Git version, present a structured manifest of preserved items in the conversation, save it as a local file when incident traceability requires it, and **ABORT** packaging until the snapshot is sane
