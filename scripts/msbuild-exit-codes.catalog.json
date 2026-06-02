@@ -277,7 +277,6 @@
           "wrappers": [
             "Invoke-GeneXusKbBuildAll.ps1",
             "Invoke-GeneXusKbSpecifyGenerate.ps1",
-            "Invoke-GeneXusXpzImportThenBuild.ps1",
             "Invoke-GeneXusXpzImport.ps1",
             "Invoke-GeneXusXpzExport.ps1",
             "Test-GeneXusXpzImportPreview.ps1"
