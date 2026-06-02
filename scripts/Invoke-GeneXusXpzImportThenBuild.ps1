@@ -185,6 +185,19 @@ function Test-IsUnderProgramFilesX86 {
     return $fullPath.StartsWith($programFilesX86, [System.StringComparison]::OrdinalIgnoreCase)
 }
 
+function Write-JsonLogIfSafe {
+    param(
+        [string]$TargetLogPath,
+        [string]$JsonPayload
+    )
+
+    if ([string]::IsNullOrWhiteSpace($TargetLogPath) -or (Test-IsUnderProgramFilesX86 -PathValue $TargetLogPath)) {
+        return
+    }
+
+    Write-JsonLog -TargetLogPath $TargetLogPath -JsonPayload $JsonPayload
+}
+
 function New-RoundtripArtifactDirectory {
     param([string]$BaseDirectory)
 
@@ -467,7 +480,7 @@ try {
             strategyTrace = @($script:StrategyTrace)
         }
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
-        Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+        Write-JsonLogIfSafe -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
         Write-Output $blockedJson
         exit 46
     }
@@ -484,7 +497,6 @@ try {
             strategyTrace = @($script:StrategyTrace)
         }
         $blockedJson = ConvertTo-JsonText -InputObject $blocked
-        Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
         Write-Output $blockedJson
         exit 46
     }
