@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-06-01",
+  "lastUpdated": "2026-06-02",
   "legend": {
     "exitCode": "Valor classificado pelo wrapper GeneXus XPZ; e tambem o exit code do processo PowerShell.",
     "executionEvidence.msBuildExitCode": "Codigo bruto retornado pela invocacao MSBuild/task GeneXus; nao substitui exitCode quando o wrapper reclassifica (ex.: 48, 32, 41-45).",
@@ -264,6 +264,7 @@
       "wrappers": [
         "Invoke-GeneXusKbBuildAll.ps1",
         "Invoke-GeneXusKbSpecifyGenerate.ps1",
+        "Invoke-GeneXusXpzImportThenBuild.ps1",
         "Invoke-GeneXusXpzImport.ps1",
         "Invoke-GeneXusXpzExport.ps1",
         "Test-GeneXusXpzImportPreview.ps1"
@@ -276,11 +277,24 @@
           "wrappers": [
             "Invoke-GeneXusKbBuildAll.ps1",
             "Invoke-GeneXusKbSpecifyGenerate.ps1",
+            "Invoke-GeneXusXpzImportThenBuild.ps1",
             "Invoke-GeneXusXpzImport.ps1",
             "Invoke-GeneXusXpzExport.ps1",
             "Test-GeneXusXpzImportPreview.ps1"
           ],
           "jsonHints": ["watcherContext.startWatcherRequested", "resolvedPaths", "blockingReasons"]
+        },
+        {
+          "id": "roundtrip-import-nao-apto-build",
+          "condition": "Invoke-GeneXusXpzImportThenBuild.ps1 nao executou BuildAll porque o JSON de importacao nao ficou apto para build, apesar de nao haver codigo de import mais especifico a propagar.",
+          "wrappers": ["Invoke-GeneXusXpzImportThenBuild.ps1"],
+          "jsonHints": ["importReadyForBuild", "buildSkippedReason", "importJson.exitCode", "importJson.blockingReasons", "importJson.msBuildCategoryBBlocked"]
+        },
+        {
+          "id": "roundtrip-caminho-inseguro",
+          "condition": "Invoke-GeneXusXpzImportThenBuild.ps1 recebeu WorkingDirectory ou LogPath sob Program Files (x86).",
+          "wrappers": ["Invoke-GeneXusXpzImportThenBuild.ps1"],
+          "jsonHints": ["stage", "blockingReasons", "resolvedPaths"]
         },
         {
           "id": "msbuild-concorrente-mesma-kb",

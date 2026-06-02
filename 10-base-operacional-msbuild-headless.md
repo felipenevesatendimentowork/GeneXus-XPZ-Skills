@@ -471,6 +471,21 @@ Contrato adotado:
 
 Essa proteção é propositalmente simples: não enfileira, não espera, não tenta matar processos e não decide sobre `MSBuild.exe` de outra KB. O objetivo é evitar contenção de lock da KB em uso comunitário, preservando diagnóstico suficiente para o agente humano/automatizado saber qual processo estava em conflito.
 
+### Roundtrip Import-build Com Parada Condicional
+
+`scripts/Invoke-GeneXusXpzImportThenBuild.ps1` materializa o wrapper integrador simples para a rodada cotidiana `Invoke-GeneXusXpzImport.ps1` → `Invoke-GeneXusKbBuildAll.ps1`.
+
+Contrato adotado:
+
+- o wrapper chama os scripts filhos em processos `pwsh -NoProfile -File` separados, porque os wrappers existentes usam `exit` próprio e não podem ser chamados por dot-source sem encerrar o processo pai
+- a etapa de importação real roda primeiro e grava `import.json` em um diretório de artefatos da rodada
+- `BuildAll` só roda quando o JSON de import está interpretável, `exitCode=0`, `blockingReasons` está vazio, `msBuildCategoryBBlocked` não é verdadeiro e `status` não indica falha/bloqueio
+- se a importação não ficar apta, o build é pulado; o JSON final traz `roundtripStatus='import-blocked-or-failed'`, `buildJson=null`, `buildSkippedReason`, `importJson` e os caminhos dos logs
+- se o build roda, o `exitCode` final do roundtrip acompanha o `exitCode` do build; se o build não roda, o `exitCode` final acompanha o código do import ou usa `46` quando o import não deixou um código específico a propagar
+- quando `-StartWatcher` é usado no wrapper integrador, ele gera logs de monitor separados para import e build, salvo caminhos explícitos por `-ImportMonitorLogPath` e `-BuildMonitorLogPath`
+
+Esse wrapper reduz invocações e leitura manual de JSON, mas não transforma falha de import em build. A regra comunitária é conservadora: build pós-import é consequência de import apto, não etapa obrigatória a qualquer custo.
+
 ### Diagnóstico: código de evento que não surte efeito (mecanismos a e b)
 
 Quando o sintoma for evento GeneXus que parece não executar ou não refletir na UI após import/build headless, distinguir **antes de editar o XML** dois mecanismos documentados em [02-regras-operacionais-e-runtime.md](02-regras-operacionais-e-runtime.md), seção `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`:

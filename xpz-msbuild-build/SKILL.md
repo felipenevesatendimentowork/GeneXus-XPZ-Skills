@@ -199,7 +199,9 @@ Skills externas não listadas nesta tabela não devem ser carregadas durante a e
 
 ## EXPECTED INTERFACE
 
-Dois scripts PowerShell, seguindo o mesmo padrão de `xpz-msbuild-import-export`.
+Dois scripts PowerShell próprios, seguindo o mesmo padrão de `xpz-msbuild-import-export`, e um wrapper integrador de handoff pós-import.
+
+- `Invoke-GeneXusXpzImportThenBuild.ps1` pertence operacionalmente à trilha `xpz-msbuild-import-export`, mas chama `Invoke-GeneXusKbBuildAll.ps1` como etapa receptora. O build só roda quando `importReadyForBuild.ready=true`; com `buildSkippedReason`, tratar como import não apto para build, não como falha autônoma de build.
 
 ### Categoria B (rejeição MSBuild no log)
 
