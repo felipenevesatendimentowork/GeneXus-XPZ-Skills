@@ -705,6 +705,9 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - usar `variables` como bloco inicial para tipo, declaracao, coerencia de uso e colecao vs simples
 - usar `metadado funcional serializado` como bloco inicial para `Conditions`, `ControlWhere`, `ControlBaseTable`, `ControlOrder`, `ControlUnique`, `PATTERN_ELEMENT_CUSTOM_PROPERTIES`, `WebUserControlProperties` e marcas de pattern
 - se a leitura do layout serializado em `CDATA` vier truncada, nao remontar o layout manualmente; extrair o bloco completo por metodo estruturado ou operar por substituicao cirurgica no raw integral
+- ao buscar texto em XML de `WebPanel`, nao usar match bruto em `<Source><![CDATA[<GxMultiForm...` como evidencia de comportamento em `events`; `GxMultiForm` prova camada de `layout` ou metadado serializado, nao code-behind
+- para busca textual pontual em `Source` de `WebPanel`, preferir `scripts\Search-GeneXusXmlSourceBlock.ps1 -Block events` quando a pergunta for sobre evento, chamada, validacao ou fluxo; usar `-Block layout` apenas quando o sintoma for visual ou de binding visivel
+- se uma busca direta com `rg`/`grep` for inevitavel, filtrar ou classificar separadamente matches em `GxMultiForm`, `labelCaption`, `PATTERN_ELEMENT_CUSTOM_PROPERTIES` e linhas de `events`, sem despejar o `CDATA` gigante na resposta
 - usar `identidade e contêiner` como bloco inicial para `parent`, `module`, `fullyQualifiedName`, risco de clonagem e classificacao estrutural
 - usar `dependencias` como bloco inicial quando o sintoma nascer de `MasterPage`, pattern, user control, objeto chamado ou vinculo externo ausente
 

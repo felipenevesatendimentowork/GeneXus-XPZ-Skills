@@ -45,6 +45,7 @@ Do NOT use this skill for:
 - Map Part types present in input against observed frequencies and known patterns, using [01b-matriz-part-types-por-tipo](../01b-matriz-part-types-por-tipo.md) when needed
 - Classify object family when applicable: WebPanel families in [04-webpanel-familias-e-templates](../04-webpanel-familias-e-templates.md), Transaction families in [05-transaction-familias-e-templates](../05-transaction-familias-e-templates.md)
 - For `WebPanel`, classify the review by functional block before fine analysis: `layout`, `events`, `variables`, `serialized functional metadata`, `identity and container`, or `dependencies`
+- For `WebPanel`, when a textual search finds a term inside `<Source><![CDATA[<GxMultiForm...`, classify that evidence as `layout` or `serialized functional metadata`, not as `events`; for event/code-behind questions, prefer `scripts\Search-GeneXusXmlSourceBlock.ps1 -Block events` over raw `rg`/`grep`
 - For `WorkWithForWeb`, classify the review by functional block before fine analysis: `Transaction binding`, `Pattern structure and navigation`, `Actions, links and prompts`, `Attribute references and data contract`, or `Identity and container`
 - For `DataSelector`, classify the review by functional block before fine analysis: `Selection contract`, `Selection logic and conditions`, `Attribute and function dependencies`, `Navigation context`, or `Identity and container`
 - For `Panel`, classify the review by functional block before fine analysis: `Panel structure and layout`, `Serialized behavior and configuration`, `Pattern and parent coupling`, `External dependencies`, or `Identity and container`
@@ -156,6 +157,7 @@ Reference files and when to load them:
    - `serialized functional metadata` for `Conditions`, `ControlWhere`, `ControlBaseTable`, `ControlOrder`, `ControlUnique`, `PATTERN_ELEMENT_CUSTOM_PROPERTIES`, `WebUserControlProperties`, and pattern marks
    - `identity and container` for `fullyQualifiedName`, `parent`, `parentGuid`, `parentType`, and `moduleGuid`
    - `dependencies` for `MasterPage`, pattern links, user controls, and relevant external object references
+12a. For WebPanel textual search in a local XML, do not treat a match in inline `GxMultiForm` layout as behavioral evidence; if the question is about calls, actions, validation, filters, or event flow, use `scripts\Search-GeneXusXmlSourceBlock.ps1 -Block events` or an equivalent structured extraction before citing the line
 13. For `WebPanel`, open adjacent blocks only when there is explicit functional dependency with the primary block, and name that transition in the analysis
 14. If type is `WorkWithForWeb` → classify the primary review block before fine analysis:
    - `Transaction binding` for `parent`, `parentGuid`, `parentType`, associated `Transaction`, structural coupling, and suspicion that the WW is attached to the wrong parent
