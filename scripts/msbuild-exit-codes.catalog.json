@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-05-31",
+  "lastUpdated": "2026-06-01",
   "legend": {
     "exitCode": "Valor classificado pelo wrapper GeneXus XPZ; e tambem o exit code do processo PowerShell.",
     "executionEvidence.msBuildExitCode": "Codigo bruto retornado pela invocacao MSBuild/task GeneXus; nao substitui exitCode quando o wrapper reclassifica (ex.: 48, 32, 41-45).",
@@ -281,6 +281,18 @@
             "Test-GeneXusXpzImportPreview.ps1"
           ],
           "jsonHints": ["watcherContext.startWatcherRequested", "resolvedPaths", "blockingReasons"]
+        },
+        {
+          "id": "msbuild-concorrente-mesma-kb",
+          "condition": "Preflight msBuildConcurrency confirmou MSBuild.exe em execucao para a mesma KB.",
+          "wrappers": [
+            "Invoke-GeneXusKbBuildAll.ps1",
+            "Invoke-GeneXusKbSpecifyGenerate.ps1",
+            "Invoke-GeneXusXpzImport.ps1",
+            "Invoke-GeneXusXpzExport.ps1",
+            "Test-GeneXusXpzImportPreview.ps1"
+          ],
+          "jsonHints": ["msBuildConcurrency.status", "msBuildConcurrency.matchedKbProcesses", "blockingReasons"]
         },
         {
           "id": "force-rebuild-sem-allow-wide",

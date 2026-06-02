@@ -457,6 +457,20 @@ Esse gate é **independente** do gate de reorg (`-AllowReorg`): autorizar um nã
 
 O workflow completo, parâmetros e interface estruturada estão documentados na skill `xpz-msbuild-build`; esta seção registra apenas a salvaguarda como parte da realidade operacional MSBuild headless.
 
+### Bloqueio Preventivo De MSBuild Concorrente Por KB
+
+Wrappers MSBuild headless que abrem uma KB nativa devem executar uma checagem preventiva de concorrência logo depois de gerar o `.msbuild` temporário da rodada e antes de chamar `Start-Process` para `MSBuild.exe`.
+
+Contrato adotado:
+
+- `scripts/Test-GeneXusMsBuildKbConcurrency.ps1` e `scripts/GeneXusMsBuildConcurrencySupport.ps1` inspecionam processos `MSBuild.exe` em execução via `Win32_Process`
+- cada processo é reconciliado ao arquivo `.msbuild` citado na linha de comando; desse arquivo é lido o `KBPath`
+- o wrapper bloqueia somente quando o `KBPath` reconciliado é a mesma KB solicitada na rodada atual
+- processos `MSBuild.exe` sem linha de comando, sem `.msbuild` detectável, sem arquivo legível ou sem `KBPath` reconciliável são reportados em `unreconciledMsBuildProcesses` e em `warnings`, mas não bloqueiam por não confirmar que usam a mesma KB
+- em bloqueio confirmado, o wrapper retorna `exitCode=46`, `status='bloqueado por MSBuild concorrente'`, `stage` da operação, `msBuildConcurrency`, `blockingReasons` e artefatos já gerados
+
+Essa proteção é propositalmente simples: não enfileira, não espera, não tenta matar processos e não decide sobre `MSBuild.exe` de outra KB. O objetivo é evitar contenção de lock da KB em uso comunitário, preservando diagnóstico suficiente para o agente humano/automatizado saber qual processo estava em conflito.
+
 ### Diagnóstico: código de evento que não surte efeito (mecanismos a e b)
 
 Quando o sintoma for evento GeneXus que parece não executar ou não refletir na UI após import/build headless, distinguir **antes de editar o XML** dois mecanismos documentados em [02-regras-operacionais-e-runtime.md](02-regras-operacionais-e-runtime.md), seção `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`:

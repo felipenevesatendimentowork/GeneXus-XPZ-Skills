@@ -578,6 +578,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - [ ] O probe (sondagem técnica inicial) devolveu diagnóstico estruturado completo
 - [ ] O probe (sondagem técnica inicial) respeitou o contrato de parâmetros obrigatórios, opcionais e `exitCode`
 - [ ] `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory` e `LogPath` foram explicitados
+- [ ] Antes de abrir a KB por MSBuild em preview, import real ou export, o bloqueio preventivo de concorrência por KB foi executado; se `msBuildConcurrency.status=blocked` ou `exitCode=46`, a rodada foi abortada e o conflito foi reportado ao usuário, sem tentar enfileirar nem aguardar
 - [ ] O probe só auto-criou `WorkingDirectory` quando o caminho explícito era seguro e permaneceu bloqueando caminhos proibidos, inválidos ou ambíguos
 - [ ] `GeneXusDir` e `MsBuildPath` foram resolvidos por precedência e fallback rastreáveis
 - [ ] `observedContext.pathEnrichment` registrou o enriquecimento preventivo do `PATH` (`applied`, `subdirsAdded`, `subdirsSkipped`)
@@ -632,6 +633,7 @@ Após a limpeza, reaplicar WWP na Transaction final para regenerar base consiste
 - NUNCA executar importação real sem `-StartWatcher` e `-MonitorLogPath`; ausência bloqueia cedo (exit 46). Exceção apenas com bloqueio documentado e reportado ao usuário, nunca por omissão silenciosa
 - NEVER depender de `GeneXus Server` como base operacional desta skill
 - NEVER chamar MSBuild para preview ou import sem antes executar `Test-GeneXusImportFileEnvelope.ps1` no arquivo alvo
+- NEVER chamar MSBuild para preview, import real ou export quando o preflight `msBuildConcurrency` confirmar `MSBuild.exe` em execução para a mesma KB; abortar com exit 46 e reportar o processo conflitante
 - NEVER usar o valor retornado por `GetVersionProperty -Name Name` como `-VersionName`; para exportar da versão ativa, omitir `-VersionName`; se for necessário posicionar versão explicitamente, obter o identificador via `GetActiveVersion`, não via `GetVersionProperty`
 - ABORT se `KbPath`, versão, `Environment`, pacote ou destino de logs estiverem ambíguos
 - ABORT se não houver ambiente controlado compatível com a fase solicitada

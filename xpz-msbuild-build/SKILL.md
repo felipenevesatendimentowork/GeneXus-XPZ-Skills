@@ -882,6 +882,7 @@ Campos relevantes:
 - [ ] Ambiente validado por probe antes do build
 - [ ] `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory` e `LogPath` foram
       explicitados
+- [ ] Antes de abrir a KB por MSBuild em `BuildAll` ou `SpecifyGenerate`, o bloqueio preventivo de concorrência por KB foi executado; se `msBuildConcurrency.status=blocked` ou `exitCode=46`, a rodada foi abortada e o conflito foi reportado ao usuário, sem tentar enfileirar nem aguardar
 - [ ] Quando o objetivo era `Invoke-GeneXusKbSpecifyGenerate.ps1`, os sinais de alteração estrutural do import recente foram avaliados antes de executar
 - [ ] Quando havia sinal de alteração estrutural, a confirmação com a frase exata foi exigida e obtida antes de executar
 - [ ] `FailIfReorg=true` foi mantido como default em `BuildAll`, salvo instrução explícita
@@ -922,6 +923,7 @@ Campos relevantes:
 - NEVER executar `icacls` nem qualquer concessão NTFS na instalação do GeneXus — apenas oferecer comandos em `environmentRemediationHints` para o usuário executar uma vez, por conta própria, se quiser silenciar o ruído GAM filtrado
 - NEVER recomendar elevar o build MSBuild a cada execução como substituto do filtro de ruído GAM; a única elevação mencionada é terminal administrativo **one-time** para o usuário rodar `icacls` sugerido
 - NEVER executar `BuildAll` ou `SpecifyGenerate` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
+- NEVER chamar MSBuild para `BuildAll` ou `SpecifyGenerate` quando o preflight `msBuildConcurrency` confirmar `MSBuild.exe` em execução para a mesma KB; abortar com exit 46 e reportar o processo conflitante
 - NEVER executar reorg sem autorização explícita do usuário
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê
 - NEVER passar `-ConfirmReorg` sem `-AllowReorg` — combinação bloqueada por política (exit 46)

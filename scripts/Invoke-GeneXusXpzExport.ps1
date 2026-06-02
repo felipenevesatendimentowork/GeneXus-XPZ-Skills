@@ -143,6 +143,12 @@ if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
 }
 . $watcherSupportPath
 
+$concurrencySupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildConcurrencySupport.ps1'
+if (-not (Test-Path -LiteralPath $concurrencySupportPath -PathType Leaf)) {
+    throw "Concurrency support script not found: $concurrencySupportPath"
+}
+. $concurrencySupportPath
+
 $exportInventoryGovernancePath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusXpzExportInventoryGovernance.ps1'
 if (-not (Test-Path -LiteralPath $exportInventoryGovernancePath -PathType Leaf)) {
     throw "Export inventory governance script not found: $exportInventoryGovernancePath"
@@ -967,6 +973,52 @@ try {
     $projectContent = New-MsBuildProjectContent -ResolvedGeneXusDir $resolvedGeneXusDir -ResolvedKbPath $resolvedKbPath -ResolvedXpzPath $resolvedXpzPath -ResolvedObjectList $resolvedObjectList -ResolvedDependencyType $resolvedDependencyType -ResolvedReferenceType $resolvedReferenceType -ResolvedExportKbInfoPropertyName $exportKbInfoPropertyName -SupportsExportAll $supportsExportAll
     [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-Utf8NoBomEncoding))
     Add-StrategyTrace -Message ('Arquivo .msbuild temporário gerado em: {0}' -f $msBuildFilePath)
+
+    $script:TimingLog['msbuildConcurrencyCheckStart'] = Get-GeneXusMsBuildNowIso
+    $msBuildConcurrency = Invoke-GeneXusMsBuildKbConcurrencyCheck -KbPath $resolvedKbPath -ExcludeProcessId $PID
+    $script:TimingLog['msbuildConcurrencyCheckEnd'] = Get-GeneXusMsBuildNowIso
+    Add-StrategyTrace -Message ('Preflight de concorrência MSBuild concluído com status {0}.' -f $msBuildConcurrency.status)
+    if ([int]$msBuildConcurrency.exitCode -ne 0) {
+        Add-BlockingReason -Reason $msBuildConcurrency.summary
+        $blocked = [ordered]@{
+            status = 'bloqueado por MSBuild concorrente'
+            summary = $msBuildConcurrency.summary
+            exitCode = 46
+            stage = 'pre-export'
+            requestedContext = [ordered]@{
+                VersionName = $VersionName
+                EnvironmentName = $EnvironmentName
+                XpzPath = $resolvedXpzPath
+                ObjectList = $resolvedObjectList
+            }
+            resolvedPaths = [ordered]@{
+                GeneXusDir = $resolvedGeneXusDir
+                MsBuildPath = $resolvedMsBuildPath
+                KbPath = $resolvedKbPath
+                XpzPath = $resolvedXpzPath
+                LogPath = $resolvedLogPath
+            }
+            artifacts = [ordered]@{
+                ProbeLogPath = $probeLogPath
+                MsBuildFilePath = $msBuildFilePath
+                StdOutPath = $stdOutPath
+                StdErrPath = $stdErrPath
+            }
+            watcherContext = $script:WatcherContext
+            timing = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            msBuildConcurrency = $msBuildConcurrency
+            blockingReasons = @($msBuildConcurrency.blockingReasons + $script:BlockingReasons)
+            warnings = @($msBuildConcurrency.warnings + $script:Warnings)
+            strategyTrace = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
+        }
+
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
 
     if ($StartWatcher.IsPresent) {
         Start-GeneXusMsBuildWatcherProcess `
