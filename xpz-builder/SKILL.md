@@ -115,6 +115,7 @@ If the main need is to prepare or validate the initial folder structure around t
 - Do NOT generate `.xpz` as an extra artifact by default when `import_file.xml` already satisfies the intended manual IDE import flow
 - Name locally generated packages for IDE import using the preferred pattern `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`
 - In that package name, the front is identified only by the prefix `NomeCurto_GUID_YYYYMMDD`; `nn` is only the short package round for that front
+- For successive micro-adjustments in the same active front, keep the same front subfolder and the same package prefix `NomeCurto_GUID_YYYYMMDD`; advance only `nn`
 - Before writing `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, run a deterministic collision gate in `.ps1`; do NOT leave this decision to ad hoc reasoning
 - When the recommended helper `Build-GeneXusImportFileEnvelope.ps1` is used, the collision gate is embedded and runs before any byte is written; the file is materialized only when the gate passes
 - When the recommended helper `Build-GeneXusImportFileEnvelope.ps1` is used, pass `-AcervoPath <ObjetosDaKbEmXml>`; the helper always runs the `lastUpdate` gate, so declaring modified objects with `-ModifiedObjectNames` or `-ModifiedObjectGuids` lets it block `lastUpdate` older than the acervo, `lastUpdate` equal to the acervo for declared modified objects, and unjustified future timestamps before serializing the package
@@ -581,6 +582,7 @@ The end-to-end Quality Checklist for any packaging round lives in the satellite 
 - NEVER deliver locally generated object XML with trailing spaces or tabs introduced on new or modified lines
 - NEVER keep the active front batch directly in the root of `ObjetosGeradosParaImportacaoNaKbNoGenexus`; use the front folder `NomeCurto_GUID_YYYYMMDD`
 - NEVER create automatic subfolders by type under the active front folder in `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- NEVER create a new front subfolder or change the package base name for another attempt, visual adjustment, or reimport that is still part of the same active front
 - NEVER treat a contaminated active front folder as acceptable for a new isolated single-object delta
 - NEVER mix a pre-existing parallel change into the package of the current front only because both are present in the same workspace
 - NEVER move files to `ArquivoMorto` without explicit user request
@@ -596,6 +598,7 @@ The end-to-end Quality Checklist for any packaging round lives in the satellite 
 - NEVER answer later user questions about nominal package content (same round or new session) using only prior chat memory, `extrasSample`, or aggregate counts from the motor JSON — re-read the sidecar when it still exists (path A) or re-run `Get-GeneXusImportPackageObjectInventory.ps1` on the final `import_file.xml` or `.xpz` (path B) before answering
 - NEVER assemble `import_file.xml` inline (string concatenation of object XMLs into the envelope, in PowerShell, Bash, or any other shell) when one of the shared engines is available. The shared engines are `scripts/Build-GeneXusImportFileEnvelope.ps1` (for direct object XML inputs with validated template) and `scripts/New-XpzImportPackage.ps1`/`.py` (for front-based assembly). Inline assembly diverges from envelope contracts the engines validate (KMW, Source, Dependencies, ObjectsIdentityMapping ordering) and skips the embedded collision gate. The textual fallback path described in WORKFLOW step 15 is allowed only when both engines are demonstrably unusable for the case AND the user has explicitly acknowledged the exception
 - NEVER create subfolders by front under `PacotesGeradosParaImportacaoNaKbNoGenexus`; that package area must remain flat
+- NEVER change `NomeCurto_GUID_YYYYMMDD` inside the same active front; keep that prefix stable and change only the final `nn` package counter
 - NEVER ignore `Cannot convert Domain to Attribute`, `Attribute 'X' in 'Transaction Y' does not exist`, or `DescriptionAttribute ... could not be found in level attributes`; these are blocking package-construction errors for this trail
 - NEVER treat `OBSOLETO_` as the default naming convention for normal package generation
 - NEVER default to package names that are only subject, only date/time, excessively long conversation prose, or permanent overwrite of the same file name

@@ -31,6 +31,7 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] Embedded objects in `import_file.xml` were checked for correct `lastUpdate` handling before delivery
 - [ ] `ObjetosDaKbEmXml` was treated as read-only official snapshot
 - [ ] Current front folder `NomeCurto_GUID_YYYYMMDD` was created or reused explicitly
+- [ ] Successive micro-adjustments in the same active front reused the same front folder; no new front subfolder was created just for another attempt, visual adjustment, or reimport
 - [ ] Active front folder format was validated before packaging; if local rules require `NomeCurto_GUID_YYYYMMDD`, nonconforming folders were reported and realigned before package generation
 - [ ] Round spec was declared (object names + types) before listing the workspace in step 4b — the declaration came from user intent, not from reading the workspace first
 - [ ] After listing the workspace, the round spec was verified against the workspace content, and any divergence (missing object or unexpected extra) was reconciled explicitly before proceeding to the collision gate
@@ -46,6 +47,7 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] For each object type present in the batch, the corresponding satellite under `responsibilities-by-type/` was loaded and its Quality Checklist was satisfied end-to-end
 - [ ] UTF-8 BOM hygiene was checked on every active XML
 - [ ] Generated package name followed the preferred `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` pattern when applicable
+- [ ] During the same active front, the package prefix `NomeCurto_GUID_YYYYMMDD` stayed stable and only `nn` changed
 - [ ] Package write was blocked if the same front prefix already had the same `nn`
 - [ ] Any `nn` collision returned an explicit next-free-round suggestion without auto-incrementing or silent overwrite
 - [ ] Batch manifest was produced or validated before packaging, by default in the conversation

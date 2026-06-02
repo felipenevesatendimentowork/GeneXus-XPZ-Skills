@@ -753,6 +753,7 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - nesta trilha, `KbIntelligence\kb-intelligence.sqlite` e indice derivado e regeneravel a partir de `ObjetosDaKbEmXml`
 - nesta trilha, `ObjetosGeradosParaImportacaoNaKbNoGenexus` e a area de trabalho para XMLs a importar manualmente na IDE
 - nesta trilha, cada frente ativa deve usar sua propria subpasta `NomeCurto_GUID_YYYYMMDD` dentro de `ObjetosGeradosParaImportacaoNaKbNoGenexus`
+- se a conversa continua a mesma frente ativa, microajustes sucessivos devem reutilizar essa subpasta; nao criar nova subpasta por tentativa, ajuste visual ou reimportacao da mesma frente
 - nesta trilha, os arquivos ativos do lote devem ficar dentro da subpasta ativa da frente, e nao soltos na raiz da area de trabalho
 - XML de referencia, exemplo ou template nao deve permanecer dentro da frente ativa; se aparecer ali, bloquear o empacotamento ate remover ou tratar por caminho explicito fora da area gerenciada
 - nesta trilha, `PacotesGeradosParaImportacaoNaKbNoGenexus` e a area de saida para pacotes gerados localmente
@@ -997,6 +998,7 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - Regra operacional: antes de gerar `import_file.xml` ou `.xpz`, produzir ou validar manifesto do lote, por padrao na propria conversa, com frente ou descricao curta do lote, origem do lote, quantidade total de XMLs, quantidade de `Objects`, quantidade de `Attributes`, lista ou resumo dos arquivos incluidos, `lastUpdate` aplicado ou preservado, pacote gerado, pacote anterior substituido quando houver e observacoes de risco ou pendencia
 - Regra operacional: salvar manifesto em arquivo e comportamento excepcional e contextual; so fazer isso em incidente de processo envolvendo `ObjetosDaKbEmXml`, substituicao de pacote com rastreabilidade local util, pedido explicito do usuario ou necessidade real de retomada futura fora da conversa imediata
 - Regra operacional: ao nomear o pacote local, preferir `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, evitando nome so com assunto, nome so com data/hora, descricao longa de conversa ou sobrescrita recorrente do mesmo nome
+- Regra operacional: durante a mesma frente ativa, manter o mesmo prefixo `NomeCurto_GUID_YYYYMMDD` em todos os pacotes e alterar somente `nn`; novo nome base para a mesma frente e ruido operacional, nao rastreabilidade
 - Regra operacional: antes de gravar `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, verificar colisao do mesmo prefixo de frente `NomeCurto_GUID_YYYYMMDD` com o mesmo `nn` em `PacotesGeradosParaImportacaoNaKbNoGenexus`
 - Regra operacional: se houver colisao do mesmo prefixo de frente com o mesmo `nn`, abortar a gravacao; nao sobrescrever silenciosamente a rodada
 - Regra operacional: em caso de colisao, retornar erro explicito com sugestao do proximo `nn` livre para aquela frente, sem autoincrementar nem gravar automaticamente com o valor sugerido

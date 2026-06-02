@@ -118,9 +118,11 @@ Se você quer entender a base rapidamente:
 - `Temp`: destino preferencial de artefatos efêmeros de execução, como diretórios temporários de wrappers, logs auxiliares e saídas intermediárias que não sejam fonte normativa da base
 - `ArquivoMorto`: subpasta opcional de `ObjetosGeradosParaImportacaoNaKbNoGenexus` para preservar XMLs contaminados que nao devem ser importados mas precisam de rastreabilidade; nao apagar sem autorizacao explicita do usuario
 - em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, cada frente ativa deve usar sua propria subpasta no formato `NomeCurto_GUID_YYYYMMDD`
+- enquanto a mesma frente nao for encerrada, microajustes sucessivos devem reutilizar essa mesma subpasta; nao criar nova subpasta nem mudar `NomeCurto_GUID_YYYYMMDD` por tentativa, ajuste visual ou reimportacao da mesma frente
 - `NomeCurto_GUID_YYYYMMDD` identifica a frente pela combinacao de nome curto, GUID gerado na abertura da frente e data de criacao da frente; `YYYYMMDD` representa a data de criacao da frente, nao a data do pacote
 - em `PacotesGeradosParaImportacaoNaKbNoGenexus`, os pacotes devem permanecer na raiz, sem subpastas, usando o formato `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`
 - `nn` representa apenas a rodada curta de pacote daquela frente; nao representa versao semantica
+- durante a mesma frente, manter o mesmo prefixo `NomeCurto_GUID_YYYYMMDD` em todos os pacotes e alterar somente `nn`; escolher outro nome base para a mesma frente e ruido operacional, nao rastreabilidade
 - antes de gravar `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, verificar se ja existe pacote com o mesmo prefixo de frente `NomeCurto_GUID_YYYYMMDD` e o mesmo `nn`
 - quando a regra for deterministica, o enforcement primario deve viver em `.ps1`; para colisao de pacote, preferir gate dedicado como `Test-XpzPackageCollision.ps1` ou wrapper local equivalente
 - se ja existir pacote com o mesmo prefixo de frente e o mesmo `nn`, o gate deve abortar a gravacao; nao sobrescrever silenciosamente a rodada
@@ -337,9 +339,11 @@ Si quieres entender la base rápidamente:
 - `Temp`: destino preferente de artefactos efímeros de ejecución, como directorios temporales de wrappers, logs auxiliares y salidas intermedias que no sean fuente normativa de la base
 - `ArquivoMorto`: subcarpeta opcional de `ObjetosGeradosParaImportacaoNaKbNoGenexus` para preservar XML contaminados que no deben importarse pero necesitan trazabilidad; no borrar sin autorización explícita del usuario
 - en `ObjetosGeradosParaImportacaoNaKbNoGenexus`, cada frente activa debe usar su propia subcarpeta con el formato `NomeCurto_GUID_YYYYMMDD`
+- mientras la misma frente no esté cerrada, los microajustes sucesivos deben reutilizar esa misma subcarpeta; no crear una nueva subcarpeta ni cambiar `NomeCurto_GUID_YYYYMMDD` por intento, ajuste visual o reimportación de la misma frente
 - `NomeCurto_GUID_YYYYMMDD` identifica la frente por la combinación de nombre corto, GUID generado al abrir la frente y fecha de creación de la frente
 - en `PacotesGeradosParaImportacaoNaKbNoGenexus`, los paquetes deben permanecer en la raíz, sin subcarpetas, usando el formato `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`
 - `nn` representa solo la ronda corta del paquete en esa frente; no representa versión semántica
+- durante la misma frente, mantener el mismo prefijo `NomeCurto_GUID_YYYYMMDD` en todos los paquetes y alterar solo `nn`; elegir otro nombre base para la misma frente es ruido operativo, no trazabilidad
 - antes de grabar `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, verificar si ya existe un paquete con el mismo prefijo de frente `NomeCurto_GUID_YYYYMMDD` y el mismo `nn`
 - si ya existe un paquete con el mismo prefijo de frente y el mismo `nn`, abortar la grabación; no sobrescribir silenciosamente la ronda
 - cuando la regla sea determinística, el enforcement primario debe vivir en `.ps1`; para colisión de paquete, preferir un gate dedicado como `Test-XpzPackageCollision.ps1` o un wrapper local equivalente
@@ -556,9 +560,11 @@ If you want to understand the repository quickly:
 - `Temp`: preferred destination for ephemeral execution artifacts, such as wrapper temporary directories, auxiliary logs, and intermediate outputs that are not normative source material for the base
 - `ArquivoMorto`: optional subfolder of `ObjetosGeradosParaImportacaoNaKbNoGenexus` used to preserve contaminated XMLs that must not be imported but require traceability; do not delete without explicit user authorization
 - in `ObjetosGeradosParaImportacaoNaKbNoGenexus`, each active front must use its own subfolder in the format `NomeCurto_GUID_YYYYMMDD`
+- until that front is closed, successive micro-adjustments must reuse the same subfolder; do not create a new subfolder or change `NomeCurto_GUID_YYYYMMDD` for another attempt, visual adjustment, or reimport of the same front
 - `NomeCurto_GUID_YYYYMMDD` identifies the front by the combination of short name, GUID generated when the front is opened, and the front creation date
 - in `PacotesGeradosParaImportacaoNaKbNoGenexus`, packages must remain in the root, without subfolders, using the format `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`
 - `nn` represents only the short package round for that front; it is not semantic versioning
+- during the same front, keep the same `NomeCurto_GUID_YYYYMMDD` prefix across all packages and change only `nn`; choosing another base name for the same front is operational noise, not traceability
 - before writing `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`, check whether a package with the same front prefix `NomeCurto_GUID_YYYYMMDD` and the same `nn` already exists
 - if a package with the same front prefix and the same `nn` already exists, abort the write; do not silently overwrite that round
 - when the rule is deterministic, the primary enforcement should live in `.ps1`; for package collision, prefer a dedicated gate such as `Test-XpzPackageCollision.ps1` or an equivalent local wrapper

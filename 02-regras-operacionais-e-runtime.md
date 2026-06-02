@@ -992,6 +992,7 @@ Regras de uso:
 - `Regra operacional`: nome de pacote local gerado para importacao na IDE deve priorizar clareza humana e separacao de frentes paralelas, preferindo o padrao `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`.
 - `Regra operacional`: nesse padrao, `NomeCurto` e uma descricao curta, legivel e semanticamente forte da frente; `GUID` e o identificador aberto para aquela frente; `YYYYMMDD` e a data de abertura da frente; `nn` e apenas o contador curto e incremental da rodada daquela frente.
 - `Regra operacional`: `nn` nao representa versao semantica profunda nem historico de release; ele representa somente o candidato curto daquela frente.
+- `Regra operacional`: enquanto a mesma frente ativa nao estiver encerrada, microajustes sucessivos devem reutilizar a mesma subpasta `NomeCurto_GUID_YYYYMMDD` e manter o mesmo prefixo de pacote, alterando somente `nn`.
 - `Regra operacional`: antes de gravar `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` em `PacotesGeradosParaImportacaoNaKbNoGenexus`, verificar se ja existe arquivo com o mesmo prefixo de frente `NomeCurto_GUID_YYYYMMDD` e o mesmo `nn`.
 - `Regra operacional`: quando a decisao for deterministica, o enforcement primario deve viver em `.ps1`; para colisao de pacote, preferir um gate dedicado como `Test-XpzPackageCollision.ps1` ou wrapper local equivalente, em vez de recalcular a regra no texto da resposta.
 - `Regra operacional`: se ja existir pacote com o mesmo prefixo de frente e o mesmo `nn`, o gate deve abortar a gravacao; nao sobrescrever silenciosamente a rodada.
