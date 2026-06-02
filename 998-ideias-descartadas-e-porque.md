@@ -1337,3 +1337,19 @@ Precedente do repositório: self-tests em `scripts/` validam **mecanismo e contr
 O risco que o teste Evo1 mitigaria — remoção acidental de entrada no JSON — é erro de **edição do catálogo**, não de lógica de descoberta (já coberta pelo self-test genérico). Um teste genérico de integridade do catálogo (GUIDs únicos, parse JSON, paridade opcional `01a`↔JSON) seria frente distinta e não KB-específica; não foi aberta nesta avaliação.
 
 **Não reavaliar** na forma Evo1-fixture. **Reavaliar apenas** se surgir frente genérica de integridade do catálogo compartilhado (sem nomes de KB, sem snippets de pacote cliente) ou se o mesmo GUID estável reaparecer como bloqueio em **segunda KB independente** após regressão confirmada no upstream.
+
+---
+
+## Enfileiramento automático de MSBuild por KB
+
+**Origem:** avaliação de prompt externo sobre múltiplas rodadas importação → build em pasta paralela de KB GeneXus, 2026-06-02.
+
+**O que era:** substituir o bloqueio preventivo simples de concorrência por uma espera automática, retentativa em loop ou fila persistente para serializar execuções `MSBuild.exe` que tentem abrir a mesma KB.
+
+**Por que foi descartada:**
+
+O bloqueio preventivo simples já evita o risco principal: contenção de lock da KB quando outra execução MSBuild da mesma KB está ativa. O wrapper retorna `exitCode=46`, diagnostica o processo conflitante e preserva rastreabilidade suficiente para o agente decidir a próxima tentativa.
+
+Espera automática com timeout ainda prenderia a sessão por tempo indefinido em KB grande e criaria novos estados operacionais para explicar à comunidade. Fila persistente exigiria daemon, lock próprio, recuperação de falhas e limpeza de jobs, aumentando bastante a superfície de manutenção para um caso que hoje se resolve melhor com parada clara e nova tentativa explícita.
+
+**Não reavaliar** salvo evidência recorrente de múltiplas sessões independentes disputando a mesma KB com perda real de produtividade que não seja resolvida pelo bloqueio preventivo e pelo wrapper importação → build já existente.

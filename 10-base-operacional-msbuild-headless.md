@@ -471,6 +471,8 @@ Contrato adotado:
 
 Essa proteção é propositalmente simples: não enfileira, não espera, não tenta matar processos e não decide sobre `MSBuild.exe` de outra KB. O objetivo é evitar contenção de lock da KB em uso comunitário, preservando diagnóstico suficiente para o agente humano/automatizado saber qual processo estava em conflito.
 
+Decisão de escopo: enfileiramento persistente, espera automática com timeout ou retentativa em loop ficam fora do contrato atual. Se `exitCode=46` indicar concorrência confirmada na mesma KB, a rodada deve parar, reportar o processo conflitante e deixar a próxima tentativa como decisão explícita do usuário ou da sessão seguinte.
+
 ### Roundtrip Import-build Com Parada Condicional
 
 `scripts/Invoke-GeneXusXpzImportThenBuild.ps1` materializa o wrapper integrador simples para a rodada cotidiana `Invoke-GeneXusXpzImport.ps1` → `Invoke-GeneXusKbBuildAll.ps1`.
