@@ -53,6 +53,29 @@ public class venda_pedido_impl
 "@
 }
 
+function New-AlternateCascadeCsFixture {
+    return @"
+public class venda_pedido_impl
+{
+    protected void OnLoadActions490( IGxContext context )
+    {
+        if (StringUtil.StrCmp(Gx_mode, "INS") == 0 && !(0==AV10Insert_VendaPedidoVendedorId))
+        {
+            $canonicalAttr = AV10Insert_VendaPedidoVendedorId;
+        }
+        else if (true)
+        {
+            $canonicalAttr = (AV12X==0 ? AV13A : AV13B);
+        }
+        else
+        {
+            $canonicalAttr = new procVendedorPadrao(context).execute(out AV11X);
+        }
+    }
+}
+"@
+}
+
 function Invoke-FindAssignments {
     param(
         [string]$CsPath,
@@ -115,6 +138,23 @@ try {
     }
     if ($checkMethod.tripletDetected) {
         throw 'tripletDetected nao esperado em CheckExtendedTable490'
+    }
+
+    $alternatePath = Join-Path $tempRoot 'vendapedido-alternate.cs'
+    [System.IO.File]::WriteAllText($alternatePath, (New-AlternateCascadeCsFixture), (New-Object System.Text.UTF8Encoding $false))
+    $alternateResult = Invoke-FindAssignments -CsPath $alternatePath -Attribute $shortAttr
+    if ($alternateResult.ExitCode -ne 0) {
+        throw "Exit esperado 0 no alternativo; obtido $($alternateResult.ExitCode)"
+    }
+    $alternateTripletMethod = @($alternateResult.Json.methods | Where-Object { $_.name -eq 'OnLoadActions490' } | Select-Object -First 1)
+    if ($alternateTripletMethod.Count -eq 0) {
+        throw 'metodo OnLoadActions490 alternativo nao encontrado'
+    }
+    if (-not $alternateTripletMethod.tripletDetected) {
+        throw 'tripletDetected esperado true no alternativo'
+    }
+    if ([string]$alternateTripletMethod.tripletPattern.cascadeOrder -ne 'override-then-fallback-then-default') {
+        throw "cascadeOrder alternativo inesperado: $($alternateTripletMethod.tripletPattern.cascadeOrder)"
     }
 }
 finally {

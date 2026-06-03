@@ -234,6 +234,8 @@ Motor compartilhado de **diagnóstico** no `.cs` gerado (camada web), complement
 - `-Attribute` (obrigatório) — nome com ou sem prefixo `A<n>`; o motor normaliza para a forma canônica no arquivo
 - `-AsJson` (opcional) — saída estruturada (`methods[]`, `totals`, `tripletPattern.cascadeOrder`, `hasAssignAttriInMethod`)
 
+**Interpretação de `cascadeOrder`:** os valores conhecidos `override-then-default-then-fallback` e `override-then-fallback-then-default` descrevem a ordem efetiva de ramos `if/else if` mutuamente exclusivos no `.cs` gerado. Trate isso como diagnóstico em quarentena XPZ, não como catálogo geral de modelagem GeneXus. Quando a correção aprovada for inverter a ordem textual de `Rules` no XML da frente, aplicar com `scripts/Edit-GeneXusXmlSurgical.ps1` (`-DryRun`, âncora literal, contagem esperada de âncoras e baseline de `lastUpdate` quando houver) e repetir import/build + leitura do `.cs` antes de encerrar.
+
 **Regressão:** `scripts/Test-FindCsAttributeAssignmentsContract.ps1` (sentinela `FIND_CS_ATTRIBUTE_ASSIGNMENTS_CONTRACT_OK`).
 
 ### Invoke-GeneXusKbSpecifyGenerate.ps1
