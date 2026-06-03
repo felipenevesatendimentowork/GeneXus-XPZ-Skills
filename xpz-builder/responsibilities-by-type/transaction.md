@@ -87,7 +87,23 @@ Architectural note (XPZ scope only): persisting a new attribute value **via `Eve
 | Import fails: `src0056` … `end of the rule` in `Transaction` `Rules` | Parameterized `on <event>(…)` (e.g. `on AfterValidate(<Attribute>)`) not accepted in declarative `Transaction` `Rules` on tested GX18 import | Remove the parameter; use only forms from Catalog 1; for per-field timing see **nexa** / product docs — do not reintroduce via `Event` attribute assignment |
 | Build fails: `spc0150` … `only allowed in procedures` in `Transaction` `Events` | Transaction attribute assignment inside `Event` | Move value logic to declarative `Rules`; keep `Event` to UI / variables / proc calls (Catalog 2) |
 | Rule present in XML, import OK, field value on screen unchanged when another field changes | Mixing **business timing** with motor-blocked shortcuts | Do **not** “fix” with Catalog 1 rejected forms or Catalog 2 attribute assignment; diagnose evaluation path in target KB — correct GeneXus modeling is **not** duplicated here |
-| `Find-CsAttributeAssignments.ps1` reports `tripletDetected=true` with `cascadeOrder` `override-then-default-then-fallback` or `override-then-fallback-then-default` | Effective order of generated `if/else if` assignment branches differs from the intended precedence | Treat as XPZ diagnostic quarantine: if the approved fix is textual `Rules` reordering, apply only in the front XML with `Edit-GeneXusXmlSurgical.ps1`, then validate by import/build and re-read the generated `.cs`; do not promote this row to general GeneXus modeling guidance |
+| `Find-CsAttributeAssignments.ps1` reports `tripletDetected=true` with `cascadeOrder` `override-then-default-then-fallback` or `override-then-fallback-then-default` | Effective order of generated `if/else if` assignment branches differs from the intended precedence | See **Cascade ordering: when `Default(X, ...)` shadows an assignment rule on the same attribute (in-XPZ quarantine)** below |
+
+### Cascade ordering: when `Default(X, ...)` shadows an assignment rule on the same attribute (in-XPZ quarantine)
+
+Named anti-pattern in the shared XPZ trail: `transaction-attribute-rule-shadowed-by-default-in-cascade` (canonical Portuguese entry in [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md)).
+
+Observed symptom: the assignment rule exists in the `Transaction` XML, import/specification/build are operationally clean, but the attribute does not receive the rule value at runtime. In web editing, the usual symptom is a derived FK field staying empty after leaving the trigger attribute, or receiving the `Default(...)` value (often `0`) instead.
+
+Generated-code shape: `Default(...)` and an assignment rule targeting the same attribute can become mutually exclusive `if`/`else if` branches in generated web `.cs` methods such as `OnLoadActions<KbId>`, `CheckExtendedTable<KbId>`, `Valid_<FKSide>`, and `GX<n>ASA<ATTR><KbId>`. Textual order in the XML controls branch order.
+
+Diagnosis path: after import OK and generated `.cs` is available, run `scripts/Find-CsAttributeAssignments.ps1` with absolute `-CsPath`, `-Attribute`, and `-AsJson`. `tripletPattern.cascadeOrder=override-then-default-then-fallback` means the default branch is ahead of the fallback rule branch and can shadow it. `override-then-fallback-then-default` is the expected order after the textual reordering fix.
+
+Correction path: if the approved fix is textual `Rules` reordering, edit only the front XML with `scripts/Edit-GeneXusXmlSurgical.ps1` using `-DryRun`, a literal anchor, `-ExpectedAnchorCount`, and `lastUpdate` baseline when available. Do not reserialize the whole `Transaction`. Re-import/build and re-read the generated `.cs` before closing.
+
+Evidence labels: `confirmado-acervo` in the XPZ trail (`VendaPedido` in a parallel KB after sync) plus `confirmado-build` by reproducible before/after inspection of generated `.cs`.
+
+Scope note: this is naturally GeneXus modeling knowledge and belongs in product documentation or a skill such as **nexa**. It is documented here because the operational diagnosis uses this repository's `Find-CsAttributeAssignments.ps1`, the approved correction is applied to XML in a parallel KB through XPZ helpers, and **nexa** is not practically contributable from this repository. If **nexa** or an equivalent product skill becomes contributable, this entry is a migration candidate. Do not generalize this quarantine to unrelated GeneXus semantic topics without the same diagnosis-plus-correction link inside XPZ scope.
 
 ## Quality Checklist
 
