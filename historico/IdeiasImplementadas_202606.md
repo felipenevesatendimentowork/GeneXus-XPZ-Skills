@@ -58,3 +58,30 @@ A trilha adotou detecção por fase como caminho preferencial, sem remover compa
 ### Rastreabilidade
 
 - Commit: este commit
+
+## Teste de integração para bloqueio de XML de referência no `Build-GeneXusImportFileEnvelope`
+
+**Importancia original:** baixa
+**Status:** concluida em 2026-06-04
+
+### Origem
+
+Fechamento da frente de bloqueio de XML de referência/exemplo/template em empacotamento, discutida em 2026-05-23 e registrada em `999-ideias-pendentes.md`.
+
+### Problema concreto
+
+`Build-GeneXusImportFileEnvelope.ps1` bloqueava arquivos de entrada explícita em `-ObjectXmlPaths` e `-TopLevelAttributesXmlPaths` quando o nome indicava XML de referência, exemplo, template ou molde, mas esse contrato só estava coberto por parse PowerShell e inspeção do diff.
+
+### Implementacao
+
+- `scripts/Test-BuildGeneXusImportFileEnvelopeSelfTest.ps1`: novo autoteste com fixture temporária mínima.
+- O teste chama o script real `Build-GeneXusImportFileEnvelope.ps1`, com template `ExportFile`, XML de objeto com `lastUpdate`, acervo baseline e atributo top-level sintético.
+- A cobertura confirma bloqueio em `-ObjectXmlPaths`, bloqueio equivalente em `-TopLevelAttributesXmlPaths` e controle positivo em que `-TemplatePackagePath` contém `template` no nome sem acionar o bloqueio.
+
+### Decisao final
+
+A trilha passou a ter cobertura executável para o bloqueio nominal dos XMLs de entrada do pacote, preservando o uso legítimo de pacote template como fonte comparável do envelope.
+
+### Rastreabilidade
+
+- Commit: este commit
