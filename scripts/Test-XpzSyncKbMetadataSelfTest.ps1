@@ -1,11 +1,11 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Valida que Update-XpzKbSourceMetadataFromSync preserva last_setup_audit_run_at e EOL LF.
+    Valida que Update-XpzKbSourceMetadataFromSync preserva last_setup_audit_run_at, setup_contract_signature_* e EOL LF.
 
 .DESCRIPTION
-    Fixture LF com carimbo de setup e tabelas minimas; simula refresh de materializacao
-    e verifica campo de setup intacto, CR=0 e campos de materializacao atualizados.
+    Fixture LF com carimbo/assinatura de setup e tabelas minimas; simula refresh de materializacao
+    e verifica campos de setup intactos, CR=0 e campos de materializacao atualizados.
 #>
 
 [CmdletBinding()]
@@ -23,6 +23,8 @@ if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) 
 $scriptDir = Split-Path -Parent $PSCommandPath
 $editSupportPath = Join-Path $scriptDir 'XpzKbSourceMetadataEditSupport.ps1'
 $auditTimestamp = '2026-01-15T08:00:00.0000000+00:00'
+$setupSignatureVersion = '2026-06-04T00:00:00Z'
+$setupSignatureHash = 'sha256:selftest-setup-contract'
 $oldMaterializationTimestamp = '2026-01-01T00:00:00.0000000+00:00'
 
 function Get-CarriageReturnCount {
@@ -41,6 +43,8 @@ function New-LfMetadataFixture {
         'description: fixture de self-test'
         'last_xpz_materialization_run_at: 2026-01-01T00:00:00.0000000+00:00'
         'last_setup_audit_run_at: ' + $auditTimestamp
+        'setup_contract_signature_version: ' + $setupSignatureVersion
+        'setup_contract_signature_hash: ' + $setupSignatureHash
         'custom_future_field: keep-me'
         'source_xpz: C:\Old\Package.xpz'
         'source_refresh_status: partial-preserved'
@@ -154,6 +158,8 @@ try {
 
     Assert-ZeroCr -Path $metadataPath -Message 'fixture deve iniciar sem CR'
     Assert-ContainsPattern -Path $metadataPath -Pattern ('last_setup_audit_run_at:\s*' + [regex]::Escape($auditTimestamp)) -Message 'fixture deve conter carimbo de setup'
+    Assert-ContainsPattern -Path $metadataPath -Pattern ('setup_contract_signature_version:\s*' + [regex]::Escape($setupSignatureVersion)) -Message 'fixture deve conter versao da assinatura de setup'
+    Assert-ContainsPattern -Path $metadataPath -Pattern ('setup_contract_signature_hash:\s*' + [regex]::Escape($setupSignatureHash)) -Message 'fixture deve conter hash da assinatura de setup'
 
     [xml]$packageXml = Get-Content -LiteralPath $packageXmlPath -Raw
     $result = Update-XpzKbSourceMetadataFromSync -XmlDocument $packageXml -SourceXpzPath $sourceXpzPath -MetadataPath $metadataPath
@@ -164,6 +170,8 @@ try {
 
     Assert-ZeroCr -Path $metadataPath -Message 'refresh de materializacao deve preservar EOL LF'
     Assert-ContainsPattern -Path $metadataPath -Pattern ('last_setup_audit_run_at:\s*' + [regex]::Escape($auditTimestamp)) -Message 'carimbo de setup deve permanecer intacto'
+    Assert-ContainsPattern -Path $metadataPath -Pattern ('setup_contract_signature_version:\s*' + [regex]::Escape($setupSignatureVersion)) -Message 'versao da assinatura de setup deve permanecer intacta'
+    Assert-ContainsPattern -Path $metadataPath -Pattern ('setup_contract_signature_hash:\s*' + [regex]::Escape($setupSignatureHash)) -Message 'hash da assinatura de setup deve permanecer intacto'
     Assert-NotContainsPattern -Path $metadataPath -Pattern ('last_xpz_materialization_run_at:\s*' + [regex]::Escape($oldMaterializationTimestamp)) -Message 'timestamp de materializacao antigo deve ser substituido'
 
     $rawAfter = [System.IO.File]::ReadAllText($metadataPath)
