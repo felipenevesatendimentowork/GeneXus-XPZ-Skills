@@ -32,7 +32,7 @@ Estes tipos **permanecem** aptos a consultas semânticas; o grafo pode ser só d
 | `API` | Quase sempre **origem** (chamadas em `Source`); raramente destino | Informa o que o API dispara |
 | `DataSelector` | Idem `API`, volume menor | Idem |
 | `WorkWithForWeb` | Forte **origem** (actions, links, transação); quase nunca `target_type` WorkWith | Informa dependências que o WW referencia |
-| `ExternalObject` | Pode receber entrada via `ATTCUSTOMTYPE` resolvido; esparsa por KB | `who-uses` pode achar referências; grafo vazio em KB pequena nao prova ausência global |
+| `ExternalObject` | Pode receber entrada via `ATTCUSTOMTYPE` resolvido e por chamada de metodo em variavel `exo:<ExternalObject>` no `Source` efetivo; esparsa por KB | `who-uses` pode achar referencias declarativas e usos efetivos; grafo vazio em KB pequena nao prova ausencia global |
 
 Nao confundir com tipos `false` (ex.: `Image`, `Theme`, `SubTypeGroup`), em que o extrator **nunca** cria arestas para esse `target_type`.
 
@@ -56,6 +56,7 @@ Escopo de extracao de relacoes atual:
 - alvo literal por propriedade: `CustomType:<valor>` a partir de `ATTCUSTOMTYPE`
 - alvo resolvido por propriedade: `SDT`, `Domain` ou `ExternalObject` a partir de `ATTCUSTOMTYPE`, quando o objeto existir no inventario e a regra aprovada resolver o prefixo com seguranca
 - origem atual de `ATTCUSTOMTYPE` indexado: `Procedure`, `WebPanel`, `DataProvider`, `API`, `DataSelector`, `Domain`, `SDT`, `WorkWithForWeb` e `Transaction`
+- chamada efetiva de metodo em ExternalObject: `Procedure`, `WebPanel`, `DataProvider`, `Transaction`, `API` e `DataSelector` para `ExternalObject` a partir de `&Variavel.Metodo(...)` em `Source` efetivo, quando a variavel tiver `ATTCUSTOMTYPE` `exo:<ExternalObject>` resolvido no inventario local
 - dominio base de atributo: `Attribute` para `Domain` a partir de `idBasedOn`, quando o dominio existir no inventario local
 - chamada em atributo calculado: `Attribute` para `Procedure`, `WebPanel` ou `DataProvider` a partir de `Property Formula`, quando o alvo existir no inventario local e o padrao de chamada for o mesmo usado em `Source` efetivo (`proc...(...)`, `Nome.Call(...)`, `Nome.Link(...)`, `Nome.Create(...)`, chamada direta a `DataProvider`)
 - atributo estrutural de transacao: `Transaction` para `Attribute` a partir de `<Level>/<Attribute>`, quando o atributo existir no inventario local
@@ -70,10 +71,10 @@ Escopo de extracao de relacoes atual:
 - exclusao de Business Component: `Procedure`, `WebPanel` e `DataProvider` para `Transaction` a partir de `&Variavel.Delete()` em `Source` efetivo, quando a variavel tiver `ATTCUSTOMTYPE` `bc:<Transaction>` resolvido no inventario local
 - validacao de Business Component: `Procedure`, `WebPanel` e `DataProvider` para `Transaction` a partir de `&Variavel.Check()` em `Source` efetivo, quando a variavel tiver `ATTCUSTOMTYPE` `bc:<Transaction>` resolvido no inventario local
 - insercao/atualizacao de Business Component simples: `Procedure`, `WebPanel` e `DataProvider` para `Transaction` a partir de `&Variavel.Insert()` ou `&Variavel.Update()` em `Source` efetivo, quando a variavel tiver `ATTCUSTOMTYPE` `bc:<Transaction>` resolvido no inventario local e nao tiver `AttCollection=True`
-- relacoes: chamadas diretas em `Source efetivo`, criacao de WebComponent por `<WebPanel>.Create(...)`, actions `gxobject` resolvidas, vinculacoes explicitas de `Transaction`, links e prompts explicitos de `WebPanel` em `WorkWithForWeb`, condicoes por tag e atributo de `WorkWithForWeb` chamando `Procedure`, propriedades `ATTCUSTOMTYPE`, `idBasedOn` e `Formula` de `Attribute`, atributos e tabelas estruturais de `Transaction`, atributos chave e membros de indice de `Table`, tipos internos resolvidos de `SDT`, tabelas declaradas em `for each` explicito, prefixos de tabela em `for each` qualificado e chamadas `.Load(...)`/`.Save()`/`.Delete()`/`.Check()`/`.Insert()`/`.Update()` de BC resolvidas para `Transaction`
+- relacoes: chamadas diretas em `Source efetivo`, criacao de WebComponent por `<WebPanel>.Create(...)`, actions `gxobject` resolvidas, vinculacoes explicitas de `Transaction`, links e prompts explicitos de `WebPanel` em `WorkWithForWeb`, condicoes por tag e atributo de `WorkWithForWeb` chamando `Procedure`, propriedades `ATTCUSTOMTYPE`, chamadas de metodo em variavel `exo:<ExternalObject>`, `idBasedOn` e `Formula` de `Attribute`, atributos e tabelas estruturais de `Transaction`, atributos chave e membros de indice de `Table`, tipos internos resolvidos de `SDT`, tabelas declaradas em `for each` explicito, prefixos de tabela em `for each` qualificado e chamadas `.Load(...)`/`.Save()`/`.Delete()`/`.Check()`/`.Insert()`/`.Update()` de BC resolvidas para `Transaction`
 - artefato principal: SQLite derivado
 
-A extracao basica cobre `DataProvider` como origem e como destino de chamada direta, `<WebPanel>.Create(...)` em `Source` efetivo, actions de `WorkWithForWeb` com `gxobject` resolvido para `Procedure` ou `WebPanel`, vinculacao explicita de `WorkWithForWeb` para `Transaction`, links e prompts explicitos de `WorkWithForWeb` para `WebPanel`, condicoes por tag e atributo de `WorkWithForWeb` chamando `Procedure`, e `ATTCUSTOMTYPE` como `CustomType` literal. Ela nao cobre semantica completa de `Transaction`, semantica de `WorkWithForWeb` alem dos recortes ja cobertos. A extracao semantica ampliou `for each`, `.Load(...)` e resolucao de `CustomType` para `SDT`, `Domain` e `ExternalObject`.
+A extracao basica cobre `DataProvider` como origem e como destino de chamada direta, `<WebPanel>.Create(...)` em `Source` efetivo, actions de `WorkWithForWeb` com `gxobject` resolvido para `Procedure` ou `WebPanel`, vinculacao explicita de `WorkWithForWeb` para `Transaction`, links e prompts explicitos de `WorkWithForWeb` para `WebPanel`, condicoes por tag e atributo de `WorkWithForWeb` chamando `Procedure`, e `ATTCUSTOMTYPE` como `CustomType` literal. Ela nao cobre semantica completa de `Transaction`, semantica de `WorkWithForWeb` alem dos recortes ja cobertos. A extracao semantica ampliou `for each`, `.Load(...)`, resolucao de `CustomType` para `SDT`, `Domain` e `ExternalObject`, e chamada efetiva de metodo em variavel `exo:<ExternalObject>`.
 
 Eles nao substituem o acervo XML em `ObjetosDaKbEmXml` e nao provam comportamento runtime.
 
@@ -435,6 +436,12 @@ Self-test local (nao depende de KBExemplo) para `Property Formula` em `Attribute
 
 ```powershell
 .\scripts\Test-KbIntelligenceAttributeFormulaExtractionSelfTest.ps1
+```
+
+Self-test local (nao depende de KBExemplo) para chamada de metodo em variavel `exo:<ExternalObject>` e protecao contra falso positivo por substring em chamada direta de `Procedure`:
+
+```powershell
+.\scripts\Test-KbIntelligenceExternalObjectMethodExtractionSelfTest.ps1
 ```
 
 Casos positivos de `Property Formula` em KBs de producao ficam catalogados em `kb-intelligence-kbexemplo.validation-extraction-semantic.json` (ids `phase5-case-65..68`) e em baterias dedicadas por KB: `kb-intelligence-fabricabrasil.validation-extraction-attribute-formula.json`, `kb-intelligence-wseducacaospteste.validation-extraction-attribute-formula.json`. Validar cada bateria no rebuild da pasta paralela correspondente; o arquivo semantic completo continua orientado ao KBExemplo e inclui esses casos apenas como catalogo compartilhado.

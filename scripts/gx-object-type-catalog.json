@@ -125,7 +125,7 @@
       "inventoryEligible": true,
       "queryableByKbIntelligence": true,
       "containerType": false,
-      "notes": "External Object."
+      "notes": "External Object. O indice materializa referencia declarativa via ATTCUSTOMTYPE exo:<Nome> e uso efetivo por chamada de metodo em variavel tipada como exo:<Nome> no Source efetivo."
     },
     "File": {
       "objectTypeGuid": "1132ac08-290f-4fd1-bd18-64777b7329d1",

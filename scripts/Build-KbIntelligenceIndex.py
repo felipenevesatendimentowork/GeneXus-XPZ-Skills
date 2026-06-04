@@ -21,6 +21,7 @@ Current scope:
 - Source Business Component Delete calls with receiver resolved by variable ATTCUSTOMTYPE
 - Source Business Component Check calls with receiver resolved by variable ATTCUSTOMTYPE
 - Source simple Business Component Insert and Update calls with receiver resolved by variable ATTCUSTOMTYPE
+- Source ExternalObject method calls with receiver resolved by variable ATTCUSTOMTYPE
 - Attribute Formula property references to Procedure, WebPanel and DataProvider when resolvable in the local inventory
 """
 
@@ -38,7 +39,7 @@ from pathlib import Path
 from typing import Iterable
 
 # Incrementar quando a cobertura ou regras do indexador mudarem de forma material (nao em refator inerte).
-EXTRACTOR_SIGNATURE_VERSION = "4"
+EXTRACTOR_SIGNATURE_VERSION = "5"
 
 
 def compute_extractor_signature_hash() -> str:
@@ -68,6 +69,10 @@ BC_DELETE_RE = re.compile(r"(?P<receiver>&[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*Delete\
 BC_CHECK_RE = re.compile(r"(?P<receiver>&[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*Check\s*\(", re.IGNORECASE)
 BC_SIMPLE_INSERT_UPDATE_RE = re.compile(
     r"(?P<receiver>&[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*(?P<method>Insert|Update)\s*\(",
+    re.IGNORECASE,
+)
+EXTERNAL_OBJECT_METHOD_RE = re.compile(
+    r"(?P<receiver>&[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*(?P<method>[A-Za-z_][A-Za-z0-9_]*)\s*\(",
     re.IGNORECASE,
 )
 INDEXED_SOURCE_TYPES = ("Procedure", "WebPanel", "DataProvider", "Transaction", "API", "DataSelector")
@@ -838,6 +843,27 @@ def simple_bc_variable_targets(xml_text: str, transaction_lookup: dict[str, str]
     return targets
 
 
+def external_object_variable_targets(xml_text: str, external_object_lookup: dict[str, str]) -> dict[str, str]:
+    targets: dict[str, str] = {}
+    for match in VARIABLE_RE.finditer(xml_text):
+        attrs = parse_attributes(match.group("attrs"))
+        variable_name = attrs.get("Name")
+        if not variable_name:
+            continue
+        custom_type_match = ATTCUSTOMTYPE_PROPERTY_RE.search(match.group("body"))
+        if not custom_type_match:
+            continue
+        custom_type = normalize_custom_type(custom_type_match.group("value"))
+        if not custom_type.lower().startswith("exo:"):
+            continue
+        raw_external_object_name = custom_type.split(":", 1)[1].split(",", 1)[0].strip()
+        target_name = external_object_lookup.get(raw_external_object_name.lower())
+        if not target_name:
+            continue
+        targets[variable_name.lower()] = target_name
+    return targets
+
+
 def extract_source_bc_load_transaction_evidence(
     source_objects: Iterable[ObjectInfo],
     transaction_names: set[str],
@@ -1078,6 +1104,57 @@ def extract_source_simple_bc_insert_update_transaction_evidence(
                         snippet=cleaned,
                         extractor_rule=f"source_simple_bc_{method}_transaction",
                         evidence_role=f"Source Simple BC {method.capitalize()}",
+                    )
+
+    unique: dict[tuple[str, str, str, str, int, str], Evidence] = {}
+    for evidence in evidences:
+        key = (
+            evidence.source_type,
+            evidence.source_name,
+            evidence.target_type,
+            evidence.target_name,
+            evidence.line,
+            evidence.extractor_rule,
+        )
+        unique[key] = evidence
+    return list(unique.values())
+
+
+def extract_source_external_object_method_evidence(
+    source_objects: Iterable[ObjectInfo],
+    external_object_names: set[str],
+) -> list[Evidence]:
+    evidences: list[Evidence] = []
+    external_object_lookup = case_insensitive_lookup(external_object_names, "ExternalObject")
+
+    for source in source_objects:
+        xml_text = read_text(source.path)
+        variable_targets = external_object_variable_targets(xml_text, external_object_lookup)
+        if not variable_targets:
+            continue
+        for block in source_blocks(xml_text):
+            for offset, line in enumerate(block.text.splitlines()):
+                cleaned = active_line(line)
+                if not cleaned.strip():
+                    continue
+                line_no = block.start_line + offset
+
+                for match in EXTERNAL_OBJECT_METHOD_RE.finditer(cleaned):
+                    receiver_name = match.group("receiver")[1:]
+                    target_name = variable_targets.get(receiver_name.lower())
+                    if not target_name:
+                        continue
+                    add_evidence(
+                        evidences,
+                        source=source,
+                        target_type="ExternalObject",
+                        target_name=target_name,
+                        relation_kind="calls_external_object_method",
+                        line=line_no,
+                        column=match.start("receiver") + 1,
+                        snippet=cleaned,
+                        extractor_rule="source_external_object_method",
+                        evidence_role="Source ExternalObject method",
                     )
 
     unique: dict[tuple[str, str, str, str, int, str], Evidence] = {}
@@ -2099,6 +2176,10 @@ def main() -> int:
             transaction_names=set(transactions),
         )
     )
+    source_external_object_method_evidences = extract_source_external_object_method_evidence(
+        [obj for obj in objects if obj.object_type in INDEXED_SOURCE_TYPES],
+        external_object_names=set(external_objects),
+    )
     workwith_evidences = extract_workwith_action_evidence(
         workwiths.values(),
         procedure_names=set(procedures),
@@ -2181,6 +2262,7 @@ def main() -> int:
         *source_bc_delete_transaction_evidences,
         *source_bc_check_transaction_evidences,
         *source_simple_bc_insert_update_transaction_evidences,
+        *source_external_object_method_evidences,
         *workwith_evidences,
         *workwith_condition_evidences,
         *workwith_condition_attribute_evidences,
