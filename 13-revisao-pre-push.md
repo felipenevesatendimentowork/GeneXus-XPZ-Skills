@@ -62,6 +62,8 @@ Comparar a documentação afetada com:
 
 Quando a mudança afetar regra operacional compartilhada, `02-regras-operacionais-e-runtime.md` é documento obrigatório de paridade: a regra deve existir ali ou a ausência deve ser descartada com justificativa explícita no relatório. Cobertura apenas em `08`, `09`, skill ou README técnico não basta para concluir alinhamento.
 
+Antes de declarar que um termo, self-test, script, regra ou evidência está ausente de um documento, confrontar a alegação com o conjunto completo de resultados de busca e leituras já coletados na fase semântica — não só com a busca mais recente ou mais estreita. Uma ausência só vira gap confirmado se nenhuma busca anterior, diff, leitura de seção ou trecho aberto contradisser a alegação; se houver conflito entre resultados, reler o arquivo-alvo no ponto citado antes de reportar.
+
 ### 4. Paridade motor ↔ promessa documental (obrigatório)
 
 Quando a frente introduzir ou alterar regra que cite **motor por nome** (ex.: «`Query-KbIntelligenceIndex` usa catálogo efetivo», «exit `11`», «`-ParallelKbRoot`»):

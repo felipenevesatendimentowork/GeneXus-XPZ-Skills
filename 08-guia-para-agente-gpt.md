@@ -99,6 +99,7 @@ Regras da escada:
 - quando a frente alterar script compartilhado, contrato metodologico, skill, checklist, nomenclatura operacional, estado, parametro, wrapper ou evidencia publica rastreavel, incluir `09-inventario-e-rastreabilidade-publica.md` na comparacao semantica
 - quando a frente alterar motor com versao, assinatura, regra de extracao ou estado, buscar tambem termos antigos que possam ter ficado nos docs (ex.: referencias a `extrator N` depois de `EXTRACTOR_SIGNATURE_VERSION=N+1`)
 - quando a mudanca afetar regra operacional compartilhada, `02-regras-operacionais-e-runtime.md` precisa ter cobertura explicita ou ausencia descartada com justificativa; cobertura apenas em `08`, `09`, skill ou README tecnico nao basta
+- antes de declarar ausencia de termo, self-test, script, regra ou evidencia, confrontar a alegacao com todos os resultados de busca e leituras ja coletados na fase semantica; se uma busca anterior contradisser a ausencia, reler o ponto citado antes de reportar gap
 - encontrar o termo no `09` nao basta; comparar se a descricao ainda reflete a abrangencia atual do contrato, script ou regra
 - evitar rastreabilidade agregada demais no `09`: quando motor, orquestrador, wrapper e bateria de teste tiverem papeis distintos, cada papel relevante precisa de evidencia propria ou justificativa explicita para nao registrar separadamente
 - com `SKILL.md` no diff, o orquestrador avisa para conferir satelites linkados no proprio SKILL
