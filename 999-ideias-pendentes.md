@@ -1843,37 +1843,6 @@ No FBgx18MCP, build longo vira job em background; o canal MCP devolve `job_id` r
 - `xpz-msbuild-import-export/SKILL.md`
 - `scripts/Invoke-GeneXusKbBuildAll.ps1` e equivalente de import
 
-## `config.sample.json` versionado + `config.json` no `.gitignore` (se aplicável)
-
-**Importância:** baixa
-**Maturidade:** ideia
-
-**Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commit-âncora:
-
-- `a41755e fix(ci): copy config.sample.json instead of gitignored config.json`
-
-Anti-duplicata: sem busca aplicável (termos genéricos demais). Limitação: não inspecionei `scripts/` a fundo nesta sessão para verificar se há `config.json` candidato hoje — pode ser que a ideia seja inaplicável; nesse caso, mover esta entrada para `998` como "não aplicável neste repositório".
-
-### Problema concreto que motiva a ideia
-
-Prática de segurança: separar configuração padrão (versionada como `*.sample.json`) de configuração local com possíveis segredos/paths sensíveis (`*.json` no `.gitignore`). Evita commit acidental de credenciais ou paths que vazam topologia.
-
-No FBgx18MCP, foi feita a substituição porque havia `config.json` versionado anteriormente.
-
-### Design em aberto
-
-- **Aplicabilidade**: verificar primeiro se há arquivos de config locais usados por scripts do repo. Se não houver, a ideia entra em 998 em vez de continuar em 999.
-- **Convenção de nome**: `.sample.json`, `.example.json`, `.template.json` — a primeira é a mais comum no ecossistema.
-
-### Decisões em aberto
-
-- Antes de implementar, mapear se existe alguma config local hoje em `scripts/` ou nas skills.
-
-### Relacionado
-
-- `scripts/` (a inspecionar)
-- `.gitignore` (sede do bloqueio)
-
 ## Catálogo semântico de operações em `xpz-builder` (alternativa a edição XML livre)
 
 **Importância:** média

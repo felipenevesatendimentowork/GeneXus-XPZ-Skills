@@ -1353,3 +1353,34 @@ O bloqueio preventivo simples já evita o risco principal: contenção de lock d
 Espera automática com timeout ainda prenderia a sessão por tempo indefinido em KB grande e criaria novos estados operacionais para explicar à comunidade. Fila persistente exigiria daemon, lock próprio, recuperação de falhas e limpeza de jobs, aumentando bastante a superfície de manutenção para um caso que hoje se resolve melhor com parada clara e nova tentativa explícita.
 
 **Não reavaliar** salvo evidência recorrente de múltiplas sessões independentes disputando a mesma KB com perda real de produtividade que não seja resolvida pelo bloqueio preventivo e pelo wrapper importação → build já existente.
+
+---
+
+## `config.sample.json` versionado + `config.json` no `.gitignore`
+
+**Origem:** ideia importada por analogia com FBgx18MCP, onde havia `config.json`
+versionado e ele foi substituído por `config.sample.json`.
+
+**O que era:** separar configuração padrão versionada (`*.sample.json`) de
+configuração local ignorada (`config.json`) para evitar commit acidental de
+credenciais, strings de conexão ou caminhos sensíveis.
+
+**Por que foi descartada:**
+
+A investigação não encontrou `config.json` local versionado nem arquivo de
+configuração sensível usado diretamente pelo repositório. Os `.json` versionados em
+`scripts/` são catálogos ou fixtures.
+
+O MCP de instruções globais do Cursor referencia `config.json`, mas esse arquivo é
+gerado pelo instalador fora do repositório, em
+`~/.cursor/xpz-global-instructions-mcp/config.json`, junto da cópia instalada de
+`server.py`. O `server.py` canônico em `scripts/cursor-global-instructions-mcp/`
+espera essa configuração apenas no diretório de instalação.
+
+O `.gitignore` em whitelist já reduz commits acidentais na raiz, embora `scripts/`
+continue aceitando JSONs versionados por design. Como não existe configuração local
+sensível dentro da árvore versionada, a prática `config.sample.json` + `config.json`
+ignorado não tem objeto concreto neste repositório.
+
+**Não reavaliar salvo** criação futura de script ou serviço deste repositório que
+passe a exigir arquivo de configuração local dentro da árvore versionada.
