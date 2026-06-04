@@ -72,12 +72,14 @@ C:\Dev\Knowledge\GeneXus-XPZ-Skills
 Wrappers esperados:
 
 - `Test-<NomeKb>KbSetupFreshness.ps1`: PRE-CONDICAO do gatilho global — compara
-  `last_setup_audit_run_at` com a data de ultima modificacao do repositorio de
-  skills e retorna `GATE_ONLY` ou `AUDIT_REQUIRED: <motivo>`.
-- `Set-<NomeKb>KbSetupAuditTimestamp.ps1`: grava somente `last_setup_audit_run_at`
-  em `kb-source-metadata.md` apos auditoria de setup bem-sucedida; usar na mesma
-  sessao quando o freshness retornar `AUDIT_REQUIRED` por campo ausente ou defasado
-  e a auditoria completa + gate tiverem passado.
+  a assinatura de contrato auditada (`setup_contract_signature_*`) com a
+  assinatura atual de `xpz-kb-parallel-setup` e retorna `GATE_ONLY` ou
+  `AUDIT_REQUIRED: <motivo>`.
+- `Set-<NomeKb>KbSetupAuditTimestamp.ps1`: grava `last_setup_audit_run_at` e
+  `setup_contract_signature_*` em `kb-source-metadata.md` apos auditoria de setup
+  bem-sucedida; usar na mesma sessao quando o freshness retornar `AUDIT_REQUIRED`
+  por campo ausente, assinatura ausente ou assinatura defasada e a auditoria
+  completa + gate tiverem passado.
 - `Update-<NomeKb>KbFromXpz.ps1`: materializa XPZ/XML em `ObjetosDaKbEmXml`,
   atualiza **cirurgicamente** campos de materializacao em `kb-source-metadata.md`
   (motor `Sync-GeneXusXpzToXml.ps1` via `XpzKbSourceMetadataEditSupport.ps1`),

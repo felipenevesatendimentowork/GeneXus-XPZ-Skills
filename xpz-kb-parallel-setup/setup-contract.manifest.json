@@ -1,0 +1,18 @@
+{
+  "signatureVersion": "xpz-setup-contract-signature-v1",
+  "description": "Superficie compartilhada que define o contrato de setup da pasta paralela da KB.",
+  "include": [
+    "xpz-kb-parallel-setup/SKILL.md",
+    "xpz-kb-parallel-setup/examples/*",
+    "scripts/Get-XpzSetupContractSignature.ps1",
+    "scripts/Test-XpzSetupFreshness.ps1",
+    "scripts/Set-XpzSetupAuditTimestamp.ps1",
+    "scripts/Test-XpzSetupAudit.ps1",
+    "scripts/Test-XpzWrapperInventory.ps1",
+    "scripts/Test-XpzPowerShellRuntime.ps1",
+    "scripts/Test-XpzKbMetadataWrapper.ps1",
+    "scripts/Test-XpzKbDeploymentMetadata.ps1",
+    "scripts/Test-XpzObjetosDaKbNaming.ps1",
+    "scripts/Set-XpzKbSourceMetadataDeployment.ps1"
+  ]
+}

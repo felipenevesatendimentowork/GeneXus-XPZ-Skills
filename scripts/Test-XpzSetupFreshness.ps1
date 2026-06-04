@@ -1,16 +1,14 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Verifica se o setup da pasta paralela da KB esta fresco em relacao ao repositorio de skills XPZ.
+    Verifica se o setup da pasta paralela da KB esta fresco em relacao ao contrato de setup XPZ.
 
 .DESCRIPTION
-    Le last_setup_audit_run_at de kb-source-metadata.md da pasta paralela, determina a data de
-    ultima modificacao do repositorio de skills XPZ e compara os dois timestamps.
-    Retorna GATE_ONLY quando o repositorio nao foi atualizado desde o ultimo audit concluido
-    com sucesso; retorna AUDIT_REQUIRED com motivo nos demais casos.
-    A comparacao com a ultima mudanca do repositorio de skills e deliberadamente conservadora:
-    apos git pull da base metodologica, a pasta paralela deve ser conferida para detectar
-    wrappers, gates, metadata ou regras locais novas antes de liberar uso operacional amplo.
+    Le last_setup_audit_run_at e setup_contract_signature_* de kb-source-metadata.md,
+    calcula a assinatura atual da superficie de contrato de xpz-kb-parallel-setup e
+    compara com a assinatura gravada apos a ultima auditoria bem-sucedida.
+    Retorna GATE_ONLY quando a assinatura auditada coincide com a atual; retorna
+    AUDIT_REQUIRED com motivo nos demais casos.
 
     Projetado para ser chamado pelo wrapper local Test-*KbSetupFreshness.ps1 como primeira acao
     da PRE-CONDICAO obrigatoria em xpz-kb-parallel-setup.
@@ -68,38 +66,52 @@ try {
     exit 0
 }
 
-# Determinar data de ultima modificacao do repositorio de skills
-$skillsLastChange = $null
-$gitDir = Join-Path $SkillsRoot '.git'
-
-if (Test-Path -LiteralPath $gitDir -PathType Container) {
-    try {
-        $gitOutput = & git -C $SkillsRoot log -1 --format="%cI" 2>$null
-        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($gitOutput)) {
-            $skillsLastChange = [DateTimeOffset]::Parse($gitOutput.Trim())
-        }
-    } catch {
-        $skillsLastChange = $null
-    }
+$storedSignatureVersion = $null
+if ($content -match '(?m)^setup_contract_signature_version:\s*(.+)$') {
+    $storedSignatureVersion = $Matches[1].Trim()
 }
 
-if ($null -eq $skillsLastChange) {
-    # Fallback: arquivo mais recentemente modificado na pasta de skills (ignora .git)
-    $mostRecent = Get-ChildItem -LiteralPath $SkillsRoot -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notlike "*\.git\*" } |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
-
-    if ($null -eq $mostRecent) {
-        Write-Output "AUDIT_REQUIRED: nao foi possivel determinar data de modificacao do repositorio de skills em $SkillsRoot"
-        exit 0
-    }
-
-    $skillsLastChange = [DateTimeOffset]::new($mostRecent.LastWriteTime)
+if ([string]::IsNullOrWhiteSpace($storedSignatureVersion)) {
+    Write-Output 'AUDIT_REQUIRED: campo setup_contract_signature_version ausente em kb-source-metadata.md'
+    exit 0
 }
 
-if ($skillsLastChange -gt $lastAudit) {
-    Write-Output "AUDIT_REQUIRED: skills atualizados em $($skillsLastChange.ToString('o')); ultimo audit em $($lastAudit.ToString('o'))"
+$storedSignatureHash = $null
+if ($content -match '(?m)^setup_contract_signature_hash:\s*(.+)$') {
+    $storedSignatureHash = $Matches[1].Trim()
+}
+
+if ([string]::IsNullOrWhiteSpace($storedSignatureHash)) {
+    Write-Output 'AUDIT_REQUIRED: campo setup_contract_signature_hash ausente em kb-source-metadata.md'
+    exit 0
+}
+
+if ($storedSignatureHash -notmatch '^[0-9a-fA-F]{64}$') {
+    Write-Output "AUDIT_REQUIRED: setup_contract_signature_hash invalido em kb-source-metadata.md: '$storedSignatureHash'"
+    exit 0
+}
+
+$signatureScriptPath = Join-Path $SkillsRoot 'scripts\Get-XpzSetupContractSignature.ps1'
+if (-not (Test-Path -LiteralPath $signatureScriptPath -PathType Leaf)) {
+    Write-Output "AUDIT_REQUIRED: motor de assinatura do contrato de setup ausente em $signatureScriptPath"
+    exit 0
+}
+
+$signatureJson = & $signatureScriptPath -SkillsRoot $SkillsRoot -AsJson
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($signatureJson)) {
+    Write-Output "AUDIT_REQUIRED: nao foi possivel calcular assinatura atual do contrato de setup em $SkillsRoot"
+    exit 0
+}
+
+$currentSignature = $signatureJson | ConvertFrom-Json
+
+if ($storedSignatureVersion -ne $currentSignature.signatureVersion) {
+    Write-Output "AUDIT_REQUIRED: versao da assinatura do contrato de setup mudou de $storedSignatureVersion para $($currentSignature.signatureVersion); ultimo audit em $($lastAudit.ToString('o'))"
+    exit 0
+}
+
+if ($storedSignatureHash -ne $currentSignature.signatureHash) {
+    Write-Output "AUDIT_REQUIRED: contrato de setup atualizado; assinatura atual $($currentSignature.signatureHash); assinatura auditada $storedSignatureHash; ultimo audit em $($lastAudit.ToString('o'))"
     exit 0
 }
 

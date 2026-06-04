@@ -5,7 +5,8 @@ Wrapper local para gravar last_setup_audit_run_at apos auditoria de setup bem-su
 
 .DESCRIPTION
 Delega ao motor compartilhado Set-XpzSetupAuditTimestamp.ps1 com a raiz fixa desta pasta paralela.
-Atualiza somente last_setup_audit_run_at em kb-source-metadata.md; nao altera campos de xpz-sync.
+Atualiza last_setup_audit_run_at e setup_contract_signature_* em kb-source-metadata.md;
+nao altera campos de xpz-sync.
 
 Usar apos auditoria completa com estado canonico bem-sucedido (WORKFLOW passo 34) ou no subestado
 setup_apto_com_metadata_pendente da PRE-CONDICAO, com aprovacao explicita quando regras locais exigirem.
@@ -62,6 +63,7 @@ if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
 
 $params = @{
     KbParallelRoot = $KbParallelRoot
+    SkillsRoot = $SharedSkillsRoot
 }
 
 if ($AuditTimestamp) {

@@ -4,8 +4,9 @@
     Valida que Set-XpzSetupAuditTimestamp.ps1 preserva EOL LF em kb-source-metadata.md.
 
 .DESCRIPTION
-    Grava fixture LF, executa update e insert de last_setup_audit_run_at e verifica
-    que nenhum CR foi introduzido na reescrita.
+    Grava fixture LF, executa update e insert de last_setup_audit_run_at e da
+    assinatura de contrato de setup, e verifica que nenhum CR foi introduzido
+    na reescrita.
 #>
 
 [CmdletBinding()]
@@ -114,6 +115,8 @@ try {
 
     Assert-ZeroCr -Path $updateMetadataPath -Message 'update deve preservar EOL LF'
     Assert-ContainsField -Path $updateMetadataPath -Pattern 'last_setup_audit_run_at:\s*2026-05-28T12:34:56\.7890123\+00:00' -Message 'update deve gravar timestamp informado'
+    Assert-ContainsField -Path $updateMetadataPath -Pattern 'setup_contract_signature_version:\s*xpz-setup-contract-signature-v1' -Message 'update deve gravar versao da assinatura de contrato'
+    Assert-ContainsField -Path $updateMetadataPath -Pattern 'setup_contract_signature_hash:\s*[0-9a-f]{64}' -Message 'update deve gravar hash da assinatura de contrato'
 
     $insertMetadataPath = New-LfMetadataFixture -RootPath $insertRoot
     Assert-ZeroCr -Path $insertMetadataPath -Message 'fixture insert deve iniciar sem CR'
@@ -125,6 +128,8 @@ try {
 
     Assert-ZeroCr -Path $insertMetadataPath -Message 'insert deve preservar EOL LF'
     Assert-ContainsField -Path $insertMetadataPath -Pattern 'last_setup_audit_run_at:\s*2026-05-28T12:34:56\.7890123\+00:00' -Message 'insert deve gravar timestamp informado'
+    Assert-ContainsField -Path $insertMetadataPath -Pattern 'setup_contract_signature_version:\s*xpz-setup-contract-signature-v1' -Message 'insert deve gravar versao da assinatura de contrato'
+    Assert-ContainsField -Path $insertMetadataPath -Pattern 'setup_contract_signature_hash:\s*[0-9a-f]{64}' -Message 'insert deve gravar hash da assinatura de contrato'
 
     Write-Output 'XPZ_SETUP_AUDIT_TIMESTAMP_EOL_SELFTEST_OK'
     exit 0

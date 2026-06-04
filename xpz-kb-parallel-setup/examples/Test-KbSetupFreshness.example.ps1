@@ -1,12 +1,12 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Wrapper local para verificar frescor do setup da pasta paralela da KB em relacao ao repositorio de skills XPZ.
+Wrapper local para verificar frescor do setup da pasta paralela da KB em relacao ao contrato de setup XPZ.
 
 .DESCRIPTION
 Delega ao motor compartilhado Test-XpzSetupFreshness.ps1 com os caminhos fixos desta pasta paralela.
-Retorna GATE_ONLY quando o repositorio de skills nao foi atualizado desde o ultimo audit concluido
-com sucesso; retorna AUDIT_REQUIRED com motivo nos demais casos.
+Retorna GATE_ONLY quando a assinatura de contrato auditada em kb-source-metadata.md coincide
+com a assinatura atual de xpz-kb-parallel-setup; retorna AUDIT_REQUIRED com motivo nos demais casos.
 
 Usado como primeira acao obrigatoria da PRE-CONDICAO em xpz-kb-parallel-setup ao ser invocado
 pelo gatilho global (quando o usuario nao pede explicitamente setup, atualizacao ou auditoria).
