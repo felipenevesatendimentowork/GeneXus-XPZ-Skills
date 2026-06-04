@@ -7,6 +7,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 $inventoryScript = Join-Path $scriptDir 'Get-GeneXusImportPackageObjectInventory.ps1'
 # Export real GeneXus 18: modulos SDK/plataforma entram como PackagedModule, nao Module.
@@ -35,7 +41,7 @@ $exportXml = @"
 "@
 
 $xmlPath = Join-Path $tempRoot 'package.import_file.xml'
-[System.IO.File]::WriteAllText($xmlPath, $exportXml, [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($xmlPath, $exportXml, (Get-Utf8NoBomEncoding))
 
 $result = (& $inventoryScript -InputPath $xmlPath -DeclaredDeltaItems 'Procedure:ProcPedida' -AsJson | ConvertFrom-Json)
 if ($result.objectCount -ne 4) { throw "objectCount esperado 4; obtido $($result.objectCount)" }
@@ -79,7 +85,7 @@ $selectiveWithTransactionXml = @"
 </ExportFile>
 "@
 $trnXmlPath = Join-Path $tempRoot 'package-trn.import_file.xml'
-[System.IO.File]::WriteAllText($trnXmlPath, $selectiveWithTransactionXml, [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($trnXmlPath, $selectiveWithTransactionXml, (Get-Utf8NoBomEncoding))
 $resultTrn = (& $inventoryScript -InputPath $trnXmlPath -DeclaredDeltaItems 'Transaction:TrPedida' -AsJson | ConvertFrom-Json)
 if (-not $resultTrn.declaredIncludesTransaction) { throw 'declaredIncludesTransaction esperado true com Transaction na lista' }
 if ($resultTrn.attributesTopLevelUnreconciled) {
@@ -110,7 +116,7 @@ $exportLabelXml = @"
 </ExportFile>
 "@
 $exportLabelPath = Join-Path $tempRoot 'package-export-label.import_file.xml'
-[System.IO.File]::WriteAllText($exportLabelPath, $exportLabelXml, [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($exportLabelPath, $exportLabelXml, (Get-Utf8NoBomEncoding))
 $resultAlias = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW' -AsJson | ConvertFrom-Json)
 if ($resultAlias.status -ne 'DELTA_MISMATCH') {
     throw "status esperado DELTA_MISMATCH (ProcExtra extra); obtido $($resultAlias.status)"

@@ -11,25 +11,6 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
-## Unificar `Get-Utf8NoBomEncoding` repo-wide (fora da frente de inventário export)
-
-**Importância:** baixa
-**Maturidade:** ideia
-
-**Origem:** frente combinada 2026-05-25 (Parte C); escopo conservador da frente atual limitou-se ao sidecar `package-inventory.json` (já via `GeneXusPackageInventorySupport.ps1`).
-
-### Problema concreto
-
-A mesma codificação UTF-8 sem BOM aparece como função local `Get-Utf8NoBomEncoding` em ~12 scripts MSBuild e como `New-Object System.Text.UTF8Encoding($false)` no suporte de inventário.
-
-### Ideia de melhoria
-
-Padronizar em um único padrão (inline ou helper compartilhado) em todos os wrappers que gravam JSON/proj/logs.
-
-### Limiar para implementar
-
-Quando uma frente tocar vários desses scripts por outro motivo, ou em sessão dedicada de higiene.
-
 ## Teste de integração para bloqueio de XML de referência no Build-GeneXusImportFileEnvelope
 
 **Importância:** baixa

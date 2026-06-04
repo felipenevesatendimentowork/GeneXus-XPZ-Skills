@@ -6,6 +6,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $supportPath = Join-Path $PSScriptRoot 'GeneXusMsBuildConcurrencySupport.ps1'
 if (-not (Test-Path -LiteralPath $supportPath -PathType Leaf)) {
     throw "GeneXusMsBuildConcurrencySupport.ps1 nao encontrado: $supportPath"
@@ -54,27 +60,27 @@ try {
     [System.IO.File]::WriteAllText(
         $projectPath,
         "<Project><PropertyGroup><KBPath>$kbPath</KBPath></PropertyGroup></Project>",
-        [System.Text.UTF8Encoding]::new($false)
+        (Get-Utf8NoBomEncoding)
     )
     [System.IO.File]::WriteAllText(
         $plainProjectPath,
         "<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003""><PropertyGroup><KBPath>$kbPath</KBPath></PropertyGroup></Project>",
-        [System.Text.UTF8Encoding]::new($false)
+        (Get-Utf8NoBomEncoding)
     )
     [System.IO.File]::WriteAllText(
         $otherProjectPath,
         "<Project><PropertyGroup><KBPath>$otherKbPath</KBPath></PropertyGroup></Project>",
-        [System.Text.UTF8Encoding]::new($false)
+        (Get-Utf8NoBomEncoding)
     )
     [System.IO.File]::WriteAllText(
         $withoutKbPath,
         '<Project><PropertyGroup><Other>value</Other></PropertyGroup></Project>',
-        [System.Text.UTF8Encoding]::new($false)
+        (Get-Utf8NoBomEncoding)
     )
     [System.IO.File]::WriteAllText(
         $invalidProjectPath,
         '<Project><PropertyGroup>',
-        [System.Text.UTF8Encoding]::new($false)
+        (Get-Utf8NoBomEncoding)
     )
 
     $quotedPaths = @(Get-GeneXusMsBuildProjectPathFromCommandLine -CommandLine ('"C:\MSBuild.exe" "{0}" /t:Run "{1}"' -f $projectPath, $projectPath))

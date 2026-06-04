@@ -73,6 +73,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Format-GeneXusLastUpdate {
     param([Parameter(Mandatory = $true)][DateTime]$Value)
     return $Value.ToUniversalTime().ToString(
@@ -327,7 +333,7 @@ if ($frontMetas.Count -eq 0 -and $frontXmls.Count -eq 0) {
         $pattern = [regex]::new('lastUpdate="[^"]*"')
         $newText = $pattern.Replace($rawText, "lastUpdate=""$newLastUpdate""", 1)
 
-        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        $utf8NoBom = (Get-Utf8NoBomEncoding)
         [System.IO.File]::WriteAllText($fMeta.Path, $newText, $utf8NoBom)
 
         $findings += New-Finding -Severity 'info' -Code 'copied-and-bumped' `

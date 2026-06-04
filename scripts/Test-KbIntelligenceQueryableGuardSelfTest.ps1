@@ -7,6 +7,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 $buildScript = Join-Path $scriptDir 'Build-KbIntelligenceIndex.ps1'
 $queryScript = Join-Path $scriptDir 'Query-KbIntelligenceIndex.ps1'
@@ -24,7 +30,7 @@ $sqlitePath = Join-Path $tempRoot 'KbIntelligence\kb-intelligence.sqlite'
 $sdpXml = @'
 <Object type="c84ec0ea-d159-46e2-a118-2108860379bb" name="SmartDevicesPlus" description="Smart Devices Plus" parentGuid="afa47377-41d5-4ae8-9755-6f53150aa361" moduleGuid="afa47377-41d5-4ae8-9755-6f53150aa361"><Properties><Property><Name>SDPlus_Settings_Theme</Name><Value>DarkBlue</Value></Property></Properties></Object>
 '@
-[System.IO.File]::WriteAllText((Join-Path $sdpDir 'SmartDevicesPlus.xml'), $sdpXml, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText((Join-Path $sdpDir 'SmartDevicesPlus.xml'), $sdpXml, (Get-Utf8NoBomEncoding))
 
 & $buildScript -SourceRoot $objetosPath -OutputPath $sqlitePath -ParallelKbRoot $tempRoot
 if ($LASTEXITCODE -ne 0) {
@@ -111,7 +117,7 @@ $procDir = Join-Path $objetosPath 'Procedure'
 $procXml = @'
 <Object type="84a12160-f59b-4ad7-a683-ea4481ac23e9" name="procSelfTestQueryable" description="proc selftest" parentGuid="afa47377-41d5-4ae8-9755-6f53150aa361" moduleGuid="afa47377-41d5-4ae8-9755-6f53150aa361"><Properties><Property><Name>Name</Name><Value>procSelfTestQueryable</Value></Property></Properties><Source><![CDATA[]]></Source></Object>
 '@
-[System.IO.File]::WriteAllText((Join-Path $procDir 'procSelfTestQueryable.xml'), $procXml, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText((Join-Path $procDir 'procSelfTestQueryable.xml'), $procXml, (Get-Utf8NoBomEncoding))
 
 & $buildScript -SourceRoot $objetosPath -OutputPath $sqlitePath -ParallelKbRoot $tempRoot -CatalogOverridePath $overridePath
 if ($LASTEXITCODE -ne 0) {

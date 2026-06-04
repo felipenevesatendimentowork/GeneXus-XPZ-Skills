@@ -86,6 +86,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $kbMetadataEditSupportScript = Join-Path $PSScriptRoot 'XpzKbSourceMetadataEditSupport.ps1'
 if (-not (Test-Path -LiteralPath $kbMetadataEditSupportScript -PathType Leaf)) {
     throw "BLOCK: suporte de edicao de kb-source-metadata nao encontrado: $kbMetadataEditSupportScript"
@@ -376,7 +382,7 @@ function Convert-NodeToXmlString {
     [void]$doc.AppendChild($imported)
 
     $settings = New-Object System.Xml.XmlWriterSettings
-    $settings.Encoding = New-Object System.Text.UTF8Encoding($false)
+    $settings.Encoding = (Get-Utf8NoBomEncoding)
     $settings.Indent = $true
     $settings.NewLineChars = "`r`n"
     $settings.NewLineHandling = [System.Xml.NewLineHandling]::Replace
@@ -467,7 +473,7 @@ function Write-ItemToDestination {
     }
 
     if ($status -eq "created" -or $status -eq "updated") {
-        [System.IO.File]::WriteAllText($filePath, $xmlText, (New-Object System.Text.UTF8Encoding($false)))
+        [System.IO.File]::WriteAllText($filePath, $xmlText, (Get-Utf8NoBomEncoding))
     }
 
     return [pscustomobject]@{
@@ -583,7 +589,7 @@ function Write-Report {
     )
 
     $json = $Payload | ConvertTo-Json -Depth 8
-    [System.IO.File]::WriteAllText($Path, $json, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText($Path, $json, (Get-Utf8NoBomEncoding))
 }
 
 $package = $null

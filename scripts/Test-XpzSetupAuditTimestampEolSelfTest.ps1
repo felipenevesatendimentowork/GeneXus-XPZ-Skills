@@ -14,6 +14,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = Split-Path -Parent $PSCommandPath
 $timestampScriptPath = Join-Path $scriptDir 'Set-XpzSetupAuditTimestamp.ps1'
 
@@ -59,7 +65,7 @@ function New-LfMetadataFixture {
 
     $content = ($lines -join "`n") + "`n"
     $metadataPath = Join-Path $RootPath 'kb-source-metadata.md'
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8NoBom = (Get-Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($metadataPath, $content, $utf8NoBom)
     return $metadataPath
 }

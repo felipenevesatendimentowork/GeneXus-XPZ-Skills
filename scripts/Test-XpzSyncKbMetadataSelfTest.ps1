@@ -14,6 +14,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = Split-Path -Parent $PSCommandPath
 $editSupportPath = Join-Path $scriptDir 'XpzKbSourceMetadataEditSupport.ps1'
 $auditTimestamp = '2026-01-15T08:00:00.0000000+00:00'
@@ -70,7 +76,7 @@ function New-LfMetadataFixture {
 
     $content = ($lines -join "`n") + "`n"
     $metadataPath = Join-Path $RootPath 'kb-source-metadata.md'
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8NoBom = (Get-Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($metadataPath, $content, $utf8NoBom)
     return $metadataPath
 }
@@ -93,7 +99,7 @@ function New-MinimalExportFileXml {
 </ExportFile>
 '@
 
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8NoBom = (Get-Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($Path, $xml, $utf8NoBom)
 }
 

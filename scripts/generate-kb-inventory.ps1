@@ -10,6 +10,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Format-MdCell {
     param([AllowNull()][object]$Value)
 
@@ -404,5 +410,5 @@ if ($problemFiles.Count -gt 0) {
     [void]$sb.AppendLine()
 }
 
-[System.IO.File]::WriteAllText($OutputPath, $sb.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($OutputPath, $sb.ToString(), (Get-Utf8NoBomEncoding))
 Write-Output "Inventory generated at: $OutputPath"

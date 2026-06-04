@@ -7,6 +7,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 . (Join-Path $scriptDir 'GeneXusXpzExportInventoryGovernance.ps1')
 
@@ -141,7 +147,7 @@ $exportXml = @"
 </ExportFile>
 "@
 $packagePath = Join-Path $integrationRoot 'pkg.import_file.xml'
-[System.IO.File]::WriteAllText($packagePath, $exportXml, [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($packagePath, $exportXml, (Get-Utf8NoBomEncoding))
 $dryBlock = New-ExportPackageInventoryBlock `
     -XpzPath $packagePath `
     -ArtifactDirectory $integrationRoot `

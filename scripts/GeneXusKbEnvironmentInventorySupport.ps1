@@ -11,6 +11,12 @@
 
 Set-StrictMode -Version Latest
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Get-GeneXusKbNativeFolderEnvironmentProbeExcludeReason {
     param([string]$FolderName)
 
@@ -104,9 +110,6 @@ function Get-GeneXusKbEnvironmentNameCandidatesFromNativePath {
     }
 }
 
-function Get-GeneXusKbEnvironmentInventoryUtf8NoBomEncoding {
-    return [System.Text.UTF8Encoding]::new($false)
-}
 
 function Escape-GeneXusKbEnvironmentInventoryXml {
     param([string]$Value)
@@ -259,7 +262,7 @@ function Invoke-GeneXusKbEnvironmentRegistrationProbe {
         -DatabaseUser $DatabaseUser `
         -DatabasePassword $DatabasePassword
 
-    [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-GeneXusKbEnvironmentInventoryUtf8NoBomEncoding))
+    [System.IO.File]::WriteAllText($msBuildFilePath, $projectContent, (Get-Utf8NoBomEncoding))
 
     $msBuildExitCode = Invoke-GeneXusKbEnvironmentRegistrationProbeProcess `
         -ResolvedMsBuildPath $ResolvedMsBuildPath `

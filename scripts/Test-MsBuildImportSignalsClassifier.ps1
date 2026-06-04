@@ -6,6 +6,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $readerPath = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
 if (-not (Test-Path -LiteralPath $readerPath -PathType Leaf)) {
     throw "Read-MsBuildImportSignals.ps1 nao encontrado: $readerPath"
@@ -23,8 +29,8 @@ try {
         'Import Task Success'
     ) -join [Environment]::NewLine
 
-    [System.IO.File]::WriteAllText($stdoutPath, $stdoutText, [System.Text.UTF8Encoding]::new($false))
-    [System.IO.File]::WriteAllText($stderrPath, '', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($stdoutPath, $stdoutText, (Get-Utf8NoBomEncoding))
+    [System.IO.File]::WriteAllText($stderrPath, '', (Get-Utf8NoBomEncoding))
 
     $jsonText = (& $readerPath -StdOutPath $stdoutPath -StdErrPath $stderrPath -Stage 'classifier-self-test' -AsJson) -join [Environment]::NewLine
     $signals = $jsonText | ConvertFrom-Json
@@ -50,7 +56,7 @@ try {
         "The process cannot access the file 'C:\Models\GX\GxImport.log' because it is being used by another process."
         'Import Task Success'
     ) -join [Environment]::NewLine
-    [System.IO.File]::WriteAllText($stdoutPath, $lockedStdoutText, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($stdoutPath, $lockedStdoutText, (Get-Utf8NoBomEncoding))
 
     $lockedJsonText = (& $readerPath -StdOutPath $stdoutPath -StdErrPath $stderrPath -Stage 'classifier-self-test' -AsJson) -join [Environment]::NewLine
     $lockedSignals = $lockedJsonText | ConvertFrom-Json
@@ -71,7 +77,7 @@ try {
         '__IMPORTED_ITEM__=SDPanel:SDVendaIncluir'
         'Import Task Success'
     ) -join [Environment]::NewLine
-    [System.IO.File]::WriteAllText($stdoutPath, $aliasStdoutText, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($stdoutPath, $aliasStdoutText, (Get-Utf8NoBomEncoding))
 
     $aliasJsonText = (& $readerPath -StdOutPath $stdoutPath -StdErrPath $stderrPath -ExpectedItems 'Panel:SDVendaIncluir' -Stage 'classifier-self-test' -AsJson) -join [Environment]::NewLine
     $aliasSignals = $aliasJsonText | ConvertFrom-Json
@@ -97,7 +103,7 @@ try {
         '__EXPORTED_FILE__=C:\Temp\demo.xpz'
         "O acesso ao caminho 'C:\Program Files (x86)\GeneXus\GeneXus18\CssProperties.json' foi negado."
     ) -join [Environment]::NewLine
-    [System.IO.File]::WriteAllText($stdoutPath, $exportStdoutText, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($stdoutPath, $exportStdoutText, (Get-Utf8NoBomEncoding))
 
     $exportJsonText = (& $readerPath -StdOutPath $stdoutPath -StdErrPath $stderrPath -Stage 'export' -AsJson) -join [Environment]::NewLine
     $exportSignals = $exportJsonText | ConvertFrom-Json

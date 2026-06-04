@@ -12,6 +12,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $McpServerKey = 'xpz-global-instructions'
 $CursorMcpDirName = 'xpz-global-instructions-mcp'
 
@@ -213,7 +219,7 @@ function Write-JsonFile {
     )
 
     $json = $Object | ConvertTo-Json -Depth 20
-    [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
 }
 
 function Test-PythonCommandOrBlock {

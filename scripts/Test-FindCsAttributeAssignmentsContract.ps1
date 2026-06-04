@@ -10,6 +10,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 $scriptPath = Join-Path $scriptDir 'Find-CsAttributeAssignments.ps1'
 if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
@@ -95,7 +101,7 @@ $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('find-cs-attr-assign-{0
 
 try {
     $fixturePath = Join-Path $tempRoot 'vendapedido.cs'
-    [System.IO.File]::WriteAllText($fixturePath, (New-ContractCsFixture), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixturePath, (New-ContractCsFixture), (Get-Utf8NoBomEncoding))
 
     $result = Invoke-FindAssignments -CsPath $fixturePath -Attribute $shortAttr
     if ($result.ExitCode -ne 0) {
@@ -141,7 +147,7 @@ try {
     }
 
     $alternatePath = Join-Path $tempRoot 'vendapedido-alternate.cs'
-    [System.IO.File]::WriteAllText($alternatePath, (New-AlternateCascadeCsFixture), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($alternatePath, (New-AlternateCascadeCsFixture), (Get-Utf8NoBomEncoding))
     $alternateResult = Invoke-FindAssignments -CsPath $alternatePath -Attribute $shortAttr
     if ($alternateResult.ExitCode -ne 0) {
         throw "Exit esperado 0 no alternativo; obtido $($alternateResult.ExitCode)"

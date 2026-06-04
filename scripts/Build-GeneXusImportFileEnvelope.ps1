@@ -58,6 +58,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Resolve-NextRejectedPath {
     param(
         [Parameter(Mandatory = $true)][string]$BasePath
@@ -518,7 +524,7 @@ if (-not [string]::IsNullOrEmpty($outputDir) -and -not (Test-Path -LiteralPath $
 }
 
 $writerSettings = New-Object System.Xml.XmlWriterSettings
-$writerSettings.Encoding = New-Object System.Text.UTF8Encoding($false)
+$writerSettings.Encoding = (Get-Utf8NoBomEncoding)
 $writerSettings.Indent = $true
 $writerSettings.IndentChars = "  "
 $writerSettings.OmitXmlDeclaration = $false

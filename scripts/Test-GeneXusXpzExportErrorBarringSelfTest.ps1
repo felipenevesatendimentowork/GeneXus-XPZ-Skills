@@ -6,6 +6,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $governancePath = Join-Path $PSScriptRoot 'GeneXusXpzExportInventoryGovernance.ps1'
 $supportPath = Join-Path $PSScriptRoot 'GeneXusMsBuildCategoryBSupport.ps1'
 . $governancePath
@@ -27,8 +33,8 @@ try {
         '__EXPORTED_FILE__=C:\Temp\demo.xpz'
         'error : WorkWithForWeb is not a valid type.'
     ) -join [Environment]::NewLine
-    [System.IO.File]::WriteAllText($stdoutPath, $stdoutText, [System.Text.UTF8Encoding]::new($false))
-    [System.IO.File]::WriteAllText($stderrPath, '', [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($stdoutPath, $stdoutText, (Get-Utf8NoBomEncoding))
+    [System.IO.File]::WriteAllText($stderrPath, '', (Get-Utf8NoBomEncoding))
 
     $readerPath = Join-Path $PSScriptRoot 'Read-MsBuildImportSignals.ps1'
     $signalsJson = (& $readerPath -StdOutPath $stdoutPath -StdErrPath $stderrPath -Stage 'export' -AsJson) | Out-String

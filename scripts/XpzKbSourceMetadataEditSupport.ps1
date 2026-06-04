@@ -17,6 +17,12 @@
 
 Set-StrictMode -Version Latest
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $script:SyncOwnedFrontmatterFieldNames = @(
     'updated'
     'last_xpz_materialization_run_at'
@@ -283,7 +289,7 @@ Ao gerar um ``import_file.xml`` ou ``.xpz`` para importacao na KB, usar estes va
 nos blocos ``<KMW>`` e ``<Source>`` do envelope ``<ExportFile>``.
 "@
 
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8NoBom = (Get-Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($MetadataPath, $content, $utf8NoBom)
 }
 

@@ -6,6 +6,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptUnderTest = Join-Path $PSScriptRoot 'Search-GeneXusXmlSourceBlock.ps1'
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('xpz-source-search-selftest-' + [guid]::NewGuid().ToString('N'))
 $samplePath = Join-Path $tempRoot 'wpSample.xml'
@@ -48,7 +54,7 @@ try {
         '  </Part>',
         '</Object>'
     ) -join "`n"
-    [System.IO.File]::WriteAllText($samplePath, $sampleXml, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($samplePath, $sampleXml, (Get-Utf8NoBomEncoding))
 
     $packageXml = @(
         '<ExportFile>',
@@ -68,7 +74,7 @@ try {
         '  </Objects>',
         '</ExportFile>'
     ) -join "`n"
-    [System.IO.File]::WriteAllText($packagePath, $packageXml, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($packagePath, $packageXml, (Get-Utf8NoBomEncoding))
 
     $events = Read-JsonArray -Text (& $scriptUnderTest -Path $samplePath -Pattern 'praConsultaSerie' -Block events -AsJson)
     Assert-Equal -Actual $events.Count -Expected 1 -Message 'events deve encontrar apenas o match no code-behind.'

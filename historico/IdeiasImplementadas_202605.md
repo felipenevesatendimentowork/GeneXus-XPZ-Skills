@@ -530,7 +530,7 @@ Frente combinada (Partes B e C conservador).
 
 - Removido branch redundante em `scripts/GeneXusXpzExportInventoryGovernance.ps1` (`inventoryDegraded` duplicava retorno de `operationalSubState`).
 - `scripts/GeneXusPackageInventorySupport.ps1`: comentário + `[System.Text.UTF8Encoding]::new($false)` explícito no sidecar `package-inventory.json`.
-- Unificação repo-wide de `Get-Utf8NoBomEncoding` permanece em `999-ideias-pendentes.md`.
+- Unificacao repo-wide de `Get-Utf8NoBomEncoding` foi concluida depois, em 2026-06-04, e registrada em `historico/IdeiasImplementadas_202606.md`.
 
 ### Rastreabilidade
 

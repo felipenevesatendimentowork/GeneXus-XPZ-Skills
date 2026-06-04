@@ -7,6 +7,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 $procedureGuid = '84a12160-f59b-4ad7-a683-ea4481ac23e9'
 
@@ -23,7 +29,7 @@ $procCalleeXml = @"
   <Source><![CDATA[]]></Source>
 </Object>
 "@
-[System.IO.File]::WriteAllText((Join-Path $procedureDir 'procFormulaCallee.xml'), $procCalleeXml, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText((Join-Path $procedureDir 'procFormulaCallee.xml'), $procCalleeXml, (Get-Utf8NoBomEncoding))
 
 $attrDirectXml = @"
 <Attribute name="AttrCalcFormula" guid="22222222-2222-2222-2222-222222222201">
@@ -46,9 +52,9 @@ $attrPlainXml = @"
   </Properties>
 </Attribute>
 "@
-[System.IO.File]::WriteAllText((Join-Path $attributeDir 'AttrCalcFormula.xml'), $attrDirectXml, (New-Object System.Text.UTF8Encoding($false)))
-[System.IO.File]::WriteAllText((Join-Path $attributeDir 'AttrCalcFormulaDotCall.xml'), $attrDotCallXml, (New-Object System.Text.UTF8Encoding($false)))
-[System.IO.File]::WriteAllText((Join-Path $attributeDir 'AttrPlain.xml'), $attrPlainXml, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText((Join-Path $attributeDir 'AttrCalcFormula.xml'), $attrDirectXml, (Get-Utf8NoBomEncoding))
+[System.IO.File]::WriteAllText((Join-Path $attributeDir 'AttrCalcFormulaDotCall.xml'), $attrDotCallXml, (Get-Utf8NoBomEncoding))
+[System.IO.File]::WriteAllText((Join-Path $attributeDir 'AttrPlain.xml'), $attrPlainXml, (Get-Utf8NoBomEncoding))
 
 $sqlitePath = Join-Path $kbIntelDir 'kb-intelligence.sqlite'
 $validationPath = Join-Path $kbIntelDir 'kb-intelligence-validation.json'

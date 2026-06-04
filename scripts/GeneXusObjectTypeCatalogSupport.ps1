@@ -6,6 +6,12 @@
 
 Set-StrictMode -Version Latest
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Get-GeneXusObjectTypeCatalogDefaultBasePath {
     return (Join-Path $PSScriptRoot 'gx-object-type-catalog.json')
 }
@@ -417,7 +423,7 @@ function Write-GeneXusUnknownTypeDiscoveryReport {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 
-    [System.IO.File]::WriteAllText($Path, $json, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText($Path, $json, (Get-Utf8NoBomEncoding))
 }
 
 function New-GeneXusUnknownTypeMaintainerPromptText {

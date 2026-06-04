@@ -6,6 +6,12 @@
 
 Set-StrictMode -Version Latest
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $script:LastUpdateAttributePattern = [regex]::new('lastUpdate="([0-9T:.\-Z]+)"')
 $script:FreshnessMarginSecondsDefault = 60
 
@@ -261,7 +267,7 @@ function Invoke-GeneXusXmlSurgicalEditCore {
 
     $bakPath = $null
     if (-not $DryRun.IsPresent) {
-        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        $utf8NoBom = (Get-Utf8NoBomEncoding)
         if (Test-Path -LiteralPath $resolvedOutput -PathType Leaf) {
             $bakPath = "$resolvedOutput.bak"
             [System.IO.File]::Copy($resolvedOutput, $bakPath, $true)

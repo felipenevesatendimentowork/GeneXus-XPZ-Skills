@@ -10,6 +10,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Format-MdCell {
     param([AllowNull()][object]$Value)
     if ($null -eq $Value) { return "" }
@@ -277,7 +283,7 @@ foreach ($summary in $typeSummaries) {
     [void]$matrixBuilder.AppendLine()
     Add-Table -Builder $matrixBuilder -Headers @("PartType", "ObjectsWithPart", "PresencePct", "EmptyPct", "PreliminaryClass", "Examples") -Rows @($summary.PartCatalog)
 }
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "10-matriz-part-types-por-tipo.md"), $matrixBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "10-matriz-part-types-por-tipo.md"), $matrixBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $fieldsBuilder = New-Object System.Text.StringBuilder
 [void]$fieldsBuilder.AppendLine("# 11 - Campos Estaveis vs Variaveis do no Object")
@@ -299,7 +305,7 @@ foreach ($summary in $typeSummaries) {
     }
     [void]$fieldsBuilder.AppendLine()
 }
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "11-campos-estaveis-vs-variaveis.md"), $fieldsBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "11-campos-estaveis-vs-variaveis.md"), $fieldsBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $diffBuilder = New-Object System.Text.StringBuilder
 [void]$diffBuilder.AppendLine("# 12 - Diffs Estruturais por Tipo")
@@ -332,7 +338,7 @@ foreach ($summary in $prioritySummaries) {
     [void]$diffBuilder.AppendLine("- Hipótese: editar primeiro blocos claramente textuais e recorrentes pode ter risco menor do que alterar blocos raros/opacos, mas isso ainda depende de validação posterior.")
     [void]$diffBuilder.AppendLine()
 }
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "12-diffs-estruturais-por-tipo.md"), $diffBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "12-diffs-estruturais-por-tipo.md"), $diffBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $cloneBuilder = New-Object System.Text.StringBuilder
 [void]$cloneBuilder.AppendLine("# 13 - Guia de Clonagem Segura")
@@ -366,7 +372,7 @@ foreach ($summary in $prioritySummaries) {
     [void]$cloneBuilder.AppendLine("- Evidência direta: objetos com parent: $($summary.WithParent)/$($summary.Count); com pattern: $($summary.WithPattern)/$($summary.Count).")
     [void]$cloneBuilder.AppendLine()
 }
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "13-guia-de-clonagem-segura.md"), $cloneBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "13-guia-de-clonagem-segura.md"), $cloneBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $mandatoryBuilder = New-Object System.Text.StringBuilder
 [void]$mandatoryBuilder.AppendLine("# 14 - Indicios de Obrigatoriedade")
@@ -392,7 +398,7 @@ foreach ($summary in $prioritySummaries) {
     [void]$mandatoryBuilder.AppendLine("- Hipótese: blocos quase sempre vazios podem continuar sendo necessarios mesmo sem carregar conteudo util.")
     [void]$mandatoryBuilder.AppendLine()
 }
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "14-indicios-de-obrigatoriedade.md"), $mandatoryBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "14-indicios-de-obrigatoriedade.md"), $mandatoryBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $readinessBuilder = New-Object System.Text.StringBuilder
 [void]$readinessBuilder.AppendLine("# 15 - Tipos Prontos para Geracao Conservadora")
@@ -427,7 +433,7 @@ $readinessRows = foreach ($summary in $prioritySummaries) {
     }
 }
 Add-Table -Builder $readinessBuilder -Headers @("FolderType", "Classification", "Evidence", "Reading") -Rows $readinessRows
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "15-tipos-prontos-para-geracao-conservadora.md"), $readinessBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "15-tipos-prontos-para-geracao-conservadora.md"), $readinessBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $riskBuilder = New-Object System.Text.StringBuilder
 [void]$riskBuilder.AppendLine("# 16 - Mapa de Risco por Tipo")
@@ -448,7 +454,7 @@ $riskRows = foreach ($summary in $prioritySummaries) {
     }
 }
 Add-Table -Builder $riskBuilder -Headers @("FolderType", "StructuralRisk", "ParentModuleDependency", "PatternDependency", "CurrentConfidence", "PracticalRecommendation") -Rows $riskRows
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "16-mapa-de-risco-por-tipo.md"), $riskBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "16-mapa-de-risco-por-tipo.md"), $riskBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $opsBuilder = New-Object System.Text.StringBuilder
 [void]$opsBuilder.AppendLine("# 17 - Resumo Operacional para Gerador XPZ")
@@ -493,7 +499,7 @@ foreach ($row in ($readinessRows | Where-Object { $_.Classification -eq "apto pa
 [void]$opsBuilder.AppendLine("- Inferência forte: começar por tipos com menor complexidade estrutural relativa nesta KB.")
 [void]$opsBuilder.AppendLine("- Inferência forte: depois avancar para tipos com mais contexto, sempre partindo de templates reais muito proximos.")
 [void]$opsBuilder.AppendLine("- Hipótese: so apos alguns ciclos de validacao externa valera endurecer regras como obrigatorio ou seguro para editar.")
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "17-resumo-operacional-para-gerador-xpz.md"), $opsBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "17-resumo-operacional-para-gerador-xpz.md"), $opsBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 $checklistBuilder = New-Object System.Text.StringBuilder
 [void]$checklistBuilder.AppendLine("# 18 - Checklist para Novos Templates")
@@ -510,6 +516,6 @@ foreach ($summary in $prioritySummaries) {
 [void]$checklistBuilder.AppendLine("- Exportar casos em que o mesmo tipo exista com e sem parent.")
 [void]$checklistBuilder.AppendLine("- Exportar casos em que o mesmo tipo exista com e sem pattern.")
 [void]$checklistBuilder.AppendLine("- Exportar exemplos onde Part type raro apareca acompanhado de comportamento conhecido na IDE.")
-[System.IO.File]::WriteAllText((Join-Path $OutputRoot "18-checklist-para-novos-templates.md"), $checklistBuilder.ToString(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText((Join-Path $OutputRoot "18-checklist-para-novos-templates.md"), $checklistBuilder.ToString(), (Get-Utf8NoBomEncoding))
 
 Write-Output "Advanced KB docs generated under: $OutputRoot"

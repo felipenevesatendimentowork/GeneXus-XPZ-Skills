@@ -117,13 +117,16 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $script:StrategyTrace = @()
 $script:Warnings = @()
 $script:BlockingReasons = @()
 
-function Get-Utf8NoBomEncoding {
-    return [System.Text.UTF8Encoding]::new($false)
-}
 
 function ConvertTo-JsonText {
     param([object]$InputObject)

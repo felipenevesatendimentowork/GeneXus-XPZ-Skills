@@ -17,6 +17,12 @@
 
 Set-StrictMode -Version Latest
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Get-GeneXusCatalogMap {
     param([string]$CatalogPath)
 
@@ -211,7 +217,7 @@ function New-PackageInventoryResult {
                 items          = @($namedItems)
             }
             # Sidecar package-inventory.json: UTF-8 sem BOM (mesmo contrato que wrappers MSBuild usam via Get-Utf8NoBomEncoding).
-            $encoding = [System.Text.UTF8Encoding]::new($false)
+            $encoding = (Get-Utf8NoBomEncoding)
             [System.IO.File]::WriteAllText(
                 $SidecarInventoryPath,
                 (($fullInventoryDoc | ConvertTo-Json -Depth 6) + [Environment]::NewLine),

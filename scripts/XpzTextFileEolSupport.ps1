@@ -11,6 +11,12 @@
 
 Set-StrictMode -Version Latest
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 function Get-TextFileLineContext {
     param(
         [Parameter(Mandatory = $true)]
@@ -52,6 +58,6 @@ function Write-TextFilePreservingEol {
         $text += $FileContext.EolSequence
     }
 
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8NoBom = (Get-Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($Path, $text, $utf8NoBom)
 }

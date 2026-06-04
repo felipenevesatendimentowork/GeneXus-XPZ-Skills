@@ -7,6 +7,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 . (Join-Path $scriptDir 'GeneXusObjectTypeCatalogSupport.ps1')
 
@@ -88,7 +94,7 @@ if (-not $mergedMap.ContainsKey($unknownGuid)) {
 }
 
 $xmlPath = Join-Path $tempRoot 'package.xml'
-[System.IO.File]::WriteAllText($xmlPath, $exportXml, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText($xmlPath, $exportXml, (Get-Utf8NoBomEncoding))
 $inventoryScript = Join-Path $scriptDir 'Get-GeneXusImportPackageObjectInventory.ps1'
 $invBlocked = & $inventoryScript -InputPath $xmlPath -ParallelKbRoot $parallelRoot -AsJson | ConvertFrom-Json
 if ($invBlocked.unknownTypeCount -ne 0) {
@@ -103,7 +109,7 @@ $sampleObjectXml = @"
   <Source />
 </Object>
 "@
-[System.IO.File]::WriteAllText((Join-Path $tipoDir 'ObjNovo.xml'), $sampleObjectXml, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText((Join-Path $tipoDir 'ObjNovo.xml'), $sampleObjectXml, (Get-Utf8NoBomEncoding))
 
 $namingScript = Join-Path $scriptDir 'Test-XpzObjetosDaKbNaming.ps1'
 $namingJson = & $namingScript -ParallelKbRoot $parallelRoot -AsJson | ConvertFrom-Json

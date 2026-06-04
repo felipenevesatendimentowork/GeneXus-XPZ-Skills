@@ -55,6 +55,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 . (Join-Path $PSScriptRoot 'GeneXusObjectTypeCatalogSupport.ps1')
 
 $unknownTypes = @()
@@ -94,7 +100,7 @@ if ($unknownTypes.Count -eq 0) {
 $promptText = New-GeneXusUnknownTypeMaintainerPromptText -UnknownTypes $unknownTypes -KbName $KbName -GeneXusVersion $GeneXusVersion -WikiLinks $WikiLinks -NexaFindings $NexaFindings
 
 if ($OutFile) {
-    [System.IO.File]::WriteAllText($OutFile, $promptText, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText($OutFile, $promptText, (Get-Utf8NoBomEncoding))
 }
 
 if ($AsJson) {

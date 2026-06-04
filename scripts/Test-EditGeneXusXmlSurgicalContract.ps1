@@ -10,6 +10,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
+if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
+    throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
+}
+. $utf8NoBomEncodingSupportPath
+
 $scriptDir = $PSScriptRoot
 $scriptPath = Join-Path $scriptDir 'Edit-GeneXusXmlSurgical.ps1'
 if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
@@ -104,7 +110,7 @@ $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('edit-genexus-xml-surgi
 try {
     $anchorDefault = 'Default(Field,proc());'
     $fixturePath = Join-Path $tempRoot 'ContractTest.xml'
-    [System.IO.File]::WriteAllText($fixturePath, (New-ContractFixtureXml), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixturePath, (New-ContractFixtureXml), (Get-Utf8NoBomEncoding))
 
     # 1) Replace com bump (default)
     $r1 = Invoke-SurgicalScript -Arguments @{
@@ -125,7 +131,7 @@ try {
 
     # 2) InsertAfter
     $fixtureInsert = Join-Path $tempRoot 'ContractInsert.xml'
-    [System.IO.File]::WriteAllText($fixtureInsert, (New-ContractFixtureXml), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixtureInsert, (New-ContractFixtureXml), (Get-Utf8NoBomEncoding))
     $r2 = Invoke-SurgicalScript -Arguments @{
         InputPath   = $fixtureInsert
         Anchor      = $anchorDefault
@@ -141,7 +147,7 @@ try {
     # 3) DryRun nao grava
     $fixtureDry = Join-Path $tempRoot 'ContractDry.xml'
     $dryContent = New-ContractFixtureXml
-    [System.IO.File]::WriteAllText($fixtureDry, $dryContent, (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixtureDry, $dryContent, (Get-Utf8NoBomEncoding))
     $r3 = Invoke-SurgicalScript -Arguments @{
         InputPath   = $fixtureDry
         Anchor      = $anchorDefault
@@ -158,7 +164,7 @@ try {
     $sourceCopy = Join-Path $tempRoot 'ContractSource.xml'
     $destCopy = Join-Path $tempRoot 'ContractDest.xml'
     $sourceContent = New-ContractFixtureXml
-    [System.IO.File]::WriteAllText($sourceCopy, $sourceContent, (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($sourceCopy, $sourceContent, (Get-Utf8NoBomEncoding))
     $r4 = Invoke-SurgicalScript -Arguments @{
         InputPath   = $sourceCopy
         OutputPath  = $destCopy
@@ -172,7 +178,7 @@ try {
 
     # 5) Ancora ausente
     $fixtureMissing = Join-Path $tempRoot 'ContractMissingAnchor.xml'
-    [System.IO.File]::WriteAllText($fixtureMissing, (New-ContractFixtureXml), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixtureMissing, (New-ContractFixtureXml), (Get-Utf8NoBomEncoding))
     $r5 = Invoke-SurgicalScript -Arguments @{
         InputPath   = $fixtureMissing
         Anchor      = 'ANCORA_INEXISTENTE'
@@ -185,7 +191,7 @@ try {
     # 6) Ancora duplicada
     $dupBody = "Default(Field,proc());`r`n" + 'Default(Field,proc());' + "`r`n"
     $fixtureDup = Join-Path $tempRoot 'ContractDup.xml'
-    [System.IO.File]::WriteAllText($fixtureDup, (New-ContractFixtureXml -RulesBody $dupBody), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixtureDup, (New-ContractFixtureXml -RulesBody $dupBody), (Get-Utf8NoBomEncoding))
     $r6 = Invoke-SurgicalScript -Arguments @{
         InputPath   = $fixtureDup
         Anchor      = $anchorDefault
@@ -197,7 +203,7 @@ try {
     # 7) XML malformado apos replace + restore
     $fixtureBad = Join-Path $tempRoot 'ContractBad.xml'
     $badOriginal = New-ContractFixtureXml
-    [System.IO.File]::WriteAllText($fixtureBad, $badOriginal, (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixtureBad, $badOriginal, (Get-Utf8NoBomEncoding))
     $r7 = Invoke-SurgicalScript -Arguments @{
         InputPath   = $fixtureBad
         Anchor      = ']]></Rules>'
@@ -211,7 +217,7 @@ try {
 
     # 8) PreserveLastUpdate
     $fixturePreserve = Join-Path $tempRoot 'ContractPreserve.xml'
-    [System.IO.File]::WriteAllText($fixturePreserve, (New-ContractFixtureXml), (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($fixturePreserve, (New-ContractFixtureXml), (Get-Utf8NoBomEncoding))
     $r8 = Invoke-SurgicalScript -Arguments @{
         InputPath            = $fixturePreserve
         Anchor               = $anchorDefault
