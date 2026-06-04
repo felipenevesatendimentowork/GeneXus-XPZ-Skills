@@ -202,6 +202,17 @@ Regras de uso:
 - `Regra operacional`: alerta consultivo isolado nao bloqueia automaticamente, mas deve ser registrado como risco e resolvido quando o trecho ainda estiver sustentado apenas por plausibilidade.
 - `Regra operacional`: cheque automatizado leve de `Source`, quando existir no repositório, deve ser tratado como apoio de triagem e nao como prova completa de importabilidade.
 
+### Gate de variaveis tocadas por delta de `Source`
+
+- `Evidência direta`: em corpus real de KB GeneXus de producao, a edicao combinada de `Source` e `Variables` apareceu como caso operacional sensivel: `Source` pode usar tabs enquanto a estrutura XML de `Variables` usa espacos, e o arquivo pode ser CRLF conforme `.gitattributes` da pasta paralela.
+- `Evidência direta`: no mesmo corpus, blocos `<Variable>` observados usam familias variadas de tipagem (`idBasedOn=Domain:*`, `idBasedOn=Attribute:*`, `ATTCUSTOMTYPE=bas:*`, `sdt:*`, `exo:*`, `bc:*`, `ext:*`) e tambem existem formas legadas sem `idBasedOn`/`ATTCUSTOMTYPE`.
+- `Regra operacional`: quando o delta inserir ou alterar codigo em `Source` e declarar novas variaveis, a transicao `Source -> Variables` deve ser declarada como bloco adjacente justificado antes do empacotamento.
+- `Regra operacional`: o agente deve preservar separadamente o estilo textual observado no `Source` e na estrutura `Variables`; nao normalizar tabs, espacos, EOL ou CDATA fora do delta funcional aprovado.
+- `Regra operacional`: variavel nova nao deve ser montada a partir de lista universal de propriedades obrigatorias; deve clonar forma comparavel do proprio objeto, depois do mesmo tipo de objeto na KB, e so por ultimo de molde sanitizado.
+- `Regra operacional`: validacao mecanica ampla sobre todas as variaveis legadas deve ser consultiva, porque o acervo real contem formas raras e historicas; bloqueio antes do pacote deve focar variaveis declaradas como novas ou tocadas pelo delta.
+- `Regra operacional`: usar `scripts/Test-GeneXusObjectVariableDelta.ps1 -InputPath <xml> -VariableName <nomes> -AsJson` para checar variaveis novas/tocadas. `status=fail` bloqueia o pacote; `status=warn` exige revisao conservadora e justificativa antes de prosseguir.
+- `Regra operacional`: nao validar ingenuamente toda ocorrencia textual `&X` no `Source` contra `<Variables>`; entidades XML, variaveis especiais e formas geradas produzem falsos positivos. A validacao deve focar os nomes do delta e o trecho funcional alterado.
+
 ### Baseline oficial conhecido em revisao e sanity
 
 - `Regra operacional`: em objeto legado, separar explicitamente duas decisoes independentes: `sanity absoluto do artefato atual` e `comparacao contra baseline oficial`.

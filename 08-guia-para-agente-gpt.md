@@ -822,6 +822,10 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
 - nao introduzir espacos ou tabs finais em linhas novas ou modificadas; a verificacao posterior serve para confirmar que o agente nao criou ruido, nao para limpar retrospectivamente o snapshot oficial
 - antes de empacotar, comparar a copia alterada com o XML de origem e bloquear se o diff trouxer apenas whitespace, indentacao, quebra de linha, comentario removido ou outra mudanca textual nao funcional fora do delta aprovado
 - para editar o delta aprovado em XML GeneXus grande (`Rules`, `Source`, `CDATA` longo), preferir `scripts\Edit-GeneXusXmlSurgical.ps1` (`-DryRun` antes do apply, `-LastUpdateBaselinePath` apontando para `ObjetosDaKbEmXml`, `-EditMode Replace` ou `InsertAfter`); evitar substituicao por trecho no harness e scripts ad-hoc por frente; ver `xpz-builder/SKILL.md`
+- quando a mudanca tocar `Source` e exigir variaveis novas ou alteradas, declarar a transicao `Source -> Variables` (ou equivalente por tipo) como bloco adjacente justificado; medir EOL/encoding/indentacao do XML alvo antes do patch
+- em `Source`, inserir texto com a indentacao observada no proprio `Source`; em `<Variables>`, preservar a indentacao estrutural observada na secao, que pode ser diferente da do codigo
+- para variavel nova, clonar forma comparavel primeiro do proprio objeto, depois de objeto do mesmo tipo na KB, e so por ultimo de molde sanitizado; nao usar lista fixa universal de propriedades para todos os tipos
+- antes de empacotar, rodar `scripts\Test-GeneXusObjectVariableDelta.ps1 -InputPath <xml> -VariableName <nomes> -AsJson` para variaveis novas/tocadas; `status=fail` bloqueia, `status=warn` exige revisao explicita
 - manifesto nao implica automaticamente arquivo fisico; por padrao, ele deve ser apresentado na propria conversa
 - para `WorkWithWeb` com ruído comprovado de `Load Code` em `Selection` e/ou tabs de `View`, registrar isso como nao funcional no manifesto e nao generalizar para todo caso de `WorkWithWeb`
 - ao gerar pacote local para importacao na IDE, preferir nome no formato `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml`
