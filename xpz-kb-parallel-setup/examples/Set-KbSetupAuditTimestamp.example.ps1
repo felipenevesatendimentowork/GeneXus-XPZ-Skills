@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Wrapper local para gravar last_setup_audit_run_at apos auditoria de setup bem-sucedida.
+Wrapper local para gravar last_setup_audit_run_at e setup_contract_signature_* apos auditoria de setup bem-sucedida.
 
 .DESCRIPTION
 Delega ao motor compartilhado Set-XpzSetupAuditTimestamp.ps1 com a raiz fixa desta pasta paralela.
