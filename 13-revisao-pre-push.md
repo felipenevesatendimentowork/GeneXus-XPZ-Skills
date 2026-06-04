@@ -46,6 +46,8 @@ Identificar termos, scripts, wrappers, parâmetros, estados, caminhos e regras o
 
 Buscar esses mesmos termos no repositório inteiro (não parar no primeiro arquivo que contém o termo).
 
+Quando a frente altera motor com versão, assinatura, código de evidência, regra de extração ou nome de estado, buscar também os **termos antigos** que ficaram para trás. Exemplo: se `Build-KbIntelligenceIndex.py` muda `EXTRACTOR_SIGNATURE_VERSION` de `N` para `N+1`, procurar referências à versão textual anterior (`extrator N`, `extractor N`, `extrator atual N`, `signature_version N` e variações equivalentes) nos Markdown operacionais; ocorrência residual em documento normativo é gap, salvo justificativa explícita de histórico.
+
 ### 3. Comparação documental
 
 Comparar a documentação afetada com:
@@ -57,6 +59,8 @@ Comparar a documentação afetada com:
 - `09-inventario-e-rastreabilidade-publica.md`, quando a frente alterar script compartilhado, contrato metodológico, skill, checklist, nomenclatura operacional, estado, parâmetro, wrapper ou evidência pública rastreável
 - exemplos canônicos `*.example.ps1` nas skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`; não há `examples/` na raiz)
 - scripts compartilhados em `scripts/`
+
+Quando a mudança afetar regra operacional compartilhada, `02-regras-operacionais-e-runtime.md` é documento obrigatório de paridade: a regra deve existir ali ou a ausência deve ser descartada com justificativa explícita no relatório. Cobertura apenas em `08`, `09`, skill ou README técnico não basta para concluir alinhamento.
 
 ### 4. Paridade motor ↔ promessa documental (obrigatório)
 
@@ -71,6 +75,8 @@ Quando a frente introduzir ou alterar regra que cite **motor por nome** (ex.: «
 - Doc diz «catálogo efetivo» (base + `gx-object-type-catalog.override.json`), mas o motor usa só `gx-object-type-catalog.json` fixo ao lado do script.
 - `Build-KbIntelligenceIndex.ps1` expõe `-ParallelKbRoot` e `Query-KbIntelligenceIndex.ps1` não.
 - Selftest da frente não exercita override quando a doc promete catálogo efetivo no query.
+- `Build-KbIntelligenceIndex.py` incrementa `EXTRACTOR_SIGNATURE_VERSION`, mas documento operacional ainda menciona a versão antiga do extrator.
+- Tipo `queryableByKbIntelligence=true` ganha nova aresta ou regra de extração, mas `02-regras-operacionais-e-runtime.md` não explica o que o índice materializa e o que ainda exige leitura XML.
 
 ### 5. Regra em camadas para skills longas
 
