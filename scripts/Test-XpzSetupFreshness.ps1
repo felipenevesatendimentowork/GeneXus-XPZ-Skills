@@ -8,6 +8,9 @@
     ultima modificacao do repositorio de skills XPZ e compara os dois timestamps.
     Retorna GATE_ONLY quando o repositorio nao foi atualizado desde o ultimo audit concluido
     com sucesso; retorna AUDIT_REQUIRED com motivo nos demais casos.
+    A comparacao com a ultima mudanca do repositorio de skills e deliberadamente conservadora:
+    apos git pull da base metodologica, a pasta paralela deve ser conferida para detectar
+    wrappers, gates, metadata ou regras locais novas antes de liberar uso operacional amplo.
 
     Projetado para ser chamado pelo wrapper local Test-*KbSetupFreshness.ps1 como primeira acao
     da PRE-CONDICAO obrigatoria em xpz-kb-parallel-setup.

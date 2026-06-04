@@ -15,6 +15,8 @@ Esta skill e de invocacao obrigatoria antes de qualquer acao de consulta, triage
 
 **PRE-CONDICAO OBRIGATORIA AO SER INVOCADA PELO GATILHO GLOBAL** (nao se aplica quando o usuario pede explicitamente setup, atualizacao ou auditoria — nesses casos ir direto ao WORKFLOW passo 1):
 
+Esta pre-condicao e o caminho leve de seguranca para tarefas normais do usuario na KB. Ela deve executar apenas runtime, freshness e gate de indice enquanto o freshness retornar `GATE_ONLY` e o indice retornar `GATE_OK`; nao carregar nem aplicar o corpo completo do WORKFLOW nesse caminho curto. `AUDIT_REQUIRED` por atualizacao do repositorio de skills e comportamento deliberado: apos `git pull` da base metodologica, a pasta paralela precisa ser conferida para saber se deve incorporar wrappers, gates, metadata ou regras locais novas.
+
 0. Verificar se `Test-*KbPowerShellRuntime.ps1` existe em `scripts/` da pasta paralela e executa-lo antes de qualquer outro wrapper:
    ```powershell
    & "<caminho-absoluto-de-Test-*KbPowerShellRuntime.ps1>"
@@ -43,6 +45,8 @@ Quando acionada pelo gatilho global, "auditoria completa" significa: executar `T
 - `setup_apto`: auditoria passou, gate passou e nao ha pendencia persistente identificada no motivo original do `AUDIT_REQUIRED`.
 - `setup_apto_com_metadata_pendente`: auditoria passou e gate passou, mas o motivo original do `AUDIT_REQUIRED` foi ausencia, defasagem ou inconsistencia de campo persistente em `kb-source-metadata.md`, como `last_setup_audit_run_at`.
 - `setup_bloqueado`: runtime PowerShell minimo falhou/ausente, auditoria ou gate falhou, ou `estado_operacional_sugerido` nao e compativel com a tarefa em curso.
+
+Quando o motivo original do `AUDIT_REQUIRED` for `skills atualizados em ...` e a auditoria completa seguida do gate passar sem pendencia corrigivel, tratar a gravacao de `last_setup_audit_run_at` como fechamento da pre-condicao bem-sucedida: incluir `Set-*KbSetupAuditTimestamp.ps1` no plano consolidado, ou registrar recusa/adiamento explicito do usuario. Sem esse fechamento, a proxima sessao repetira a auditoria completa pelo mesmo motivo, mesmo com a pasta ja conferida.
 
 Se o subestado for `setup_apto_com_metadata_pendente`, o agente nao pode prosseguir silenciosamente apenas porque o gate retornou `GATE_OK`. Antes de continuar a tarefa original, montar o **plano consolidado de correcoes** (secao PLANO DE CORRECOES POS-AUDITORIA), incluindo obrigatoriamente a linha de `last_setup_audit_run_at` com `Set-*KbSetupAuditTimestamp.ps1` quando a auditoria bem-sucedida permitir gravacao. Declarar que a tarefa atual esta liberada pelo gate, mas a pasta repetira auditoria completa nas proximas sessoes enquanto o plano nao for executado ou adiado explicitamente pelo usuario.
 
@@ -99,7 +103,7 @@ Consolidar **todos** os itens abaixo que a auditoria tiver identificado; omitir 
 
 | Origem tipica | Item no plano | Acao preferida | Aprovacao antes de gravar |
 |---|---|---|---|
-| `setup_apto_com_metadata_pendente` ou passo 34 | `last_setup_audit_run_at` ausente, vazio ou defasado apos auditoria OK | `Set-*KbSetupAuditTimestamp.ps1`; rerodar freshness e index gate | Sim, se regra local exigir |
+| `setup_apto`, `setup_apto_com_metadata_pendente` ou passo 34 apos `AUDIT_REQUIRED` | `last_setup_audit_run_at` ausente, vazio ou defasado apos auditoria OK; inclui motivo `skills atualizados em ...` | `Set-*KbSetupAuditTimestamp.ps1`; rerodar freshness e index gate | Sim, se regra local exigir |
 | `INVENTORY_GAPS` / scripts AUSENTE em 8.h | Wrappers ou gates ausentes previstos | `atualizar_bootstrap_local` a partir dos `.example.ps1` | Sim |
 | `INVENTORY_SHORT_NAMING` | Naming curto de wrapper | Renome canonico em lote (8.c excecao 2) | Sim, confirmacao em lote |
 | `INVENTORY_LEGACY_ORPHANS` | Script legado lado a lado com canonico | Remocao segura + atualizar referencias (8.f.1) | Sim |
@@ -143,7 +147,7 @@ Quando o usuario aprovar o pacote, executar na ordem abaixo salvo bloqueio concr
 Depois de classificar o subestado transitorio (`setup_apto`, `setup_apto_com_metadata_pendente`, `setup_bloqueado`):
 
 - Se `setup_bloqueado`: nao voltar a tarefa original; plano so com o que for corrigivel para destravar.
-- Se `setup_apto` ou `setup_apto_com_metadata_pendente` com itens corrigiveis: **montar o plano consolidado** antes de retomar a tarefa original; itens de metadata pendente entram como linhas do plano, nao como unico aviso solto.
+- Se `setup_apto` ou `setup_apto_com_metadata_pendente` com itens corrigiveis: **montar o plano consolidado** antes de retomar a tarefa original; itens de metadata pendente entram como linhas do plano, nao como unico aviso solto. Quando o unico item for atualizar `last_setup_audit_run_at` apos auditoria bem-sucedida exigida por `skills atualizados em ...`, ele ainda deve aparecer no plano para restaurar o caminho `GATE_ONLY` das proximas sessoes.
 - Registrar decisao do usuario sobre o plano: executado (total/parcial), recusado ou adiado — so entao retomar a tarefa original liberada pelo gate.
 
 ### Fechamento de `auditar_setup`
