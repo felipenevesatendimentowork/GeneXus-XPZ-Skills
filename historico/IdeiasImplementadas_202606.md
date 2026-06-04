@@ -25,3 +25,7 @@ Scripts PowerShell da raiz gravavam texto em UTF-8 sem BOM por padroes locais di
 ### Decisao final
 
 A trilha adotou helper compartilhado em vez de manter duplicacao local ou padronizar apenas por estilo inline. A regra futura e reutilizar `scripts/Utf8NoBomEncodingSupport.ps1` para escrita simples em UTF-8 sem BOM e reservar construtores inline de `UTF8Encoding` para casos semanticamente especiais.
+
+### Rastreabilidade
+
+- Commit: `95cf6d8` (`Centraliza codificacao UTF-8 sem BOM`)
