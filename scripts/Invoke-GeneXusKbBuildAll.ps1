@@ -1528,6 +1528,13 @@ try {
 
     if ($postBuildEventLines.Count -gt 0) {
         Add-WarningMessage -Message "Evento pos-build detectado em stdout — processo externo pode ter sido disparado: '$($postBuildEventLines[0])'"
+        if ($buildStatus.Status -eq 'compilou limpo') {
+            $buildStatus = [ordered]@{
+                Status   = 'operacao concluida, pendente de confirmacao funcional'
+                Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stdout indica evento pos-build. Verifique stdoutSignals.postBuildEvents no diagnostico.'
+                ExitCode = 0
+            }
+        }
     }
 
     # Promover warnings pmm00xx (versao de modulo GeneXus) a alertas top-level.

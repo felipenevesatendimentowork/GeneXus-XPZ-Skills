@@ -471,7 +471,8 @@ function Resolve-BuildStatus {
         [bool]$SpecifyDone,
         [bool]$GenerateDone,
         [string]$StdOutText,
-        [string]$StdErrText
+        [string]$StdErrText,
+        [string[]]$PostBuildEventLines = @()
     )
 
     # Padrão bloqueante de maior prioridade: reorg real executada dentro do SpecifyAll.
@@ -487,17 +488,10 @@ function Resolve-BuildStatus {
         }
     }
 
-    # Eventos pós-build detectados (start c:, start cmd, e variantes prefixadas com REM
-    # quando o GeneXus encena comandos que tentou rodar mas falharam, ex.: .Bat ausente).
-    # KB configurada com ações pós-build que disparam (ou tentam disparar) processos externos.
-    # Registrar como warning mesmo quando a classificação principal for bem-sucedida.
-    $postBuildLines = @($StdOutText -split "`r?`n" |
-                        Where-Object { $_ -match '^\s*(REM\s+)?start\s+(c:|cmd)' })
-    if ($postBuildLines.Count -gt 0) {
-        foreach ($evtLine in $postBuildLines) {
-            $trimmed = $evtLine.Trim()
-            $shown = if ($trimmed -match '^(?i)REM\s+') { "(commented) $trimmed" } else { $trimmed }
-            Add-WarningMessage -Message ('Evento pós-build detectado em stdout: "{0}". A KB disparou (ou tentou disparar) processos externos durante o SpecifyAll.' -f $shown)
+    # Eventos pos-build detectados por janela de fase ou fallback historico.
+    if (@($PostBuildEventLines).Count -gt 0) {
+        foreach ($evtLine in @($PostBuildEventLines)) {
+            Add-WarningMessage -Message ('Evento pós-build detectado em stdout: "{0}". A KB disparou (ou tentou disparar) processos externos durante o SpecifyAll.' -f $evtLine)
         }
     }
 
@@ -512,7 +506,7 @@ function Resolve-BuildStatus {
         ($StdOutText -match [regex]::Escape($_)) -or ($StdErrText -match [regex]::Escape($_))
     })
 
-    $hasImpediment = ($foundAlerts.Count -gt 0) -or $stderrNonEmpty -or ($postBuildLines.Count -gt 0)
+    $hasImpediment = ($foundAlerts.Count -gt 0) -or $stderrNonEmpty -or (@($PostBuildEventLines).Count -gt 0)
 
     if ($MsBuildExitCode -eq 0 -and $SpecifyDone -and $GenerateDone -and -not $hasImpediment) {
         return [ordered]@{
@@ -1109,13 +1103,19 @@ try {
         Add-WarningMessage -Message 'Environment solicitado, mas o retorno de GetActiveEnvironment veio vazio.'
     }
 
-    $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $specifyDone -GenerateDone $generateDone -StdOutText $stdOutFiltered -StdErrText $stdErrFiltered
-
     $stdOutBlockingPatternRegex = 'Access denied|error MSB|: error |FAILED|at System\.|at Microsoft\.'
     $blockingPatternMatch       = [regex]::Match($stdOutFiltered, $stdOutBlockingPatternRegex)
     $detectedBlockingPattern    = if ($blockingPatternMatch.Success) { $blockingPatternMatch.Value } else { $null }
 
     $postBuildEventLines = @(Get-GeneXusMsBuildPostBuildEventLines -StdOutLines $stdOutNonNoiseLines)
+
+    $buildStatus = Resolve-BuildStatus `
+        -MsBuildExitCode $msBuildExitCode `
+        -SpecifyDone $specifyDone `
+        -GenerateDone $generateDone `
+        -StdOutText $stdOutFiltered `
+        -StdErrText $stdErrFiltered `
+        -PostBuildEventLines $postBuildEventLines
 
     $buildWarningLines   = @([regex]::Matches($stdOutFiltered, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
                              ForEach-Object { $_.Value.Trim() })
@@ -1200,7 +1200,13 @@ try {
             $stdErrFiltered = $stdErrText
         }
         if ($null -eq $buildStatus) {
-            $buildStatus = Resolve-BuildStatus -MsBuildExitCode $msBuildExitCode -SpecifyDone $false -GenerateDone $false -StdOutText $stdOutFiltered -StdErrText $stdErrFiltered
+            $buildStatus = Resolve-BuildStatus `
+                -MsBuildExitCode $msBuildExitCode `
+                -SpecifyDone $false `
+                -GenerateDone $false `
+                -StdOutText $stdOutFiltered `
+                -StdErrText $stdErrFiltered `
+                -PostBuildEventLines $postBuildEventLines
         }
     }
 
