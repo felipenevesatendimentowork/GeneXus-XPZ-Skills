@@ -98,6 +98,21 @@ Reportar separadamente:
 - flags descartados, com justificativa
 - áreas não cobertas pela busca
 
+### Gate semântico: relatório antes de qualquer edição
+
+A fase semântica produz um **relatório**. Esse relatório é o produto da pré-push — não as edições.
+
+Entre o relatório e qualquer edição de arquivo, commit ou push, existe uma **validação obrigatória**: o agente deve parar, apresentar o relatório completo e aguardar aprovação explícita do usuário (`sim`, `aprova`, `pode aplicar`, etc.).
+
+Esta validação é **incondicional** — vale para gaps grandes e pequenos, para correções óbvias e não óbvias. Não existe categoria de gap "pequeno o suficiente para corrigir sem perguntar".
+
+Se o agente encontrar gaps durante a busca semântica:
+
+1. Apresentar o relatório com gaps confirmados, flags descartados e áreas não cobertas.
+2. Parar. Não editar nenhum arquivo.
+3. Aguardar aprovação explícita do usuário para cada alteração proposta.
+4. Só após aprovação, executar as correções.
+
 ### 8. Veredicto
 
 Encerrar com linha fixa:

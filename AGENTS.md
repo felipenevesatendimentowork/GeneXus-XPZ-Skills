@@ -53,6 +53,7 @@
 - Fonte **autoritativa** da rotina: [13-revisao-pre-push.md](13-revisao-pre-push.md) (passo mecânico, fase semântica, paridade motor↔doc, veredicto).
 - Resumo obrigatório antes de push: executar `scripts/Invoke-PrePushMechanicalChecks.ps1` (`-AsJson` para agentes), depois a busca semântica integral descrita no `13` — **não** basta grep de termos em `.md`; validar implementação dos motores citados.
 - Escopo: análise e relatório ao usuário; correções só após aprovação explícita **depois** do relatório pré-push.
+- **Gate semântico incondicional:** a fase semântica produz relatório e para. Nenhuma edição de arquivo, commit ou push acontece entre o relatório e a aprovação explícita do usuário — sem exceção, independentemente do tamanho ou obviedade do gap.
 
 ## Rastreabilidade privada de moldes sanitizados
 
