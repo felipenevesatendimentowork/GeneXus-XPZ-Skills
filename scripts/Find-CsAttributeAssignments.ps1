@@ -6,6 +6,8 @@
 .DESCRIPTION
     Mapeia copias de atribuicao por metodo, detecta AssignAttri no mesmo metodo e
     padrao triplet tipico do Specifier (override INS/Insert_, default por proc, fallback ternario).
+    Em -AsJson, methods[].name preserva o nome literal do metodo gerado; veja o mapa canonico
+    em xpz-builder/responsibilities-by-type/transaction.md.
 
 .PARAMETER CsPath
     Caminho absoluto do arquivo .cs gerado.

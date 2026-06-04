@@ -234,6 +234,17 @@ Motor compartilhado de **diagnóstico** no `.cs` gerado (camada web), complement
 - `-Attribute` (obrigatório) — nome com ou sem prefixo `A<n>`; o motor normaliza para a forma canônica no arquivo
 - `-AsJson` (opcional) — saída estruturada (`methods[]`, `totals`, `tripletPattern.cascadeOrder`, `hasAssignAttriInMethod`)
 
+**Mapa dos métodos `.cs` gerados onde a atribuição pode aparecer:** use `methods[].name` como nome literal gerado e cruze com o mapa canônico longo em [xpz-builder/responsibilities-by-type/transaction.md](../xpz-builder/responsibilities-by-type/transaction.md#generated-cs-map-where-a-transaction-assignment-rule-lives-in-xpz-quarantine).
+
+| Padrão de nome do método | Cenário de runtime | Gatilho JS / AJAX | `AssignAttri` típico | Quando aparece |
+|--------------------------|--------------------|-------------------|----------------------|----------------|
+| `OnLoadActions<KbId>` | carga inicial, refresh leve de FK e recarga parcial server-side | refresh AJAX genérico; também dentro de outros fluxos | presente | observado como método único por Transaction com cópia da rule |
+| `CheckExtendedTable<KbId>` | validação pesada no Confirm/Save | submit do form, `Confirmar` / `btn_enter` | presente | observado como método único por Transaction com cópia da rule |
+| `Valid_<FKDoLado>` | validação de FK quando o JS decide chamar `VALID_<FK>` | evento AJAX `VALID_<FK>` em `setEventMetadata` | pode faltar | depende de FK usada pela expressão ou condição da rule; variações negativas ficam `padrao-gx-nao-verificado` sem corpus adicional |
+| `GX<n>ASA<ATTR><KbId>` | handler AJAX do prompt-aggregator-selector do atributo | `gxfirstwebparm` como `gxajaxAggSel<n>_<ATTR>` | presente | depende de prompt-control associado ao atributo; sem prompt fica `padrao-gx-nao-verificado` sem corpus adicional |
+
+A rule pode estar presente nesses métodos e ainda assim ficar "escondida" em runtime se a cascata interna `if`/`else if` sombrear a atribuição; ver o anti-padrão `transaction-attribute-rule-shadowed-by-default-in-cascade` em [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md).
+
 **Interpretação de `cascadeOrder`:** os valores conhecidos `override-then-default-then-fallback` e `override-then-fallback-then-default` descrevem a ordem efetiva de ramos `if/else if` mutuamente exclusivos no `.cs` gerado. Trate isso como diagnóstico em quarentena XPZ, não como catálogo geral de modelagem GeneXus. Quando a correção aprovada for inverter a ordem textual de `Rules` no XML da frente, aplicar com `scripts/Edit-GeneXusXmlSurgical.ps1` (`-DryRun`, âncora literal, contagem esperada de âncoras e baseline de `lastUpdate` quando houver) e repetir import/build + leitura do `.cs` antes de encerrar. Entrada canônica: `transaction-attribute-rule-shadowed-by-default-in-cascade` em [02-regras-operacionais-e-runtime.md](../02-regras-operacionais-e-runtime.md).
 
 **Regressão:** `scripts/Test-FindCsAttributeAssignmentsContract.ps1` (sentinela `FIND_CS_ATTRIBUTE_ASSIGNMENTS_CONTRACT_OK`).
