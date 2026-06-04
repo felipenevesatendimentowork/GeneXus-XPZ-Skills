@@ -1,22 +1,26 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Wrapper local sanitizado para copiar XMLs do acervo para a frente quando o acervo e mais recente.
+Wrapper local sanitizado para copiar XMLs do acervo para a frente, com bump de lastUpdate.
 
 .DESCRIPTION
 Chama o script compartilhado Copy-GeneXusAcervoToFront.ps1 para copiar XMLs de
 ObjetosDaKbEmXml para a pasta da frente, com bump automatico de lastUpdate.
 Resolve o anti-padrao "editar acervo esperando que o pacote pegue": em vez de
 editar o acervo, copia a versao mais recente para a frente e bumpa o lastUpdate.
+Quando ObjectNames ou ObjectGuids e informado e o objeto ainda nao existe na frente,
+faz seed inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo explicito.
 
 .PARAMETER FrontName
 Nome da subpasta da frente no formato NomeCurto_GUID_YYYYMMDD.
 
 .PARAMETER ObjectNames
 Nomes de objetos a copiar (opcional). Quando omitido, copia todos com drift.
+Para seed inicial, deve identificar um unico XML no acervo.
 
 .PARAMETER ObjectGuids
 GUIDs de objetos a copiar (opcional). Quando omitido, copia todos com drift.
+Para seed inicial, deve identificar um unico XML no acervo.
 
 .PARAMETER DryRun
 Mostra o que seria copiado sem gravar.
