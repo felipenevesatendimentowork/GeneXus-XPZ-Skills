@@ -29,3 +29,32 @@ A trilha adotou helper compartilhado em vez de manter duplicacao local ou padron
 ### Rastreabilidade
 
 - Commit: `95cf6d8` (`Centraliza codificacao UTF-8 sem BOM`)
+
+## Detecção robusta de eventos pós-build por marcador de fase
+
+**Importancia original:** baixa
+**Status:** concluida em 2026-06-04
+
+### Origem
+
+Ideia levantada em 2026-05-12 como evolução natural do tratamento de eventos pós-build introduzido na frente de filtro de ruído GAM/NetCore.
+
+### Problema concreto
+
+A detecção de eventos pós-build em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1` usava regex enumerativa para linhas `start c:` / `start cmd`, com ou sem `REM`. Isso cobria os formatos vistos, mas deixava invisíveis comandos pós-build com formatos novos, como `call`, `cmd /k`, `powershell` ou comando direto sem `start`.
+
+### Implementacao
+
+- `scripts/GeneXusMsBuildPostBuildEventsSupport.ps1`: novo suporte compartilhado para extrair `postBuildEvents`.
+- `scripts/Invoke-GeneXusKbBuildAll.ps1` e `scripts/Invoke-GeneXusKbSpecifyGenerate.ps1` passaram a usar a janela iniciada por `Executando eventos pos-construcao ...` e encerrada pelo próximo separador `==========`.
+- A regex histórica para `start c:` / `start cmd` permanece como fallback quando o marcador de fase não existe no log.
+- `scripts/Test-GeneXusMsBuildPostBuildEventsSupportSelfTest.ps1` cobre comandos `start`, `call`, `cmd /k`, `powershell`, `REM` e fallback legado.
+- `02-regras-operacionais-e-runtime.md` e `xpz-msbuild-build/SKILL.md` foram atualizados para documentar a janela por marcador e o fallback.
+
+### Decisao final
+
+A trilha adotou detecção por fase como caminho preferencial, sem remover compatibilidade com a regex antiga. Assim o wrapper cobre formatos futuros observados dentro da fase pós-build e evita regressão em logs antigos ou variantes que ainda não emitam o marcador.
+
+### Rastreabilidade
+
+- Commit: este commit

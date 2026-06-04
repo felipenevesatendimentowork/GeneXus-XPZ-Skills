@@ -1224,48 +1224,6 @@ Qualquer palavra cujo acento muda o sentido — `e/é`, `esta/está`, `tem/têm`
 
 **Pronto agora.** Não há gate técnico, não há pesquisa pendente, não há decisão de design em aberto. Falta apenas alocar sessão dedicada com escopo declarado.
 
-## Detecção robusta de eventos pós-build por marcador de fase
-
-**Importância:** baixa
-**Maturidade:** ideia
-
-**Origem:** levantado em 2026-05-12 como evolução natural do tratamento de eventos pós-build introduzido na frente de filtro de ruído GAM/NetCore.
-
-### Problema concreto que motiva a ideia
-
-Hoje a detecção de eventos pós-build em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1` usa regex direta nas linhas de comando observadas:
-
-```regex
-^\s*(REM\s+)?(start\s+c:|start\s+cmd)[^\r\n]*
-```
-
-Essa abordagem cobre os formatos vistos até agora (`start c:`, `start cmd /c`, com ou sem prefixo `REM`), mas é uma lista enumerada de literais. Cada novo formato observado (ex.: `call`, `cmd /k`, `powershell`, comando direto sem `start`) exigirá nova rodada de coleta empírica e novo literal na regex.
-
-O GeneXus já emite um marcador estável de início da fase pós-build no stdout: `========== ... iniciado ==========` (com nome da fase) e `Executando eventos pós-construção ...`. Esse marcador delimita uma janela bem definida onde qualquer linha posterior, até o próximo `==========` de fim de fase, é candidata a evento pós-build.
-
-### Ideia de melhoria
-
-Substituir a regex enumerativa por uma detecção baseada em janela delimitada por marcador de fase:
-
-1. Localizar no stdout o marcador `Executando eventos pós-construção ...` (ou marcador equivalente que apareça nas próximas evidências)
-2. Capturar todas as linhas a partir desse marcador até o próximo `==========` de fim de fase ou marcador equivalente de conclusão
-3. Classificar as linhas dessa janela como `postBuildEvents`, preservando ordem e prefixos (incluindo `REM`)
-4. Aplicar heurística adicional para distinguir "linha que é comando real" de "linha que é diagnóstico/marcador" — provavelmente excluindo linhas com `==========`, mensagens de erro do MSBuild com formato `path(N,M): error :`, etc.
-
-### Benefícios
-
-- Cobertura completa de formatos de comando pós-build (atuais e futuros)
-- Robustez a variações de configuração da KB que ainda não vimos
-- Captura ordem original dos eventos, útil quando há cadeia
-- Elimina necessidade de manutenção contínua da lista enumerativa
-
-### Perguntas a responder antes de decidir
-
-- O marcador `Executando eventos pós-construção ...` aparece **sempre** que há eventos pós-build, independentemente do environment, generator e versão do GeneXus? (Suspeita forte: sim — é mensagem padrão da fase, mas precisa confirmação empírica em pelo menos 3 environments distintos.)
-- O fechamento da janela é confiável pelo próximo `==========` ou existe formato alternativo (ex.: silêncio de N linhas)?
-- A heurística de exclusão de linhas de erro/diagnóstico do MSBuild dentro da janela deve seguir os mesmos padrões já usados pelo classificador principal, ou requer lista própria?
-- Vale fazer a transição em uma frente única, ou faz mais sentido manter regex literal como fallback enquanto a detecção por janela é validada empiricamente em paralelo?
-
 ## Avaliar gate similar a `-AllowWideRebuild` para `CompileMains=true` e `DetailedNavigation=true`
 
 **Importância:** baixa

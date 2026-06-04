@@ -186,6 +186,12 @@ if (-not (Test-Path -LiteralPath $gamPlatformsSupportPath -PathType Leaf)) {
 }
 . $gamPlatformsSupportPath
 
+$postBuildEventsSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildPostBuildEventsSupport.ps1'
+if (-not (Test-Path -LiteralPath $postBuildEventsSupportPath -PathType Leaf)) {
+    throw "Post-build events support script not found: $postBuildEventsSupportPath"
+}
+. $postBuildEventsSupportPath
+
 $deploymentEnvironmentSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusKbDeploymentEnvironmentSupport.ps1'
 if (-not (Test-Path -LiteralPath $deploymentEnvironmentSupportPath -PathType Leaf)) {
     throw "Deployment environment support script not found: $deploymentEnvironmentSupportPath"
@@ -1109,14 +1115,7 @@ try {
     $blockingPatternMatch       = [regex]::Match($stdOutFiltered, $stdOutBlockingPatternRegex)
     $detectedBlockingPattern    = if ($blockingPatternMatch.Success) { $blockingPatternMatch.Value } else { $null }
 
-    # Inclui linhas prefixadas com REM: o GeneXus encena assim quando o comando pos-build
-    # foi tentado mas falhou (ex.: .Bat ausente). Marca essas com sufixo "(commented) "
-    # para o consumidor distinguir entre executou vs apenas tentou.
-    $postBuildEventLines = @([regex]::Matches($stdOutFiltered, '(?im)^\s*(REM\s+)?(start\s+c:|start\s+cmd)[^\r\n]*') |
-                             ForEach-Object {
-                                 $value = $_.Value.Trim()
-                                 if ($value -match '^(?i)REM\s+') { "(commented) $value" } else { $value }
-                             })
+    $postBuildEventLines = @(Get-GeneXusMsBuildPostBuildEventLines -StdOutLines $stdOutNonNoiseLines)
 
     $buildWarningLines   = @([regex]::Matches($stdOutFiltered, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
                              ForEach-Object { $_.Value.Trim() })
