@@ -102,6 +102,7 @@ Regras da escada:
 - com `SKILL.md` no diff, o orquestrador avisa para conferir satelites linkados no proprio SKILL
 - na fase semantica (passo 4 do `AGENTS.md`), confirmar explicitamente se checklist em satelite (ex. `quality-checklist.md`) contradiz o `SKILL.md` da mesma frente
 - na pre-push, gaps exigem aprovacao explicita depois do relatorio; uma unica aprovacao pode cobrir o conjunto sugerido (ex.: «aplica os gaps do relatorio»), salvo pedido item a item; intencao inicial nao autoriza gravar automaticamente
+- gate semantico incondicional: a fase semantica produz relatorio e para; nenhuma edicao de arquivo, commit ou push acontece entre o relatorio e a aprovacao explicita do usuario — sem excecao, independentemente do tamanho ou obviedade do gap
 - encerrar o relatorio pre-push com linha fixa `VEREDICTO: nenhum gap confirmado` ou `VEREDICTO: N gap(s) confirmado(s)` (`N` = contagem de gaps confirmados); avisos descartados e areas nao cobertas nao contam como gap; ausencia da linha significa pre-push nao concluida, mesmo com passo mecanico ok
 - rotina pre-push completa e paridade motor↔documentacao: `13-revisao-pre-push.md` (prevalece sobre este resumo quando houver divergencia)
 - com `commitsBehind > 0`, `PUSH_READINESS=blocked`: diff/arquivos do intervalo sao so diagnosticos; fetch origin se necessario; se persistir, integrar antes do push (sem push automatico)
