@@ -150,8 +150,10 @@ Do NOT use esta skill para:
     «Saída do gerador GeneXus por environment»). Não confundir A bem-sucedido com B completo.
 - Ao chamar `Invoke-GeneXusKbBuildAll.ps1` ou `Invoke-GeneXusKbSpecifyGenerate.ps1` a partir
   de pasta paralela, passar `-ParallelKbRoot` (ou `-KbMetadataPath`). Os wrappers **leem**
-  `kb_environment_count`, `deployment_environment_name` e `kb_environment_names` do metadata —
-  **não** inventariam environments na KB nativa em cada build.
+  `kb_environment_count`, `deployment_environment_name`, `kb_environment_names`,
+  `deployment_hosting_kind` e, quando a validação de deploy bin estiver ativa,
+  `kb_environment_web_dirs` do metadata — **não** inventariam environments nem inferem
+  caminho de `web\bin` por pastas da KB nativa em cada build.
 - Para diagnostico de `.cs` gerado, resolver o caminho com `Resolve-GeneXusGeneratedCsPath.ps1`,
   que le `kb_environment_web_dirs` no mesmo metadata; metadata sem esse campo volta para
   `xpz-kb-parallel-setup`.
