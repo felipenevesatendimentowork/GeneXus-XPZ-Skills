@@ -64,7 +64,15 @@ Quando a mudança afetar regra operacional compartilhada, `02-regras-operacionai
 
 Antes de declarar que um termo, self-test, script, regra ou evidência está ausente de um documento, confrontar a alegação com o conjunto completo de resultados de busca e leituras já coletados na fase semântica — não só com a busca mais recente ou mais estreita. Uma ausência só vira gap confirmado se nenhuma busca anterior, diff, leitura de seção ou trecho aberto contradisser a alegação; se houver conflito entre resultados, reler o arquivo-alvo no ponto citado antes de reportar.
 
-### 4. Paridade motor ↔ promessa documental (obrigatório)
+### 4. Avaliação de `CHANGELOG.md`
+
+Para cada frente alterada, avaliar se houve mudança de comportamento público, contrato operacional, script público, skill, governança, segurança, fluxo de contribuição, remoção, rename ou incompatibilidade relevante para quem usa ou acompanha o repositório.
+
+Quando houver impacto público, `CHANGELOG.md` deve receber entrada em `Unreleased` antes da publicação. Se o changelog não for atualizado, o relatório pré-push deve registrar uma flag descartada com justificativa explícita (ex.: correção textual interna, refatoração sem mudança de contrato, ajuste de histórico sem efeito operacional).
+
+`CHANGELOG.md` é alvo de comparação documental quando a frente tiver impacto público. Ele não substitui `historico/IdeiasImplementadas_YYYYMM.md`: o histórico mensal explica a frente; o changelog resume o impacto público.
+
+### 5. Paridade motor ↔ promessa documental (obrigatório)
 
 Quando a frente introduzir ou alterar regra que cite **motor por nome** (ex.: «`Query-KbIntelligenceIndex` usa catálogo efetivo», «exit `11`», «`-ParallelKbRoot`»):
 
@@ -80,11 +88,11 @@ Quando a frente introduzir ou alterar regra que cite **motor por nome** (ex.: «
 - `Build-KbIntelligenceIndex.py` incrementa `EXTRACTOR_SIGNATURE_VERSION`, mas documento operacional ainda menciona a versão antiga do extrator.
 - Tipo `queryableByKbIntelligence=true` ganha nova aresta ou regra de extração, mas `02-regras-operacionais-e-runtime.md` não explica o que o índice materializa e o que ainda exige leitura XML.
 
-### 5. Regra em camadas para skills longas
+### 6. Regra em camadas para skills longas
 
 Ao alinhar nomenclatura ou contrato (ex.: `lastUpdate`, `-AcervoPath`, `executionEvidence`, `pathEnrichment`, `queryableByKbIntelligence`), varrer o `SKILL.md` **e os satélites que ele manda carregar** antes de considerar a frente fechada — não basta o `SKILL.md` estar alinhado. Exemplos em `xpz-builder`: [quality-checklist.md](xpz-builder/quality-checklist.md), [wwp-packaging.md](xpz-builder/wwp-packaging.md), `responsibilities-by-type/*.md`. Três cortes: (1) checklist final ou gates de fechamento; (2) fluxo operacional e captura de resultado; (3) inventário de scripts e contratos por script.
 
-### 6. Checklist de gaps
+### 7. Checklist de gaps
 
 Confirmar se há:
 
@@ -97,8 +105,9 @@ Confirmar se há:
 - rastreabilidade pública desatualizada em `09-inventario-e-rastreabilidade-publica.md` (presença do termo não basta — comparar abrangência)
 - rastreabilidade agregada demais no `09` (motor vs bateria com papéis distintos)
 - selftest que não cobre contrato novo documentado (reportar como área não coberta ou gap de teste)
+- mudança com impacto público sem entrada correspondente em `CHANGELOG.md` nem justificativa explícita de omissão
 
-### 7. Relatório
+### 8. Relatório
 
 Reportar separadamente:
 
@@ -121,7 +130,7 @@ Se o agente encontrar gaps durante a busca semântica:
 3. Aguardar aprovação explícita do usuário para cada alteração proposta.
 4. Só após aprovação, executar as correções.
 
-### 8. Veredicto
+### 9. Veredicto
 
 Encerrar com linha fixa:
 
