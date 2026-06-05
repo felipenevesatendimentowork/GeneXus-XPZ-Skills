@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Complementa Test-GeneXusRuntimeFreshness.ps1 (CSharpModel compartilhado) verificando
-    artefatos em <KbNative>\<EnvDeploy>\web\bin conforme deployment_hosting_kind no metadata.
+    artefatos no web\bin mapeado por kb_environment_web_dirs conforme deployment_hosting_kind no metadata.
 
 .PARAMETER KbPath
     Caminho da KB GeneXus nativa.

@@ -4,7 +4,7 @@
     Checagem pos-build de frescor de web\bin do environment de deploy (Ponto 2).
 
 .DESCRIPTION
-    Le deployment_hosting_kind do metadata; gate por publicacao em web\bin:
+    Le deployment_hosting_kind e kb_environment_web_dirs do metadata; gate por publicacao em web\bin:
       object *.dll (exceto runtime GeneXus/System/Microsoft) ou *.config
       dotnet-core-self-host: GxNetCoreStartup.dll so complementar (warning se velho)
 
@@ -289,17 +289,46 @@ function Add-GeneXusKbDeployBinPublicationFieldsToBinCheck {
 function Get-GeneXusKbDeployBinPaths {
     param(
         [string]$KbPath,
-        [string]$EnvironmentName
+        [string]$EnvironmentName,
+        [string]$MetadataPath
     )
 
-    $envWebPath = Join-Path $KbPath $EnvironmentName
-    $envWebPath = Join-Path $envWebPath 'web'
-    $envBinPath = Join-Path $envWebPath 'bin'
+    $pathStatus = 'resolved'
+    $pathReason = $null
+    $pathSource = 'legacy-kbpath-environment-name'
+    $envWebPath = $null
+
+    if (-not [string]::IsNullOrWhiteSpace($MetadataPath) -and (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
+        $fields = Read-GeneXusKbDeploymentMetadataFields -MetadataPath $MetadataPath
+        if ($fields.kb_environment_web_dirs.Count -eq 0) {
+            $pathStatus = 'blocked'
+            $pathReason = 'kb_environment_web_dirs ausente em kb-source-metadata.md; nao inferir diretorio pelo nome do environment.'
+        } elseif (-not $fields.kb_environment_web_dirs.Contains($EnvironmentName)) {
+            $pathStatus = 'blocked'
+            $pathReason = ("kb_environment_web_dirs nao contem mapeamento para environment '{0}'." -f $EnvironmentName)
+        } elseif ([string]::IsNullOrWhiteSpace($fields.kb_environment_web_dirs[$EnvironmentName])) {
+            $pathStatus = 'blocked'
+            $pathReason = ("kb_environment_web_dirs contem caminho vazio para environment '{0}'." -f $EnvironmentName)
+        } else {
+            $envWebPath = $fields.kb_environment_web_dirs[$EnvironmentName]
+            $pathSource = 'kb-source-metadata.kb_environment_web_dirs'
+        }
+    }
+
+    if ($null -eq $envWebPath -and $pathStatus -eq 'resolved') {
+        $envWebPath = Join-Path $KbPath $EnvironmentName
+        $envWebPath = Join-Path $envWebPath 'web'
+    }
+
+    $envBinPath = if ($null -ne $envWebPath) { Join-Path $envWebPath 'bin' } else { $null }
 
     return [pscustomobject][ordered]@{
         environmentWebPath = $envWebPath
         environmentBinPath = $envBinPath
-        sentinelPath       = Join-Path $envBinPath 'GxNetCoreStartup.dll'
+        sentinelPath       = if ($null -ne $envBinPath) { Join-Path $envBinPath 'GxNetCoreStartup.dll' } else { $null }
+        pathResolutionStatus = $pathStatus
+        pathResolutionSource = $pathSource
+        pathResolutionReason = $pathReason
     }
 }
 
@@ -312,7 +341,7 @@ function Test-GeneXusKbDeployBinFreshnessCore {
         [string]$MetadataPath
     )
 
-    $paths = Get-GeneXusKbDeployBinPaths -KbPath $KbPath -EnvironmentName $EnvironmentName
+    $paths = Get-GeneXusKbDeployBinPaths -KbPath $KbPath -EnvironmentName $EnvironmentName -MetadataPath $MetadataPath
     $slack = Get-GeneXusKbDeployBinTimeSlack
     $threshold = $BuildStartedAt.Subtract($slack)
 
@@ -325,10 +354,19 @@ function Test-GeneXusKbDeployBinFreshnessCore {
         paths                      = [ordered]@{
             environmentWebPath = $paths.environmentWebPath
             environmentBinPath = $paths.environmentBinPath
+            pathResolutionStatus = $paths.pathResolutionStatus
+            pathResolutionSource = $paths.pathResolutionSource
+            pathResolutionReason = $paths.pathResolutionReason
         }
         binCheck                   = [ordered]@{}
         diagnosticLayer            = [ordered]@{}
         interpretation             = $null
+    }
+
+    if ($paths.pathResolutionStatus -ne 'resolved') {
+        $result.status = 'unknown'
+        $result.interpretation = $paths.pathResolutionReason
+        return [pscustomobject]$result
     }
 
     $envWebMax = Get-GeneXusKbDirectoryMaxWriteTime -RootPath $paths.environmentWebPath -IncludeExtensions @('.cs', '.js', '.aspx', '.dll') -ExcludeDirectoryNames @('bin')
