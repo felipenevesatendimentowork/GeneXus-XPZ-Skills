@@ -119,41 +119,6 @@ Aguardar ate que haja uma frente de refatoracao maior no motor compartilhado ou 
 - Ha outras renomeclaturas de campo ou arquivo pendentes que pudessem ser agrupadas na mesma frente de migracao para amortizar o custo?
 - O rename deve ser feito com compatibilidade retroativa (suporte temporario aos dois nomes) ou como corte limpo?
 
-## CreateOfflineDatabase
-
-**Importância:** FALTA AVALIAR
-**Maturidade:** FALTA AVALIAR
-
-**Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
-
-### Problema concreto que motiva a ideia
-
-Em KBs GeneXus com aplicativos Native Mobile e `Connectivity Support = Offline` em Main Objects, o build headless do pipeline precisa gerar o banco SQLite local que será embutido no app do dispositivo. Sem `CreateOfflineDatabase` headless, essa etapa fica dependente da IDE.
-
-### O que a task faz tecnicamente
-
-- Registrada em `Genexus.Tasks.targets` e documentada em `3908.html` da instalação oficial.
-- Parâmetro obrigatório: `OfflineObjectNames` — lista de nomes de objetos separada por `;`.
-- Os objetos listados precisam ter `Connectivity Support = Offline` configurado.
-- Quando um Main Object tem essa propriedade, o GeneXus cria automaticamente um objeto do tipo "Offline Database object" na KB. `CreateOfflineDatabase` gera e executa a criação do SQLite correspondente.
-- **Não toca o banco de dados do servidor** (SQL Server, PostgreSQL, etc.) — cria apenas o arquivo SQLite local para o dispositivo.
-- Geradores compatíveis: Android, Apple, Angular exclusivamente.
-
-### Diferença de risco em relação às tasks de banco de servidor
-
-Risco contido: o SQLite gerado é um artefato de app mobile, não o banco central da KB. Pode ser regenerado a qualquer momento sem impacto no servidor.
-
-### Perguntas a responder antes de decidir
-
-- A task `Genexus.MsBuild.Tasks.CreateOfflineDatabase` expõe `OfflineObjectNames` como propriedade pública na reflexão do assembly desta instalação?
-- Em um pipeline headless de Native Mobile, `CreateOfflineDatabase` é chamada antes ou depois de `BuildAll`?
-- Existe documentação ou uso empírico que mostre se a task exige gerador Android/Apple/Angular ativo no Environment, ou se opera apenas sobre o modelo da KB?
-- O script adequado seria um novo `Invoke-GeneXusOfflineDb.ps1` ou uma extensão do pipeline de `xpz-msbuild-build`?
-
-### Limiar para implementar
-
-Implementar quando houver: (a) KB concreta com Native Mobile Offline no portfólio onde a automação headless do build seja requisito real, ou (b) solicitação explícita de cobertura desse pipeline.
-
 ## Tríade de diagnóstico de schema: WriteDatabaseSchema + WriteKnowledgeBaseSchema + CompareSchemas
 
 **Importância:** FALTA AVALIAR

@@ -1410,3 +1410,29 @@ com task pública acessível.
 **Não reavaliar salvo** se for identificado que a task existe em caminho acessível sem
 GeneXus Server e se a semântica "check before install" for confirmada empiricamente
 como diferente de `Reorganize` puro.
+
+---
+
+## CreateOfflineDatabase
+
+**Origem:** avaliação de inventário de tasks MSBuild — domínio Database, 2026-05-06.
+
+**O que era:** task MSBuild para gerar o banco SQLite local usado por aplicativos
+Native Mobile com `Connectivity Support = Offline`. O SQLite gerado é artefato do
+app/dispositivo e não altera o banco central da aplicação.
+
+**Por que foi descartada:**
+
+A necessidade é específica de KBs com Native Mobile Offline e pipeline headless de
+build/deploy mobile. Para uso eventual, ou quando a geração/publicação mobile já passa
+pela IDE do GeneXus, a opção da IDE atende sem exigir novo wrapper, nova documentação
+e manutenção adicional nesta base XPZ.
+
+O caso também não melhora o fluxo central deste repositório: importação/exportação
+XPZ, empacotamento, validação de objetos e build web pós-import. O risco técnico da
+task é contido, pois o SQLite é regenerável e não toca o banco servidor, mas o ganho
+prático é baixo sem demanda concreta de automação mobile offline.
+
+**Não reavaliar salvo** surgimento de KB concreta com Native Mobile Offline em que a
+automação headless do build/deploy seja requisito real, ou solicitação explícita de
+cobertura desse pipeline.
