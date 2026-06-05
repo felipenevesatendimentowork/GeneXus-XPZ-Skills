@@ -8,6 +8,7 @@ O formato segue a ideia de manter uma seção `Unreleased` para mudanças ainda 
 
 ### Unreleased
 
+- Documentado no guia de contribuição que a revisão pré-push deve avaliar atualização do `CHANGELOG.md`.
 - Adicionados documentos públicos de governança: `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` e `CHANGELOG.md`.
 
 ## Español
@@ -18,6 +19,7 @@ El formato mantiene una sección `Unreleased` para cambios aún no publicados en
 
 ### Unreleased
 
+- Documentado en la guía de contribución que la revisión previa al push debe evaluar la actualización de `CHANGELOG.md`.
 - Agregados documentos públicos de gobernanza: `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` y `CHANGELOG.md`.
 
 ## English
@@ -28,4 +30,5 @@ The format keeps an `Unreleased` section for changes not yet published in a form
 
 ### Unreleased
 
+- Documented in the contribution guide that pre-push review should evaluate updates to `CHANGELOG.md`.
 - Added public governance documents: `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md`.
