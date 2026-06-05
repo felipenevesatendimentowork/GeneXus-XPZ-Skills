@@ -9,7 +9,7 @@ Este repositório contém documentação, scripts e exemplos metodológicos para
 Se você encontrar uma vulnerabilidade, vazamento acidental de informação sensível ou risco operacional que possa afetar usuários do projeto:
 
 - use um canal privado do repositório quando ele estiver disponível;
-- se não houver canal privado configurado, contate o mantenedor pelo canal já usado para coordenação do projeto ou por `ForGenexusCommunity@frigobyte.com` antes de publicar detalhes sensíveis;
+- se não houver canal privado configurado, contate o mantenedor pelo canal já usado para coordenação do projeto ou por `for-genexus-community@frigobyte.com` antes de publicar detalhes sensíveis;
 - não abra uma issue pública com credenciais, nomes sensíveis de clientes, conteúdo de KB real ou passos exploráveis.
 - não envie credenciais, XPZ real ou conteúdo de KB real por e-mail sem combinação prévia.
 
@@ -33,7 +33,7 @@ Este repositorio contiene documentación, scripts y ejemplos metodológicos para
 Si encuentras una vulnerabilidad, filtración accidental de información sensible o riesgo operativo que pueda afectar a usuarios del proyecto:
 
 - usa un canal privado del repositorio cuando esté disponible;
-- si no hay un canal privado configurado, contacta a la persona mantenedora por el canal ya usado para coordinar el proyecto o por `ForGenexusCommunity@frigobyte.com` antes de publicar detalles sensibles;
+- si no hay un canal privado configurado, contacta a la persona mantenedora por el canal ya usado para coordinar el proyecto o por `for-genexus-community@frigobyte.com` antes de publicar detalles sensibles;
 - no abras una issue pública con credenciales, nombres sensibles de clientes, contenido de KB real o pasos explotables.
 - no envíes credenciales, XPZ real o contenido de KB real por correo electrónico sin acuerdo previo.
 
@@ -57,7 +57,7 @@ This repository contains documentation, scripts, and methodological examples for
 If you find a vulnerability, accidental sensitive information leak, or operational risk that may affect project users:
 
 - use a private repository channel when available;
-- if no private channel is configured, contact the maintainer through the channel already used for project coordination or at `ForGenexusCommunity@frigobyte.com` before publishing sensitive details;
+- if no private channel is configured, contact the maintainer through the channel already used for project coordination or at `for-genexus-community@frigobyte.com` before publishing sensitive details;
 - do not open a public issue with credentials, sensitive client names, real KB content, or exploitable steps.
 - do not send credentials, real XPZ files, or real KB content by email without prior agreement.
 
