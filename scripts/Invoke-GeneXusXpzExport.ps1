@@ -10,6 +10,13 @@ o probe Test-GeneXusMsBuildSetup.ps1, abre a KB em modo headless controlado,
 posiciona versão e Environment quando informados, executa a task Export com
 parâmetros explícitos e fecha a KB. O script não executa importação.
 
+.EXAMPLE
+pwsh -NoProfile -File scripts/Invoke-GeneXusXpzExport.ps1 -KbPath "C:\GxModels\MinhaKb" -XpzPath "C:\Temp\wpObjeto.xpz" -WorkingDirectory "C:\Temp\gx-export" -LogPath "C:\Temp\gx-export\export.json" -ObjectList "WebPanel:wpObjeto" -ParallelKbRoot "C:\Dev\Prod\MinhaKbParalela" -DependencyType "None" -ReferenceType "None"
+
+Exportação seletiva/cirúrgica de um objeto. Use DependencyType=None e
+ReferenceType=None quando a intenção for gerar pacote contendo somente os
+objetos listados; o inventário pós-export continua obrigatório.
+
 .PARAMETER KbPath
 Caminho da KB a ser usada na exportação.
 
@@ -38,10 +45,16 @@ Nome opcional do Environment a posicionar antes da exportação.
 Lista explícita de objetos a exportar, quando ExportAll não estiver habilitado.
 
 .PARAMETER DependencyType
-Valor explícito para DependencyType.
+Valor explícito para DependencyType. Em exportação seletiva/cirúrgica com
+ObjectList cujo objetivo seja conter somente os objetos listados, use "None".
+Valores além de "None" e o default formal quando omitido devem ser confirmados
+na instalação antes de uso operacional.
 
 .PARAMETER ReferenceType
-Valor explícito para ReferenceType.
+Valor explícito para ReferenceType. Em exportação seletiva/cirúrgica com
+ObjectList cujo objetivo seja conter somente os objetos listados, use "None".
+Valores além de "None" e o default formal quando omitido devem ser confirmados
+na instalação antes de uso operacional.
 
 .PARAMETER ExportKbInfo
 Valor explícito para ExportKBInfo. Default: false.

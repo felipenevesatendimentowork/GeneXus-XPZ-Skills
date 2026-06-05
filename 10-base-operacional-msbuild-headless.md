@@ -583,6 +583,7 @@ Com base na documentação offline da instalação oficial, ficam confirmados pa
 
 - não assumir sem teste a relação exata entre `ExportKBInfo` documentado e `ExportKBProperties` exposto na definição interna
 - não assumir que os defaults internos de importação e exportação são adequados para esta frente sem validação prática
+- confirmar, por documentação oficial offline ou experimento controlado, os valores aceitos de `DependencyType` e `ReferenceType` além de `None`, e o default formal da task `Export` quando esses atributos são omitidos
 - verificar em ambiente controlado o efeito real de `ImportKBInformation` sobre propriedades de `KB`, `Version` e `Environment`
 - verificar se `PreviewMode` e `UpdateFile` entregam evidência suficiente para uma fase segura de inspeção antes de importação real
 - verificar se a execução via `MSBuild` deixa rastros laterais relevantes no diretório de trabalho ou em arquivos de log associados ao host
@@ -627,9 +628,20 @@ Conclusão operacional desta frente:
 - o caminho headless validado para exportação parcial é fornecer explicitamente a lista de objetos em `Objects`/`ObjectList`
 - quando o usuário precisar selecionar objetos por data e não houver lista prévia, a seleção por data permanece dependente da IDE ou de outra fonte externa autorizada que produza a lista de objetos
 
+## Achado Empírico Sobre Recorte Cirúrgico Na Exportação
+
+Na KB `FabricaBrasil18` (GeneXus 18, environment `NETPostgreSQL`), duas exportações headless do mesmo objeto `WebPanel:wpProcessaArquivoDeTransacaoDePagamento` mostraram diferença operacional relevante:
+
+- com `Objects`/`ObjectList` preenchido e `DependencyType`/`ReferenceType` omitidos, o `.xpz` gerado continha 25 objetos (`WebPanel` pedido + 24 extras), 50 atributos top-level, `attributesTopLevelUnreconciled=true` e `deltaStatus=MISMATCH`
+- com a mesma lista explícita e `DependencyType="None"` / `ReferenceType="None"`, o `.xpz` gerado continha exatamente 1 objeto, 0 atributos top-level, `systemObjectsPresent=[]`, `attributesTopLevelUnreconciled=false` e `deltaStatus=MATCH`
+
+Conclusão operacional confirmada para esta instalação: `None` é aceito por `DependencyType` e `ReferenceType` e deve ser usado como alavanca preventiva em exportação seletiva/cirúrgica quando a intenção declarada for obter somente os objetos listados. A omissão desses atributos já produziu arrasto de dependências, referências, módulos e atributos top-level; até confirmação formal do default, tratar a omissão como comportamento não seguro para pacote cirúrgico.
+
+Regra prática: ao chamar `Invoke-GeneXusXpzExport.ps1` com `-ObjectList` para um pacote que deve conter somente os itens listados, passar `-DependencyType "None" -ReferenceType "None"`. Incluir dependências ou referências só quando o usuário pedir explicitamente esse comportamento. Essa prevenção na origem **não substitui** o inventário pós-export: o pacote gerado continua precisando ser inventariado e confrontado com o delta declarado antes de qualquer materialização, importação ou sync.
+
 **Divergências de rótulo (`Tipo` em `-ObjectList`):** o prefixo aceito pela task MSBuild `Export` pode diferir do nome no catálogo interno (`gx-object-type-catalog.json`), do `folderName` no acervo ou do tipo em consultas KbIntelligence. Antes de montar `-ObjectList` a partir do índice ou do catálogo, consultar `exportTaskLabel` quando existir e a tabela em [10a-gx-export-task-labels.md](10a-gx-export-task-labels.md). Exemplo consolidado (A1, FabricaBrasil18): catálogo/índice `WorkWithForWeb`, task Export `WorkWith` (`WorkWithForWeb` em `-ObjectList` gera `is not a valid type`).
 
-**Advertência sobre exportação parcial com lista explícita:** mesmo quando `Objects`/`ObjectList` nomeia objetos concretos, o GeneXus pode incluir no `.xpz` **objetos adicionais** (dependências, referências, módulos organizacionais) e **atributos top-level** (arrasto de base quando a lista não inclui `Transaction`) conforme parâmetros da task (`DependencyType`, `ReferenceType`) e comportamento padrão. **Não** concluir que o pacote coincide com a lista nominal **sem** inventariar o artefato. O motor `scripts/Get-GeneXusImportPackageObjectInventory.ps1` aceita `import_file.xml`, XML com raiz `<ExportFile>` e `.xpz`; confronta delta via `-DeclaredDeltaPath` ou `-DeclaredDeltaItems` (mesmo formato `Tipo:Nome` de `-ObjectList`, separador `;` ou linha); detecta objetos de plataforma/SDK via `scripts/gx-platform-objects.json` (`Get-SystemObjectsPresent` → `systemObjectsPresent` com `name` e `kind`) e emite `attributes-top-level-em-export-cirurgico` em export seletiva sem `Transaction` na lista. Após export headless, `scripts/Invoke-GeneXusXpzExport.ps1` embute `packageInventory` resumido no diagnóstico (`extrasSample` cobre só extras de `<Objects>`; atributos top-level ficam no sidecar), grava `package-inventory.json`, expõe `nominalInventoryAt` no resumo e classifica `operationalSubState`; linhas `error :` no stdout viram `exportErrors` no top-level do `export.json` via `Read-MsBuildImportSignals.ps1 -Stage export` — **não** tratar `exitCode=0` com `exportErrors` não vazio como conclusão limpa. A skill `xpz-msbuild-import-export` documenta sub-estados, checklist, listas nominais obrigatórias ao humano e o anti-padrão de contar a lista nominal ou `extrasSample` no lugar do pacote completo.
+**Advertência sobre exportação parcial com lista explícita:** mesmo quando `Objects`/`ObjectList` nomeia objetos concretos, o GeneXus pode incluir no `.xpz` **objetos adicionais** (dependências, referências, módulos organizacionais) e **atributos top-level** (arrasto de base quando a lista não inclui `Transaction`) conforme parâmetros da task (`DependencyType`, `ReferenceType`) e comportamento padrão. Em pacote cirúrgico, prevenir esse arrasto passando `DependencyType="None"` e `ReferenceType="None"`; se o usuário pedir dependências/referências, ou se a rodada omitir a prevenção, o resultado continua sujeito a extras e deve ser tratado como pacote seletivo com inventário obrigatório. **Não** concluir que o pacote coincide com a lista nominal **sem** inventariar o artefato. O motor `scripts/Get-GeneXusImportPackageObjectInventory.ps1` aceita `import_file.xml`, XML com raiz `<ExportFile>` e `.xpz`; confronta delta via `-DeclaredDeltaPath` ou `-DeclaredDeltaItems` (mesmo formato `Tipo:Nome` de `-ObjectList`, separador `;` ou linha); detecta objetos de plataforma/SDK via `scripts/gx-platform-objects.json` (`Get-SystemObjectsPresent` → `systemObjectsPresent` com `name` e `kind`) e emite `attributes-top-level-em-export-cirurgico` em export seletiva sem `Transaction` na lista. Após export headless, `scripts/Invoke-GeneXusXpzExport.ps1` embute `packageInventory` resumido no diagnóstico (`extrasSample` cobre só extras de `<Objects>`; atributos top-level ficam no sidecar), grava `package-inventory.json`, expõe `nominalInventoryAt` no resumo e classifica `operationalSubState`; linhas `error :` no stdout viram `exportErrors` no top-level do `export.json` via `Read-MsBuildImportSignals.ps1 -Stage export` — **não** tratar `exitCode=0` com `exportErrors` não vazio como conclusão limpa. A skill `xpz-msbuild-import-export` documenta sub-estados, checklist, listas nominais obrigatórias ao humano e o anti-padrão de contar a lista nominal ou `extrasSample` no lugar do pacote completo.
 
 ## Checklist Inicial De Requisitos Da Skill
 
@@ -744,8 +756,8 @@ Parâmetros específicos de exportação:
 - `-XpzPath`
 - `-ObjectList` (export seletivo: formato `Tipo:Nome`; exige `-ParallelKbRoot` ou `-IndexPath` — pré-validação `objectListPreflight`, estágio `pre-export-identity`, exit **35** se homônimo ou índice inválido; ver `10a-gx-export-task-labels.md`)
 - `-ParallelKbRoot` / `-IndexPath` / `-CatalogOverridePath` (obrigatórios com `-ObjectList` preenchido e sem `-ExportAll`/exportação full)
-- `-DependencyType`
-- `-ReferenceType`
+- `-DependencyType` (em export seletivo/cirúrgico que deve conter somente a lista nominal, usar `"None"`)
+- `-ReferenceType` (em export seletivo/cirúrgico que deve conter somente a lista nominal, usar `"None"`)
 - `-ExportKbInfo`
 - `-ExportAll`
 
