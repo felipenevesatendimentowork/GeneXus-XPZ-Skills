@@ -16,6 +16,8 @@ Antes de abrir uma alteração:
 
 Antes de propor publicação, compare sua alteração com `origin/main..HEAD`, execute as verificações mecânicas documentadas em `13-revisao-pre-push.md` e faça a busca semântica de coerência descrita ali. A revisão pré-push é relatório primeiro: correções decorrentes do relatório devem ser discutidas antes de novas edições quando o fluxo local assim exigir.
 
+Durante essa revisão, avalie também se a mudança precisa ser registrada em `CHANGELOG.md`. Mudanças de comportamento público, contrato operacional, scripts, skills, governança, segurança ou fluxo de contribuição devem atualizar o changelog ou trazer justificativa explícita para a omissão.
+
 ### Contribuições por mensagem privada
 
 Contribuições também podem chegar por mensagem privada ao mantenedor, especialmente quando forem prompts, diagnósticos ou sugestões geradas por agentes trabalhando em pastas paralelas de KB GeneXus.
@@ -40,6 +42,7 @@ Ao abrir um pull request, descreva:
 - o problema resolvido;
 - os arquivos principais alterados;
 - quais verificações foram executadas;
+- se `CHANGELOG.md` foi atualizado ou por que não se aplica;
 - riscos conhecidos, pendências e áreas não cobertas.
 
 ## Español
@@ -57,6 +60,8 @@ Antes de abrir un cambio:
 ### Revisión antes del push
 
 Antes de proponer publicación, compara tu cambio con `origin/main..HEAD`, ejecuta las verificaciones mecánicas documentadas en `13-revisao-pre-push.md` y realiza la búsqueda semántica de coherencia descrita allí. La revisión previa al push es primero un informe: las correcciones derivadas del informe deben discutirse antes de nuevas ediciones cuando el flujo local así lo exija.
+
+Durante esa revisión, evalúa también si el cambio debe registrarse en `CHANGELOG.md`. Cambios de comportamiento público, contrato operativo, scripts, skills, gobernanza, seguridad o flujo de contribución deben actualizar el changelog o traer una justificación explícita para la omisión.
 
 ### Contribuciones por mensaje privado
 
@@ -82,6 +87,7 @@ Al abrir un pull request, describe:
 - el problema resuelto;
 - los archivos principales modificados;
 - qué verificaciones fueron ejecutadas;
+- si `CHANGELOG.md` fue actualizado o por qué no aplica;
 - riesgos conocidos, pendientes y áreas no cubiertas.
 
 ## English
@@ -99,6 +105,8 @@ Before opening a change:
 ### Pre-Push Review
 
 Before proposing publication, compare your change with `origin/main..HEAD`, run the mechanical checks documented in `13-revisao-pre-push.md`, and perform the semantic consistency search described there. Pre-push review is report-first: corrections derived from the report should be discussed before new edits when the local flow requires it.
+
+During that review, also evaluate whether the change should be recorded in `CHANGELOG.md`. Changes to public behavior, operational contracts, scripts, skills, governance, security, or contribution flow should update the changelog or include an explicit justification for omitting it.
 
 ### Private Message Contributions
 
@@ -124,4 +132,5 @@ When opening a pull request, describe:
 - the problem solved;
 - the main files changed;
 - which checks were run;
+- whether `CHANGELOG.md` was updated or why it does not apply;
 - known risks, pending work, and uncovered areas.
