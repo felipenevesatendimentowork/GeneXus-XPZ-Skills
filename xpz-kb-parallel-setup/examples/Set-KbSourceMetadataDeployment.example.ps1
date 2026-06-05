@@ -10,6 +10,9 @@ O mapeamento de output por environment vem SOMENTE de -KbEnvironmentOutputDirs c
 pelo usuario; nao fazer scan de pastas da KB nativa.
 Por padrao valida cada nome via SetActiveEnvironment headless (MSBuild).
 
+.PARAMETER SharedSkillsRoot
+Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
+
 .EXAMPLE
 .\Set-KbSourceMetadataDeployment.ps1 `
     -KbParallelRoot "C:\Dev\Prod\Gx_FabricaBrasil" `
@@ -57,14 +60,15 @@ param(
 
     [string]$DatabasePassword,
 
-    [switch]$AsJson
+    [switch]$AsJson,
+
+    [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$skillsRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$engineScript = Join-Path $skillsRoot 'scripts\Set-XpzKbSourceMetadataDeployment.ps1'
+$engineScript = Join-Path $SharedSkillsRoot 'scripts\Set-XpzKbSourceMetadataDeployment.ps1'
 
 if (-not (Test-Path -LiteralPath $engineScript -PathType Leaf)) {
     throw "Motor compartilhado ausente: $engineScript"
