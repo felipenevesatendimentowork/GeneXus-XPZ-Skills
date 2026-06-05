@@ -293,9 +293,9 @@ function Get-GeneXusKbDeployBinPaths {
         [string]$MetadataPath
     )
 
-    $pathStatus = 'resolved'
-    $pathReason = $null
-    $pathSource = 'legacy-kbpath-environment-name'
+    $pathStatus = 'blocked'
+    $pathReason = 'kb-source-metadata.md ausente para resolver kb_environment_web_dirs; nao inferir diretorio pelo nome do environment.'
+    $pathSource = 'kb-source-metadata.kb_environment_web_dirs'
     $envWebPath = $null
 
     if (-not [string]::IsNullOrWhiteSpace($MetadataPath) -and (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
@@ -311,13 +311,10 @@ function Get-GeneXusKbDeployBinPaths {
             $pathReason = ("kb_environment_web_dirs contem caminho vazio para environment '{0}'." -f $EnvironmentName)
         } else {
             $envWebPath = $fields.kb_environment_web_dirs[$EnvironmentName]
+            $pathStatus = 'resolved'
+            $pathReason = $null
             $pathSource = 'kb-source-metadata.kb_environment_web_dirs'
         }
-    }
-
-    if ($null -eq $envWebPath -and $pathStatus -eq 'resolved') {
-        $envWebPath = Join-Path $KbPath $EnvironmentName
-        $envWebPath = Join-Path $envWebPath 'web'
     }
 
     $envBinPath = if ($null -ne $envWebPath) { Join-Path $envWebPath 'bin' } else { $null }

@@ -63,6 +63,22 @@ try {
         throw "ASSERT_FAILED: status esperado fresh, atual=$($result.status)"
     }
 
+    $blockedWithoutMetadata = Test-GeneXusKbDeployBinFreshnessCore `
+        -KbPath $kbNativePath `
+        -EnvironmentName '.Net Environment' `
+        -DeploymentHostingKind 'dotnet-framework-iis' `
+        -BuildStartedAt $buildStartedAt
+
+    if ($blockedWithoutMetadata.paths.pathResolutionStatus -ne 'blocked') {
+        throw "ASSERT_FAILED: metadata ausente deveria bloquear resolucao, atual=$($blockedWithoutMetadata.paths.pathResolutionStatus)"
+    }
+    if ($blockedWithoutMetadata.paths.pathResolutionSource -ne 'kb-source-metadata.kb_environment_web_dirs') {
+        throw "ASSERT_FAILED: metadata ausente nao deve usar fallback legado, atual=$($blockedWithoutMetadata.paths.pathResolutionSource)"
+    }
+    if ($blockedWithoutMetadata.paths.environmentWebPath) {
+        throw "ASSERT_FAILED: metadata ausente nao deve inferir environmentWebPath, atual=$($blockedWithoutMetadata.paths.environmentWebPath)"
+    }
+
     'GENEXUS_DEPLOY_BIN_FRESHNESS_SELFTEST_OK'
 } finally {
     if (Test-Path -LiteralPath $tempRoot) {
