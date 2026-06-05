@@ -28,6 +28,8 @@
 
 .PARAMETER GeneratorOutputPath
     Pasta de output do gerador. Se omitido, deriva como <KbPath>\CSharpModel\web.
+    Para diagnostico de .cs por environment, prefira resolver este caminho antes
+    com Resolve-GeneXusGeneratedCsPath.ps1 a partir de kb-source-metadata.md.
 
 .PARAMETER AsJson
     Emite saida como JSON estruturado em vez de texto humano.

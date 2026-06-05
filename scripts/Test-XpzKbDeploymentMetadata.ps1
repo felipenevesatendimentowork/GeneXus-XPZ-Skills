@@ -5,8 +5,9 @@
 
 .DESCRIPTION
     Gate de setup (xpz-kb-parallel-setup): rejeita metadata legado com nomes tipicos de scan
-    por pastas web\ (CSharpModel, Data*) e inconsistencias de contagem. A lista correta vem
-    do usuario via -KbEnvironmentNames; este gate nao valida existencia no GeneXus (MSBuild).
+    por pastas web\ (CSharpModel, Data*), inconsistencias de contagem e mapeamento
+    de output/web ausente ou divergente. A lista correta vem do usuario via
+    -KbEnvironmentNames e -KbEnvironmentOutputDirs; este gate nao valida existencia no GeneXus (MSBuild).
 
 .PARAMETER MetadataPath
     Caminho para kb-source-metadata.md.
@@ -44,6 +45,8 @@ switch ($result.status) {
         Write-Output ("deployment_environment_name: {0}" -f $result.deployment_environment_name)
         Write-Output ("kb_environment_count: {0}" -f $result.kb_environment_count)
         Write-Output ("kb_environment_names: {0}" -f ($result.kb_environment_names -join ', '))
+        Write-Output ("kb_environment_output_dirs: {0}" -f (Join-GeneXusKbEnvironmentMap -Map $result.kb_environment_output_dirs))
+        Write-Output ("kb_environment_web_dirs: {0}" -f (Join-GeneXusKbEnvironmentMap -Map $result.kb_environment_web_dirs))
     }
     'PENDENTE' {
         foreach ($warning in $result.warnings) {

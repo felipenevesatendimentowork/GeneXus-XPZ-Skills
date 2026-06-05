@@ -152,6 +152,9 @@ Do NOT use esta skill para:
   de pasta paralela, passar `-ParallelKbRoot` (ou `-KbMetadataPath`). Os wrappers **leem**
   `kb_environment_count`, `deployment_environment_name` e `kb_environment_names` do metadata —
   **não** inventariam environments na KB nativa em cada build.
+- Para diagnostico de `.cs` gerado, resolver o caminho com `Resolve-GeneXusGeneratedCsPath.ps1`,
+  que le `kb_environment_web_dirs` no mesmo metadata; metadata sem esse campo volta para
+  `xpz-kb-parallel-setup`.
 - Quando o build falhar com erros C# compatíveis com arquivo gerado truncado, como
   `CS1010` (newline em constante) e `CS1513` (`}` esperada) repetidos no mesmo `.cs`,
   verificar primeiro se o artefato gerado termina abruptamente, sem string/funcao
@@ -233,6 +236,8 @@ Motor compartilhado de **diagnóstico** no `.cs` gerado (camada web), complement
 - `-CsPath` (obrigatório) — caminho absoluto do `.cs` (ex.: `<KbPath>\<Environment>\web\<transaction>.cs`)
 - `-Attribute` (obrigatório) — nome com ou sem prefixo `A<n>`; o motor normaliza para a forma canônica no arquivo
 - `-AsJson` (opcional) — saída estruturada (`methods[]`, `totals`, `tripletPattern.cascadeOrder`, `hasAssignAttriInMethod`)
+
+Antes de montar `-CsPath`, preferir `scripts/Resolve-GeneXusGeneratedCsPath.ps1` com `-KbPath`, `-ParallelKbRoot`/`-KbMetadataPath`, `-EnvironmentName` quando necessario e `-ObjectName`. O resolvedor usa `kb_environment_web_dirs` em `kb-source-metadata.md`; se o campo estiver ausente, bloquear e encaminhar para `xpz-kb-parallel-setup`, sem glob recursivo na KB nativa nem inferencia por `CSharpModel`.
 
 **Mapa dos métodos `.cs` gerados onde a atribuição pode aparecer:** use `methods[].name` como nome literal gerado e cruze com o mapa canônico longo em [xpz-builder/responsibilities-by-type/transaction.md](../xpz-builder/responsibilities-by-type/transaction.md#generated-cs-map-where-a-transaction-assignment-rule-lives-in-xpz-quarantine).
 

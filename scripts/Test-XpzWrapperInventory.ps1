@@ -191,6 +191,7 @@ $recommendedEvidenceByBaseName = @{
     'Get-KbLastUpdate' = (Test-GeneratedLastUpdateHistory -RootPath $KbParallelRoot)
     'New-KbImportPackage' = (Test-ImportPackageHistory -RootPath $KbParallelRoot)
     'Resolve-KbIdentity' = (Test-KbIdentityMetadata -RootPath $KbParallelRoot)
+    'Resolve-KbGeneratedCsPath' = $false
 }
 
 # Mapear cada exemplo para o nome local esperado e verificar presenca
@@ -205,6 +206,7 @@ $optionalBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([S
 [void]$optionalBaseNames.Add('Get-KbLastUpdate')
 [void]$optionalBaseNames.Add('Notify-TaskComplete')
 [void]$optionalBaseNames.Add('Resolve-KbIdentity')
+[void]$optionalBaseNames.Add('Resolve-KbGeneratedCsPath')
 $requiresVersionExemptBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 [void]$requiresVersionExemptBaseNames.Add('Test-KbPowerShellRuntime')
 
@@ -252,6 +254,8 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
                 $customized.Add(('{0}(reason=uses_removed_inventory_discovery)' -f $standardLocalName))
             } elseif ($exampleText -match 'KbEnvironmentNames' -and $localText -notmatch 'KbEnvironmentNames') {
                 $customized.Add(('{0}(reason=missing_KbEnvironmentNames)' -f $standardLocalName))
+            } elseif ($exampleText -match 'KbEnvironmentOutputDirs' -and $localText -notmatch 'KbEnvironmentOutputDirs') {
+                $customized.Add(('{0}(reason=missing_KbEnvironmentOutputDirs)' -f $standardLocalName))
             } elseif ($exampleText -match 'KbNativePath' -and $localText -notmatch 'KbNativePath') {
                 $customized.Add(('{0}(reason=missing_KbNativePath_for_msbuild_validation)' -f $standardLocalName))
             } elseif ($exampleText -match 'InventoryWorkingDirectory' -and $localText -notmatch 'InventoryWorkingDirectory') {

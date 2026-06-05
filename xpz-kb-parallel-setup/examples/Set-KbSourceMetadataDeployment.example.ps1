@@ -6,6 +6,8 @@ Wrapper local para gravar campos de environment/deploy em kb-source-metadata.md.
 .DESCRIPTION
 Delega a scripts/Set-XpzKbSourceMetadataDeployment.ps1 no repositorio GeneXus-XPZ-Skills.
 A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames confirmada pelo usuario.
+O mapeamento de output por environment vem SOMENTE de -KbEnvironmentOutputDirs confirmado
+pelo usuario; nao fazer scan de pastas da KB nativa.
 Por padrao valida cada nome via SetActiveEnvironment headless (MSBuild).
 
 .EXAMPLE
@@ -14,6 +16,7 @@ Por padrao valida cada nome via SetActiveEnvironment headless (MSBuild).
     -DeploymentEnvironmentName "NETPostgreSQL" `
     -DeploymentHostingKind "dotnet-core-self-host" `
     -KbEnvironmentNames @("NETPostgreSQL", ".Net Environment") `
+    -KbEnvironmentOutputDirs @("NETPostgreSQL=NETPostgreSQL", ".Net Environment=NETFrameworkPostgreSQL") `
     -KbNativePath "C:\GxModels\FabricaBrasil18" `
     -InventoryWorkingDirectory "C:\Dev\Prod\Gx_FabricaBrasil\Temp\msbuild-inventory"
 #>
@@ -32,6 +35,11 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string[]]$KbEnvironmentNames,
+
+    [Parameter(Mandatory = $true)]
+    [string[]]$KbEnvironmentOutputDirs,
+
+    [string[]]$KbEnvironmentWebDirs,
 
     [string]$KbNativePath,
 
@@ -66,9 +74,11 @@ $invokeArgs = @{
     DeploymentEnvironmentName = $DeploymentEnvironmentName
     DeploymentHostingKind     = $DeploymentHostingKind
     KbEnvironmentNames        = $KbEnvironmentNames
+    KbEnvironmentOutputDirs   = $KbEnvironmentOutputDirs
 }
 if ($KbParallelRoot) { $invokeArgs['KbParallelRoot'] = $KbParallelRoot }
 if ($MetadataPath) { $invokeArgs['MetadataPath'] = $MetadataPath }
+if ($KbEnvironmentWebDirs) { $invokeArgs['KbEnvironmentWebDirs'] = $KbEnvironmentWebDirs }
 if ($KbNativePath) { $invokeArgs['KbNativePath'] = $KbNativePath }
 if ($InventoryWorkingDirectory) { $invokeArgs['InventoryWorkingDirectory'] = $InventoryWorkingDirectory }
 if ($InventoryLogPath) { $invokeArgs['InventoryLogPath'] = $InventoryLogPath }

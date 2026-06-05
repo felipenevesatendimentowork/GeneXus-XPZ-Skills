@@ -24,6 +24,8 @@ Campos retornados e sua origem em kb-source-metadata.md:
   deployment_hosting_kind         : frontmatter — dotnet-core-self-host ou dotnet-framework-iis
   kb_environment_count            : frontmatter — contagem de environments (inventario no setup)
   kb_environment_names            : frontmatter — lista separada por virgula (inventario no setup)
+  kb_environment_output_dirs      : frontmatter — pares Environment=DiretorioOutput separados por ;
+  kb_environment_web_dirs         : frontmatter — pares Environment=CaminhoWeb separados por ;
 
 Campos ausentes sao indicados com "(ausente)" em vez de falha silenciosa.
 
@@ -125,6 +127,8 @@ $deploymentEnvironment = Get-DirectFieldValue -Lines $lines -FieldName 'deployme
 $deploymentHostingKind = Get-DirectFieldValue -Lines $lines -FieldName 'deployment_hosting_kind'
 $kbEnvironmentCount = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_count'
 $kbEnvironmentNames = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_names'
+$kbEnvironmentOutputDirs = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_output_dirs'
+$kbEnvironmentWebDirs = Get-DirectFieldValue -Lines $lines -FieldName 'kb_environment_web_dirs'
 
 $values = [ordered]@{
     last_xpz_materialization_run_at = $lastMaterialization
@@ -134,6 +138,8 @@ $values = [ordered]@{
     deployment_hosting_kind = $deploymentHostingKind
     kb_environment_count = $kbEnvironmentCount
     kb_environment_names = $kbEnvironmentNames
+    kb_environment_output_dirs = $kbEnvironmentOutputDirs
+    kb_environment_web_dirs = $kbEnvironmentWebDirs
 }
 
 foreach ($field in $values.Keys) {

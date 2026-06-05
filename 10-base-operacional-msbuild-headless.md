@@ -694,6 +694,11 @@ Scripts propostos:
   - objetivo: diagnosticar se o runtime GeneXus reflete a versão mais recente de um objeto após import+build; somente leitura, não abre KB, não invoca MSBuild
   - parâmetros obrigatórios: `-KbPath`, `-ObjectName`, `-ImportedAt`
   - parâmetros opcionais: `-ObjectType` (reservado para uso futuro), `-GeneratorOutputPath` (se omitido, deriva como `<KbPath>\CSharpModel\web`), `-AsJson`
+- `Resolve-GeneXusGeneratedCsPath.ps1`
+  - objetivo: resolver o caminho direto do `.cs` gerado para diagnostico pontual, sem glob recursivo na KB nativa
+  - parâmetros obrigatórios: `-KbPath`, `-ObjectName`, e `-ParallelKbRoot` ou `-KbMetadataPath`
+  - parâmetros opcionais: `-ObjectType`, `-EnvironmentName`, `-AsJson`
+  - regra: consome `kb_environment_web_dirs` de `kb-source-metadata.md`; se o mapeamento estiver ausente, bloqueia e encaminha para `xpz-kb-parallel-setup`
 
 Estado atual da materialização adicional:
 
@@ -705,6 +710,7 @@ Estado atual da materialização adicional:
 - `GeneXusMsBuildWatcherSupport.ps1`: implementado como helper comum do contrato de watcher dos wrappers MSBuild; centraliza `-StartWatcher`, `-MonitorLogPath`, `watcherContext`, `timing.phases` e leitura do log do monitor
 - `Watch-GeneXusMsBuildLog.ps1`: implementado como monitor incremental de execução headless; destaca fases do GeneXus (Open, Specify, Generate, Compile, BuildAll, Reorg, Validating subtype group, Close), detecta silêncio prolongado e encerra sozinho quando o processo termina; exibe contador de silêncio in-place (sem gerar nova linha a cada poll); quando `-MonitorLog` é passado com o mesmo caminho de `-MonitorLogPath` em wrapper compatível, o JSON de resultado inclui `timing.phases` com duração de cada fase interna; iniciar com `-NoExit` quando a janela precisar permanecer aberta após a execução
 - `Test-GeneXusRuntimeFreshness.ps1`: implementado como diagnóstico somente leitura de frescor de runtime; verifica `nav_objs.xml` e timestamps dos artefatos gerados; saída JSON com `runtime-fresh`, `runtime-stale` ou `runtime-unknown`
+- `Resolve-GeneXusGeneratedCsPath.ps1`: implementado como resolvedor somente leitura de caminho de `.cs` gerado a partir de `kb_environment_web_dirs` em `kb-source-metadata.md`; bloqueia metadata incompleto em vez de varrer `C:\GxModels`
 
 Parâmetros transversais esperados:
 
@@ -713,7 +719,7 @@ Parâmetros transversais esperados:
 - `-MsBuildPath`
 - `-VersionName`
 - `-EnvironmentName`
-- `-ParallelKbRoot` / `-KbMetadataPath` (somente `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`: leem `kb_environment_count`, `deployment_environment_name`, `deployment_hosting_kind` e `kb_environment_names` de `kb-source-metadata.md` **sem** inventariar pastas da KB nativa em cada execução; no setup (`xpz-kb-parallel-setup`), a lista vem de `-KbEnvironmentNames` declarado pelo usuario com validacao MSBuild obrigatoria; ver `scripts/GeneXusKbDeploymentEnvironmentSupport.ps1`, `scripts/GeneXusKbEnvironmentInventorySupport.ps1`, `scripts/GeneXusKbDeployBinSupport.ps1`)
+- `-ParallelKbRoot` / `-KbMetadataPath` (`Invoke-GeneXusKbBuildAll.ps1`, `Invoke-GeneXusKbSpecifyGenerate.ps1` e `Resolve-GeneXusGeneratedCsPath.ps1`: leem `kb_environment_count`, `deployment_environment_name`, `deployment_hosting_kind`, `kb_environment_names`, `kb_environment_output_dirs` e/ou `kb_environment_web_dirs` de `kb-source-metadata.md` **sem** inventariar pastas da KB nativa em cada execução; no setup (`xpz-kb-parallel-setup`), a lista vem de `-KbEnvironmentNames` e `-KbEnvironmentOutputDirs` declarados pelo usuario com validacao MSBuild obrigatoria; ver `scripts/GeneXusKbDeploymentEnvironmentSupport.ps1`, `scripts/GeneXusKbEnvironmentInventorySupport.ps1`, `scripts/GeneXusKbDeployBinSupport.ps1`)
 - `-PostImportDeployValidation` / `-SkipDeployBinCheck` / `-StrictDeployBinCheck` (mesmos wrappers: checagem pos-build de publicacao em `web\bin` do environment de deploy — DLL de objeto ou `*.config`, nao `GxNetCoreStartup.dll` sozinha; gate exit **49** quando `-PostImportDeployValidation` ou `-StrictDeployBinCheck`; diagnostico somente leitura via `scripts/Test-GeneXusDeployBinFreshness.ps1`)
 - `-WorkingDirectory`
 - `-LogPath`

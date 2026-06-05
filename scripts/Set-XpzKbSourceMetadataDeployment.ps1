@@ -5,11 +5,16 @@
 
 .DESCRIPTION
     Atualiza ou insere deployment_environment_name, deployment_hosting_kind,
-    kb_environment_count e kb_environment_names no frontmatter, preservando o restante do arquivo.
+    kb_environment_count, kb_environment_names e o mapeamento de output/web por environment
+    no frontmatter, preservando o restante do arquivo.
 
     A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames declarado pelo usuario
     (ou agente apos confirmacao explicita). Scan de pastas da KB nativa e inventario automatico
     foram removidos.
+
+    O mapeamento kb_environment_output_dirs vem SOMENTE de -KbEnvironmentOutputDirs declarado
+    pelo usuario. kb_environment_web_dirs pode ser informado explicitamente ou derivado de
+    -KbNativePath + output dir + web, sem varrer a KB nativa.
 
     Por padrao valida cada nome informado via SetActiveEnvironment headless (MSBuild).
     Use -SkipEnvironmentNamesMsBuildValidation apenas quando a sondagem MSBuild estiver
@@ -29,6 +34,14 @@
 
 .PARAMETER KbEnvironmentNames
     Lista explicita de environments GeneXus (nomes exatos como na IDE / SetActiveEnvironment).
+
+.PARAMETER KbEnvironmentOutputDirs
+    Mapeamento explicito Environment=DiretorioOutput para cada environment declarado
+    (ex.: NETPostgreSQL=NETPostgreSQL). Nao usar scan de pastas da KB nativa.
+
+.PARAMETER KbEnvironmentWebDirs
+    Mapeamento opcional Environment=CaminhoWeb para cada environment declarado. Quando omitido,
+    e derivado de -KbNativePath + DiretorioOutput + web.
 
 .PARAMETER KbNativePath
     Caminho da KB nativa GeneXus. Obrigatorio salvo -SkipEnvironmentNamesMsBuildValidation.
@@ -81,6 +94,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string[]]$KbEnvironmentNames,
 
+    [Parameter(Mandatory = $true)]
+    [string[]]$KbEnvironmentOutputDirs,
+
+    [string[]]$KbEnvironmentWebDirs,
+
     [string]$KbNativePath,
 
     [string]$InventoryWorkingDirectory,
@@ -106,6 +124,8 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot 'GeneXusKbDeploymentEnvironmentSupport.ps1')
 
 if ($InventoryFromKbNativePath.IsPresent) {
     throw @'
@@ -164,6 +184,63 @@ foreach ($name in $environmentNamesList) {
     $environmentNames.Add($name) | Out-Null
 }
 
+$outputDirsRaw = ($KbEnvironmentOutputDirs -join '; ')
+$outputDirsMap = Split-GeneXusKbEnvironmentMap -MapRaw $outputDirsRaw
+if ($outputDirsMap.Count -eq 0) {
+    throw 'BLOCK: -KbEnvironmentOutputDirs vazio ou invalido. Informe Environment=DiretorioOutput para cada environment declarado.'
+}
+
+$knownEnvironmentNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($name in $environmentNames) {
+    [void]$knownEnvironmentNames.Add($name)
+}
+
+foreach ($key in $outputDirsMap.Keys) {
+    if (-not $knownEnvironmentNames.Contains($key)) {
+        throw ("BLOCK: KbEnvironmentOutputDirs contem environment '{0}' que nao consta em -KbEnvironmentNames." -f $key)
+    }
+    if ([string]::IsNullOrWhiteSpace($outputDirsMap[$key])) {
+        throw ("BLOCK: KbEnvironmentOutputDirs sem diretorio de output para '{0}'." -f $key)
+    }
+}
+
+foreach ($name in $environmentNames) {
+    if (-not $outputDirsMap.Contains($name)) {
+        throw ("BLOCK: KbEnvironmentOutputDirs nao contem mapeamento para environment '{0}'." -f $name)
+    }
+}
+
+$webDirsMap = [ordered]@{}
+if ($null -ne $KbEnvironmentWebDirs -and $KbEnvironmentWebDirs.Count -gt 0) {
+    $webDirsRaw = ($KbEnvironmentWebDirs -join '; ')
+    $webDirsMap = Split-GeneXusKbEnvironmentMap -MapRaw $webDirsRaw
+} else {
+    if ([string]::IsNullOrWhiteSpace($KbNativePath)) {
+        throw 'BLOCK: -KbEnvironmentWebDirs ausente exige -KbNativePath para derivar <KbNativePath>\<OutputDir>\web.'
+    }
+
+    $resolvedKbNativePathForWeb = [System.IO.Path]::GetFullPath($KbNativePath)
+    foreach ($name in $environmentNames) {
+        $webDir = Join-Path (Join-Path $resolvedKbNativePathForWeb $outputDirsMap[$name]) 'web'
+        $webDirsMap[$name] = $webDir
+    }
+}
+
+foreach ($key in $webDirsMap.Keys) {
+    if (-not $knownEnvironmentNames.Contains($key)) {
+        throw ("BLOCK: KbEnvironmentWebDirs contem environment '{0}' que nao consta em -KbEnvironmentNames." -f $key)
+    }
+    if ([string]::IsNullOrWhiteSpace($webDirsMap[$key])) {
+        throw ("BLOCK: KbEnvironmentWebDirs sem caminho web para '{0}'." -f $key)
+    }
+}
+
+foreach ($name in $environmentNames) {
+    if (-not $webDirsMap.Contains($name)) {
+        throw ("BLOCK: KbEnvironmentWebDirs nao contem mapeamento para environment '{0}'." -f $name)
+    }
+}
+
 $msBuildValidationSkipped = $false
 $msBuildValidationPerformed = $false
 $msBuildRejectedNames = @()
@@ -217,6 +294,8 @@ if (-not $nameSet.Contains($deploymentName)) {
 
 $count = $environmentNames.Count
 $namesJoined = ($environmentNames | Sort-Object) -join ', '
+$outputDirsJoined = Join-GeneXusKbEnvironmentMap -Map $outputDirsMap
+$webDirsJoined = Join-GeneXusKbEnvironmentMap -Map $webDirsMap
 
 . (Join-Path $PSScriptRoot 'XpzTextFileEolSupport.ps1')
 
@@ -225,6 +304,8 @@ $fieldsToWrite = [ordered]@{
     deployment_hosting_kind     = $hostingKind
     kb_environment_count        = [string]$count
     kb_environment_names        = $namesJoined
+    kb_environment_output_dirs  = $outputDirsJoined
+    kb_environment_web_dirs     = $webDirsJoined
 }
 
 $fileContext = Get-TextFileLineContext -Path $MetadataPath
@@ -288,6 +369,8 @@ $result = [ordered]@{
     deployment_hosting_kind             = $hostingKind
     kb_environment_count                = $count
     kb_environment_names                = @($environmentNames | Sort-Object)
+    kb_environment_output_dirs          = $outputDirsMap
+    kb_environment_web_dirs             = $webDirsMap
     environmentNamesSource              = 'user_declared'
     msBuildValidationPerformed          = $msBuildValidationPerformed
     msBuildValidationSkipped            = $msBuildValidationSkipped
@@ -299,5 +382,5 @@ if ($AsJson) {
     $result | ConvertTo-Json -Depth 8
 } else {
     $validationLabel = if ($msBuildValidationSkipped) { 'msbuild_validation=skipped' } else { 'msbuild_validation=ok' }
-    Write-Output ("KB_DEPLOYMENT_METADATA_OK: deployment=$deploymentName count=$count names=$namesJoined $validationLabel")
+    Write-Output ("KB_DEPLOYMENT_METADATA_OK: deployment=$deploymentName count=$count names=$namesJoined output_dirs=$outputDirsJoined $validationLabel")
 }

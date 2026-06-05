@@ -56,6 +56,9 @@ conhecer o estado atual, usar:
   `Query-<NomeKb>KbIntelligence.ps1 -Query index-metadata`.
 - Gate operacional de frescor do indice:
   `Test-<NomeKb>KbIndexGate.ps1` — retorna `GATE_OK` ou `BLOCK: <motivo>`.
+- Mapeamento de output/web por environment:
+  `kb_environment_output_dirs` e `kb_environment_web_dirs` em
+  `kb-source-metadata.md`, mantidos por `Set-<NomeKb>KbSourceMetadataDeployment.ps1`.
 
 Nao registrar timestamps literais (`last_xpz_materialization_run_at`,
 `last_index_build_run_at`) nesta secao nem em outras secoes deste `AGENTS.md`
@@ -117,7 +120,12 @@ Wrappers esperados:
   trouxer atributos explicitos, o motor preserva esses `Attributes`.
 - `Get-<NomeKb>KbMetadata.ps1`: le campos-chave de `kb-source-metadata.md` sem
   regex inline nos chamadores; expoe ao menos `last_xpz_materialization_run_at`,
-  `kb_name` e `source_guid`.
+  `kb_name`, `source_guid` e, quando presentes, campos de environment/deploy/output.
+- `Resolve-<NomeKb>KbGeneratedCsPath.ps1`: wrapper recomendado para diagnostico
+  de codigo C# gerado; resolve `<webDir>\<objeto-lowercase>.cs` a partir de
+  `kb_environment_web_dirs` em `kb-source-metadata.md`, sem varredura recursiva
+  da KB nativa. Se o metadata nao tiver o mapeamento do environment, bloquear e
+  atualizar setup via `xpz-kb-parallel-setup`.
 - `Resolve-<NomeKb>KbIdentity.ps1`: wrapper recomendado quando for preciso
   reconciliar identidade estavel da KB nativa local porque o XPZ exportado veio
   com `Source` vazio ou incompleto; delega ao motor compartilhado

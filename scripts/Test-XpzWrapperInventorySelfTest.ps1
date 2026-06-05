@@ -97,7 +97,7 @@ Write-Output "runtime"
     Assert-NotContains -Text $output -Pattern '\bINVENTORY_OK\b' -Message 'inventario com CUSTOMIZADO nao pode retornar OK'
     Assert-NotContains -Text $output -Pattern 'Test-DemoKbPowerShellRuntime\.ps1\(reason=requires_version_mismatch' -Message 'wrapper de runtime e excecao intencional'
 
-    foreach ($optionalExample in @('New-KbFront', 'Get-KbLastUpdate', 'New-KbImportPackage', 'Resolve-KbIdentity')) {
+    foreach ($optionalExample in @('New-KbFront', 'Get-KbLastUpdate', 'New-KbImportPackage', 'Resolve-KbIdentity', 'Resolve-KbGeneratedCsPath')) {
         @'
 #requires -Version 7.4
 Write-Output "optional"
@@ -142,6 +142,7 @@ Write-Output "optional"
 #requires -Version 7.4
 param(
     [Parameter(Mandatory = $true)][string[]]$KbEnvironmentNames,
+    [Parameter(Mandatory = $true)][string[]]$KbEnvironmentOutputDirs,
     [string]$KbNativePath,
     [string]$InventoryWorkingDirectory
 )
@@ -155,6 +156,7 @@ Write-Output "deployment"
 param(
     [switch]$InventoryFromKbNativePath,
     [string[]]$KbEnvironmentNames,
+    [string[]]$KbEnvironmentOutputDirs,
     [string]$KbNativePath,
     [string]$InventoryWorkingDirectory
 )
@@ -182,6 +184,21 @@ param(
 #requires -Version 7.4
 param(
     [string[]]$KbEnvironmentNames,
+    [string]$KbNativePath,
+    [string]$InventoryWorkingDirectory
+)
+'@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Set-DemoKbSourceMetadataDeployment\.ps1\(reason=missing_KbEnvironmentOutputDirs\)' -Message 'wrapper sem KbEnvironmentOutputDirs deve ser sinalizado'
+
+    @'
+#requires -Version 7.4
+param(
+    [string[]]$KbEnvironmentNames,
+    [string[]]$KbEnvironmentOutputDirs,
     [string]$InventoryWorkingDirectory
 )
 '@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM
@@ -195,6 +212,7 @@ param(
 #requires -Version 7.4
 param(
     [string[]]$KbEnvironmentNames,
+    [string[]]$KbEnvironmentOutputDirs,
     [string]$KbNativePath
 )
 '@ | Set-Content -LiteralPath $deploymentStandardPath -Encoding utf8NoBOM

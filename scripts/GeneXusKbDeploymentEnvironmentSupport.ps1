@@ -1,11 +1,11 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Leitura de campos de environment em kb-source-metadata.md e resolucao de -EnvironmentName para wrappers MSBuild.
+    Leitura de campos de environment/output em kb-source-metadata.md e resolucao de -EnvironmentName para wrappers MSBuild.
 
 .DESCRIPTION
     Inventario de environments da KB nativa ocorre somente via xpz-kb-parallel-setup
-    (Set-XpzKbSourceMetadataDeployment.ps1 com -KbEnvironmentNames declarado pelo usuario). Build/import apenas leem o metadata gravado.
+    (Set-XpzKbSourceMetadataDeployment.ps1 com -KbEnvironmentNames e -KbEnvironmentOutputDirs declarados pelo usuario). Build/import/diagnostico de .cs apenas leem o metadata gravado.
 #>
 
 Set-StrictMode -Version Latest
@@ -42,6 +42,56 @@ function Normalize-GeneXusKbMetadataScalar {
     return $trimmed
 }
 
+function Split-GeneXusKbEnvironmentMap {
+    param([AllowNull()][string]$MapRaw)
+
+    $result = [ordered]@{}
+    if ([string]::IsNullOrWhiteSpace($MapRaw)) {
+        return $result
+    }
+
+    $entries = @(
+        $MapRaw -split ';' |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_.Length -gt 0 }
+    )
+
+    foreach ($entry in $entries) {
+        $parts = @($entry -split '=', 2)
+        if ($parts.Count -ne 2) {
+            $result[$entry] = $null
+            continue
+        }
+
+        $key = $parts[0].Trim()
+        $value = $parts[1].Trim()
+        if ($key.Length -eq 0) {
+            $result[$entry] = $null
+            continue
+        }
+
+        $result[$key] = if ($value.Length -gt 0) { $value } else { $null }
+    }
+
+    return $result
+}
+
+function Join-GeneXusKbEnvironmentMap {
+    param([System.Collections.IDictionary]$Map)
+
+    if ($null -eq $Map -or $Map.Count -eq 0) {
+        return ''
+    }
+
+    $entries = New-Object System.Collections.Generic.List[string]
+    foreach ($key in @($Map.Keys | Sort-Object)) {
+        $value = $Map[$key]
+        $entries.Add(('{0}={1}' -f $key, $value)) | Out-Null
+    }
+
+    return ($entries -join '; ')
+}
+
 function Resolve-GeneXusKbSourceMetadataPath {
     param(
         [string]$KbMetadataPath,
@@ -69,6 +119,8 @@ function Read-GeneXusKbDeploymentMetadataFields {
         deployment_hosting_kind       = $null
         kb_environment_count          = $null
         kb_environment_names          = @()
+        kb_environment_output_dirs    = [ordered]@{}
+        kb_environment_web_dirs       = [ordered]@{}
     }
 
     if ([string]::IsNullOrWhiteSpace($MetadataPath) -or -not (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
@@ -106,6 +158,20 @@ function Read-GeneXusKbDeploymentMetadataFields {
             Where-Object { $_.Length -gt 0 }
         )
         $result.kb_environment_names = $splitNames
+    }
+
+    $outputDirsRaw = Normalize-GeneXusKbMetadataScalar (
+        Get-GeneXusKbSourceMetadataDirectField -Lines $lines -FieldName 'kb_environment_output_dirs'
+    )
+    if ($outputDirsRaw) {
+        $result.kb_environment_output_dirs = Split-GeneXusKbEnvironmentMap -MapRaw $outputDirsRaw
+    }
+
+    $webDirsRaw = Normalize-GeneXusKbMetadataScalar (
+        Get-GeneXusKbSourceMetadataDirectField -Lines $lines -FieldName 'kb_environment_web_dirs'
+    )
+    if ($webDirsRaw) {
+        $result.kb_environment_web_dirs = Split-GeneXusKbEnvironmentMap -MapRaw $webDirsRaw
     }
 
     return [pscustomobject]$result
@@ -371,6 +437,8 @@ function Test-GeneXusKbDeploymentMetadataPlausibility {
         kb_environment_names       = @()
         kb_environment_count       = $null
         deployment_environment_name = $null
+        kb_environment_output_dirs = [ordered]@{}
+        kb_environment_web_dirs    = [ordered]@{}
     }
 
     if ([string]::IsNullOrWhiteSpace($MetadataPath) -or -not (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
@@ -391,10 +459,12 @@ function Test-GeneXusKbDeploymentMetadataPlausibility {
     $result.deployment_environment_name = $fields.deployment_environment_name
     $result.kb_environment_count = $fields.kb_environment_count
     $result.kb_environment_names = @($fields.kb_environment_names)
+    $result.kb_environment_output_dirs = $fields.kb_environment_output_dirs
+    $result.kb_environment_web_dirs = $fields.kb_environment_web_dirs
 
     if (-not $hasAnyDeploymentField) {
         $result.status = 'PENDENTE'
-        $result.warnings = @('Campos de environment/deploy ausentes em kb-source-metadata.md — executar Set-*KbSourceMetadataDeployment com -KbEnvironmentNames (confirmado pelo usuario) e validacao MSBuild no setup.')
+        $result.warnings = @('Campos de environment/deploy ausentes em kb-source-metadata.md — executar Set-*KbSourceMetadataDeployment com -KbEnvironmentNames e mapeamento de output por environment (confirmados pelo usuario) e validacao MSBuild no setup.')
         return [pscustomobject]$result
     }
 
@@ -449,9 +519,48 @@ function Test-GeneXusKbDeploymentMetadataPlausibility {
         }
     }
 
+    $warnings = New-Object System.Collections.Generic.List[string]
+    $hasOutputDirs = ($fields.kb_environment_output_dirs.Count -gt 0)
+    $hasWebDirs = ($fields.kb_environment_web_dirs.Count -gt 0)
+    if (-not $hasOutputDirs -or -not $hasWebDirs) {
+        $warnings.Add('Mapeamento de output por environment ausente em kb-source-metadata.md: preencher kb_environment_output_dirs e kb_environment_web_dirs via xpz-kb-parallel-setup antes de diagnostico por .cs gerado.') | Out-Null
+    } else {
+        $knownEnvironmentNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        foreach ($name in $fields.kb_environment_names) {
+            [void]$knownEnvironmentNames.Add($name)
+        }
+
+        foreach ($mapName in @('kb_environment_output_dirs', 'kb_environment_web_dirs')) {
+            $map = if ($mapName -eq 'kb_environment_output_dirs') { $fields.kb_environment_output_dirs } else { $fields.kb_environment_web_dirs }
+
+            foreach ($key in $map.Keys) {
+                if ([string]::IsNullOrWhiteSpace($map[$key])) {
+                    $failures.Add(("{0} contem valor vazio ou entrada malformada para '{1}'." -f $mapName, $key)) | Out-Null
+                    continue
+                }
+
+                if (-not $knownEnvironmentNames.Contains($key)) {
+                    $failures.Add(("{0} contem environment '{1}' que nao consta em kb_environment_names." -f $mapName, $key)) | Out-Null
+                }
+            }
+
+            foreach ($name in $fields.kb_environment_names) {
+                if (-not $map.Contains($name)) {
+                    $failures.Add(("{0} nao contem mapeamento para environment '{1}'." -f $mapName, $name)) | Out-Null
+                }
+            }
+        }
+    }
+
     $result.failures = $failures.ToArray()
     if ($failures.Count -gt 0) {
         $result.status = 'BLOCK'
+        return [pscustomobject]$result
+    }
+
+    if ($warnings.Count -gt 0) {
+        $result.status = 'PENDENTE'
+        $result.warnings = $warnings.ToArray()
         return [pscustomobject]$result
     }
 
