@@ -524,7 +524,9 @@ pwsh -NoProfile -File scripts/Invoke-GeneXusXpzImport.ps1 `
    - Sintomas concretos de IDE desatualizada: mesmo erro persiste após reabertura + rebuild, propriedades do objeto exibem data/versão anterior ao import, output gerado é idêntico ao da rodada anterior
    - Nenhum desses sintomas invalida o sub-estado de import já declarado — o diagnóstico de IDE desatualizada é camada separada
    Quando o sub-estado for `importação real efetiva provada`, build tiver sido executado após reabertura da KB e o usuário reportar que o comportamento ainda não mudou, oferecer a `checagem de frescor de runtime` como trilha de diagnóstico nomeada antes de sugerir nova edição:
-   Executar `scripts\Test-GeneXusRuntimeFreshness.ps1 -KbPath <caminho> -ObjectName <nome> -ImportedAt <timestamp-do-import> -AsJson` para verificar automaticamente os dois indicadores; a saída JSON indica `runtime-fresh`, `runtime-stale` ou `runtime-unknown`.
+   - Resolver antes o caminho do `.cs` gerado com `scripts\Resolve-GeneXusGeneratedCsPath.ps1 -KbPath <caminho> -ParallelKbRoot <pasta-paralela> -ObjectName <nome> -EnvironmentName <environment-quando-necessario> -AsJson`, usando `kb_environment_web_dirs` de `kb-source-metadata.md`
+   - Se o metadata não cobrir o environment, bloquear e encaminhar para `xpz-kb-parallel-setup`; não usar glob recursivo nem inferir `CSharpModel\web` como substituto em KB multi-environment
+   - Em seguida executar `scripts\Test-GeneXusRuntimeFreshness.ps1 -KbPath <caminho> -ObjectName <nome> -ImportedAt <timestamp-do-import> -GeneratorOutputPath <webDirectory-resolvido> -AsJson` para verificar automaticamente os dois indicadores; a saída JSON indica `runtime-fresh`, `runtime-stale` ou `runtime-unknown`
    - Verificar `nav_objs.xml` (raiz da KB nativa): confirmar se o objeto aparece com `ObjStatus=nogenreq`; `ObjStatus=genreq` indica que a geração está pendente após o import
    - NVG excluído da checagem somente leitura: é gerado ao abrir a KB na IDE e não é um arquivo estático acessível sem abertura
    - Comparar timestamps dos artefatos gerados (`.cs`, `.aspx`, ou equivalente da instalação) com o timestamp do import
