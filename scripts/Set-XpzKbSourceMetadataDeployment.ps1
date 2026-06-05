@@ -44,7 +44,9 @@
     e derivado de -KbNativePath + DiretorioOutput + web.
 
 .PARAMETER KbNativePath
-    Caminho da KB nativa GeneXus. Obrigatorio salvo -SkipEnvironmentNamesMsBuildValidation.
+    Caminho da KB nativa GeneXus. Obrigatorio para validacao MSBuild, salvo
+    -SkipEnvironmentNamesMsBuildValidation, e tambem obrigatorio para derivar
+    kb_environment_web_dirs quando -KbEnvironmentWebDirs for omitido.
 
 .PARAMETER InventoryWorkingDirectory
     Diretorio de trabalho para validacao MSBuild. Obrigatorio salvo -SkipEnvironmentNamesMsBuildValidation.
