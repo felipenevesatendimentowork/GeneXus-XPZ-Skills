@@ -41,19 +41,22 @@ maior que 1 em kb-source-metadata.md, e obrigatorio (direto ou via deployment_en
 gravado pelo xpz-kb-parallel-setup).
 
 .PARAMETER ParallelKbRoot
-Raiz da pasta paralela da KB para resolver kb-source-metadata.md sem inventario em runtime.
+Raiz da pasta paralela da KB para resolver kb-source-metadata.md sem inventario em runtime
+(quando o gate de deploy bin estiver ativo, tambem le kb_environment_web_dirs).
 
 .PARAMETER KbMetadataPath
 Caminho explicito para kb-source-metadata.md; prevalece sobre -ParallelKbRoot.
 
 .PARAMETER PostImportDeployValidation
-Quando presente, ativa gate de validacao deploy pos-import sobre web\bin (exit 49 se desatualizado).
+Quando presente, ativa gate de validacao deploy pos-import: checagem do web\bin resolvido por
+kb_environment_web_dirs em kb-source-metadata.md (exit 49 se desatualizado). Metadata sem esse
+mapeamento bloqueia a resolucao (status unknown); reconciliar via xpz-kb-parallel-setup.
 
 .PARAMETER SkipDeployBinCheck
-Pula a checagem de web\bin do environment de deploy.
+Pula a checagem do web\bin do environment de deploy (resolvido por kb_environment_web_dirs).
 
 .PARAMETER StrictDeployBinCheck
-Forca gate de web\bin mesmo fora do fluxo pos-import.
+Forca gate do web\bin (resolvido por kb_environment_web_dirs) mesmo fora do fluxo pos-import.
 
 .PARAMETER ForceRebuild
 Quando true, força a regeneração de TODOS os objetos da KB, independentemente de mudança.

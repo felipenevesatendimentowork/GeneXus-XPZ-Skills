@@ -50,19 +50,22 @@ xpz-kb-parallel-setup). Omitir so e valido quando kb_environment_count for 1 no 
 
 .PARAMETER ParallelKbRoot
 Raiz da pasta paralela da KB para resolver kb-source-metadata.md (campos deployment_environment_name,
-kb_environment_count, kb_environment_names). Nao dispara inventario de environments na KB nativa.
+kb_environment_count, kb_environment_names e, quando o gate de deploy bin estiver ativo,
+kb_environment_web_dirs). Nao dispara inventario de environments na KB nativa.
 
 .PARAMETER KbMetadataPath
 Caminho explicito para kb-source-metadata.md; prevalece sobre -ParallelKbRoot.
 
 .PARAMETER PostImportDeployValidation
-Quando presente, ativa gate de validacao deploy pos-import: checagem de web\bin com exit 49 se desatualizado.
+Quando presente, ativa gate de validacao deploy pos-import: checagem do web\bin resolvido por
+kb_environment_web_dirs em kb-source-metadata.md (exit 49 se desatualizado). Metadata sem esse
+mapeamento bloqueia a resolucao (status unknown); reconciliar via xpz-kb-parallel-setup.
 
 .PARAMETER SkipDeployBinCheck
-Pula a checagem de web\bin do environment de deploy.
+Pula a checagem do web\bin do environment de deploy (resolvido por kb_environment_web_dirs).
 
 .PARAMETER StrictDeployBinCheck
-Forca gate de web\bin mesmo fora do fluxo pos-import.
+Forca gate do web\bin (resolvido por kb_environment_web_dirs) mesmo fora do fluxo pos-import.
 
 .PARAMETER ForceRebuild
 Quando true, força a regeneração de TODOS os objetos da KB, independentemente de mudança.
