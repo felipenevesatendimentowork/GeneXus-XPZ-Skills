@@ -45,6 +45,13 @@ Além dessa base principal, a raiz também pode conter documentação operaciona
 
 Os arquivos `10-matriz-part-types-por-tipo.md`, `11-campos-estaveis-vs-variaveis.md` e `12-diffs-estruturais-por-tipo.md` sao stubs de compatibilidade retroativa: cada um redireciona para o equivalente na serie `01` (`01b`, `01c`, `01d`). Nao contem conteudo proprio e nao devem ser usados como fonte direta.
 
+### Documentos de governança pública
+
+- `CHANGELOG.md`: registro de mudanças relevantes a partir da adoção do changelog.
+- `CONTRIBUTING.md`: guia para contribuições, revisão pré-push e cuidado com dados reais.
+- `SECURITY.md`: política para reporte privado de vulnerabilidades, vazamentos e riscos operacionais sensíveis.
+- `CODE_OF_CONDUCT.md`: código de conduta para interações ligadas ao projeto.
+
 ### Documentacao operacional KB Intelligence
 
 Guia operacional e metodologico da trilha KB Intelligence. Contratos de fases encerradas e registros historicos estao em `historico/kb-intelligence/`.
@@ -268,6 +275,13 @@ Además de esa base principal, la raíz también puede contener documentación o
 
 Los archivos `10-matriz-part-types-por-tipo.md`, `11-campos-estaveis-vs-variaveis.md` y `12-diffs-estruturais-por-tipo.md` son stubs de compatibilidad retroactiva: cada uno redirige al equivalente en la serie `01` (`01b`, `01c`, `01d`). No contienen contenido propio y no deben usarse como fuente directa.
 
+### Documentos de gobernanza pública
+
+- `CHANGELOG.md`: registro de cambios relevantes desde la adopción del changelog.
+- `CONTRIBUTING.md`: guía para contribuciones, revisión previa al push y cuidado con datos reales.
+- `SECURITY.md`: política para reporte privado de vulnerabilidades, filtraciones y riesgos operativos sensibles.
+- `CODE_OF_CONDUCT.md`: código de conducta para interacciones vinculadas al proyecto.
+
 ### Documentacion operacional KB Intelligence
 
 Guía operacional y metodológica de la trilha KB Intelligence. Los contratos de fases cerradas y los registros históricos están en `historico/kb-intelligence/`.
@@ -490,6 +504,13 @@ In addition to that main base, the root may also contain complementary operation
 - `10a-gx-export-task-labels.md`: mismatches between Export task labels (`-ObjectList`) and the internal catalog / KbIntelligence; complements `10-base` for selective export (`exportTaskLabel`)
 
 The files `10-matriz-part-types-por-tipo.md`, `11-campos-estaveis-vs-variaveis.md`, and `12-diffs-estruturais-por-tipo.md` are backward-compatibility stubs: each one redirects to its equivalent in the `01` series (`01b`, `01c`, `01d`). They contain no content of their own and must not be used as a direct source.
+
+### Public Governance Documents
+
+- `CHANGELOG.md`: record of relevant changes from the changelog adoption onward.
+- `CONTRIBUTING.md`: guide for contributions, pre-push review, and care with real data.
+- `SECURITY.md`: policy for private reporting of vulnerabilities, leaks, and sensitive operational risks.
+- `CODE_OF_CONDUCT.md`: code of conduct for project-related interactions.
 
 ### KB Intelligence operational documentation
 

@@ -85,7 +85,10 @@ A frente adotou documentos mínimos e trilíngues, com português como fonte edi
 
 ### Rastreabilidade
 
-- Commit: este commit
+- Commit: `b0408a0` (`Adiciona documentos de governança do repositório`)
+- Commit: `1ef85e1` (`Documenta contato privado para contribuicoes`)
+- Commit: `4e919ff` (`Ajusta email de contato comunitario`)
+- Commit: `0123b9b` (`Vincula contribuicao ao changelog`)
 
 ## Teste de integração para bloqueio de XML de referência no `Build-GeneXusImportFileEnvelope`
 

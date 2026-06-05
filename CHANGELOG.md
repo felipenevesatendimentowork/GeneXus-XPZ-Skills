@@ -8,6 +8,7 @@ O formato segue a ideia de manter uma seção `Unreleased` para mudanças ainda 
 
 ### Unreleased
 
+- Alinhada a descoberta e a rastreabilidade dos documentos de governança em `README.md`, `09-inventario-e-rastreabilidade-publica.md` e `historico/IdeiasImplementadas_202606.md`.
 - Alinhados `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md` e `999-ideias-pendentes.md` após a nova regra de changelog na pré-push.
 - Incorporada à rotina pré-push a avaliação semântica obrigatória de `CHANGELOG.md` para mudanças com impacto público.
 - Documentado no guia de contribuição que a revisão pré-push deve avaliar atualização do `CHANGELOG.md`.
@@ -21,6 +22,7 @@ El formato mantiene una sección `Unreleased` para cambios aún no publicados en
 
 ### Unreleased
 
+- Alineada la localización y trazabilidad de los documentos de gobernanza en `README.md`, `09-inventario-e-rastreabilidade-publica.md` e `historico/IdeiasImplementadas_202606.md`.
 - Alineados `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md` y `999-ideias-pendentes.md` después de la nueva regla de changelog en la revisión previa al push.
 - Incorporada a la rutina previa al push la evaluación semántica obligatoria de `CHANGELOG.md` para cambios con impacto público.
 - Documentado en la guía de contribución que la revisión previa al push debe evaluar la actualización de `CHANGELOG.md`.
@@ -34,6 +36,7 @@ The format keeps an `Unreleased` section for changes not yet published in a form
 
 ### Unreleased
 
+- Aligned discovery and traceability of governance documents in `README.md`, `09-inventario-e-rastreabilidade-publica.md`, and `historico/IdeiasImplementadas_202606.md`.
 - Aligned `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, and `999-ideias-pendentes.md` after the new changelog rule in pre-push review.
 - Added mandatory semantic evaluation of `CHANGELOG.md` to the pre-push routine for changes with public impact.
 - Documented in the contribution guide that pre-push review should evaluate updates to `CHANGELOG.md`.
