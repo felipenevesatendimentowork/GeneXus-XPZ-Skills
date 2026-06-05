@@ -1384,3 +1384,29 @@ ignorado não tem objeto concreto neste repositório.
 
 **Não reavaliar salvo** criação futura de script ou serviço deste repositório que
 passe a exigir arquivo de configuração local dentro da árvore versionada.
+
+---
+
+## CheckAndInstallDatabase
+
+**Origem:** referência encontrada em fonte externa de código como sinônimo de Reorg,
+avaliação de domínio Database, 2026-05-06.
+
+**O que era:** task MSBuild citada como `<CheckAndInstallDatabase />`, sem parâmetros,
+aparentemente equivalente headless da operação de Reorg, com semântica sugerida de
+"verificar se o banco precisa de alterações e instalar somente se necessário".
+
+**Por que foi descartada:**
+
+Na instalação GeneXus 18 local investigada, `Genexus.MsBuild.Tasks.CheckAndInstallDatabase`
+não existe no assembly `Genexus.MsBuild.Tasks.dll`. A task também não aparece nos
+`UsingTask` de `Genexus.Tasks.targets` nem na reflexão do assembly.
+
+As hipóteses restantes não sustentam uma frente implementável nesta base: pode ser
+uma task de GeneXus Server, um target MSBuild não exposto como task de DLL, algo de
+outra versão/extensão instalada, ou apenas um nome/alias externo sem correspondência
+com task pública acessível.
+
+**Não reavaliar salvo** se for identificado que a task existe em caminho acessível sem
+GeneXus Server e se a semântica "check before install" for confirmada empiricamente
+como diferente de `Reorganize` puro.

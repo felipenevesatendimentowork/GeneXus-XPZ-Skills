@@ -194,38 +194,6 @@ Não é um gate pré-import. Import trata de objetos GeneXus; o schema do banco 
 
 Implementar quando houver caso concreto de diagnóstico de drift DB-KB que a IDE não consiga resolver de forma conveniente, ou quando o fluxo de `Invoke-GeneXusDbImpact.ps1` precisar de contexto de schema para interpretar o script de impacto gerado.
 
-## CheckAndInstallDatabase
-
-**Importância:** FALTA AVALIAR
-**Maturidade:** FALTA AVALIAR
-
-**Origem:** referência encontrada em fonte externa de código como sinônimo de Reorg, avaliação de domínio Database, 2026-05-06.
-
-### Problema concreto que motiva a ideia
-
-A fonte externa utiliza `<CheckAndInstallDatabase />` sem parâmetros como equivalente headless da operação de Reorg, com semântica implícita de "verificar se o banco precisa de alterações e instalar somente se necessário" — o que seria mais seguro que um `Reorganize` puro, que executaria incondicionalmente.
-
-### Achado empírico desta instalação
-
-`Genexus.MsBuild.Tasks.CheckAndInstallDatabase` **não existe** no assembly `Genexus.MsBuild.Tasks.dll` da instalação GeneXus 18 local. A task não aparece nos `UsingTask` de `Genexus.Tasks.targets` nem na reflexão do assembly.
-
-Hipóteses sobre a origem:
-- Task definida em `Genexus.Server.Tasks.targets` (escopo de GeneXus Server — fora do escopo desta skill)
-- Target MSBuild definido em algum `.targets` não inspecionado, e não uma task de DLL
-- Específica de outra versão do GeneXus 18 (upgrade diferente) ou de extensão instalada
-- Nome alternativo ou alias interno que mapeia para outro mecanismo
-
-### Perguntas a responder antes de decidir
-
-- Em qual arquivo ou assembly `CheckAndInstallDatabase` está definida nesta ou em outra instalação do GeneXus 18?
-- É uma task de server (`Genexus.Server.Tasks.targets`)? Se sim, sai do escopo desta skill por definição.
-- Se for um Target MSBuild (não task de DLL), quais tasks internas ele orquestra?
-- O comportamento "verifica antes de executar" é real, ou o nome apenas sugere isso?
-
-### Limiar para reavaliar
-
-Reavaliar somente se: (a) for identificado que a task existe em caminho acessível sem GeneXus Server, e (b) a semântica "check before install" for confirmada empiricamente como diferente de `Reorganize` puro.
-
 ## DeleteObject — limpeza headless pós-import
 
 **Importância:** FALTA AVALIAR
