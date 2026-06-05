@@ -59,6 +59,34 @@ A trilha adotou detecção por fase como caminho preferencial, sem remover compa
 
 - Commit: este commit
 
+## Documentos de governança na raiz
+
+**Importancia original:** baixa
+**Status:** concluida em 2026-06-05
+
+### Origem
+
+Ideia registrada em `999-ideias-pendentes.md` a partir do alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17, e reforçada na frente pré-push de 2026-05-21 como lacuna de orientação para contribuidores humanos.
+
+### Problema concreto
+
+O repositório já era público e continha base metodológica com potencial de adoção externa, mas não tinha os arquivos canônicos de governança para orientar segurança, contribuição, conduta e registro de mudanças.
+
+### Implementacao
+
+- `SECURITY.md`: política mínima para reporte privado de vulnerabilidades, vazamento de dados e riscos operacionais.
+- `CONTRIBUTING.md`: guia curto para contribuidores humanos, com leitura obrigatória, anti-duplicata em `998`/`999`, cuidado com dados reais e ponte para a revisão pré-push.
+- `CODE_OF_CONDUCT.md`: código de conduta trilíngue, alinhado ao propósito GeneXus XPZ/XML e explícito contra desqualificação de participantes por trabalharem com GeneXus ou IA.
+- `CHANGELOG.md`: registro inicial de mudanças a partir desta adoção, sem reconstrução retroativa de versões.
+
+### Decisao final
+
+A frente adotou documentos mínimos e trilíngues, com português como fonte editorial primária, sem duplicar integralmente `README.md` ou `AGENTS.md`. O histórico anterior permanece nos commits, em `historico/` e na documentação das frentes já encerradas.
+
+### Rastreabilidade
+
+- Commit: este commit
+
 ## Teste de integração para bloqueio de XML de referência no `Build-GeneXusImportFileEnvelope`
 
 **Importancia original:** baixa
