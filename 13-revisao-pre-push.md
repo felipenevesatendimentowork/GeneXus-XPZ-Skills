@@ -110,6 +110,7 @@ Confirmar se há:
 - rastreabilidade agregada demais no `09` (motor vs bateria com papéis distintos)
 - selftest que não cobre contrato novo documentado (reportar como área não coberta ou gap de teste)
 - mudança com impacto público sem entrada correspondente em `CHANGELOG.md` nem justificativa explícita de omissão
+- campo de rastreabilidade em `historico/` (`Commit:`/`PR:`) com placeholder genérico (`este commit`, `este PR`, `TODO`, `TBD`, vazio ou `<...>`) em vez do hash real — salvo quando o commit ainda não existe e o campo será preenchido no commit seguinte (reportar como "a preencher"). Suporte mecânico (consultivo): `scripts/Test-PrePushHistoryCommitPlaceholder.ps1`, sobre os `historico/*.md` no diff
 
 ### 8. Relatório
 
@@ -174,6 +175,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | `scripts/Test-GeneXusUnexpectedCharacter.ps1` | Caracteres Unicode inesperados em .md/.ps1 (consultivo) |
 | `scripts/Test-PrePushNewTokenPropagation.ps1` | Propagação de termo novo introduzido no diff por transição co-localizada (consultivo) |
 | `scripts/Test-PrePushSharedScriptSkillCoverage.ps1` | Script compartilhado alterado documentado em SKILL.md/quality-checklist.md fora do diff (consultivo) |
+| `scripts/Test-PrePushHistoryCommitPlaceholder.ps1` | Placeholder genérico em campo `Commit:`/`PR:` de `historico/` no diff (consultivo) |
 
 ## Espelho em outros documentos
 

@@ -354,6 +354,12 @@ $sharedScriptSkillGate = [ordered]@{
     findings = @()
 }
 
+$historyCommitGate = [ordered]@{
+    script   = 'scripts/Test-PrePushHistoryCommitPlaceholder.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -541,6 +547,30 @@ if (Test-Path -LiteralPath $sharedScriptSkillScript -PathType Leaf) {
     }
 }
 
+$historyCommitScript = Join-Path $PSScriptRoot 'Test-PrePushHistoryCommitPlaceholder.ps1'
+if (Test-Path -LiteralPath $historyCommitScript -PathType Leaf) {
+    $historyCommitOutput = & $historyCommitScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $historyCommitExitCode = $LASTEXITCODE
+    $historyCommitJsonText = ($historyCommitOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $historyCommitObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($historyCommitJsonText)) {
+        $historyCommitObject = $historyCommitJsonText | ConvertFrom-Json
+    }
+
+    if ($historyCommitExitCode -eq 0 -and $null -ne $historyCommitObject) {
+        $historyCommitGate.status = $historyCommitObject.status
+        $historyCommitGate.findings = @($historyCommitObject.findings)
+    } else {
+        $historyCommitGate.status = 'warn'
+        $historyCommitGate.findings = @([pscustomobject][ordered]@{
+            code     = 'HISTORY_COMMIT_PLACEHOLDER_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-PrePushHistoryCommitPlaceholder.ps1'
+            message  = "Falha consultiva ao executar Test-PrePushHistoryCommitPlaceholder.ps1: $historyCommitJsonText"
+        })
+    }
+}
+
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
 $pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
@@ -631,6 +661,11 @@ foreach ($sharedScriptFinding in @($sharedScriptSkillGate.findings)) {
         ("Script compartilhado em skill transversal (candidata consultiva) ({0}): {1} [{2}]" -f $sharedScriptFinding.code, $sharedScriptFinding.message, $sharedScriptFinding.path)
     )
 }
+foreach ($historyCommitFinding in @($historyCommitGate.findings)) {
+    [void]$agentWarnings.Add(
+        ("Placeholder de rastreabilidade em historico (candidata consultiva) ({0}): {1} [{2}]" -f $historyCommitFinding.code, $historyCommitFinding.message, $historyCommitFinding.path)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
@@ -676,6 +711,7 @@ $result = [ordered]@{
         unexpectedChar       = $unexpectedCharGate
         newTokenPropagation  = $newTokenPropagationGate
         sharedScriptSkillCoverage = $sharedScriptSkillGate
+        historyCommitPlaceholder = $historyCommitGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -761,6 +797,11 @@ if ($AsJson) {
     Write-Output ("SHARED_SCRIPT_SKILL_COVERAGE_GATE={0}" -f $sharedScriptSkillGate.status)
     foreach ($finding in @($sharedScriptSkillGate.findings)) {
         Write-Output ("SHARED_SCRIPT_SKILL_DOC_NOT_IN_DIFF: {0}: {1}" -f $finding.path, $finding.message)
+    }
+
+    Write-Output ("HISTORY_COMMIT_PLACEHOLDER_GATE={0}" -f $historyCommitGate.status)
+    foreach ($finding in @($historyCommitGate.findings)) {
+        Write-Output ("HISTORY_COMMIT_FIELD_PLACEHOLDER: {0}: {1}" -f $finding.path, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {
