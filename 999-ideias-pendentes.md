@@ -11,6 +11,37 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Eliminar globalmente o uso de `-AsJson`
+
+**Importância:** média
+**Maturidade:** ideia
+
+**Origem:** fechamento da frente de padronização JSON nos wrappers XPZ de pacote, 2026-06-06. A frente já removeu `-AsJson` dos scripts compartilhados de empacotamento, inventário, sanidade e wrappers locais derivados, mas deixou scripts fora dessa frente com contrato humano/JSON próprio.
+
+### Problema concreto que motiva a ideia
+
+O contrato misto `texto humano por padrão` versus `JSON com -AsJson` ainda existe em outros scripts públicos da base. Mesmo que esses scripts não façam parte da frente de empacotamento, a existência de dois padrões mantém risco operacional para agentes:
+
+- tentativa-erro de flag em scripts diferentes;
+- parse frágil quando um wrapper espera JSON e outro ainda alterna formato;
+- documentação e exemplos precisando explicar exceções;
+- chance de wrappers locais em pastas paralelas perpetuarem contratos antigos.
+
+### Ideia de melhoria
+
+Fazer uma frente separada para inventariar todos os `-AsJson` restantes e decidir, script a script, o novo contrato:
+
+1. scripts de motor/automação devem emitir JSON de máquina por padrão no stdout e remover `-AsJson`;
+2. scripts que ainda precisem de saída humana devem usar outro contrato explícito, por exemplo `-HumanReadable`, ou ter wrapper humano separado;
+3. chamadas internas, exemplos `.example.ps1`, skills e documentos devem ser atualizados juntos;
+4. pastas paralelas devem receber wrappers atualizados por `xpz-kb-parallel-setup`, sem promessa de compatibilidade com wrappers locais antigos.
+
+### Decisões em aberto
+
+- Se algum script deve manter saída humana como contrato primário.
+- Se `-HumanReadable` vale a complexidade ou se JSON sempre é suficiente.
+- Ordem de migração para scripts MSBuild, gates de setup, diagnósticos de runtime e helpers de edição XML.
+
 ## LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual
 
 **Importância:** FALTA AVALIAR
