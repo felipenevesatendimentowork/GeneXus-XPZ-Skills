@@ -342,6 +342,12 @@ $unexpectedCharGate = [ordered]@{
     findings = @()
 }
 
+$newTokenPropagationGate = [ordered]@{
+    script   = 'scripts/Test-PrePushNewTokenPropagation.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -481,6 +487,30 @@ if (Test-Path -LiteralPath $unexpectedCharScript -PathType Leaf) {
     }
 }
 
+$newTokenPropagationScript = Join-Path $PSScriptRoot 'Test-PrePushNewTokenPropagation.ps1'
+if (Test-Path -LiteralPath $newTokenPropagationScript -PathType Leaf) {
+    $newTokenOutput = & $newTokenPropagationScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $newTokenExitCode = $LASTEXITCODE
+    $newTokenJsonText = ($newTokenOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $newTokenObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($newTokenJsonText)) {
+        $newTokenObject = $newTokenJsonText | ConvertFrom-Json
+    }
+
+    if ($newTokenExitCode -eq 0 -and $null -ne $newTokenObject) {
+        $newTokenPropagationGate.status = $newTokenObject.status
+        $newTokenPropagationGate.findings = @($newTokenObject.findings)
+    } else {
+        $newTokenPropagationGate.status = 'warn'
+        $newTokenPropagationGate.findings = @([pscustomobject][ordered]@{
+            code     = 'NEW_TOKEN_PROPAGATION_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-PrePushNewTokenPropagation.ps1'
+            message  = "Falha consultiva ao executar Test-PrePushNewTokenPropagation.ps1: $newTokenJsonText"
+        })
+    }
+}
+
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
 $pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
@@ -561,6 +591,11 @@ foreach ($unexpectedCharFinding in @($unexpectedCharGate.findings)) {
         ("Caractere inesperado ({0}): {1}" -f $unexpectedCharFinding.code, $unexpectedCharFinding.message)
     )
 }
+foreach ($newTokenFinding in @($newTokenPropagationGate.findings)) {
+    [void]$agentWarnings.Add(
+        ("Propagacao de termo novo (candidata consultiva) ({0}): {1} [{2}]" -f $newTokenFinding.code, $newTokenFinding.message, $newTokenFinding.path)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
@@ -604,6 +639,7 @@ $result = [ordered]@{
         traceabilityCoverage = $traceabilityCoverageGate
         msBuildProbeDocParity = $msBuildProbeDocParityGate
         unexpectedChar       = $unexpectedCharGate
+        newTokenPropagation  = $newTokenPropagationGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -679,6 +715,11 @@ if ($AsJson) {
     Write-Output ("UNEXPECTED_CHAR_GATE={0}" -f $unexpectedCharGate.status)
     foreach ($finding in @($unexpectedCharGate.findings)) {
         Write-Output ("UNEXPECTED_CHAR_FINDING: {0}: {1}" -f $finding.code, $finding.message)
+    }
+
+    Write-Output ("NEW_TOKEN_PROPAGATION_GATE={0}" -f $newTokenPropagationGate.status)
+    foreach ($finding in @($newTokenPropagationGate.findings)) {
+        Write-Output ("NEW_TOKEN_PROPAGATION_CANDIDATE: {0}: {1}" -f $finding.path, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {

@@ -50,6 +50,8 @@ Quando a frente altera motor com versão, assinatura, código de evidência, reg
 
 Simetricamente, quando a frente **adiciona** parâmetro, alias, flag, estado ou opção a um contrato, buscar o **termo novo** em todas as menções da mesma operação e confirmar propagação completa — não basta confirmar que o termo antigo não ficou para trás. Exemplo: se um wrapper passa a aceitar `-ObjectList` ao lado de `-ObjectNames`/`-ObjectGuids`, procurar todas as descrições dessa operação (`README.md`, `02`, `08`, `09`, skills, checklists e exemplos `*.example.ps1`) e confirmar que cada menção pré-existente equivalente recebeu o termo novo; menção que ficou só com o conjunto antigo é gap, salvo justificativa explícita.
 
+Suporte mecânico (consultivo): `scripts/Test-PrePushNewTokenPropagation.ps1`, chamado pelo orquestrador, detecta no diff o termo introduzido por **transição co-localizada** (`- ...-ObjectNames`/`-ObjectGuids` → `+ ...-ObjectList, -ObjectNames`/`-ObjectGuids`), filtra pares por morfema comum e ignora variável `$Token` de código e declaração do próprio parâmetro, listando as menções do repositório que ficaram com o termo antigo sem o novo como candidatas em `agentWarnings`. É apoio, não substituto: só dispara quando há transição co-localizada no mesmo hunk (alias adicionado sem enumeração pré-existente não gera par) e devolve candidatas a confrontar, não veredito — a varredura desta seção continua obrigatória.
+
 ### 3. Comparação documental
 
 Comparar a documentação afetada com:
@@ -170,6 +172,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | `scripts/Test-PrePushTraceabilityCoverage.ps1` | Rastreabilidade editorial + paridade motor/doc (consultivo) |
 | `scripts/Test-PrePushMsBuildProbeDocParity.ps1` | Paridade MSBuild probe (quando aplicável) |
 | `scripts/Test-GeneXusUnexpectedCharacter.ps1` | Caracteres Unicode inesperados em .md/.ps1 (consultivo) |
+| `scripts/Test-PrePushNewTokenPropagation.ps1` | Propagação de termo novo introduzido no diff por transição co-localizada (consultivo) |
 
 ## Espelho em outros documentos
 

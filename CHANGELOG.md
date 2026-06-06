@@ -8,6 +8,7 @@ O formato segue a ideia de manter uma seção `Unreleased` para mudanças ainda 
 
 ### Unreleased
 
+- Adicionado gate consultivo de propagação de termo novo à revisão pré-push (`scripts/Test-PrePushNewTokenPropagation.ps1`): quando o diff introduz parâmetro/alias por transição co-localizada, lista menções do repositório que ficaram com o conjunto antigo; integrado ao orquestrador como aviso, com self-test.
 - Reforçada a fase semântica da pré-push para buscar termos novos adicionados a contratos e reportar lacunas candidatas de rastreabilidade separadas do veredicto.
 - Padronizados wrappers compartilhados de empacotamento, inventário e sanidade XPZ para JSON por padrão no stdout, sem `-AsJson`, com bloqueios estruturados e aliases operacionais `-InputPath`/`-ObjectList`.
 - Adicionado gate para opções caras de build MSBuild: `CompileMains=true` e `DetailedNavigation=true` agora exigem `-AllowCostlyBuildOptions` com confirmação explícita.
@@ -25,6 +26,7 @@ El formato mantiene una sección `Unreleased` para cambios aún no publicados en
 
 ### Unreleased
 
+- Agregado gate consultivo de propagación de término nuevo a la revisión previa al push (`scripts/Test-PrePushNewTokenPropagation.ps1`): cuando el diff introduce un parámetro/alias por transición colocalizada, lista menciones del repositorio que quedaron con el conjunto antiguo; integrado al orquestador como aviso, con self-test.
 - Reforzada la fase semántica de la revisión previa al push para buscar términos nuevos agregados a contratos y reportar lagunas candidatas de trazabilidad separadas del veredicto.
 - Estandarizados los wrappers compartidos de empaquetado, inventario y sanidad XPZ para JSON por defecto en stdout, sin `-AsJson`, con bloqueos estructurados y aliases operativos `-InputPath`/`-ObjectList`.
 - Agregado gate para opciones costosas de build MSBuild: `CompileMains=true` y `DetailedNavigation=true` ahora exigen `-AllowCostlyBuildOptions` con confirmación explícita.
@@ -42,6 +44,7 @@ The format keeps an `Unreleased` section for changes not yet published in a form
 
 ### Unreleased
 
+- Added a consultative new-token propagation gate to the pre-push review (`scripts/Test-PrePushNewTokenPropagation.ps1`): when the diff introduces a parameter/alias via a co-located transition, it lists repository mentions left with the old set; wired into the orchestrator as a warning, with a self-test.
 - Strengthened the pre-push semantic phase to search for newly added contract terms and report candidate traceability gaps separately from the verdict.
 - Standardized shared XPZ packaging, inventory, and sanity wrappers to emit JSON by default on stdout, without `-AsJson`, with structured blocks and operational `-InputPath`/`-ObjectList` aliases.
 - Added a gate for costly MSBuild options: `CompileMains=true` and `DetailedNavigation=true` now require `-AllowCostlyBuildOptions` with explicit confirmation.
