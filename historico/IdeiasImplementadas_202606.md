@@ -57,7 +57,7 @@ A trilha adotou detecção por fase como caminho preferencial, sem remover compa
 
 ### Rastreabilidade
 
-- Commit: este commit
+- Commit: `be4ac59` (`Detecta eventos pos-build por janela MSBuild`)
 
 ## Gate para opções caras de build (`CompileMains=true` / `DetailedNavigation=true`)
 
@@ -154,4 +154,4 @@ A trilha passou a ter cobertura executável para o bloqueio nominal dos XMLs de 
 
 ### Rastreabilidade
 
-- Commit: este commit
+- Commit: `2bf4e05` (`Cobre bloqueio de XML de referencia no envelope`)
