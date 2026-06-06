@@ -241,10 +241,10 @@ Reference files and when to load them:
    - When the package is assembled via the manual fallback (textual envelope assembly without the helper), the collision gate must be executed explicitly before any `Set-Content`, rename, move, or overwrite of the package artifact
    - Prefer the local wrapper `Test-*KbPackageCollision.ps1` when the KB/repository publishes it
    - The wrapper should delegate to the shared engine `scripts\Test-XpzPackageCollision.ps1`
-   - Expected outputs:
-     - `COLLISION_OK`
-     - `BLOCK: _nn já existe para o front X, próximo livre: _mm`
-   - If the gate blocks, **ABORT** packaging before any `Set-Content`, rename, move, or overwrite of the package artifact
+   - Expected outputs (JSON on stdout by default, no `-AsJson`):
+     - free round: `status=ok`, `reason=COLLISION_OK`, exit 0
+     - collision: `status=bloqueado`, `reason=PACKAGE_ROUND_COLLISION`, `blockingReasons`, `nextFreeNN`/`nextFreeRound`, exit 20
+   - If the gate blocks (`status=bloqueado` or non-zero exit code), **ABORT** packaging before any `Set-Content`, rename, move, or overwrite of the package artifact
 7. Classify the package intent before packaging and record it in the conversation/manifests:
    - `pacote funcional`
    - `pacote experimental`
