@@ -26,7 +26,7 @@ Usar **uma e apenas uma** destas formas literais:
 - **Working tree:** com `commitsAhead=0` não há diff nem `git diff --check` no intervalo («nada commitado pendente de push»). A pré-push **não** substitui revisão de alterações **só** na working tree; o orquestrador avisa contagens, mas não analisa esses arquivos no intervalo.
 - **`exit 0` vs push:** `exit 0` do orquestrador **não** significa «pode dar push» nem pré-push concluída. Ler `PUSH_READINESS` (e `pushReadiness` no JSON): com `blocked`, push fica proibido até integrar o remoto, mesmo com parse/whitespace limpos.
 - **`pushReadiness=blocked`:** bloqueia **push** e torna diff/arquivos do intervalo apenas diagnósticos; **não** dispensa a fase semântica sobre os commits locais ainda pendentes — continuar o relatório de coerência cruzada.
-- **Gates consultivos:** `Test-PrePushTraceabilityCoverage.ps1` e `Test-GeneXusUnexpectedCharacter.ps1` apontam riscos objetivos; **não** substituem a fase semântica nem autorizam concluir a pré-push sozinhos.
+- **Gates consultivos:** os gates consultivos do orquestrador (ver a tabela «Scripts do orquestrador» ao final — fonte única; não reenumerar nomes aqui) apontam riscos objetivos; **não** substituem a fase semântica nem autorizam concluir a pré-push sozinhos.
 
 ### Referência remota fresca
 
@@ -51,6 +51,8 @@ Quando a frente altera motor com versão, assinatura, código de evidência, reg
 Simetricamente, quando a frente **adiciona** parâmetro, alias, flag, estado ou opção a um contrato, buscar o **termo novo** em todas as menções da mesma operação e confirmar propagação completa — não basta confirmar que o termo antigo não ficou para trás. Exemplo: se um wrapper passa a aceitar `-ObjectList` ao lado de `-ObjectNames`/`-ObjectGuids`, procurar todas as descrições dessa operação (`README.md`, `02`, `08`, `09`, skills, checklists e exemplos `*.example.ps1`) e confirmar que cada menção pré-existente equivalente recebeu o termo novo; menção que ficou só com o conjunto antigo é gap, salvo justificativa explícita.
 
 Suporte mecânico (consultivo): `scripts/Test-PrePushNewTokenPropagation.ps1`, chamado pelo orquestrador, detecta no diff o termo introduzido por **transição co-localizada** (`- ...-ObjectNames`/`-ObjectGuids` → `+ ...-ObjectList, -ObjectNames`/`-ObjectGuids`), filtra pares por morfema comum e ignora variável `$Token` de código e declaração do próprio parâmetro, listando as menções do repositório que ficaram com o termo antigo sem o novo como candidatas em `agentWarnings`. É apoio, não substituto: só dispara quando há transição co-localizada no mesmo hunk (alias adicionado sem enumeração pré-existente não gera par) e devolve candidatas a confrontar, não veredito — a varredura desta seção continua obrigatória.
+
+A regra acima vale para qualquer **conjunto enumerado**, não só parâmetros: quando a frente adiciona um membro a um conjunto que o repositório descreve em mais de um lugar (gates da pré-push, scripts, estados, exit codes), **toda** enumeração desse conjunto — inclusive afirmações fechadas do tipo «os X são A e B» — precisa refletir o membro novo. Atenção ao **furo de direção**: buscar só o termo *novo* é cego a enumerações que descrevem o conjunto sem nomeá-lo (a frase defasada cita os membros *antigos*, não o novo). Por isso, ao adicionar um membro, buscar **também a co-ocorrência dos termos antigos** e conferir se aquela enumeração recebeu o novo. Para o conjunto de **gates da pré-push** há suporte mecânico: `scripts/Test-PrePushGateEnumerationParity.ps1` deriva do orquestrador os gates realmente executados e sinaliza enumerações na doc que ficaram como subconjunto próprio.
 
 ### 3. Comparação documental
 
@@ -176,6 +178,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | `scripts/Test-PrePushNewTokenPropagation.ps1` | Propagação de termo novo introduzido no diff por transição co-localizada (consultivo) |
 | `scripts/Test-PrePushSharedScriptSkillCoverage.ps1` | Script compartilhado alterado documentado em SKILL.md/quality-checklist.md fora do diff (consultivo) |
 | `scripts/Test-PrePushHistoryCommitPlaceholder.ps1` | Placeholder genérico em campo `Commit:`/`PR:` de `historico/` no diff (consultivo) |
+| `scripts/Test-PrePushGateEnumerationParity.ps1` | Enumeração de gates na doc que ficou subconjunto próprio do que o orquestrador executa (consultivo) |
 
 ## Espelho em outros documentos
 

@@ -360,6 +360,12 @@ $historyCommitGate = [ordered]@{
     findings = @()
 }
 
+$gateEnumParityGate = [ordered]@{
+    script   = 'scripts/Test-PrePushGateEnumerationParity.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -571,6 +577,30 @@ if (Test-Path -LiteralPath $historyCommitScript -PathType Leaf) {
     }
 }
 
+$gateEnumParityScript = Join-Path $PSScriptRoot 'Test-PrePushGateEnumerationParity.ps1'
+if (Test-Path -LiteralPath $gateEnumParityScript -PathType Leaf) {
+    $gateEnumOutput = & $gateEnumParityScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $gateEnumExitCode = $LASTEXITCODE
+    $gateEnumJsonText = ($gateEnumOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $gateEnumObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($gateEnumJsonText)) {
+        $gateEnumObject = $gateEnumJsonText | ConvertFrom-Json
+    }
+
+    if ($gateEnumExitCode -eq 0 -and $null -ne $gateEnumObject) {
+        $gateEnumParityGate.status = $gateEnumObject.status
+        $gateEnumParityGate.findings = @($gateEnumObject.findings)
+    } else {
+        $gateEnumParityGate.status = 'warn'
+        $gateEnumParityGate.findings = @([pscustomobject][ordered]@{
+            code     = 'GATE_ENUMERATION_PARITY_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-PrePushGateEnumerationParity.ps1'
+            message  = "Falha consultiva ao executar Test-PrePushGateEnumerationParity.ps1: $gateEnumJsonText"
+        })
+    }
+}
+
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
 $pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
@@ -666,6 +696,11 @@ foreach ($historyCommitFinding in @($historyCommitGate.findings)) {
         ("Placeholder de rastreabilidade em historico (candidata consultiva) ({0}): {1} [{2}]" -f $historyCommitFinding.code, $historyCommitFinding.message, $historyCommitFinding.path)
     )
 }
+foreach ($gateEnumFinding in @($gateEnumParityGate.findings)) {
+    [void]$agentWarnings.Add(
+        ("Enumeracao de gates defasada na doc (candidata consultiva) ({0}): {1} [{2}]" -f $gateEnumFinding.code, $gateEnumFinding.message, $gateEnumFinding.path)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
@@ -712,6 +747,7 @@ $result = [ordered]@{
         newTokenPropagation  = $newTokenPropagationGate
         sharedScriptSkillCoverage = $sharedScriptSkillGate
         historyCommitPlaceholder = $historyCommitGate
+        gateEnumerationParity = $gateEnumParityGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -802,6 +838,11 @@ if ($AsJson) {
     Write-Output ("HISTORY_COMMIT_PLACEHOLDER_GATE={0}" -f $historyCommitGate.status)
     foreach ($finding in @($historyCommitGate.findings)) {
         Write-Output ("HISTORY_COMMIT_FIELD_PLACEHOLDER: {0}: {1}" -f $finding.path, $finding.message)
+    }
+
+    Write-Output ("GATE_ENUMERATION_PARITY_GATE={0}" -f $gateEnumParityGate.status)
+    foreach ($finding in @($gateEnumParityGate.findings)) {
+        Write-Output ("GATE_ENUMERATION_SUBSET: {0}: {1}" -f $finding.path, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {

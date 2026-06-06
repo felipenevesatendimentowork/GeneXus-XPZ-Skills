@@ -8,6 +8,7 @@ O formato segue a ideia de manter uma seção `Unreleased` para mudanças ainda 
 
 ### Unreleased
 
+- Adicionado gate consultivo de paridade de enumeração de gates à revisão pré-push (`scripts/Test-PrePushGateEnumerationParity.ps1`): deriva do orquestrador os gates realmente executados e sinaliza enumerações na documentação da rotina que ficaram como subconjunto próprio; generaliza a regra de propagação para "conjunto enumerado" e cobre o furo de direção (enumeração que cita só os membros antigos). Inclui self-test.
 - Adicionado gate consultivo de placeholder de rastreabilidade à revisão pré-push (`scripts/Test-PrePushHistoryCommitPlaceholder.ps1`): quando o diff toca `historico/*.md`, sinaliza campo `Commit:`/`PR:` com placeholder genérico (`este commit`, `TODO`, etc.) em vez do hash real; integrado ao orquestrador como aviso, com self-test.
 - Adicionado gate consultivo de cobertura de skill transversal à revisão pré-push (`scripts/Test-PrePushSharedScriptSkillCoverage.ps1`): quando o diff altera script compartilhado, lista os `SKILL.md`/`quality-checklist.md` que o documentam e não foram tocados; integrado ao orquestrador como aviso, com self-test.
 - Adicionado gate consultivo de propagação de termo novo à revisão pré-push (`scripts/Test-PrePushNewTokenPropagation.ps1`): quando o diff introduz parâmetro/alias por transição co-localizada, lista menções do repositório que ficaram com o conjunto antigo; integrado ao orquestrador como aviso, com self-test.
@@ -28,6 +29,7 @@ El formato mantiene una sección `Unreleased` para cambios aún no publicados en
 
 ### Unreleased
 
+- Agregado gate consultivo de paridad de enumeración de gates a la revisión previa al push (`scripts/Test-PrePushGateEnumerationParity.ps1`): deriva del orquestador los gates realmente ejecutados y señala enumeraciones en la documentación de la rutina que quedaron como subconjunto propio; generaliza la regla de propagación a "conjunto enumerado" y cubre el agujero de dirección (enumeración que cita solo los miembros antiguos). Incluye self-test.
 - Agregado gate consultivo de placeholder de trazabilidad a la revisión previa al push (`scripts/Test-PrePushHistoryCommitPlaceholder.ps1`): cuando el diff toca `historico/*.md`, señala el campo `Commit:`/`PR:` con placeholder genérico (`este commit`, `TODO`, etc.) en vez del hash real; integrado al orquestador como aviso, con self-test.
 - Agregado gate consultivo de cobertura de skill transversal a la revisión previa al push (`scripts/Test-PrePushSharedScriptSkillCoverage.ps1`): cuando el diff altera un script compartido, lista los `SKILL.md`/`quality-checklist.md` que lo documentan y no fueron tocados; integrado al orquestador como aviso, con self-test.
 - Agregado gate consultivo de propagación de término nuevo a la revisión previa al push (`scripts/Test-PrePushNewTokenPropagation.ps1`): cuando el diff introduce un parámetro/alias por transición colocalizada, lista menciones del repositorio que quedaron con el conjunto antiguo; integrado al orquestador como aviso, con self-test.
@@ -48,6 +50,7 @@ The format keeps an `Unreleased` section for changes not yet published in a form
 
 ### Unreleased
 
+- Added a consultative gate-enumeration parity gate to the pre-push review (`scripts/Test-PrePushGateEnumerationParity.ps1`): it derives the gates actually run by the orchestrator and flags enumerations in the routine documentation that became a proper subset; generalizes the propagation rule to "enumerated set" and covers the direction blind spot (an enumeration that names only the old members). Includes a self-test.
 - Added a consultative traceability-placeholder gate to the pre-push review (`scripts/Test-PrePushHistoryCommitPlaceholder.ps1`): when the diff touches `historico/*.md`, it flags a `Commit:`/`PR:` field left with a generic placeholder (`este commit`, `TODO`, etc.) instead of the real hash; wired into the orchestrator as a warning, with a self-test.
 - Added a consultative cross-skill coverage gate to the pre-push review (`scripts/Test-PrePushSharedScriptSkillCoverage.ps1`): when the diff changes a shared script, it lists the `SKILL.md`/`quality-checklist.md` files that document it and were not touched; wired into the orchestrator as a warning, with a self-test.
 - Added a consultative new-token propagation gate to the pre-push review (`scripts/Test-PrePushNewTokenPropagation.ps1`): when the diff introduces a parameter/alias via a co-located transition, it lists repository mentions left with the old set; wired into the orchestrator as a warning, with a self-test.
