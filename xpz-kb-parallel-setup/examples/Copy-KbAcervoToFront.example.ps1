@@ -8,7 +8,7 @@ Chama o script compartilhado Copy-GeneXusAcervoToFront.ps1 para copiar XMLs de
 ObjetosDaKbEmXml para a pasta da frente, com bump automatico de lastUpdate.
 Resolve o anti-padrao "editar acervo esperando que o pacote pegue": em vez de
 editar o acervo, copia a versao mais recente para a frente e bumpa o lastUpdate.
-Quando ObjectNames ou ObjectGuids e informado e o objeto ainda nao existe na frente,
+Quando ObjectList, ObjectNames ou ObjectGuids e informado e o objeto ainda nao existe na frente,
 faz seed inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo explicito.
 
 .PARAMETER FrontName
