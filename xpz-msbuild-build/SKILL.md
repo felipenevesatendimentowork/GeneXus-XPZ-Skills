@@ -104,6 +104,12 @@ Do NOT use esta skill para:
   apos confirmar com o usuário humano (modo não-interativo). Nunca emitir `ForceRebuild=true`
   implicitamente em fluxo pós-import nem em validação cotidiana — `BuildAll` incremental
   é o suficiente
+- Tratar `-CompileMains=true` e `-DetailedNavigation=true` como opções caras de build:
+  bloqueadas por default e habilitadas apenas via `-AllowCostlyBuildOptions` com
+  confirmação explícita do usuário por frase exata (modo interativo) ou
+  `-AllowCostlyBuildOptions -ConfirmCostlyBuildOptions` apos confirmar com o usuário
+  humano (modo não-interativo). Nunca emitir essas opções implicitamente em fluxo
+  pós-import nem em validação cotidiana
 - Distinguir claramente:
   - sucesso operacional da chamada MSBuild
   - efeito funcional observado depois no GeneXus
@@ -320,7 +326,8 @@ wrapper deve detectar a falha de `SetActiveVersion`/`SetActiveEnvironment`, emit
   TODOS os objetos da KB; em KB grande pode levar horas; **só pode ser habilitado via
   `-AllowWideRebuild`** — tentativa sem essa autorização é bloqueada por política
   com exit 46)
-- `-DetailedNavigation` (Boolean, default `false`)
+- `-DetailedNavigation` (Boolean, default `false`; opção cara, só pode ser habilitada
+  via `-AllowCostlyBuildOptions`)
 - `-AllowWideRebuild` (switch — único caminho autorizado para habilitar
   `-ForceRebuild true`; em modo interativo exige que o usuário digite a frase exata
   `entendo que isto pode regerar a KB inteira e aceito o custo`; em modo não-interativo
@@ -332,6 +339,13 @@ wrapper deve detectar a falha de `SetActiveVersion`/`SetActiveEnvironment`, emit
   desanexados onde não há terminal disponível; proibido sem `-AllowWideRebuild`; o
   chamador é responsável por confirmar com o usuário humano antes de passar este
   parâmetro)
+- `-AllowCostlyBuildOptions` (switch — único caminho autorizado para habilitar
+  `-DetailedNavigation true`; em modo interativo exige que o usuário digite a frase
+  exata `entendo que estas opcoes podem ampliar muito o custo do build e aceito executar`;
+  em modo não-interativo requer `-ConfirmCostlyBuildOptions`)
+- `-ConfirmCostlyBuildOptions` (switch — usado em conjunto com
+  `-AllowCostlyBuildOptions`; proibido sem `-AllowCostlyBuildOptions`; o chamador é
+  responsável por confirmar com o usuário humano antes de passar este parâmetro)
 
 **Categorias de resultado:**
 
@@ -396,8 +410,10 @@ e confirmação explícita** por frase exata.
   regenerar centenas/milhares de objetos, incluindo subtype groups; **só pode ser
   habilitado via `-AllowWideRebuild`** — tentativa sem essa autorização é bloqueada
   por política com exit 46)
-- `-CompileMains` (Boolean, default `false` — compila apenas Developer Menu)
-- `-DetailedNavigation` (Boolean, default `false`)
+- `-CompileMains` (Boolean, default `false` — compila apenas Developer Menu; opção
+  cara, só pode ser habilitada via `-AllowCostlyBuildOptions`)
+- `-DetailedNavigation` (Boolean, default `false`; opção cara, só pode ser habilitada
+  via `-AllowCostlyBuildOptions`)
 - `-FailIfReorg` (Boolean, default `true` — bloqueia build se houver reorg pendente)
 - `-DoNotExecuteReorg` (Boolean, default `false`)
 - `-AllowReorg` (switch — quando presente, define `FailIfReorg=false` e
@@ -420,6 +436,15 @@ e confirmação explícita** por frase exata.
   desanexados onde não há terminal disponível; proibido sem `-AllowWideRebuild`; o
   chamador é responsável por confirmar com o usuário humano com a frase exata antes
   de passar este parâmetro)
+- `-AllowCostlyBuildOptions` (switch — único caminho autorizado para habilitar
+  `-CompileMains true` ou `-DetailedNavigation true`; em modo interativo exige a
+  frase exata `entendo que estas opcoes podem ampliar muito o custo do build e aceito executar`;
+  em modo não-interativo requer `-ConfirmCostlyBuildOptions`; gate independente de
+  `-AllowWideRebuild` e `-AllowReorg`)
+- `-ConfirmCostlyBuildOptions` (switch — usado em conjunto com
+  `-AllowCostlyBuildOptions`; proibido sem `-AllowCostlyBuildOptions`; o chamador é
+  responsável por confirmar com o usuário humano com a frase exata antes de passar
+  este parâmetro)
 - `-Configuration` (String, opcional — valores válidos: `Release`, `Debug`,
   `Performance Test`; quando informado, emite `SetConfiguration` imediatamente antes
   do `BuildAll`; quando omitido, a configuração ativa da KB é mantida sem alteração)
@@ -913,6 +938,10 @@ Campos relevantes:
       explícito do usuário, com aviso do custo apresentado e frase exata
       `entendo que isto pode regerar a KB inteira e aceito o custo` obtida antes de
       passar `-AllowWideRebuild`
+- [ ] `-CompileMains=true` ou `-DetailedNavigation=true` só foram usados mediante
+      pedido explícito do usuário, com aviso do significado/custo apresentado e frase
+      exata `entendo que estas opcoes podem ampliar muito o custo do build e aceito executar`
+      obtida antes de passar `-AllowCostlyBuildOptions`
 - [ ] Quando `reorg necessária detectada`, as três opções foram apresentadas ao usuário
 - [ ] Quando `reorg detectada ou executada` (pós-SpecifyAll), o resultado foi apresentado ao usuário sem ser classificado como sucesso
 - [ ] `Invoke-GeneXusDbImpact.ps1` foi executado antes de `Invoke-GeneXusDbReorg.ps1` quando o objetivo era inspecionar o impacto
@@ -956,6 +985,14 @@ Campos relevantes:
   `Invoke-GeneXusKbSpecifyGenerate.ps1`
 - NEVER passar `-ConfirmWideRebuild` sem `-AllowWideRebuild` — combinação bloqueada por
   política (exit 46)
+- NEVER passar `-CompileMains true` ou `-DetailedNavigation true` sem
+  `-AllowCostlyBuildOptions` — combinação bloqueada por política (exit 46) tanto em
+  `Invoke-GeneXusKbBuildAll.ps1` quanto em `Invoke-GeneXusKbSpecifyGenerate.ps1`
+- NEVER passar `-ConfirmCostlyBuildOptions` sem `-AllowCostlyBuildOptions` —
+  combinação bloqueada por política (exit 46)
+- NEVER usar `-ConfirmCostlyBuildOptions` sem ter obtido a frase exata
+  `entendo que estas opcoes podem ampliar muito o custo do build e aceito executar`
+  do usuário humano antes de lançar o processo
 - NEVER passar `-ForceRebuild true` em fluxo pós-import cotidiano nem como "validação
   completa automática" — `BuildAll` incremental (sem `-ForceRebuild`) é o passo correto
 - NEVER usar `-ConfirmWideRebuild` sem ter obtido a frase exata

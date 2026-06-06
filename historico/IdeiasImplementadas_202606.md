@@ -59,6 +59,45 @@ A trilha adotou detecção por fase como caminho preferencial, sem remover compa
 
 - Commit: este commit
 
+## Gate para opções caras de build (`CompileMains=true` / `DetailedNavigation=true`)
+
+**Importancia original:** baixa
+**Status:** concluida em 2026-06-05
+
+### Origem
+
+Ideia levantada em 2026-05-13 durante a frente que introduziu o gate de
+`-ForceRebuild=true` em `Invoke-GeneXusKbBuildAll.ps1` e
+`Invoke-GeneXusKbSpecifyGenerate.ps1`.
+
+### Problema concreto
+
+`CompileMains=true` compila também objetos Main além do Developer Menu.
+`DetailedNavigation=true` executa navegação detalhada durante a especificação. Essas
+opções não equivalem a `Rebuild All`, mas podem ampliar bastante o custo de uma
+validação cotidiana em KB grande.
+
+### Implementacao
+
+- `Invoke-GeneXusKbBuildAll.ps1`: bloqueia `CompileMains=true` e
+  `DetailedNavigation=true` sem `-AllowCostlyBuildOptions`.
+- `Invoke-GeneXusKbSpecifyGenerate.ps1`: bloqueia `DetailedNavigation=true` sem
+  `-AllowCostlyBuildOptions`.
+- `Invoke-GeneXusXpzImportThenBuild.ps1`: propaga `-AllowCostlyBuildOptions` e
+  `-ConfirmCostlyBuildOptions` para o build pós-import.
+- `scripts/msbuild-exit-codes.catalog.json`, `10-base-operacional-msbuild-headless.md`
+  e `xpz-msbuild-build/SKILL.md`: documentam o novo gate.
+
+### Decisao final
+
+A trilha adotou gate separado de `-AllowWideRebuild` para não misturar regeneração
+total (`ForceRebuild=true`) com opções caras de build incremental. A confirmação exige
+a frase exata `entendo que estas opcoes podem ampliar muito o custo do build e aceito executar`.
+
+### Rastreabilidade
+
+- Commit: este commit
+
 ## Documentos de governança na raiz
 
 **Importancia original:** baixa

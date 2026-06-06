@@ -320,6 +320,18 @@
           "jsonHints": ["requestedContext.ConfirmWideRebuildMode", "requestedContext.AllowWideRebuildRequested"]
         },
         {
+          "id": "costly-build-options-sem-allow",
+          "condition": "CompileMains=true ou DetailedNavigation=true sem -AllowCostlyBuildOptions (e confirmacao quando exigida).",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+          "jsonHints": ["requestedContext.CompileMains", "requestedContext.DetailedNavigation", "requestedContext.AllowCostlyBuildOptionsRequested"]
+        },
+        {
+          "id": "confirm-costly-build-options-sem-allow",
+          "condition": "-ConfirmCostlyBuildOptions sem -AllowCostlyBuildOptions.",
+          "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
+          "jsonHints": ["requestedContext.ConfirmCostlyBuildOptionsMode", "requestedContext.AllowCostlyBuildOptionsRequested"]
+        },
+        {
           "id": "confirm-reorg-sem-allow",
           "condition": "-ConfirmReorg sem -AllowReorg.",
           "wrappers": ["Invoke-GeneXusKbBuildAll.ps1"],

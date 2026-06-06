@@ -83,6 +83,10 @@ param(
 
     [switch]$ConfirmWideRebuild,
 
+    [switch]$AllowCostlyBuildOptions,
+
+    [switch]$ConfirmCostlyBuildOptions,
+
     [int]$TimeoutSeconds = 0,
 
     [switch]$PostImportDeployValidation,
@@ -453,6 +457,8 @@ function New-BuildArguments {
     Add-SwitchArgument -Arguments $arguments -Name '-ConfirmReorg' -Enabled $ConfirmReorg.IsPresent
     Add-SwitchArgument -Arguments $arguments -Name '-AllowWideRebuild' -Enabled $AllowWideRebuild.IsPresent
     Add-SwitchArgument -Arguments $arguments -Name '-ConfirmWideRebuild' -Enabled $ConfirmWideRebuild.IsPresent
+    Add-SwitchArgument -Arguments $arguments -Name '-AllowCostlyBuildOptions' -Enabled $AllowCostlyBuildOptions.IsPresent
+    Add-SwitchArgument -Arguments $arguments -Name '-ConfirmCostlyBuildOptions' -Enabled $ConfirmCostlyBuildOptions.IsPresent
     Add-ArgumentPair -Arguments $arguments -Name '-TimeoutSeconds' -Value $TimeoutSeconds
     Add-OptionalArgumentPair -Arguments $arguments -Name '-MonitorLogPath' -Value $EffectiveBuildMonitorLogPath
     Add-SwitchArgument -Arguments $arguments -Name '-StartWatcher' -Enabled $StartWatcher.IsPresent

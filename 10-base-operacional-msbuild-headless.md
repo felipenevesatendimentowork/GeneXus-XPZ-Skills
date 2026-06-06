@@ -457,6 +457,14 @@ Esse gate é **independente** do gate de reorg (`-AllowReorg`): autorizar um nã
 
 O workflow completo, parâmetros e interface estruturada estão documentados na skill `xpz-msbuild-build`; esta seção registra apenas a salvaguarda como parte da realidade operacional MSBuild headless.
 
+### Gate De Opções Caras De Build (`CompileMains=true` / `DetailedNavigation=true`)
+
+`CompileMains=true` em `BuildAll` compila também os objetos Main além do Developer Menu. `DetailedNavigation=true` em `BuildAll` ou `SpecifyGenerate` executa navegação detalhada durante a especificação. Essas opções não equivalem a `Rebuild All`, mas podem ampliar bastante o custo de uma validação cotidiana em KB grande.
+
+Por essa assimetria de custo operacional, os wrappers `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1` bloqueiam essas opções por padrão (exit 46). A habilitação exige `-AllowCostlyBuildOptions` com confirmação explícita do usuário pela frase exata `entendo que estas opcoes podem ampliar muito o custo do build e aceito executar` (em modo não-interativo, a confirmação chega via `-ConfirmCostlyBuildOptions` após o chamador obter a frase do usuário humano).
+
+Esse gate é **independente** do gate de regeneração ampla (`-AllowWideRebuild`) e do gate de reorg (`-AllowReorg`): autorizar um não autoriza os outros.
+
 ### Bloqueio Preventivo De MSBuild Concorrente Por KB
 
 Wrappers MSBuild headless que abrem uma KB nativa devem executar uma checagem preventiva de concorrência logo depois de gerar o `.msbuild` temporário da rodada e antes de chamar `Start-Process` para `MSBuild.exe`.

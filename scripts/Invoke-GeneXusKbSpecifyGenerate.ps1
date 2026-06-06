@@ -70,7 +70,9 @@ Operação ampla bloqueada por política: ForceRebuild=true só pode ser usado e
 é bloqueada com exit 46.
 
 .PARAMETER DetailedNavigation
-Quando true, executa navegação detalhada. Default: false.
+Quando true, executa navegação detalhada. Default: false. Opção cara bloqueada por
+política: só pode ser usada em conjunto com -AllowCostlyBuildOptions e confirmação
+explícita do usuário.
 
 .PARAMETER AllowWideRebuild
 Switch. Único caminho autorizado para habilitar -ForceRebuild true. Em modo interativo
@@ -86,6 +88,17 @@ há terminal disponível. Usar -ConfirmWideRebuild sem -AllowWideRebuild é bloq
 por política (exit 46). O chamador é responsável por obter confirmação explícita do
 usuário humano com a frase exata antes de passar -ConfirmWideRebuild — este parâmetro
 não dispensa a confirmação, apenas muda o canal.
+
+.PARAMETER AllowCostlyBuildOptions
+Switch. Único caminho autorizado para habilitar -DetailedNavigation true sem execução
+acidental. Em modo interativo exige frase exata:
+    entendo que estas opcoes podem ampliar muito o custo do build e aceito executar
+Em modo não-interativo requer -ConfirmCostlyBuildOptions.
+
+.PARAMETER ConfirmCostlyBuildOptions
+Switch. Usado em conjunto com -AllowCostlyBuildOptions para dispensar o Read-Host
+interativo da frase de confirmação. Proibido sem -AllowCostlyBuildOptions. O chamador
+é responsável por obter confirmação explícita do usuário humano com a frase exata.
 
 .PARAMETER VerboseLog
 Amplia o detalhamento gravado no log sem alterar o resultado lógico.
@@ -132,6 +145,10 @@ param(
     [switch]$AllowWideRebuild,
 
     [switch]$ConfirmWideRebuild,
+
+    [switch]$AllowCostlyBuildOptions,
+
+    [switch]$ConfirmCostlyBuildOptions,
 
     [switch]$VerboseLog,
 
@@ -568,6 +585,8 @@ $script:DeploymentEnvironmentContext = $null
 
 $confirmWideRebuildMode    = $null
 $allowWideRebuildConfirmed = $false
+$confirmCostlyBuildOptionsMode = $null
+$allowCostlyBuildOptionsConfirmed = $false
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
 $script:TimingLog['scriptStart'] = Get-GeneXusMsBuildNowIso
@@ -669,6 +688,65 @@ try {
         exit 46
     }
 
+    # Gate de segurança: -ConfirmCostlyBuildOptions sem -AllowCostlyBuildOptions não tem sentido
+    if ($ConfirmCostlyBuildOptions.IsPresent -and -not $AllowCostlyBuildOptions.IsPresent) {
+        Add-BlockingReason -Reason '-ConfirmCostlyBuildOptions so pode ser usado em conjunto com -AllowCostlyBuildOptions. Para confirmar opcoes caras interativamente, use apenas -AllowCostlyBuildOptions. Para modo nao-interativo, use -AllowCostlyBuildOptions -ConfirmCostlyBuildOptions apos confirmar a operacao com o usuario humano.'
+        $blocked = [ordered]@{
+            status           = 'bloqueado por politica de seguranca'
+            summary          = '-ConfirmCostlyBuildOptions requer -AllowCostlyBuildOptions.'
+            exitCode         = 46
+            stage            = 'pre-specify-generate'
+            requestedContext = [ordered]@{
+                VersionName                     = $VersionName
+                EnvironmentName                 = $EnvironmentName
+                ForceRebuild                    = $ForceRebuild
+                DetailedNavigation              = $DetailedNavigation
+                AllowWideRebuildRequested       = $AllowWideRebuild.IsPresent
+                AllowWideRebuildConfirmed       = $false
+                ConfirmWideRebuildMode          = $confirmWideRebuildMode
+                AllowCostlyBuildOptionsRequested = $false
+                AllowCostlyBuildOptionsConfirmed = $false
+                ConfirmCostlyBuildOptionsMode    = $confirmCostlyBuildOptionsMode
+            }
+            observedContext  = [ordered]@{
+                ActiveVersion     = $null
+                ActiveEnvironment = $null
+                SpecifyDone       = $false
+                GenerateDone      = $false
+                pathEnrichment    = $script:PathEnrichment
+            }
+            resolvedPaths    = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $KbPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath          = $resolvedLogPath
+            }
+            pathActions      = [ordered]@{ WorkingDirectory = 'blocked-policy' }
+            artifacts        = [ordered]@{
+                ProbeLogPath     = $null
+                MsBuildFilePath  = $null
+                StdOutPath       = $null
+                StdErrPath       = $null
+                ExecutionLogPath = $resolvedLogPath
+            }
+            watcherContext   = $script:WatcherContext
+            timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            blockingReasons  = @($script:BlockingReasons)
+            warnings         = @($script:Warnings)
+            strategyTrace    = @($script:StrategyTrace)
+        }
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
     # Gate de segurança: -ForceRebuild=true sem -AllowWideRebuild é bloqueado por política
     # ForceRebuild=true muda SpecifyAll/GenerateOnly de incremental para regeneracao total
     # de TODOS os objetos da KB. Em KB grande pode levar horas e regenerar centenas/milhares.
@@ -727,6 +805,73 @@ try {
         exit 46
     }
 
+    $costlyBuildOptionsRequested = ($DetailedNavigation -eq 'true')
+
+    # Gate de segurança: opções que ampliam custo da verificação não passam silenciosamente.
+    if ($costlyBuildOptionsRequested -and -not $AllowCostlyBuildOptions.IsPresent) {
+        Add-BlockingReason -Reason 'Opcao cara de build solicitada sem -AllowCostlyBuildOptions: DetailedNavigation=true. DetailedNavigation=true executa navegacao detalhada durante a especificacao; em KB grande pode transformar validacao cotidiana em execucao de alto custo. Confirme explicitamente antes de prosseguir.'
+        $blocked = [ordered]@{
+            status           = 'bloqueado por politica de seguranca'
+            summary          = 'DetailedNavigation=true requer -AllowCostlyBuildOptions e confirmacao explicita do usuario.'
+            exitCode         = 46
+            stage            = 'pre-specify-generate'
+            requestedContext = [ordered]@{
+                VersionName                     = $VersionName
+                EnvironmentName                 = $EnvironmentName
+                ForceRebuild                    = $ForceRebuild
+                DetailedNavigation              = $DetailedNavigation
+                CostlyBuildOptions              = @('DetailedNavigation=true')
+                AllowWideRebuildRequested       = $AllowWideRebuild.IsPresent
+                AllowWideRebuildConfirmed       = $false
+                ConfirmWideRebuildMode          = $confirmWideRebuildMode
+                AllowCostlyBuildOptionsRequested = $false
+                AllowCostlyBuildOptionsConfirmed = $false
+                ConfirmCostlyBuildOptionsMode    = $confirmCostlyBuildOptionsMode
+            }
+            observedContext  = [ordered]@{
+                ActiveVersion     = $null
+                ActiveEnvironment = $null
+                SpecifyDone       = $false
+                GenerateDone      = $false
+                pathEnrichment    = $script:PathEnrichment
+            }
+            resolvedPaths    = [ordered]@{
+                GeneXusDir       = (Get-FullPathSafe -PathValue $GeneXusDir)
+                MsBuildPath      = (Get-FullPathSafe -PathValue $MsBuildPath)
+                KbPath           = (Get-FullPathSafe -PathValue $KbPath)
+                WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
+                LogPath          = $resolvedLogPath
+            }
+            pathActions      = [ordered]@{ WorkingDirectory = 'blocked-policy' }
+            artifacts        = [ordered]@{
+                ProbeLogPath     = $null
+                MsBuildFilePath  = $null
+                StdOutPath       = $null
+                StdErrPath       = $null
+                ExecutionLogPath = $resolvedLogPath
+            }
+            watcherContext   = $script:WatcherContext
+            timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+            blockingReasons  = @($script:BlockingReasons)
+            warnings         = @($script:Warnings)
+            strategyTrace    = @($script:StrategyTrace)
+        }
+        $blockedJson = ConvertTo-JsonText -InputObject $blocked
+        if (-not [string]::IsNullOrWhiteSpace($resolvedLogPath) -and -not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+            $parent = [System.IO.Path]::GetDirectoryName($resolvedLogPath)
+            if (-not [string]::IsNullOrWhiteSpace($parent) -and (Test-Path -LiteralPath $parent -PathType Container)) {
+                Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $blockedJson
+            }
+        }
+        Write-Output $blockedJson
+        exit 46
+    }
+
+    if ($costlyBuildOptionsRequested -and $AllowCostlyBuildOptions.IsPresent -and $ConfirmCostlyBuildOptions.IsPresent) {
+        $allowCostlyBuildOptionsConfirmed = $true
+        $confirmCostlyBuildOptionsMode = 'parameter'
+    }
+
     $envResolution = Resolve-GeneXusKbValidationEnvironment -EnvironmentName $EnvironmentName -KbMetadataPath $KbMetadataPath -ParallelKbRoot $ParallelKbRoot
     $script:DeploymentEnvironmentContext = $envResolution.Context
 
@@ -751,6 +896,9 @@ try {
                 AllowWideRebuildRequested  = $AllowWideRebuild.IsPresent
                 AllowWideRebuildConfirmed  = $false
                 ConfirmWideRebuildMode     = $confirmWideRebuildMode
+                AllowCostlyBuildOptionsRequested = $AllowCostlyBuildOptions.IsPresent
+                AllowCostlyBuildOptionsConfirmed = $allowCostlyBuildOptionsConfirmed
+                ConfirmCostlyBuildOptionsMode    = $confirmCostlyBuildOptionsMode
             }
             observedContext  = [ordered]@{
                 ActiveVersion     = $null
@@ -971,6 +1119,93 @@ try {
     } elseif ($AllowWideRebuild.IsPresent) {
         Add-WarningMessage -Message '-AllowWideRebuild foi informado, mas ForceRebuild=false; o autorizador e redundante neste cenario (nenhuma regeneracao ampla foi solicitada). Para regenerar a KB inteira, passar tambem -ForceRebuild true.'
         Add-StrategyTrace -Message '-AllowWideRebuild redundante: ForceRebuild=false, nenhuma regeneracao ampla a confirmar.'
+    }
+
+    if ($costlyBuildOptionsRequested -and $AllowCostlyBuildOptions.IsPresent) {
+        if ($ConfirmCostlyBuildOptions.IsPresent) {
+            $allowCostlyBuildOptionsConfirmed = $true
+            $confirmCostlyBuildOptionsMode    = 'parameter'
+            Add-StrategyTrace -Message 'AllowCostlyBuildOptions confirmado via -ConfirmCostlyBuildOptions (modo nao-interativo). DetailedNavigation=true autorizado.'
+        } else {
+            $confirmCostlyBuildOptionsMode = 'interactive'
+            Write-Host ''
+            Write-Host 'AVISO: opcao cara de build foi solicitada.'
+            Write-Host ''
+            Write-Host ('KB alvo:      {0}' -f $resolvedKbPath)
+            Write-Host ('GeneXusDir:   {0}' -f $resolvedGeneXusDir)
+            Write-Host 'Opcoes:       DetailedNavigation=true'
+            Write-Host ''
+            Write-Host 'DetailedNavigation=true executa navegacao detalhada durante a especificacao.'
+            Write-Host 'Em KB grande, essa opcao pode ampliar muito o tempo da verificacao e gerar'
+            Write-Host 'custo operacional semelhante a execucoes que o usuario pretendia evitar.'
+            Write-Host ''
+            Write-Host 'Para confirmar, digite EXATAMENTE a frase abaixo (sem aspas):'
+            Write-Host '    entendo que estas opcoes podem ampliar muito o custo do build e aceito executar'
+            Write-Host ''
+            $costlyConfirmation = Read-Host 'Confirmacao'
+
+            if ($costlyConfirmation -ne 'entendo que estas opcoes podem ampliar muito o custo do build e aceito executar') {
+                Add-BlockingReason -Reason 'Opcao cara de build nao confirmada pelo usuario com a frase exata. Execucao cancelada por seguranca.'
+                $aborted = [ordered]@{
+                    status           = 'cancelado pelo usuario'
+                    summary          = 'DetailedNavigation=true nao confirmado pelo usuario. SpecifyAll/GenerateOnly cancelado por seguranca.'
+                    exitCode         = 47
+                    stage            = 'pre-specify-generate'
+                    requestedContext = [ordered]@{
+                        VersionName                     = $VersionName
+                        EnvironmentName                 = $EnvironmentName
+                        ForceRebuild                    = $ForceRebuild
+                        DetailedNavigation              = $DetailedNavigation
+                        CostlyBuildOptions              = @('DetailedNavigation=true')
+                        AllowWideRebuildRequested       = $AllowWideRebuild.IsPresent
+                        AllowWideRebuildConfirmed       = $allowWideRebuildConfirmed
+                        ConfirmWideRebuildMode          = $confirmWideRebuildMode
+                        AllowCostlyBuildOptionsRequested = $true
+                        AllowCostlyBuildOptionsConfirmed = $false
+                        ConfirmCostlyBuildOptionsMode    = $confirmCostlyBuildOptionsMode
+                    }
+                    observedContext  = [ordered]@{
+                        ActiveVersion     = $null
+                        ActiveEnvironment = $null
+                        SpecifyDone       = $false
+                        GenerateDone      = $false
+                        pathEnrichment    = $script:PathEnrichment
+                    }
+                    resolvedPaths    = [ordered]@{
+                        GeneXusDir       = $resolvedGeneXusDir
+                        MsBuildPath      = $resolvedMsBuildPath
+                        KbPath           = $resolvedKbPath
+                        WorkingDirectory = $probeStage.Diagnostic.resolvedPaths.WorkingDirectory
+                        LogPath          = $resolvedLogPath
+                    }
+                    pathActions      = $probeStage.Diagnostic.pathActions
+                    artifacts        = [ordered]@{
+                        ProbeLogPath     = $probeLogPath
+                        MsBuildFilePath  = $null
+                        StdOutPath       = $null
+                        StdErrPath       = $null
+                        ExecutionLogPath = $resolvedLogPath
+                    }
+                    watcherContext   = $script:WatcherContext
+                    timing           = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
+                    blockingReasons  = @($probeStage.Diagnostic.blockingReasons + $script:BlockingReasons)
+                    warnings         = @($probeStage.Diagnostic.warnings + $script:Warnings)
+                    strategyTrace    = @($probeStage.Diagnostic.strategyTrace + $script:StrategyTrace)
+                }
+                $abortedJson = ConvertTo-JsonText -InputObject $aborted
+                if (-not (Test-IsUnderProgramFilesX86 -PathValue $resolvedLogPath)) {
+                    Write-JsonLog -TargetLogPath $resolvedLogPath -JsonPayload $abortedJson
+                }
+                Write-Output $abortedJson
+                exit 47
+            }
+
+            $allowCostlyBuildOptionsConfirmed = $true
+            Add-StrategyTrace -Message 'AllowCostlyBuildOptions confirmado pelo usuario interativamente via frase exata. DetailedNavigation=true autorizado.'
+        }
+    } elseif ($AllowCostlyBuildOptions.IsPresent) {
+        Add-WarningMessage -Message '-AllowCostlyBuildOptions foi informado, mas DetailedNavigation=false; o autorizador e redundante neste cenario.'
+        Add-StrategyTrace -Message '-AllowCostlyBuildOptions redundante: nenhuma opcao cara de build foi solicitada.'
     }
 
     $msBuildFilePath = Join-Path $artifactDirectory 'specifygenerate.msbuild'
@@ -1315,6 +1550,9 @@ try {
             AllowWideRebuildRequested  = $AllowWideRebuild.IsPresent
             AllowWideRebuildConfirmed  = $allowWideRebuildConfirmed
             ConfirmWideRebuildMode     = $confirmWideRebuildMode
+            AllowCostlyBuildOptionsRequested = $AllowCostlyBuildOptions.IsPresent
+            AllowCostlyBuildOptionsConfirmed = $allowCostlyBuildOptionsConfirmed
+            ConfirmCostlyBuildOptionsMode    = $confirmCostlyBuildOptionsMode
             StartWatcherRequested      = $StartWatcher.IsPresent
         }
         observedContext  = [ordered]@{
