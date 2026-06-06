@@ -8,6 +8,7 @@ O formato segue a ideia de manter uma seção `Unreleased` para mudanças ainda 
 
 ### Unreleased
 
+- Padronizados wrappers compartilhados de empacotamento, inventário e sanidade XPZ para JSON por padrão no stdout, sem `-AsJson`, com bloqueios estruturados e aliases operacionais `-InputPath`/`-ObjectList`.
 - Adicionado gate para opções caras de build MSBuild: `CompileMains=true` e `DetailedNavigation=true` agora exigem `-AllowCostlyBuildOptions` com confirmação explícita.
 - Alinhada a descoberta e a rastreabilidade dos documentos de governança em `README.md`, `09-inventario-e-rastreabilidade-publica.md` e `historico/IdeiasImplementadas_202606.md`.
 - Alinhados `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md` e `999-ideias-pendentes.md` após a nova regra de changelog na pré-push.
@@ -23,6 +24,7 @@ El formato mantiene una sección `Unreleased` para cambios aún no publicados en
 
 ### Unreleased
 
+- Estandarizados los wrappers compartidos de empaquetado, inventario y sanidad XPZ para JSON por defecto en stdout, sin `-AsJson`, con bloqueos estructurados y aliases operativos `-InputPath`/`-ObjectList`.
 - Agregado gate para opciones costosas de build MSBuild: `CompileMains=true` y `DetailedNavigation=true` ahora exigen `-AllowCostlyBuildOptions` con confirmación explícita.
 - Alineada la localización y trazabilidad de los documentos de gobernanza en `README.md`, `09-inventario-e-rastreabilidade-publica.md` e `historico/IdeiasImplementadas_202606.md`.
 - Alineados `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md` y `999-ideias-pendentes.md` después de la nueva regla de changelog en la revisión previa al push.
@@ -38,6 +40,7 @@ The format keeps an `Unreleased` section for changes not yet published in a form
 
 ### Unreleased
 
+- Standardized shared XPZ packaging, inventory, and sanity wrappers to emit JSON by default on stdout, without `-AsJson`, with structured blocks and operational `-InputPath`/`-ObjectList` aliases.
 - Added a gate for costly MSBuild options: `CompileMains=true` and `DetailedNavigation=true` now require `-AllowCostlyBuildOptions` with explicit confirmation.
 - Aligned discovery and traceability of governance documents in `README.md`, `09-inventario-e-rastreabilidade-publica.md`, and `historico/IdeiasImplementadas_202606.md`.
 - Aligned `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, and `999-ideias-pendentes.md` after the new changelog rule in pre-push review.

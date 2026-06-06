@@ -701,7 +701,7 @@ Scripts propostos:
 - `Test-GeneXusImportFileEnvelope.ps1`
   - objetivo: validar estaticamente o envelope `import_file.xml` antes de preview/import; executado em `pwsh` 7.4+ e sem abrir a KB
   - parâmetros obrigatórios: `-InputPath`
-  - parâmetros opcionais: `-PanelReferencePath` (objeto ou pacote XML/XPZ comparável usado para confirmar o par `level id`/`layout id` de Panel), `-AsJson`
+  - parâmetros opcionais: `-PanelReferencePath` (objeto ou pacote XML/XPZ comparável usado para confirmar o par `level id`/`layout id` de Panel)
   - saída esperada: `status`, `checks`, `objectCount`, `blockingReasons`, `warnings` e `information`
   - regra Panel: sem referência comparável retorna `panel-level-layout-unverified` como ressalva; com par confirmado retorna `panel-level-layout-confirmed` somente em `information`; com referência informada sem par correspondente retorna `panel-level-layout-suspicious`
 - `GeneXusMsBuildWatcherSupport.ps1`
