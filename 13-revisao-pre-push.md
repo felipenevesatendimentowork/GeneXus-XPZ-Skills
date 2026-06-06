@@ -48,6 +48,8 @@ Buscar esses mesmos termos no repositório inteiro (não parar no primeiro arqui
 
 Quando a frente altera motor com versão, assinatura, código de evidência, regra de extração ou nome de estado, buscar também os **termos antigos** que ficaram para trás. Exemplo: se `Build-KbIntelligenceIndex.py` muda `EXTRACTOR_SIGNATURE_VERSION` de `N` para `N+1`, procurar referências à versão textual anterior (`extrator N`, `extractor N`, `extrator atual N`, `signature_version N` e variações equivalentes) nos Markdown operacionais; ocorrência residual em documento normativo é gap, salvo justificativa explícita de histórico.
 
+Simetricamente, quando a frente **adiciona** parâmetro, alias, flag, estado ou opção a um contrato, buscar o **termo novo** em todas as menções da mesma operação e confirmar propagação completa — não basta confirmar que o termo antigo não ficou para trás. Exemplo: se um wrapper passa a aceitar `-ObjectList` ao lado de `-ObjectNames`/`-ObjectGuids`, procurar todas as descrições dessa operação (`README.md`, `02`, `08`, `09`, skills, checklists e exemplos `*.example.ps1`) e confirmar que cada menção pré-existente equivalente recebeu o termo novo; menção que ficou só com o conjunto antigo é gap, salvo justificativa explícita.
+
 ### 3. Comparação documental
 
 Comparar a documentação afetada com:
@@ -114,6 +116,8 @@ Reportar separadamente:
 - gaps confirmados
 - flags descartados, com justificativa
 - áreas não cobertas pela busca
+
+Categoria adicional de relato (**não** conta no `VEREDICTO`): **lacuna candidata**. Quando a busca encontrar motor, self-test ou evidência **tocado ou criado pela frente** mas ausente do `09` (ou de outro documento de rastreabilidade), reportá-lo separando explicitamente **atribuição** (ausência pré-existente não bloqueia a push) de **mérito** (cobertura que pode valer registrar). Não tratar «não é desta frente» como motivo automático de descarte: corrigir lacuna pré-existente adjacente é decisão do usuário, e deve ser apresentada de forma neutra, sem enviesar para o descarte.
 
 ### Gate semântico: relatório antes de qualquer edição
 
