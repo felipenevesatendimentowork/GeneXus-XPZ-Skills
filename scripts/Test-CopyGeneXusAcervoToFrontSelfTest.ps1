@@ -38,9 +38,10 @@ $acervo = Join-Path $tempRoot 'ObjetosDaKbEmXml'
 $procedureDir = Join-Path $acervo 'Procedure'
 $frontEmpty = Join-Path $tempRoot 'FrontEmpty'
 $frontSeed = Join-Path $tempRoot 'FrontSeed'
+$frontSeedObjectList = Join-Path $tempRoot 'FrontSeedObjectList'
 $frontSeedGuid = Join-Path $tempRoot 'FrontSeedGuid'
 $frontMissing = Join-Path $tempRoot 'FrontMissing'
-[void](New-Item -ItemType Directory -Path $procedureDir, $frontEmpty, $frontSeed, $frontSeedGuid, $frontMissing -Force)
+[void](New-Item -ItemType Directory -Path $procedureDir, $frontEmpty, $frontSeed, $frontSeedObjectList, $frontSeedGuid, $frontMissing -Force)
 
 $objName = 'procSeedTeste'
 $objGuid = '11111111-1111-1111-1111-111111111111'
@@ -52,7 +53,7 @@ $objGuidOnly = '22222222-2222-2222-2222-222222222222'
 $objGuidXml = New-FixtureObjectXml -Name $objGuidName -Guid $objGuidOnly -LastUpdate '2026-01-02T00:00:00.0000000Z'
 [System.IO.File]::WriteAllText((Join-Path $procedureDir "$objGuidName.xml"), $objGuidXml, (Get-Utf8NoBomEncoding))
 
-$emptyResult = & $scriptPath -FrontFolder $frontEmpty -AcervoFolder $acervo -AsJson | ConvertFrom-Json
+$emptyResult = & $scriptPath -FrontFolder $frontEmpty -AcervoFolder $acervo | ConvertFrom-Json
 if ($emptyResult.status -ne 'not-applicable') {
     throw "Frente vazia sem alvo explicito deveria retornar not-applicable; obtido $($emptyResult.status)"
 }
@@ -60,7 +61,7 @@ if ((Test-Path -LiteralPath (Join-Path $frontEmpty "$objName.xml") -PathType Lea
     throw 'Frente vazia sem alvo explicito nao deveria receber seed.'
 }
 
-$seedResult = & $scriptPath -FrontFolder $frontSeed -AcervoFolder $acervo -ObjectNames $objName -AsJson | ConvertFrom-Json
+$seedResult = & $scriptPath -FrontFolder $frontSeed -AcervoFolder $acervo -ObjectNames $objName | ConvertFrom-Json
 if ($seedResult.status -ne 'pass') {
     throw "Seed explicito deveria retornar pass; obtido $($seedResult.status)"
 }
@@ -80,7 +81,19 @@ if ($Matches[1] -eq '2026-01-01T00:00:00.0000000Z') {
     throw 'Seed explicito deveria bumpar lastUpdate acima do acervo.'
 }
 
-$seedGuidResult = & $scriptPath -FrontFolder $frontSeedGuid -AcervoFolder $acervo -ObjectGuids $objGuidOnly -AsJson | ConvertFrom-Json
+$seedObjectListResult = & $scriptPath -FrontFolder $frontSeedObjectList -AcervoFolder $acervo -ObjectList "Procedure:$objName" | ConvertFrom-Json
+if ($seedObjectListResult.status -ne 'pass') {
+    throw "Seed explicito via ObjectList deveria retornar pass; obtido $($seedObjectListResult.status)"
+}
+$seedObjectListFinding = @($seedObjectListResult.findings | Where-Object { $_.code -eq 'seeded-and-bumped' -and $_.objectName -eq $objName })
+if ($seedObjectListFinding.Count -ne 1) {
+    throw "Seed via ObjectList deveria gerar uma finding seeded-and-bumped; obtido $($seedObjectListFinding.Count)"
+}
+if (-not (Test-Path -LiteralPath (Join-Path $frontSeedObjectList "$objName.xml") -PathType Leaf)) {
+    throw 'Seed via ObjectList nao criou XML na frente.'
+}
+
+$seedGuidResult = & $scriptPath -FrontFolder $frontSeedGuid -AcervoFolder $acervo -ObjectGuids $objGuidOnly | ConvertFrom-Json
 if ($seedGuidResult.status -ne 'pass') {
     throw "Seed explicito por GUID deveria retornar pass; obtido $($seedGuidResult.status)"
 }
@@ -92,7 +105,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $frontSeedGuid "$objGuidName.xml") -
     throw 'Seed explicito por GUID nao criou XML na frente.'
 }
 
-$missingResult = & $scriptPath -FrontFolder $frontMissing -AcervoFolder $acervo -ObjectNames 'procInexistente' -AsJson | ConvertFrom-Json
+$missingResult = & $scriptPath -FrontFolder $frontMissing -AcervoFolder $acervo -ObjectNames 'procInexistente' | ConvertFrom-Json
 if ($missingResult.status -ne 'fail') {
     throw "Seed de alvo inexistente deveria retornar fail; obtido $($missingResult.status)"
 }

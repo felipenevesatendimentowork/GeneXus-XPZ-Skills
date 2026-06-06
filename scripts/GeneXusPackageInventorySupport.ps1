@@ -186,7 +186,6 @@ function New-PackageInventoryResult {
     try {
         $invokeParams = @{
             InputPath = $InputPath
-            AsJson    = $true
         }
         if (-not [string]::IsNullOrWhiteSpace($DeclaredDeltaItems)) {
             $invokeParams['DeclaredDeltaItems'] = $DeclaredDeltaItems

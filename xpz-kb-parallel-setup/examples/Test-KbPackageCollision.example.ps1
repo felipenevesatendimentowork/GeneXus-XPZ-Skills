@@ -10,6 +10,8 @@ gravacao de `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` em
 
 Este wrapper deve ser o unico ponto local para decidir se a rodada `nn` pode
 ser gravada ou se a frente deve bloquear por colisao.
+Emite JSON no stdout por padrao, propagando `status`, `exitCode`, `reason`,
+`blockingReasons` e, em colisao, `nextFreeNN`/`nextFreeRound`.
 
 .PARAMETER FrontPrefix
 Prefixo nominal da frente no formato `NomeCurto_GUID_YYYYMMDD`.

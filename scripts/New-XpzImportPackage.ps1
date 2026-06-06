@@ -40,8 +40,6 @@
     (front-equals-acervo ou lastupdate-unparseable) tambem bloqueiam esta
     chamada automatica ate confirmacao/resolucao fora do wrapper.
 
-.PARAMETER AsJson
-    Retorna saída JSON estruturada, incluindo warnings e information de Panel.
 #>
 
 [CmdletBinding()]
@@ -56,22 +54,57 @@ param(
 
     [string]$TemplatePackagePath,
 
-    [string]$AcervoPath,
-
-    [switch]$AsJson
+    [string]$AcervoPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function ConvertTo-XpzPackageJson {
+    param([Parameter(Mandatory = $true)][object]$InputObject)
+    return ($InputObject | ConvertTo-Json -Depth 10)
+}
+
+function Write-XpzPackageJsonAndExit {
+    param(
+        [Parameter(Mandatory = $true)][object]$InputObject,
+        [Parameter(Mandatory = $true)][int]$ExitCode
+    )
+    ConvertTo-XpzPackageJson -InputObject $InputObject
+    exit $ExitCode
+}
+
+trap {
+    $failure = [ordered]@{
+        status = 'erro'
+        exitCode = 90
+        stage = 'powershell-wrapper'
+        blockingReasons = @($_.Exception.Message)
+        warnings = @()
+    }
+    Write-XpzPackageJsonAndExit -InputObject $failure -ExitCode 90
+}
+
 $enginePath = Join-Path $PSScriptRoot 'New-XpzImportPackage.py'
 if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
-    throw "BLOCK: motor Python nao encontrado: $enginePath"
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        stage = 'preflight'
+        blockingReasons = @("motor Python nao encontrado: $enginePath")
+        warnings = @()
+    }) -ExitCode 20
 }
 
 $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
 if ($null -eq $pythonCommand) {
-    throw 'BLOCK: python nao encontrado no PATH para executar New-XpzImportPackage.py'
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        stage = 'preflight'
+        blockingReasons = @('python nao encontrado no PATH para executar New-XpzImportPackage.py')
+        warnings = @()
+    }) -ExitCode 20
 }
 
 # Gate de drift frente-vs-acervo (antes do empacotamento)
@@ -80,23 +113,61 @@ if (-not [string]::IsNullOrWhiteSpace($AcervoPath)) {
     $acervoResolved = (Resolve-Path -LiteralPath $AcervoPath -ErrorAction Stop).Path
     $frontDir = Join-Path $RepoRoot 'ObjetosGeradosParaImportacaoNaKbNoGenexus' $FrontName
     if (-not (Test-Path -LiteralPath $frontDir -PathType Container)) {
-        throw "Pasta da frente nao encontrada: $frontDir"
+        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+            status = 'bloqueado'
+            exitCode = 20
+            stage = 'front-acervo-drift'
+            repoRoot = $RepoRoot
+            frontName = $FrontName
+            blockingReasons = @("Pasta da frente nao encontrada: $frontDir")
+            warnings = @()
+        }) -ExitCode 20
     }
     $driftGatePath = Join-Path $PSScriptRoot 'Test-GeneXusFrontAcervoDrift.ps1'
     if (-not (Test-Path -LiteralPath $driftGatePath -PathType Leaf)) {
-        throw "BLOCK: gate de drift nao encontrado: $driftGatePath"
+        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+            status = 'bloqueado'
+            exitCode = 20
+            stage = 'front-acervo-drift'
+            repoRoot = $RepoRoot
+            frontName = $FrontName
+            blockingReasons = @("gate de drift nao encontrado: $driftGatePath")
+            warnings = @()
+        }) -ExitCode 20
     }
     $driftOutput = & $driftGatePath -FrontFolder $frontDir -AcervoFolder $acervoResolved -AsJson 2>&1
     $driftResult = $driftOutput | ConvertFrom-Json
     if ($driftResult.status -eq 'fail') {
         $failFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'fail' })
         $blockMsgs = @($failFindings | ForEach-Object { $_.message })
-        throw "BLOCK: gate de drift frente-vs-acervo falhou ($($blockMsgs.Count) finding(s) fatal(is)): $($blockMsgs -join '; ')"
+        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+            status = 'bloqueado'
+            exitCode = 20
+            stage = 'front-acervo-drift'
+            repoRoot = $RepoRoot
+            frontName = $FrontName
+            driftStatus = $driftResult.status
+            driftFindings = $driftResult.findings
+            driftObjectsScanned = $driftResult.objectsScanned
+            blockingReasons = @("gate de drift frente-vs-acervo falhou ($($blockMsgs.Count) finding(s) fatal(is)): $($blockMsgs -join '; ')")
+            warnings = @()
+        }) -ExitCode 20
     }
     if ($driftResult.status -eq 'alert') {
         $warnFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'warn' })
         $warnMsgs = @($warnFindings | ForEach-Object { $_.message })
-        throw "BLOCK: gate de drift frente-vs-acervo retornou alerta ($($warnMsgs.Count) finding(s) warn): confirmacao explicita ou resolucao manual requerida antes de empacotar. $($warnMsgs -join '; ')"
+        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+            status = 'bloqueado'
+            exitCode = 20
+            stage = 'front-acervo-drift'
+            repoRoot = $RepoRoot
+            frontName = $FrontName
+            driftStatus = $driftResult.status
+            driftFindings = $driftResult.findings
+            driftObjectsScanned = $driftResult.objectsScanned
+            blockingReasons = @("gate de drift frente-vs-acervo retornou alerta ($($warnMsgs.Count) finding(s) warn): confirmacao explicita ou resolucao manual requerida antes de empacotar. $($warnMsgs -join '; ')")
+            warnings = @($warnMsgs)
+        }) -ExitCode 20
     }
 }
 
@@ -104,20 +175,39 @@ $engineArgs = @(
     $enginePath,
     '--repo-root', $RepoRoot,
     '--front-name', $FrontName,
-    '--nn', $NN,
-    '--as-json'
+    '--nn', $NN
 )
 
 if (-not [string]::IsNullOrWhiteSpace($TemplatePackagePath)) {
     $engineArgs += @('--template-package-path', $TemplatePackagePath)
 }
 
-$outputText = (& $pythonCommand.Source @engineArgs | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
-if ($LASTEXITCODE -ne 0) {
-    throw $outputText
+$outputText = (& $pythonCommand.Source @engineArgs 2>&1 | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+$engineExitCode = $LASTEXITCODE
+
+try {
+    $result = $outputText | ConvertFrom-Json
+} catch {
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'erro'
+        exitCode = 90
+        stage = 'python-engine'
+        blockingReasons = @('motor Python retornou saida nao JSON')
+        rawOutput = $outputText
+        warnings = @()
+    }) -ExitCode 90
 }
 
-$result = $outputText | ConvertFrom-Json
+if ($engineExitCode -ne 0) {
+    if ($null -eq $result.PSObject.Properties['exitCode']) {
+        $result | Add-Member -NotePropertyName exitCode -NotePropertyValue $engineExitCode -Force
+    }
+    if ($null -eq $result.PSObject.Properties['stage']) {
+        $result | Add-Member -NotePropertyName stage -NotePropertyValue 'python-engine' -Force
+    }
+    Write-XpzPackageJsonAndExit -InputObject $result -ExitCode $engineExitCode
+}
+
 if (-not [string]::IsNullOrWhiteSpace([string]$result.outputPath)) {
     . (Join-Path $PSScriptRoot 'GeneXusPackageInventorySupport.ps1')
     $declaredDelta = Get-DeclaredDeltaItemsFromFrontObjectXmls -FrontDir $result.sourceFolder
@@ -137,8 +227,4 @@ if ($null -ne $driftResult) {
     $result | Add-Member -NotePropertyName driftObjectsScanned -NotePropertyValue $driftResult.objectsScanned -Force
 }
 
-if ($AsJson) {
-    $result | ConvertTo-Json -Depth 8
-} else {
-    $result
-}
+ConvertTo-XpzPackageJson -InputObject $result

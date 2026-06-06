@@ -3,13 +3,34 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [string]$InputPath,
-
-    [switch]$AsJson
+    [Alias('Path')]
+    [string]$InputPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+trap {
+    [ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        inputPath = $InputPath
+        xmlWellFormed = $false
+        sourceSanityStatus = 'fail'
+        probablyImportable = $false
+        blockingReasons = @($_.Exception.Message)
+        findings = @(
+            [pscustomobject]@{
+                severity = 'fail'
+                code = 'preflight'
+                message = $_.Exception.Message
+                lineNumber = 0
+                linePreview = ''
+            }
+        )
+    } | ConvertTo-Json -Depth 6
+    exit 20
+}
 
 function Get-LinePreview {
     param(
@@ -220,11 +241,7 @@ try {
         }
     )
     $result.failCount = 1
-    if ($AsJson) {
-        $result | ConvertTo-Json -Depth 6
-    } else {
-        [pscustomobject]$result
-    }
+    $result | ConvertTo-Json -Depth 6
     return
 }
 
@@ -293,8 +310,4 @@ if ($sourceTargets.Count -eq 0) {
     $result.probablyImportable = $true
 }
 
-if ($AsJson) {
-    $result | ConvertTo-Json -Depth 6
-} else {
-    [pscustomobject]$result
-}
+$result | ConvertTo-Json -Depth 6

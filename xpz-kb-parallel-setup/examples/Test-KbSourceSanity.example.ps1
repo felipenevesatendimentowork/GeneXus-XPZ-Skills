@@ -27,6 +27,7 @@ Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
 
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
     [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
@@ -58,7 +59,7 @@ if ($files.Count -eq 0) {
 
 $results = New-Object System.Collections.Generic.List[object]
 foreach ($file in $files) {
-    $json = & $enginePath -InputPath $file -AsJson
+    $json = & $enginePath -InputPath $file
     $parsed = $json | ConvertFrom-Json
     $results.Add($parsed) | Out-Null
 }

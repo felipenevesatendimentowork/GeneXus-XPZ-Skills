@@ -390,16 +390,16 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - gate de runtime PowerShell (`Test-*KbPowerShellRuntime.ps1`): chama o motor compartilhado `Test-XpzPowerShellRuntime.ps1`, verifica existencia de `pwsh` com PowerShell 7.4 LTS ou superior e bloqueia qualquer uso operacional da pasta paralela se retornar `BLOCK:`; deve ser o primeiro wrapper executado em setup, auditoria, frescor, sync, indice ou empacotamento
   - auditoria agregada de setup (`Test-*KbSetupAudit.ps1`): chama o motor compartilhado `Test-XpzSetupAudit.ps1`, consolida evidencias deterministicas de `powershell/runtime`, `sync/materializacao`, `naming/objetos-da-kb`, `indice/gate`, `indice/semantica`, `metadata wrapper`, `metadata/deploy`, `empacotamento local`, `declarativo/timestamps`, `wrappers/inventario` e `estado_operacional_sugerido`; deve orquestrar os gates especificos, nunca substitui-los como evidencia primaria; quando `-PowerShellRuntimeTestPath` nao for informado ao motor compartilhado, ele varre `scripts/Test-*KbPowerShellRuntime.ps1`, usa o wrapper unico detectado e, se nenhum existir, emite `powershell/runtime.detecao=missing`, `powershell/runtime.wrapper_sugerido` e `powershell/runtime.molde` sem criar arquivo automaticamente; quando existir e a intencao operacional for `auditar_setup`, o agente deve executa-lo e usar sua saida consolidada como veiculo de handoff — as dimensoes do wrapper substituem a sintese manual dessas mesmas dimensoes, mas nao substituem a evidencia dos gates especificos que as fundamentam
 - Quando a pasta paralela da KB operar com `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus`, recomendar tambem wrapper local fino para gate de `Source`, por exemplo `Test-*KbSourceSanity.ps1`:
-  - recebe um XML especifico ou a subpasta ativa da frente
+  - recebe um XML especifico em `-InputPath`; `-Path`, quando aceito, e alias de compatibilidade
   - delega para `scripts\Test-GeneXusSourceSanity.ps1` da base compartilhada
-  - retorna saida estruturada suficiente para distinguir `xmlWellFormed`, `sourceSanityStatus` e `probablyImportable`
+  - retorna JSON por padrao no stdout, suficiente para distinguir `xmlWellFormed`, `sourceSanityStatus` e `probablyImportable`
   - bloqueia empacotamento local quando encontrar `sourceSanityStatus=fail`
   - em `warn`, devolve a lista de warnings e exige revisao conservadora antes do pacote
 - Quando a pasta paralela da KB operar com empacotamento local em `PacotesGeradosParaImportacaoNaKbNoGenexus`, recomendar tambem wrapper local fino para gate de colisao de pacote, por exemplo `Test-*KbPackageCollision.ps1`:
-  - recebe `FrontPrefix`, `NN` e opcionalmente `OutputDir`
+  - recebe `FrontPrefix`, `NN` e `OutputDir`, ou `PackagePath`; `-Path`/`-InputPath`, quando aceitos, sao alias de compatibilidade para `PackagePath`
   - delega para `scripts\Test-XpzPackageCollision.ps1` da base compartilhada
-  - retorna `COLLISION_OK` quando a rodada pretendida ainda nao existe
-  - retorna `BLOCK: ...` quando a rodada `nn` ja existir para o mesmo prefixo de frente, com sugestao do proximo `nn` livre
+  - retorna JSON com `status=ok`, `reason=COLLISION_OK` e exit 0 quando a rodada pretendida ainda nao existe
+  - retorna JSON com `status=bloqueado`, `reason=PACKAGE_ROUND_COLLISION`, `blockingReasons`, `nextFreeNN`, `nextFreeRound` e exit 20 quando a rodada `nn` ja existir para o mesmo prefixo de frente
   - deve ser o unico ponto local para decidir se o pacote pode ser gravado ou se a frente deve bloquear por colisao
 - Quando agentes abrirem frentes locais com frequencia em `ObjetosGeradosParaImportacaoNaKbNoGenexus`, recomendar wrapper local fino para abertura de frente, por exemplo `New-*KbFront.ps1`:
   - recebe `NomeCurto`, opcionalmente `ExtraGuidCount`, `ReuseIfExists` e `AsJson`
@@ -414,9 +414,9 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - quando receber baseline oficial, calcula `max(UtcNow + margem, lastUpdate do baseline + margem)`, com margem padrao de 60 segundos
   - nao substitui a classificacao `modified in this round` vs `reused unchanged for mandatory dependency closure`; apenas fornece o instante canonico para objetos realmente alterados
 - Quando o empacotamento local com `import_file.xml` for recorrente, recomendar wrapper local fino para criacao do pacote, por exemplo `New-*KbImportPackage.ps1`:
-  - recebe `FrontName`, `NN`, opcionalmente `TemplatePackagePath` e opcionalmente `AsJson`
+  - recebe `FrontName`, `NN` e opcionalmente `TemplatePackagePath`; a saida de maquina e JSON por padrao no stdout, sem `-AsJson`
   - delega para `scripts\New-XpzImportPackage.ps1` da base compartilhada
-  - o wrapper compartilhado chama o motor Python `scripts\New-XpzImportPackage.py`, le `kb-source-metadata.md`, resolve as pastas padrao da pasta paralela, classifica raizes `Object`/`Attribute`, executa gate de colisao e monta o pacote
+  - o wrapper compartilhado chama o motor Python `scripts\New-XpzImportPackage.py`, le `kb-source-metadata.md`, resolve as pastas padrao da pasta paralela, classifica raizes `Object`/`Attribute`, executa gate de colisao e monta o pacote; bloqueios esperados voltam como JSON estruturado com `status`, `exitCode`, `stage` e `blockingReasons`, nunca como stack/ANSI para consumo de maquina
   - quando `TemplatePackagePath` for informado, o motor aceita `import_file.xml` ou `.xpz` real comparavel, clona `KMW`, `Source`, `Dependencies`, `ObjectsIdentityMapping` e, quando nao houver `Attribute` explicito na frente, preserva tambem `Attributes` de topo do template; para `Panel`, um par `level id`/`layout id` localizado nesse template comparavel pode ser registrado como confirmado; quando omitido, usa envelope minimo derivado de `kb-source-metadata.md` e retorna warning para pacote misto/complexo, com ressalva especifica de par nao verificado para `Panel`
   - este wrapper reduz comando local e facilita allowlist, mas sua ausencia isolada nao bloqueia `wrappers_atualizados` enquanto a KB puder chamar o motor compartilhado diretamente com `-RepoRoot`
 - Quando agentes precisarem diagnosticar codigo C# gerado apos import/build, recomendar wrapper local fino para resolver caminho de `.cs`, por exemplo `Resolve-*KbGeneratedCsPath.ps1`:
@@ -958,7 +958,7 @@ Quando acionado de forma isolada, seguir os mesmos passos de 8.g2.i a 8.g2.vii. 
    - nao usar `STRUCTURE_OK` ou `GATE_OK` como evidencia suficiente desse wrapper, porque o checklist estrutural canonico nao o trata como item minimo universal
 27a. Se `New-*KbImportPackage.ps1` for criado ou atualizado nesta frente, validar esse wrapper diretamente antes do fechamento:
    - no minimo, confirmar parse do `.ps1`, existencia do engine compartilhado apontado por ele e ausencia de placeholders sanitizados em configuracao efetiva
-   - quando houver frente local segura para teste, preferir execucao controlada com `-AsJson`; se nao houver frente segura, declarar a validacao limitada a parse/caminho
+   - quando houver frente local segura para teste, preferir execucao controlada parseando o JSON padrao do stdout, sem `-AsJson`
    - nao criar pacote real apenas para validar o wrapper sem autorizacao explicita do usuario
 27b. Se `New-*KbFront.ps1` ou `Get-*KbLastUpdate.ps1` forem criados ou atualizados nesta frente, validar esses wrappers diretamente antes do fechamento:
    - no minimo, confirmar parse do `.ps1`, existencia do engine compartilhado apontado por ele e ausencia de placeholders sanitizados em configuracao efetiva

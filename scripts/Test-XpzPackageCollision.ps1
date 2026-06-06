@@ -3,6 +3,7 @@
 [CmdletBinding(DefaultParameterSetName = 'ByFront')]
 param(
     [Parameter(Mandatory = $true, ParameterSetName = 'ByPath')]
+    [Alias('Path', 'InputPath')]
     [string]$PackagePath,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'ByFront')]
@@ -17,6 +18,24 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+trap {
+    [ordered]@{
+        status = 'erro'
+        exitCode = 90
+        reason = 'UNEXPECTED_ERROR'
+        blockingReasons = @($_.Exception.Message)
+    } | ConvertTo-Json -Depth 6
+    exit 90
+}
+
+function Write-PackageCollisionResult {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Result
+    )
+
+    [pscustomobject]$Result | ConvertTo-Json -Depth 6
+}
 
 function Get-NextFreeRound {
     param(
@@ -42,7 +61,15 @@ if ($PSCmdlet.ParameterSetName -eq 'ByPath') {
         [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
     )
     if (-not $match.Success) {
-        throw "BLOCK: nome de pacote fora do padrao esperado: $leafName"
+        Write-PackageCollisionResult @{
+            status = 'bloqueado'
+            exitCode = 20
+            reason = 'PACKAGE_NAME_OUT_OF_PATTERN'
+            packagePath = $resolvedPackage
+            blockingReasons = @("nome de pacote fora do padrao esperado: $leafName")
+            expectedPattern = '<FrontPrefix>_<nn>.import_file.xml'
+        }
+        exit 20
     }
 
     $FrontPrefix = $match.Groups['front'].Value
@@ -50,15 +77,37 @@ if ($PSCmdlet.ParameterSetName -eq 'ByPath') {
 }
 
 if (-not (Test-Path -LiteralPath $OutputDir -PathType Container)) {
-    throw "BLOCK: pasta de saida inexistente: $OutputDir"
+    Write-PackageCollisionResult @{
+        status = 'bloqueado'
+        exitCode = 20
+        reason = 'OUTPUT_DIR_NOT_FOUND'
+        outputDir = $OutputDir
+        blockingReasons = @("pasta de saida inexistente: $OutputDir")
+    }
+    exit 20
 }
 
 if ($FrontPrefix -match '[\\/]') {
-    throw "BLOCK: FrontPrefix invalido; informe apenas o prefixo nominal da frente"
+    Write-PackageCollisionResult @{
+        status = 'bloqueado'
+        exitCode = 20
+        reason = 'FRONT_PREFIX_INVALID'
+        frontPrefix = $FrontPrefix
+        blockingReasons = @('FrontPrefix invalido; informe apenas o prefixo nominal da frente')
+    }
+    exit 20
 }
 
 if ($NN -notmatch '^\d+$') {
-    throw "BLOCK: NN invalido; use apenas digitos"
+    Write-PackageCollisionResult @{
+        status = 'bloqueado'
+        exitCode = 20
+        reason = 'NN_INVALID'
+        frontPrefix = $FrontPrefix
+        requestedNN = $NN
+        blockingReasons = @('NN invalido; use apenas digitos')
+    }
+    exit 20
 }
 
 $requestedRound = [int]$NN
@@ -90,7 +139,32 @@ Get-ChildItem -LiteralPath $OutputDir -File | ForEach-Object {
 if ($null -ne $collidingPath) {
     $nextFree = Get-NextFreeRound -UsedRounds $usedRounds -StartAt ($requestedRound + 1)
     $nextFreeFormatted = $nextFree.ToString(('D{0}' -f $width))
-    throw "BLOCK: _$NN já existe para o front $FrontPrefix, próximo livre: _$nextFreeFormatted"
+    Write-PackageCollisionResult @{
+        status = 'bloqueado'
+        exitCode = 20
+        reason = 'PACKAGE_ROUND_COLLISION'
+        frontPrefix = $FrontPrefix
+        requestedNN = $NN
+        requestedRound = $requestedRound
+        nextFreeNN = $nextFreeFormatted
+        nextFreeRound = $nextFree
+        outputDir = (Resolve-Path -LiteralPath $OutputDir).Path
+        collidingPath = $collidingPath
+        blockingReasons = @("_$NN ja existe para o front $FrontPrefix; proximo livre: _$nextFreeFormatted")
+    }
+    exit 20
 }
 
-'COLLISION_OK'
+Write-PackageCollisionResult @{
+    status = 'ok'
+    exitCode = 0
+    reason = 'COLLISION_OK'
+    frontPrefix = $FrontPrefix
+    requestedNN = $NN
+    requestedRound = $requestedRound
+    nextFreeNN = $null
+    nextFreeRound = $null
+    outputDir = (Resolve-Path -LiteralPath $OutputDir).Path
+    collidingPath = $null
+    blockingReasons = @()
+}

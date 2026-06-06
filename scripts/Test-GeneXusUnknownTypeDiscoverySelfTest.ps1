@@ -96,7 +96,7 @@ if (-not $mergedMap.ContainsKey($unknownGuid)) {
 $xmlPath = Join-Path $tempRoot 'package.xml'
 [System.IO.File]::WriteAllText($xmlPath, $exportXml, (Get-Utf8NoBomEncoding))
 $inventoryScript = Join-Path $scriptDir 'Get-GeneXusImportPackageObjectInventory.ps1'
-$invBlocked = & $inventoryScript -InputPath $xmlPath -ParallelKbRoot $parallelRoot -AsJson | ConvertFrom-Json
+$invBlocked = & $inventoryScript -InputPath $xmlPath -ParallelKbRoot $parallelRoot | ConvertFrom-Json
 if ($invBlocked.unknownTypeCount -ne 0) {
     throw 'com override, unknownTypeCount deveria ser 0'
 }

@@ -54,15 +54,19 @@ function Assert-BuilderBlocksPath {
     )
 
     try {
-        & $Invocation | Out-Null
+        $output = & $Invocation
+        $result = ($output | Out-String) | ConvertFrom-Json
+        Assert-True ($result.status -eq 'bloqueado' -or $result.status -eq 'erro') `
+            "status de bloqueio inesperado para ${ExpectedRole}: $($result.status)"
+        Assert-True (@($result.blockingReasons | Where-Object { $_ -like "*$ExpectedRole nao pode ser XML de referencia/exemplo/template/molde:*" }).Count -gt 0) `
+            "blockingReasons inesperado para ${ExpectedRole}: $(@($result.blockingReasons) -join '; ')"
+        return
     } catch {
         $message = $_.Exception.Message
         Assert-True ($message -like "BLOCK: $ExpectedRole nao pode ser XML de referencia/exemplo/template/molde:*") `
             "mensagem de bloqueio inesperada para ${ExpectedRole}: $message"
         return
     }
-
-    throw "ASSERT_FAILED: esperado bloqueio para $ExpectedRole"
 }
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('gx-build-envelope-selftest-{0}' -f ([guid]::NewGuid().ToString('N')))
@@ -131,8 +135,7 @@ try {
             -AcervoPath $acervoDir `
             -ModifiedObjectNames 'Cliente' `
             -SkipGate `
-            -Force `
-            -AsJson
+            -Force
     }
 
     Assert-BuilderBlocksPath -ExpectedRole 'TopLevelAttributeXml' -Invocation {
@@ -144,8 +147,7 @@ try {
             -AcervoPath $acervoDir `
             -ModifiedObjectNames 'Cliente' `
             -SkipGate `
-            -Force `
-            -AsJson
+            -Force
     }
 
     $controlOutputPath = Join-Path $outDir 'Front_00000000000000000000000000000000_20260604_03.import_file.xml'
@@ -157,8 +159,7 @@ try {
         -AcervoPath $acervoDir `
         -ModifiedObjectNames 'Cliente' `
         -SkipGate `
-        -Force `
-        -AsJson | ConvertFrom-Json)
+        -Force | ConvertFrom-Json)
 
     Assert-True ($control.status -eq 'apto para prosseguir') "status de controle inesperado: $($control.status)"
     Assert-True ($control.objectCount -eq 1) "objectCount de controle esperado 1; obtido $($control.objectCount)"

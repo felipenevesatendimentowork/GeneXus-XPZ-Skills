@@ -15,8 +15,6 @@
     Pacote XML ou XPZ comparavel usado como template do envelope e, para Panel,
     como referencia do par level id/layout id no gate final.
 
-.PARAMETER AsJson
-    Retorna saida estruturada, incluindo information e warnings do gate final.
 #>
 
 [CmdletBinding()]
@@ -50,13 +48,42 @@ param(
 
     [switch]$SkipGate,
 
-    [switch]$Force,
-
-    [switch]$AsJson
+    [switch]$Force
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+function Write-BuildEnvelopeJsonAndExit {
+    param(
+        [Parameter(Mandatory = $true)][object]$InputObject,
+        [Parameter(Mandatory = $true)][int]$ExitCode
+    )
+
+    $InputObject | ConvertTo-Json -Depth 10
+    exit $ExitCode
+}
+
+trap {
+    $message = $_.Exception.Message
+    try {
+        $structured = $message | ConvertFrom-Json
+        if ($null -eq $structured.PSObject.Properties['exitCode']) {
+            $structured | Add-Member -NotePropertyName exitCode -NotePropertyValue 20 -Force
+        }
+        Write-BuildEnvelopeJsonAndExit -InputObject $structured -ExitCode ([int]$structured.exitCode)
+    } catch {
+        $exitCode = if ($message.StartsWith('BLOCK:')) { 20 } else { 90 }
+        $status = if ($exitCode -eq 20) { 'bloqueado' } else { 'erro' }
+        Write-BuildEnvelopeJsonAndExit -InputObject ([ordered]@{
+            status = $status
+            exitCode = $exitCode
+            stage = 'build-envelope'
+            blockingReasons = @($message)
+            warnings = @()
+        }) -ExitCode $exitCode
+    }
+}
 
 $utf8NoBomEncodingSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'Utf8NoBomEncodingSupport.ps1'
 if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) {
@@ -408,7 +435,17 @@ if (-not $Force) {
     if (-not (Test-Path -LiteralPath $collisionDir -PathType Container)) {
         New-Item -ItemType Directory -Path $collisionDir -Force | Out-Null
     }
-    & $collisionScript -FrontPrefix $collisionFront -NN $collisionNN -OutputDir $collisionDir | Out-Null
+    $collisionOutput = & pwsh -NoProfile -File $collisionScript -FrontPrefix $collisionFront -NN $collisionNN -OutputDir $collisionDir
+    $collisionExitCode = $LASTEXITCODE
+    $collisionJson = ($collisionOutput | Out-String).Trim()
+    try {
+        $collisionResult = $collisionJson | ConvertFrom-Json
+    } catch {
+        throw "BLOCK: gate de colisao retornou saida nao JSON: $collisionJson"
+    }
+    if ($collisionExitCode -ne 0 -or $collisionResult.status -ne 'ok') {
+        throw $collisionJson
+    }
 }
 
 if (Test-Path -LiteralPath $OutputPath) {
@@ -561,7 +598,7 @@ if (-not $SkipGate) {
     if (-not (Test-Path -LiteralPath $gateScript)) {
         throw "Gate nao encontrado em '$gateScript'. Use -SkipGate apenas se souber o que esta fazendo."
     }
-    $gateResult = & $gateScript -InputPath $OutputPath -PanelReferencePath $TemplatePackagePath
+    $gateResult = & $gateScript -InputPath $OutputPath -PanelReferencePath $TemplatePackagePath | ConvertFrom-Json
     $buildResult.gateStatus      = $gateResult.status
     $buildResult.blockingReasons = @($gateResult.blockingReasons)
     $buildResult.warnings        = @($buildResult.warnings + $gateResult.warnings | Sort-Object -Unique)
@@ -594,8 +631,4 @@ if (-not [string]::IsNullOrWhiteSpace([string]$buildResult.outputPath)) {
     $buildResult.inventoryError = $inventoryBlock.inventoryError
 }
 
-if ($AsJson) {
-    $buildResult | ConvertTo-Json -Depth 6
-} else {
-    [pscustomobject]$buildResult
-}
+$buildResult | ConvertTo-Json -Depth 6

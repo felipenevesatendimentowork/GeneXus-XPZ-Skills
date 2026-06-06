@@ -43,7 +43,7 @@ $exportXml = @"
 $xmlPath = Join-Path $tempRoot 'package.import_file.xml'
 [System.IO.File]::WriteAllText($xmlPath, $exportXml, (Get-Utf8NoBomEncoding))
 
-$result = (& $inventoryScript -InputPath $xmlPath -DeclaredDeltaItems 'Procedure:ProcPedida' -AsJson | ConvertFrom-Json)
+$result = (& $inventoryScript -InputPath $xmlPath -DeclaredDeltaItems 'Procedure:ProcPedida' | ConvertFrom-Json)
 if ($result.objectCount -ne 4) { throw "objectCount esperado 4; obtido $($result.objectCount)" }
 if ($result.attributeCount -ne 2) { throw 'attributeCount esperado 2' }
 if (-not $result.selectiveExport) { throw 'selectiveExport esperado true' }
@@ -86,7 +86,7 @@ $selectiveWithTransactionXml = @"
 "@
 $trnXmlPath = Join-Path $tempRoot 'package-trn.import_file.xml'
 [System.IO.File]::WriteAllText($trnXmlPath, $selectiveWithTransactionXml, (Get-Utf8NoBomEncoding))
-$resultTrn = (& $inventoryScript -InputPath $trnXmlPath -DeclaredDeltaItems 'Transaction:TrPedida' -AsJson | ConvertFrom-Json)
+$resultTrn = (& $inventoryScript -InputPath $trnXmlPath -DeclaredDeltaItems 'Transaction:TrPedida' | ConvertFrom-Json)
 if (-not $resultTrn.declaredIncludesTransaction) { throw 'declaredIncludesTransaction esperado true com Transaction na lista' }
 if ($resultTrn.attributesTopLevelUnreconciled) {
     throw 'attributesTopLevelUnreconciled deve ser false quando Transaction esta na lista (controle negativo)'
@@ -98,12 +98,12 @@ if ($trnAttrWarning.Count -gt 0) {
 
 $xpzPath = Join-Path $tempRoot 'package.xpz'
 Compress-Archive -LiteralPath $xmlPath -DestinationPath $xpzPath -Force
-$resultXpz = (& $inventoryScript -InputPath $xpzPath -DeclaredDeltaItems 'Procedure:ProcPedida' -AsJson | ConvertFrom-Json)
+$resultXpz = (& $inventoryScript -InputPath $xpzPath -DeclaredDeltaItems 'Procedure:ProcPedida' | ConvertFrom-Json)
 if ($resultXpz.inputKind -ne 'xpz') { throw 'inputKind xpz esperado' }
 if ($resultXpz.objectCount -ne 4) { throw 'objectCount xpz esperado 4' }
 if (@($resultXpz.systemObjectsPresent).Count -ne 2) { throw 'systemObjectsPresent xpz esperado 2' }
 
-$full = (& $inventoryScript -InputPath $xmlPath -AsJson | ConvertFrom-Json)
+$full = (& $inventoryScript -InputPath $xmlPath | ConvertFrom-Json)
 if ($full.selectiveExport) { throw 'selectiveExport deve ser false sem delta' }
 if ($null -ne $full.deltaComparison) { throw 'deltaComparison deve ser nulo sem delta' }
 
@@ -117,7 +117,7 @@ $exportLabelXml = @"
 "@
 $exportLabelPath = Join-Path $tempRoot 'package-export-label.import_file.xml'
 [System.IO.File]::WriteAllText($exportLabelPath, $exportLabelXml, (Get-Utf8NoBomEncoding))
-$resultAlias = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW' -AsJson | ConvertFrom-Json)
+$resultAlias = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW' | ConvertFrom-Json)
 if ($resultAlias.status -ne 'DELTA_MISMATCH') {
     throw "status esperado DELTA_MISMATCH (ProcExtra extra); obtido $($resultAlias.status)"
 }
@@ -142,7 +142,7 @@ if (@($resultAlias.deltaComparison.requestedItemsMissing).Count -gt 0) {
     throw 'requestedItemsMissing deve estar vazio quando alias resolve o pedido'
 }
 
-$resultAliasMatch = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW;Procedure:ProcExtra' -AsJson | ConvertFrom-Json)
+$resultAliasMatch = (& $inventoryScript -InputPath $exportLabelPath -DeclaredDeltaItems 'WorkWith:MainWW;Procedure:ProcExtra' | ConvertFrom-Json)
 if ($resultAliasMatch.deltaComparison.status -ne 'MATCH') {
     throw "delta status MATCH esperado com lista completa; obtido $($resultAliasMatch.deltaComparison.status)"
 }

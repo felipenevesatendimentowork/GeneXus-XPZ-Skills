@@ -23,9 +23,6 @@ Nome da subpasta da frente no formato `NomeCurto_GUID_YYYYMMDD`.
 .PARAMETER NN
 Rodada curta pretendida para o pacote. Default: 01.
 
-.PARAMETER AsJson
-Retorna saida JSON estruturada.
-
 .PARAMETER TemplatePackagePath
 Pacote import_file.xml ou XPZ real comparavel para clonar KMW, Source,
 Dependencies e ObjectsIdentityMapping. Quando o template trouxer Attributes de
@@ -56,8 +53,6 @@ param(
 
     [string]$AcervoPath,
 
-    [switch]$AsJson,
-
     [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
 )
 
@@ -75,10 +70,6 @@ $argsForEngine = @{
     RepoRoot = $repoRoot
     FrontName = $FrontName
     NN = $NN
-}
-
-if ($AsJson) {
-    $argsForEngine.AsJson = $true
 }
 
 if (-not [string]::IsNullOrWhiteSpace($TemplatePackagePath)) {

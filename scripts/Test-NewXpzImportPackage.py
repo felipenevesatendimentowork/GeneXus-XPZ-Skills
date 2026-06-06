@@ -49,12 +49,40 @@ def assert_blocks_reference_named_object(engine: Any) -> None:
 
         try:
             engine.classify_front_xmls(front_dir)
-        except RuntimeError as exc:
+        except engine.BlockedError as exc:
             message = str(exc)
-            assert message.startswith("BLOCK: XML de referencia/exemplo/template"), message
+            assert message.startswith("XML de referencia/exemplo/template"), message
             return
 
         raise AssertionError("expected reference-like XML to block packaging")
+
+
+def assert_collision_gate_reports_next_round(engine: Any) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = Path(temp_dir)
+        front_prefix = "GtaP3_c34f_20260528"
+        (output_dir / f"{front_prefix}_01.import_file.xml").write_text("<ExportFile />", encoding="utf-8")
+        (output_dir / f"{front_prefix}_02.import_file.xml").write_text("<ExportFile />", encoding="utf-8")
+
+        try:
+            engine.check_collision(output_dir / f"{front_prefix}_01.import_file.xml", front_prefix, "01")
+        except engine.BlockedError as exc:
+            assert exc.reason == "PACKAGE_ROUND_COLLISION", exc.reason
+            assert exc.details["nextFreeNN"] == "03", exc.details
+            assert exc.details["nextFreeRound"] == 3, exc.details
+            return
+
+        raise AssertionError("expected package round collision to block packaging")
+
+
+def assert_collision_gate_accepts_free_round(engine: Any) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = Path(temp_dir)
+        result = engine.check_collision(output_dir / "GtaP3_c34f_20260528_01.import_file.xml", "GtaP3_c34f_20260528", "01")
+
+        assert result["status"] == "ok", result
+        assert result["reason"] == "COLLISION_OK", result
+        assert result["requestedNN"] == "01", result
 
 
 def main() -> int:
@@ -63,6 +91,8 @@ def main() -> int:
 
     assert_accepts_regular_object(engine)
     assert_blocks_reference_named_object(engine)
+    assert_collision_gate_accepts_free_round(engine)
+    assert_collision_gate_reports_next_round(engine)
 
     print("Test-NewXpzImportPackage.py: passed")
     return 0

@@ -2,15 +2,29 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
-    [string]$PanelReferencePath,
-
-    [switch]$AsJson
+    [string]$PanelReferencePath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+trap {
+    [ordered]@{
+        inputPath = $InputPath
+        status = 'não apto para prosseguir'
+        exitCode = 20
+        xmlWellFormed = $false
+        rootElement = $null
+        checks = [ordered]@{}
+        blockingReasons = @($_.Exception.Message)
+        warnings = @()
+        information = @()
+    } | ConvertTo-Json -Depth 6
+    exit 20
+}
 
 $GuidPattern        = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
 $PlaceholderPattern = '(?i)(YOUR[-_]GUID|GUID[-_]HERE|PLACEHOLDER|TODO[-_]GUID|INSERT[-_]HERE|OBJECT[-_]HERE)'
@@ -143,7 +157,7 @@ try {
         -Message "XML malformado: $($_.Exception.Message)")) | Out-Null
     $result.blockingReasons = @($allFindings | Where-Object { $_.severity -eq "fail" } |
         ForEach-Object { "$($_.code): $($_.message)" })
-    if ($AsJson) { $result | ConvertTo-Json -Depth 6 } else { [pscustomobject]$result }
+    $result | ConvertTo-Json -Depth 6
     return
 }
 
@@ -344,4 +358,4 @@ if ($failFindings.Count -eq 0 -and $warnFindings.Count -eq 0) {
     $result.status = "não apto para prosseguir"
 }
 
-if ($AsJson) { $result | ConvertTo-Json -Depth 6 } else { [pscustomobject]$result }
+$result | ConvertTo-Json -Depth 6

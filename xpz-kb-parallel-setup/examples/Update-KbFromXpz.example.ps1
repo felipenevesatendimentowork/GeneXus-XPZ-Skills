@@ -127,7 +127,7 @@ if (Test-Path -LiteralPath $reminderScriptPath -PathType Leaf) {
 if (-not $VerifyOnly) {
     $inventoryScriptPath = Join-Path $SharedSkillsRoot 'scripts\Get-GeneXusImportPackageObjectInventory.ps1'
     if (Test-Path -LiteralPath $inventoryScriptPath -PathType Leaf) {
-        $null = & $inventoryScriptPath -InputPath $InputPath -ParallelKbRoot $repoRoot -FailOnUnknownTypes -AsJson 2>&1
+        $null = & $inventoryScriptPath -InputPath $InputPath -ParallelKbRoot $repoRoot -FailOnUnknownTypes 2>&1
         if ($LASTEXITCODE -eq 3) {
             throw 'Pre-varredura bloqueada: tipos nao mapeados no catalogo efetivo (base + override). Resolver antes de materializar; ver xpz-sync e 08-guia-para-agente-gpt.md.'
         }

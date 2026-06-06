@@ -38,13 +38,12 @@ Caminho opcional para gx-platform-objects.json (catalogo unificado de plataforma
 Quando informado junto com delta declarado, retorna exit code 2 se houver objetos
 extras ou ausentes na comparacao seletiva (somente bloco Objects).
 
-.PARAMETER AsJson
-Emite JSON estruturado.
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
     [string]$DeclaredDeltaPath,
@@ -61,13 +60,25 @@ param(
 
     [string]$PlatformObjectsCatalogPath,
 
-    [switch]$FailOnDeltaMismatch,
-
-    [switch]$AsJson
+    [switch]$FailOnDeltaMismatch
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+trap {
+    $message = $_.Exception.Message
+    $exitCode = if ($message.StartsWith('BLOCK:')) { 20 } else { 90 }
+    $status = if ($exitCode -eq 20) { 'bloqueado' } else { 'erro' }
+    [ordered]@{
+        status = $status
+        exitCode = $exitCode
+        inputPath = $InputPath
+        blockingReasons = @($message)
+        warnings = @()
+    } | ConvertTo-Json -Depth 6
+    exit $exitCode
+}
 
 $supportScript = Join-Path $PSScriptRoot 'GeneXusObjectTypeCatalogSupport.ps1'
 if (-not (Test-Path -LiteralPath $supportScript -PathType Leaf)) {
@@ -545,10 +556,6 @@ $result = [ordered]@{
     warnings             = @($warnings)
 }
 
-if ($AsJson) {
-    [pscustomobject]$result | ConvertTo-Json -Depth 10
-} else {
-    [pscustomobject]$result
-}
+[pscustomobject]$result | ConvertTo-Json -Depth 10
 
 exit $exitCode

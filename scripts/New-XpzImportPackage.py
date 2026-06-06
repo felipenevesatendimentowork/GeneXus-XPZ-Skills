@@ -23,8 +23,15 @@ FRONT_REFERENCE_XML_RE = re.compile(
 )
 
 
-def block(message: str) -> None:
-    raise RuntimeError(f"BLOCK: {message}")
+class BlockedError(RuntimeError):
+    def __init__(self, message: str, *, reason: str = "BLOCKED", details: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.reason = reason
+        self.details = details or {}
+
+
+def block(message: str, *, reason: str = "BLOCKED", details: dict[str, Any] | None = None) -> None:
+    raise BlockedError(message, reason=reason, details=details)
 
 
 def local_name(tag: str) -> str:
@@ -267,7 +274,7 @@ def format_round(nn: str) -> str:
     return str(int(nn)).zfill(max(len(nn), 2))
 
 
-def check_collision(output_path: Path, front_name: str, round_text: str) -> None:
+def check_collision(output_path: Path, front_name: str, round_text: str) -> dict[str, Any]:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     expected_name = f"{front_name}_{round_text}.import_file.xml"
     pattern = re.compile(rf"^{re.escape(front_name)}_(?P<nn>\d+)\.import_file\.xml$", re.I)
@@ -286,7 +293,32 @@ def check_collision(output_path: Path, front_name: str, round_text: str) -> None
         next_free = int(round_text) + 1
         while next_free in used:
             next_free += 1
-        block(f"_{round_text} ja existe para o front {front_name}, proximo livre: _{next_free:0{len(round_text)}d}")
+        next_free_nn = f"{next_free:0{len(round_text)}d}"
+        block(
+            f"_{round_text} ja existe para o front {front_name}; proximo livre: _{next_free_nn}",
+            reason="PACKAGE_ROUND_COLLISION",
+            details={
+                "frontPrefix": front_name,
+                "requestedNN": round_text,
+                "requestedRound": int(round_text),
+                "nextFreeNN": next_free_nn,
+                "nextFreeRound": next_free,
+                "outputDir": str(output_path.parent),
+                "collidingPath": str(colliding),
+            },
+        )
+    return {
+        "status": "ok",
+        "reason": "COLLISION_OK",
+        "frontPrefix": front_name,
+        "requestedNN": round_text,
+        "requestedRound": int(round_text),
+        "nextFreeNN": None,
+        "nextFreeRound": None,
+        "outputDir": str(output_path.parent),
+        "collidingPath": None,
+        "blockingReasons": [],
+    }
 
 
 def serialize_template_block(child: ET.Element) -> str:
@@ -398,7 +430,6 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--front-name", required=True)
     parser.add_argument("--nn", default="01")
     parser.add_argument("--template-package-path")
-    parser.add_argument("--as-json", action="store_true")
     args = parser.parse_args(argv)
 
     try:
@@ -418,7 +449,7 @@ def main(argv: list[str]) -> int:
             block(f"kb-source-metadata.md nao encontrado: {metadata_path}")
         template_path = Path(args.template_package_path).resolve() if args.template_package_path else None
         object_roots, attribute_roots = classify_front_xmls(front_dir)
-        check_collision(output_path, args.front_name, round_text)
+        collision_result = check_collision(output_path, args.front_name, round_text)
         template_root, envelope_source, envelope_warnings = load_template(template_path, metadata_path)
         validate_template(template_root)
         package_text = build_package_text(template_root, object_roots, attribute_roots)
@@ -442,6 +473,7 @@ def main(argv: list[str]) -> int:
         )
         result: dict[str, Any] = {
             "status": status,
+            "exitCode": 0,
             "outputPath": None if rejected else str(output_path),
             "rejectedPath": None if rejected is None else str(rejected),
             "repoRoot": str(repo),
@@ -455,19 +487,29 @@ def main(argv: list[str]) -> int:
             "topLevelAttrCount": len(attribute_roots),
             "topLevelAttrSource": top_level_attr_source,
             "gateStatus": status,
+            "collisionGate": collision_result,
             "blockingReasons": blocking,
             "warnings": all_warnings,
             "information": panel_information,
             "includedFiles": [str(path) for path, _, _ in object_roots + attribute_roots],
         }
-        print(json.dumps(result, ensure_ascii=False, indent=2 if args.as_json else None))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
+    except BlockedError as exc:
+        result = {
+            "status": "bloqueado",
+            "exitCode": 20,
+            "stage": "python-engine",
+            "reason": exc.reason,
+            "blockingReasons": [str(exc)],
+            "warnings": [],
+        }
+        result.update(exc.details)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 20
     except Exception as exc:
-        if args.as_json:
-            print(json.dumps({"status": "erro", "blockingReasons": [str(exc)]}, ensure_ascii=False, indent=2))
-        else:
-            print(str(exc))
-        return 1
+        print(json.dumps({"status": "erro", "exitCode": 90, "stage": "python-engine", "blockingReasons": [str(exc)]}, ensure_ascii=False, indent=2))
+        return 90
 
 
 if __name__ == "__main__":

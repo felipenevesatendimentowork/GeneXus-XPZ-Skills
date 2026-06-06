@@ -22,10 +22,10 @@
       - front-newer-than-acervo: ignorado (frente ja e mais recente)
       - lastupdate-unparseable: ignorado (requer resolucao manual)
 
-    Quando -ObjectNames ou -ObjectGuids e fornecido, so os objetos listados sao
-    considerados para copia. Quando omitido, todos os objetos com drift sao copiados.
+    Quando -ObjectList, -ObjectNames ou -ObjectGuids e fornecido, so os objetos listados
+    sao considerados para copia. Quando omitido, todos os objetos com drift sao copiados.
     Se um objeto listado explicitamente ainda nao existir na frente, o script faz seed
-    inicial desse objeto a partir do acervo. Seed nunca ocorre sem ObjectNames/ObjectGuids.
+    inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo explicito.
 
 .PARAMETER FrontFolder
     Caminho da pasta da frente (ObjetosGeradosParaImportacaoNaKbNoGenexus/<NomeCurto_GUID_YYYYMMDD>).
@@ -37,6 +37,10 @@
     Nomes de objetos a copiar (opcional). Quando omitido, copia todos com drift.
     Para seed inicial, deve identificar um unico XML no acervo.
 
+.PARAMETER ObjectList
+    Alias operacional para selecao de objetos. Aceita nomes simples ou entradas
+    `Tipo:Nome`; o script usa apenas o nome para localizar o XML no acervo.
+
 .PARAMETER ObjectGuids
     GUIDs de objetos a copiar (opcional). Quando omitido, copia todos com drift.
     Para seed inicial, deve identificar um unico XML no acervo.
@@ -47,11 +51,8 @@
 .PARAMETER DryRun
     Mostra o que seria copiado sem gravar. Util para preview.
 
-.PARAMETER AsJson
-    Emite resultado estruturado em JSON.
-
 .EXAMPLE
-    .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml -AsJson
+    .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml
 #>
 
 [CmdletBinding()]
@@ -64,14 +65,14 @@ param(
 
     [string[]]$ObjectNames,
 
+    [string[]]$ObjectList,
+
     [string[]]$ObjectGuids,
 
     [ValidateRange(1, 3600)]
     [int]$FreshnessMarginSeconds = 60,
 
-    [switch]$DryRun,
-
-    [switch]$AsJson
+    [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
@@ -82,6 +83,14 @@ if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) 
     throw "UTF-8 no-BOM encoding support script not found: $utf8NoBomEncodingSupportPath"
 }
 . $utf8NoBomEncodingSupportPath
+
+if ($null -ne $ObjectList -and $ObjectList.Count -gt 0) {
+    $objectListNames = @($ObjectList | ForEach-Object {
+        $item = [string]$_
+        if ($item -match '^[^:]+:(?<name>.+)$') { $Matches['name'] } else { $item }
+    })
+    $ObjectNames = @($ObjectNames) + $objectListNames
+}
 
 function Format-GeneXusLastUpdate {
     param([Parameter(Mandatory = $true)][DateTime]$Value)
@@ -540,22 +549,4 @@ $result = [pscustomobject]@{
     findings        = $findings
 }
 
-if ($AsJson) {
-    $result | ConvertTo-Json -Depth 6
-} else {
-    Write-Output "status: $status"
-    Write-Output "frontFolder: $FrontFolder"
-    Write-Output "acervoFolder: $AcervoFolder"
-    Write-Output "dryRun: $($DryRun.IsPresent)"
-    Write-Output "objectsScanned: $($frontMetas.Count)"
-    if ($findings.Count -eq 0) {
-        Write-Output "findings: (none)"
-    } else {
-        Write-Output "findings:"
-        foreach ($f in $findings) {
-            Write-Output "  - [$($f.severity)] $($f.code): $($f.message)"
-            Write-Output "    object: $($f.objectName) ($($f.objectFile))"
-            Write-Output "    action: $($f.action)"
-        }
-    }
-}
+$result | ConvertTo-Json -Depth 6

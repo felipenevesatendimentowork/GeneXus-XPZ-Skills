@@ -18,6 +18,10 @@ Nome da subpasta da frente no formato NomeCurto_GUID_YYYYMMDD.
 Nomes de objetos a copiar (opcional). Quando omitido, copia todos com drift.
 Para seed inicial, deve identificar um unico XML no acervo.
 
+.PARAMETER ObjectList
+Alias operacional para selecao de objetos. Aceita nomes simples ou entradas
+`Tipo:Nome`; o wrapper repassa apenas o nome ao motor de copia.
+
 .PARAMETER ObjectGuids
 GUIDs de objetos a copiar (opcional). Quando omitido, copia todos com drift.
 Para seed inicial, deve identificar um unico XML no acervo.
@@ -25,14 +29,11 @@ Para seed inicial, deve identificar um unico XML no acervo.
 .PARAMETER DryRun
 Mostra o que seria copiado sem gravar.
 
-.PARAMETER AsJson
-Retorna saida JSON estruturada.
-
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada GeneXus-XPZ-Skills.
 
 .EXAMPLE
-.\Copy-KbAcervoToFront.ps1 -FrontName GtaP3_c34f_20260528 -AsJson
+.\Copy-KbAcervoToFront.ps1 -FrontName GtaP3_c34f_20260528
 #>
 
 param(
@@ -41,11 +42,11 @@ param(
 
     [string[]]$ObjectNames,
 
+    [string[]]$ObjectList,
+
     [string[]]$ObjectGuids,
 
     [switch]$DryRun,
-
-    [switch]$AsJson,
 
     [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
 )
@@ -72,12 +73,16 @@ if ($DryRun) {
     $argsForScript.DryRun = $true
 }
 
-if ($AsJson) {
-    $argsForScript.AsJson = $true
-}
-
 if ($null -ne $ObjectNames -and $ObjectNames.Count -gt 0) {
     $argsForScript.ObjectNames = $ObjectNames
+}
+
+if ($null -ne $ObjectList -and $ObjectList.Count -gt 0) {
+    $objectListNames = @($ObjectList | ForEach-Object {
+        $item = [string]$_
+        if ($item -match '^[^:]+:(?<name>.+)$') { $Matches['name'] } else { $item }
+    })
+    $argsForScript.ObjectNames = @($argsForScript.ObjectNames) + $objectListNames
 }
 
 if ($null -ne $ObjectGuids -and $ObjectGuids.Count -gt 0) {

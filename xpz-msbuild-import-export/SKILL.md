@@ -122,7 +122,7 @@ Do NOT use esta skill para:
 - Quando um teste controlado com `Source` global preenchido e outro teste controlado com ajuste isolado de `Pattern Settings` não mudarem o padrão principal do log, registrar explicitamente que essas diferenças deixaram de ser suspeitas fortes e estreitar a hipótese para conteúdo da KB/`XPZ`
 - Exigir confirmação explícita antes de importação real
 - Recomendar reabertura da KB na IDE oficial após testes relevantes para observar warning, marca de versão ou outro efeito colateral
-- Perguntas sobre conteúdo nominal de um XPZ — tanto em turnos posteriores da **mesma rodada** quanto em **sessões novas** sobre um `.xpz` já existente («por que X está aí?», «tem Y nesse pacote?», «quais atributos exatamente?», «quais Domains?») — exigem fonte autoritativa antes de responder. **Caminho A:** na mesma rodada, ou quando o `export.json` da rodada ainda estiver acessível, reler `package-inventory.json` via `packageInventory.nominalInventoryAt`, `packageInventory.packageInventoryPath` ou `artifacts.PackageInventoryPath`. **Caminho B:** em sessão nova, ou quando o sidecar daquela rodada não existir mais (ex.: diretório efêmero em `Temp` já removido), executar `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <xpz> -AsJson` direto sobre o `.xpz`. `extrasSample`, `objectsByType` e contagens do `export.json` são resumo amostral ou agregado; memória de conversa anterior também é amostral; a fonte autoritativa do conteúdo nominal é o sidecar (caminho A) ou nova execução do motor de inventário (caminho B)
+- Perguntas sobre conteúdo nominal de um XPZ — tanto em turnos posteriores da **mesma rodada** quanto em **sessões novas** sobre um `.xpz` já existente («por que X está aí?», «tem Y nesse pacote?», «quais atributos exatamente?», «quais Domains?») — exigem fonte autoritativa antes de responder. **Caminho A:** na mesma rodada, ou quando o `export.json` da rodada ainda estiver acessível, reler `package-inventory.json` via `packageInventory.nominalInventoryAt`, `packageInventory.packageInventoryPath` ou `artifacts.PackageInventoryPath`. **Caminho B:** em sessão nova, ou quando o sidecar daquela rodada não existir mais (ex.: diretório efêmero em `Temp` já removido), executar `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <xpz>` direto sobre o `.xpz`. `extrasSample`, `objectsByType` e contagens do `export.json` são resumo amostral ou agregado; memória de conversa anterior também é amostral; a fonte autoritativa do conteúdo nominal é o sidecar (caminho A) ou nova execução do motor de inventário (caminho B)
 
 ---
 
@@ -248,7 +248,7 @@ Scripts nesta frente:
   - runtime: executar em `pwsh` 7.4 ou superior; o script declara `#requires -Version 7.4` e Windows PowerShell 5.1 não é runtime suportado
   - objetivo: validação estrutural estática do `import_file.xml` antes de qualquer chamada ao MSBuild; não invasivo, não abre KB, não requer GeneXus instalado
   - parâmetros obrigatórios: `-InputPath` (caminho do `import_file.xml`)
-  - parâmetros opcionais: `-PanelReferencePath` (objeto ou pacote XML/XPZ comparável usado para confirmar par `level id`/`layout id` em Panel), `-AsJson`
+  - parâmetros opcionais: `-PanelReferencePath` (objeto ou pacote XML/XPZ comparável usado para confirmar par `level id`/`layout id` em Panel)
   - saída esperada: `status` (`apto para prosseguir` | `apto com ressalvas` | `não apto para prosseguir`), `checks` (mapa de verificações individuais), `objectCount`, `blockingReasons`, `warnings`, `information`
   - verificações realizadas: XML bem-formado; raiz `<ExportFile>`; blocos obrigatórios `<KMW>`, `<Source>`, `<Objects>`, `<Dependencies>`; ausência de declaração XML interna dentro de `<Objects>`; ausência de texto solto ou placeholder literal em `<Objects>`; GUIDs válidos por objeto; `Source/@kb` e `Source/Version/@guid` em formato GUID
   - regra Panel: sem `-PanelReferencePath`, Panel retorna `panel-level-layout-unverified` como ressalva; com referência que contenha o mesmo par, retorna `panel-level-layout-confirmed` apenas em `information`; referência informada sem par correspondente retorna `panel-level-layout-suspicious`
@@ -257,7 +257,7 @@ Scripts nesta frente:
   - status atual: implementado para `import_file.xml`, XML com raiz `<ExportFile>` ou `.xpz` (XML interno único)
   - objetivo: inventariar o conteúdo efetivo do pacote antes de preview/import, separando `Objects`, `Attributes` top-level, tipos mapeados, GUIDs e confronto opcional com delta declarado
   - parâmetros obrigatórios: `-InputPath` (`import_file.xml`, XML equivalente ou `.xpz`)
-  - parâmetros opcionais: `-DeclaredDeltaPath`, `-DeclaredDeltaItems`, `-FailOnDeltaMismatch`, `-CatalogPath`, `-SystemModulesCatalogPath`, `-SystemExternalObjectsCatalogPath`, `-AsJson`
+  - parâmetros opcionais: `-DeclaredDeltaPath`, `-DeclaredDeltaItems`, `-FailOnDeltaMismatch`, `-CatalogPath`, `-SystemModulesCatalogPath`, `-SystemExternalObjectsCatalogPath`
   - quando o pacote cotidiano já é `import_file.xml`, não fabricar `.xpz` só para validar — chamar o motor direto sobre o `import_file.xml`
 - `Watch-GeneXusMsBuildLog.ps1`
   - status atual: implementado
@@ -343,7 +343,7 @@ Parâmetros específicos de importação:
 ## INVENTÁRIO DO PACOTE ANTES DO IMPORT REAL
 
 - O gate `Test-GeneXusImportFileEnvelope.ps1` valida estrutura do envelope; **não substitui** a verificação do **conjunto de objetos** que efetivamente seria aplicado à KB na importação.
-- Use `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <import_file.xml ou .xpz> -AsJson` como inventário determinístico preferido. Para confronto com lista esperada, use `-DeclaredDeltaPath <arquivo>` ou `-DeclaredDeltaItems "<lista Tipo:Nome separada por ; ou linha>"`. Para bloquear automaticamente divergência, acrescente `-FailOnDeltaMismatch`.
+- Use `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <import_file.xml ou .xpz>` como inventário determinístico preferido. Para confronto com lista esperada, use `-DeclaredDeltaPath <arquivo>` ou `-DeclaredDeltaItems "<lista Tipo:Nome separada por ; ou linha>"`. Para bloquear automaticamente divergência, acrescente `-FailOnDeltaMismatch`.
 - **Checklist obrigatório** antes de **importação real** quando o pacote **não** foi montado na mesma rodada pelo fluxo `xpz-builder` com manifesto explícito na conversa (objetos + intenção do lote):
   - Extrair a lista completa de objetos no `<ExportFile>` (por exemplo todos os `<Object` sob `<Objects>`, ou conteúdo equivalente dentro do `.xpz`).
   - Confrontar com o **delta declarado** / pedido do utilizador (tipo e nome de cada objeto em foco). Cada objeto **extra** deve ser classificado no espírito de `xpz-builder` como mudança pedida, auxiliar necessária ou **extra não pedida**; se for **extra não pedida** num pacote que o utilizador descreveu como correção pontual ou cirúrgica → **ABORT** salvo confirmação explícita.
@@ -379,7 +379,7 @@ A frase «sinalizar sem rebaixar `exitCode`» aplica-se **somente** à Categoria
 ## INVENTÁRIO DO PACOTE APÓS EXPORT SELETIVO
 
 - Aplicar **sempre** que a exportação headless concluir com XPZ gerado (`exitCode` classificado pelo wrapper = 0, sem Categoria B, e arquivo existente), **antes** de declarar ao usuário que a exportação está concluída de forma limpa ou de seguir para materialização/import/sync.
-- **Motor preferido:** `Invoke-GeneXusXpzExport.ps1` já chama o inventário e preenche `packageInventory` no `export.json` + `package-inventory.json` no diretório de artefatos. Quando o inventário automático falhar (`inventoryDegraded=true`), abrir o `.xpz` manualmente ou chamar `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <xpz> -AsJson` antes de fechar a rodada.
+- **Motor preferido:** `Invoke-GeneXusXpzExport.ps1` já chama o inventário e preenche `packageInventory` no `export.json` + `package-inventory.json` no diretório de artefatos. Quando o inventário automático falhar (`inventoryDegraded=true`), abrir o `.xpz` manualmente ou chamar `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <xpz>` antes de fechar a rodada.
 - **Classificação da rodada:** quando `-ObjectList` foi informado (e não houve `-ExportAll`/`-FullExport`), a rodada é **exportação seletiva/cirúrgica** — o confronto de extras usa **somente** objetos do bloco `<Objects>` cujo par `Tipo:Nome` (case-insensitive) não está na lista. Quando `-ExportAll` ou `-FullExport`, não há conceito de “extra” face à lista; `packageInventory` reporta apenas contagens reais.
 - **Critério de extra (seletiva):** objeto presente no pacote com `Tipo:Nome` normalizado ausente de `-ObjectList`. Atributos top-level entram em `totalAttributes` e na lista completa, mas **não** entram na conta de extras da lista nominal.
 - **Atributos top-level em export cirúrgica:** quando `-ObjectList` não inclui nenhuma `Transaction` e o pacote traz `Attribute` sob `<Attributes>`, o motor emite warning `attributes-top-level-em-export-cirurgico` e `attributesTopLevelUnreconciled=true` — sinal de arrasto de base (ex.: export só de WorkWith/Procedure que puxou atributos de TRN). Com `Transaction` na lista, atributos top-level são **esperados** (controle negativo: sem esse warning). Promove `operationalSubState` para **extras não conciliados** quando `exportErrors` estiver vazio.
@@ -429,14 +429,14 @@ A frase «sinalizar sem rebaixar `exitCode`» aplica-se **somente** à Categoria
    O diagnóstico deve distinguir `WorkingDirectory` já existente de `WorkingDirectory` auto-criado no caminho explícito e seguro.
    Preferir `JSON` como formato canônico inicial.
 6b. Quando o objetivo for importação (preview ou real), executar o gate de validação do envelope **antes de qualquer chamada ao MSBuild**:
-   - Chamar `Test-GeneXusImportFileEnvelope.ps1 -InputPath <caminho> -AsJson`; para Panel com molde/pacote comparável disponível, passar também `-PanelReferencePath <molde-ou-pacote>` para confirmar o par `level id`/`layout id`
+   - Chamar `Test-GeneXusImportFileEnvelope.ps1 -InputPath <caminho>`; a saída de máquina é JSON por padrão. Para Panel com molde/pacote comparável disponível, passar também `-PanelReferencePath <molde-ou-pacote>` para confirmar o par `level id`/`layout id`
    - Interpretar o resultado:
      - `não apto para prosseguir` → **ABORT**; apresentar `blockingReasons` ao usuário antes de prosseguir; não chamar MSBuild
      - `apto com ressalvas` → apresentar `warnings`; exigir confirmação explícita do usuário antes de prosseguir para preview ou import real
      - `apto para prosseguir` → prosseguir normalmente
    - Este gate é não invasivo: lê apenas o arquivo local, não abre KB, não requer GeneXus instalado
    - Aplicar mesmo quando o arquivo vier de geração anterior já validada — o gate é obrigatório por rodada, não por sessão
-6c. Antes de **importação real**: executar o **inventário do pacote** (lista completa de objetos no envelope) e confrontá-lo com o delta declarado, conforme a secção **Inventário do pacote antes do import real**. Preferir `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <pacote import_file.xml ou .xpz> -AsJson`; se houver delta declarado em arquivo `Tipo:Nome`, passar `-DeclaredDeltaPath` ou `-DeclaredDeltaItems`; quando a rodada exigir bloqueio automático, `-FailOnDeltaMismatch`. Se o pacote contiver extras não conciliados, módulo/ExternalObject de plataforma não pedido ou `attributesTopLevelUnreconciled` num pacote cirúrgico, **ABORT** salvo confirmação explícita do utilizador. Omitir este passo apenas quando o pacote foi gerado na mesma rodada pelo fluxo `xpz-builder` com manifesto na conversa que já feche o lote esperado.
+6c. Antes de **importação real**: executar o **inventário do pacote** (lista completa de objetos no envelope) e confrontá-lo com o delta declarado, conforme a secção **Inventário do pacote antes do import real**. Preferir `Get-GeneXusImportPackageObjectInventory.ps1 -InputPath <pacote import_file.xml ou .xpz>`; a saída de máquina é JSON por padrão. Se houver delta declarado em arquivo `Tipo:Nome`, passar `-DeclaredDeltaPath` ou `-DeclaredDeltaItems`; quando a rodada exigir bloqueio automático, `-FailOnDeltaMismatch`. Se o pacote contiver extras não conciliados, módulo/ExternalObject de plataforma não pedido ou `attributesTopLevelUnreconciled` num pacote cirúrgico, **ABORT** salvo confirmação explícita do utilizador. Omitir este passo apenas quando o pacote foi gerado na mesma rodada pelo fluxo `xpz-builder` com manifesto na conversa que já feche o lote esperado.
 
 ### Decisão pós-gates (importação real autorizada na sessão)
 
@@ -467,8 +467,7 @@ pwsh -NoProfile -File scripts/Invoke-GeneXusXpzImport.ps1 `
   -WorkingDirectory "<pasta-msbuild-segura>" `
   -LogPath "<pasta-artefatos>/import" `
   -MonitorLogPath "<pasta-artefatos>/import/watcher.log" `
-  -StartWatcher `
-  -AsJson
+  -StartWatcher
 ```
 
 7. Só depois abrir a KB e confirmar versão ativa e `Environment` ativo quando aplicável

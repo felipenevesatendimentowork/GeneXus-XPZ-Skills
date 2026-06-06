@@ -75,7 +75,7 @@ if (-not [string]::IsNullOrWhiteSpace($DiscoveryReportPath)) {
     }
 } elseif (-not [string]::IsNullOrWhiteSpace($InputPath)) {
     $inventoryScript = Join-Path $PSScriptRoot 'Get-GeneXusImportPackageObjectInventory.ps1'
-    $inv = & $inventoryScript -InputPath $InputPath -FailOnUnknownTypes -AsJson | ConvertFrom-Json
+    $inv = & $inventoryScript -InputPath $InputPath -FailOnUnknownTypes | ConvertFrom-Json
     if ($null -ne $inv.unknownTypesDiscovery) {
         $unknownTypes = @($inv.unknownTypesDiscovery)
     }
