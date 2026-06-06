@@ -96,7 +96,7 @@ a frase exata `entendo que estas opcoes podem ampliar muito o custo do build e a
 
 ### Rastreabilidade
 
-- Commit: este commit
+- Commit: `c2a09b7` (`Adiciona gate para opções caras de build`)
 
 ## Documentos de governança na raiz
 
