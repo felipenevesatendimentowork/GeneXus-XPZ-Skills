@@ -354,9 +354,9 @@
     {
       "exit": 47,
       "category": "cancelamento",
-      "summary": "Usuario nao confirmou frase de wide rebuild/reorg em modo interativo (distinto de bloqueio 46).",
+      "summary": "Usuario nao confirmou frase de wide rebuild, opcoes caras de build ou reorg em modo interativo (distinto de bloqueio 46).",
       "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
-      "jsonHints": ["confirmWideRebuildMode", "confirmReorgMode", "summary"]
+      "jsonHints": ["confirmWideRebuildMode", "confirmCostlyBuildOptionsMode", "confirmReorgMode", "summary"]
     },
     {
       "exit": 49,
