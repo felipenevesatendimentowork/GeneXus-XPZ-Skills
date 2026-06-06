@@ -348,6 +348,12 @@ $newTokenPropagationGate = [ordered]@{
     findings = @()
 }
 
+$sharedScriptSkillGate = [ordered]@{
+    script   = 'scripts/Test-PrePushSharedScriptSkillCoverage.ps1'
+    status   = 'skipped'
+    findings = @()
+}
+
 $mechanicalFailures = [System.Collections.Generic.List[string]]::new()
 
 if (-not $SkipParse) {
@@ -511,6 +517,30 @@ if (Test-Path -LiteralPath $newTokenPropagationScript -PathType Leaf) {
     }
 }
 
+$sharedScriptSkillScript = Join-Path $PSScriptRoot 'Test-PrePushSharedScriptSkillCoverage.ps1'
+if (Test-Path -LiteralPath $sharedScriptSkillScript -PathType Leaf) {
+    $sharedScriptOutput = & $sharedScriptSkillScript -RootPath $resolvedRoot -BaseRef $effectiveBaseRef -ChangedFiles $changedFiles -AsJson 2>&1
+    $sharedScriptExitCode = $LASTEXITCODE
+    $sharedScriptJsonText = ($sharedScriptOutput | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $sharedScriptObject = $null
+    if (-not [string]::IsNullOrWhiteSpace($sharedScriptJsonText)) {
+        $sharedScriptObject = $sharedScriptJsonText | ConvertFrom-Json
+    }
+
+    if ($sharedScriptExitCode -eq 0 -and $null -ne $sharedScriptObject) {
+        $sharedScriptSkillGate.status = $sharedScriptObject.status
+        $sharedScriptSkillGate.findings = @($sharedScriptObject.findings)
+    } else {
+        $sharedScriptSkillGate.status = 'warn'
+        $sharedScriptSkillGate.findings = @([pscustomobject][ordered]@{
+            code     = 'SHARED_SCRIPT_SKILL_COVERAGE_SCRIPT_ERROR'
+            severity = 'warn'
+            path     = 'scripts/Test-PrePushSharedScriptSkillCoverage.ps1'
+            message  = "Falha consultiva ao executar Test-PrePushSharedScriptSkillCoverage.ps1: $sharedScriptJsonText"
+        })
+    }
+}
+
 $overallStatus = if ($mechanicalFailures.Count -eq 0) { 'pass' } else { 'fail' }
 
 $pushReadiness = if ($commitsBehind -gt 0) { 'blocked' } else { 'ok' }
@@ -596,6 +626,11 @@ foreach ($newTokenFinding in @($newTokenPropagationGate.findings)) {
         ("Propagacao de termo novo (candidata consultiva) ({0}): {1} [{2}]" -f $newTokenFinding.code, $newTokenFinding.message, $newTokenFinding.path)
     )
 }
+foreach ($sharedScriptFinding in @($sharedScriptSkillGate.findings)) {
+    [void]$agentWarnings.Add(
+        ("Script compartilhado em skill transversal (candidata consultiva) ({0}): {1} [{2}]" -f $sharedScriptFinding.code, $sharedScriptFinding.message, $sharedScriptFinding.path)
+    )
+}
 
 $agentSemanticChecklist = @(
     'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
@@ -640,6 +675,7 @@ $result = [ordered]@{
         msBuildProbeDocParity = $msBuildProbeDocParityGate
         unexpectedChar       = $unexpectedCharGate
         newTokenPropagation  = $newTokenPropagationGate
+        sharedScriptSkillCoverage = $sharedScriptSkillGate
     }
     mechanicalFailures       = @($mechanicalFailures)
     agentOperationalReminders = @($agentOperationalReminders)
@@ -720,6 +756,11 @@ if ($AsJson) {
     Write-Output ("NEW_TOKEN_PROPAGATION_GATE={0}" -f $newTokenPropagationGate.status)
     foreach ($finding in @($newTokenPropagationGate.findings)) {
         Write-Output ("NEW_TOKEN_PROPAGATION_CANDIDATE: {0}: {1}" -f $finding.path, $finding.message)
+    }
+
+    Write-Output ("SHARED_SCRIPT_SKILL_COVERAGE_GATE={0}" -f $sharedScriptSkillGate.status)
+    foreach ($finding in @($sharedScriptSkillGate.findings)) {
+        Write-Output ("SHARED_SCRIPT_SKILL_DOC_NOT_IN_DIFF: {0}: {1}" -f $finding.path, $finding.message)
     }
 
     if ($changedFiles.Count -gt 0) {

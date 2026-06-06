@@ -8,6 +8,7 @@ O formato segue a ideia de manter uma seção `Unreleased` para mudanças ainda 
 
 ### Unreleased
 
+- Adicionado gate consultivo de cobertura de skill transversal à revisão pré-push (`scripts/Test-PrePushSharedScriptSkillCoverage.ps1`): quando o diff altera script compartilhado, lista os `SKILL.md`/`quality-checklist.md` que o documentam e não foram tocados; integrado ao orquestrador como aviso, com self-test.
 - Adicionado gate consultivo de propagação de termo novo à revisão pré-push (`scripts/Test-PrePushNewTokenPropagation.ps1`): quando o diff introduz parâmetro/alias por transição co-localizada, lista menções do repositório que ficaram com o conjunto antigo; integrado ao orquestrador como aviso, com self-test.
 - Reforçada a fase semântica da pré-push para buscar termos novos adicionados a contratos e reportar lacunas candidatas de rastreabilidade separadas do veredicto.
 - Padronizados wrappers compartilhados de empacotamento, inventário e sanidade XPZ para JSON por padrão no stdout, sem `-AsJson`, com bloqueios estruturados e aliases operacionais `-InputPath`/`-ObjectList`.
@@ -26,6 +27,7 @@ El formato mantiene una sección `Unreleased` para cambios aún no publicados en
 
 ### Unreleased
 
+- Agregado gate consultivo de cobertura de skill transversal a la revisión previa al push (`scripts/Test-PrePushSharedScriptSkillCoverage.ps1`): cuando el diff altera un script compartido, lista los `SKILL.md`/`quality-checklist.md` que lo documentan y no fueron tocados; integrado al orquestador como aviso, con self-test.
 - Agregado gate consultivo de propagación de término nuevo a la revisión previa al push (`scripts/Test-PrePushNewTokenPropagation.ps1`): cuando el diff introduce un parámetro/alias por transición colocalizada, lista menciones del repositorio que quedaron con el conjunto antiguo; integrado al orquestador como aviso, con self-test.
 - Reforzada la fase semántica de la revisión previa al push para buscar términos nuevos agregados a contratos y reportar lagunas candidatas de trazabilidad separadas del veredicto.
 - Estandarizados los wrappers compartidos de empaquetado, inventario y sanidad XPZ para JSON por defecto en stdout, sin `-AsJson`, con bloqueos estructurados y aliases operativos `-InputPath`/`-ObjectList`.
@@ -44,6 +46,7 @@ The format keeps an `Unreleased` section for changes not yet published in a form
 
 ### Unreleased
 
+- Added a consultative cross-skill coverage gate to the pre-push review (`scripts/Test-PrePushSharedScriptSkillCoverage.ps1`): when the diff changes a shared script, it lists the `SKILL.md`/`quality-checklist.md` files that document it and were not touched; wired into the orchestrator as a warning, with a self-test.
 - Added a consultative new-token propagation gate to the pre-push review (`scripts/Test-PrePushNewTokenPropagation.ps1`): when the diff introduces a parameter/alias via a co-located transition, it lists repository mentions left with the old set; wired into the orchestrator as a warning, with a self-test.
 - Strengthened the pre-push semantic phase to search for newly added contract terms and report candidate traceability gaps separately from the verdict.
 - Standardized shared XPZ packaging, inventory, and sanity wrappers to emit JSON by default on stdout, without `-AsJson`, with structured blocks and operational `-InputPath`/`-ObjectList` aliases.

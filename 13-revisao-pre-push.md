@@ -56,7 +56,7 @@ Suporte mecânico (consultivo): `scripts/Test-PrePushNewTokenPropagation.ps1`, c
 
 Comparar a documentação afetada com:
 
-- skills relacionadas
+- skills relacionadas — incluindo **skills transversais** que documentam o contrato, parâmetros ou checklist de um script compartilhado alterado, mesmo que essa skill não esteja no diff; não interpretar "relacionadas" como apenas "skills da mesma frente". Suporte mecânico (consultivo): `scripts/Test-PrePushSharedScriptSkillCoverage.ps1`, chamado pelo orquestrador, lista os `SKILL.md`/`quality-checklist.md` que citam um script alterado e não foram tocados, como candidatas em `agentWarnings` — apoio, não substituto da comparação
 - `README.md`
 - `02-regras-operacionais-e-runtime.md`
 - `08-guia-para-agente-gpt.md`
@@ -173,6 +173,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | `scripts/Test-PrePushMsBuildProbeDocParity.ps1` | Paridade MSBuild probe (quando aplicável) |
 | `scripts/Test-GeneXusUnexpectedCharacter.ps1` | Caracteres Unicode inesperados em .md/.ps1 (consultivo) |
 | `scripts/Test-PrePushNewTokenPropagation.ps1` | Propagação de termo novo introduzido no diff por transição co-localizada (consultivo) |
+| `scripts/Test-PrePushSharedScriptSkillCoverage.ps1` | Script compartilhado alterado documentado em SKILL.md/quality-checklist.md fora do diff (consultivo) |
 
 ## Espelho em outros documentos
 
