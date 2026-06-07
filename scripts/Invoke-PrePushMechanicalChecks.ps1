@@ -702,10 +702,36 @@ foreach ($gateEnumFinding in @($gateEnumParityGate.findings)) {
     )
 }
 
-$agentSemanticChecklist = @(
-    'Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).',
-    'Nao tratar exit 0 deste passo mecanico como pre-push concluida.'
-)
+# Segregacao das candidatas NAO-PROSA do gate de propagacao: sao as que nao
+# admitem justificativa coletiva (13: disciplina de confronto por classe) e
+# exigem veredito item a item. Bloco proeminente para o revisor nao as diluir
+# entre os demais avisos.
+$nonProseVerdictRequired = [System.Collections.Generic.List[object]]::new()
+foreach ($ntFinding in @($newTokenPropagationGate.findings)) {
+    $ntClass = if ($ntFinding.PSObject.Properties.Name -contains 'mentionClass') { [string]$ntFinding.mentionClass } else { '' }
+    if ($ntClass -ne '' -and $ntClass -ne 'prose') {
+        [void]$nonProseVerdictRequired.Add([pscustomobject][ordered]@{
+            path         = $ntFinding.path
+            mentionClass = $ntClass
+            message      = $ntFinding.message
+        })
+    }
+}
+$nonProseModelDiversityThreshold = 5
+
+$agentSemanticChecklist = [System.Collections.Generic.List[string]]::new()
+[void]$agentSemanticChecklist.Add('Fase semantica: seguir integralmente 13-revisao-pre-push.md na raiz (fonte autoritativa; AGENTS.md resume).')
+[void]$agentSemanticChecklist.Add('Nao tratar exit 0 deste passo mecanico como pre-push concluida.')
+if ($nonProseVerdictRequired.Count -gt 0) {
+    [void]$agentSemanticChecklist.Add(
+        ("{0} candidata(s) NAO-PROSA do gate de propagacao exigem VEREDITO INDIVIDUAL (livro-razao item a item: cada uma com arquivo:linha, a lista/tabela/exemplo gemeo no outro documento e veredito gap|justificado). Proibida justificativa coletiva. Lista completa em nonProseVerdictRequired." -f $nonProseVerdictRequired.Count)
+    )
+    if ($nonProseVerdictRequired.Count -gt $nonProseModelDiversityThreshold) {
+        [void]$agentSemanticChecklist.Add(
+            ("Mais de {0} candidatas nao-prosa: recomenda-se uma segunda passada da fase semantica por MODELO DISTINTO antes de fechar o veredito (13: salvaguarda de diversidade de modelo) — um unico modelo tende a satisficar e confrontar so as candidatas salientes." -f $nonProseModelDiversityThreshold)
+        )
+    }
+}
 
 $result = [ordered]@{
     status                      = $overallStatus
@@ -753,6 +779,7 @@ $result = [ordered]@{
     agentOperationalReminders = @($agentOperationalReminders)
     agentWarnings             = @($agentWarnings)
     agentSemanticChecklist   = @($agentSemanticChecklist)
+    nonProseVerdictRequired  = @($nonProseVerdictRequired)
 }
 
 if ($AsJson) {
@@ -764,6 +791,12 @@ if ($AsJson) {
     Write-Output ("WORKING_TREE={0} UNTRACKED={1} DIRTY_TRACKED={2}" -f $workingTree.Status, $workingTree.UntrackedCount, $workingTree.DirtyTrackedCount)
     foreach ($warning in @($agentWarnings)) {
         Write-Output ("AVISO: {0}" -f $warning)
+    }
+    if ($nonProseVerdictRequired.Count -gt 0) {
+        Write-Output ("NAO_PROSA_VEREDITO_INDIVIDUAL ({0}):" -f $nonProseVerdictRequired.Count)
+        foreach ($np in @($nonProseVerdictRequired)) {
+            Write-Output ("  - [{0}] {1} [{2}]" -f $np.mentionClass, $np.message, $np.path)
+        }
     }
     foreach ($path in @($workingTree.UntrackedFiles)) {
         Write-Output ("WORKING_TREE_UNTRACKED: {0}" -f $path)
