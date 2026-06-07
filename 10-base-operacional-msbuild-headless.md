@@ -771,7 +771,7 @@ Parâmetros específicos de exportação:
 
 Parâmetros específicos de importação:
 
-- `-XpzPath` (aceita `.xpz`, `.xml` e `.import_file.xml` quando o envelope foi validado por `Test-GeneXusImportFileEnvelope.ps1`; nome do parâmetro é histórico e não restringe a extensão)
+- `-InputPath` (nome canônico da entrada primária; aliases `-XpzPath` retrocompatível e `-Path`; aceita `.xpz`, `.xml` e `.import_file.xml` quando o envelope foi validado por `Test-GeneXusImportFileEnvelope.ps1`; a extensão aceita não é restringida pelo nome do parâmetro)
 - `-PreviewMode`
 - `-UpdateFilePath`
 - `-IncludeItems` (import seletivo: formato `Tipo:Nome`; exige `-ParallelKbRoot` ou `-IndexPath` — pré-validação `objectListPreflight`, exit **35** se homônimo ou índice inválido)

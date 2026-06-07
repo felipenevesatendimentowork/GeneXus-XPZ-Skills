@@ -35,6 +35,7 @@
 param(
     [string]$DiscoveryReportPath,
 
+    [Alias('Path')]
     [string]$InputPath,
 
     [string]$UnknownTypeGuid,

@@ -27,6 +27,7 @@ Retorna apenas resumo JSON compacto.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
     [Parameter(Mandatory = $true)]

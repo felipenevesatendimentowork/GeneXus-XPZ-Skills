@@ -319,7 +319,7 @@ dentro dos wrappers.
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
-- `-ObjectList` — lista de objetos para exportação seletiva; para múltiplos objetos, separar entradas com ponto-e-vírgula (`;`) no formato `Tipo:Nome`; exemplo: `Procedure:ProcA;WebPanel:WPB;Transaction:TrC`; o prefixo `Tipo` deve ser o **rótulo aceito pela task Export**, não necessariamente o nome do tipo no catálogo interno nem o retorno de KbIntelligence — ver [10a-gx-export-task-labels.md](../10a-gx-export-task-labels.md) e `exportTaskLabel` em `scripts/gx-object-type-catalog.json` quando montar lista a partir do índice ou do catálogo; a presença de `-ObjectList` classifica a rodada como **exportação seletiva/cirúrgica** para confronto de extras; após a exportação, seguir a secção **Inventário do pacote após export seletivo** (`packageInventory` no `export.json` + `package-inventory.json`); **nunca** reportar ao usuário a contagem de entradas da lista como contagem do pacote; quando exportar um único objeto, o formato `Tipo:Nome` continua válido sem separador
+- `-ObjectList` (nome canônico da seleção por nome; sinônimo aceito `-ObjectNames`; tipo `[string[]]`, aceita string única com lista ou array) — lista de objetos para exportação seletiva; para múltiplos objetos, separar entradas com ponto-e-vírgula (`;`) no formato `Tipo:Nome`; exemplo: `Procedure:ProcA;WebPanel:WPB;Transaction:TrC`; o prefixo `Tipo` deve ser o **rótulo aceito pela task Export**, não necessariamente o nome do tipo no catálogo interno nem o retorno de KbIntelligence — ver [10a-gx-export-task-labels.md](../10a-gx-export-task-labels.md) e `exportTaskLabel` em `scripts/gx-object-type-catalog.json` quando montar lista a partir do índice ou do catálogo; a presença de `-ObjectList` classifica a rodada como **exportação seletiva/cirúrgica** para confronto de extras; após a exportação, seguir a secção **Inventário do pacote após export seletivo** (`packageInventory` no `export.json` + `package-inventory.json`); **nunca** reportar ao usuário a contagem de entradas da lista como contagem do pacote; quando exportar um único objeto, o formato `Tipo:Nome` continua válido sem separador
 - `-ParallelKbRoot` / `-IndexPath` — **obrigatórios** em export seletivo (`-ObjectList` sem `-ExportAll`/full): o wrapper consulta `KbIntelligence` antes do MSBuild (`objectListPreflight` no `export.json`, `gateContext=export`). Homônimo ou índice ausente/inválido → **exit 35** (estágio `pre-export-identity`). Objeto ausente no índice mas possivelmente só na KB nativa → **aviso** e segue MSBuild; inventário pós-export continua obrigatório. Em sessão na pasta paralela da KB, passar a raiz da sessão em `-ParallelKbRoot`.
 - `-DependencyType` — em export seletivo/cirúrgico que deve conter somente a lista nominal, usar `"None"`; valores além de `None` e o default formal quando omitido permanecem pendentes de confirmação nesta base
 - `-ReferenceType` — em export seletivo/cirúrgico que deve conter somente a lista nominal, usar `"None"`; valores além de `None` e o default formal quando omitido permanecem pendentes de confirmação nesta base
@@ -328,7 +328,7 @@ Parâmetros específicos de exportação:
 
 Parâmetros específicos de importação:
 
-- `-XpzPath` — aceita `.xpz` (formato compactado padrão GeneXus), `.xml` ou `.import_file.xml` (envelope GeneXus com raiz `<ExportFile>`) como insumo válido para preview e import real, desde que o envelope tenha sido validado por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada; o nome do parâmetro é histórico e não restringe a extensão aceita
+- `-InputPath` — nome canônico da entrada primária (aliases retrocompatíveis `-XpzPath` e `-Path`); aceita `.xpz` (formato compactado padrão GeneXus), `.xml` ou `.import_file.xml` (envelope GeneXus com raiz `<ExportFile>`) como insumo válido para preview e import real, desde que o envelope tenha sido validado por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada; a extensão aceita não é restringida pelo nome do parâmetro
 - `-PreviewMode`
 - `-UpdateFilePath`
 - `-IncludeItems` — recorte seletivo no formato `Tipo:Nome` (separador `;`, `,` ou linha); classifica a rodada como import seletivo para `objectListPreflight`
@@ -461,7 +461,7 @@ Quando o usuário **já autorizou importação real headless na mesma sessão** 
 ```text
 pwsh -NoProfile -File scripts/Invoke-GeneXusXpzImport.ps1 `
   -KbPath "<caminho-kb>" `
-  -XpzPath "<caminho.import_file.xml ou .xpz>" `
+  -InputPath "<caminho.import_file.xml ou .xpz>" `
   -VersionName "<versao>" `
   -EnvironmentName "<ambiente>" `
   -WorkingDirectory "<pasta-msbuild-segura>" `

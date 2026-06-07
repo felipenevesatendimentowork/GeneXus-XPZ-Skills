@@ -26,6 +26,7 @@ Retorna JSON estruturado.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
     [string]$ObjectName,

@@ -14,13 +14,15 @@ faz seed inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo exp
 .PARAMETER FrontName
 Nome da subpasta da frente no formato NomeCurto_GUID_YYYYMMDD.
 
-.PARAMETER ObjectNames
-Nomes de objetos a copiar (opcional). Quando omitido, copia todos com drift.
-Para seed inicial, deve identificar um unico XML no acervo.
-
 .PARAMETER ObjectList
-Alias operacional para selecao de objetos. Aceita nomes simples ou entradas
-`Tipo:Nome`; o wrapper repassa apenas o nome ao motor de copia.
+Nome canonico da selecao de objeto por nome. Aceita nomes simples ou entradas
+`Tipo:Nome`; o wrapper repassa apenas o nome ao motor de copia. Quando omitido
+(junto com -ObjectNames/-ObjectGuids), copia todos com drift. Para seed inicial,
+deve identificar um unico XML no acervo.
+
+.PARAMETER ObjectNames
+Sinonimo aceito de -ObjectList (mesma semantica de selecao por nome), mantido por
+retrocompatibilidade. Itens de -ObjectNames e -ObjectList sao combinados.
 
 .PARAMETER ObjectGuids
 GUIDs de objetos a copiar (opcional). Quando omitido, copia todos com drift.

@@ -13,8 +13,9 @@ PreviewMode="true" e fecha a KB. O script não executa importação real.
 .PARAMETER KbPath
 Caminho da KB a ser usada no preview.
 
-.PARAMETER XpzPath
-Caminho do pacote de importação a ser inspecionado em preview. Aceita `.xpz`
+.PARAMETER InputPath
+Caminho do pacote de importação a ser inspecionado em preview. Nome canônico do
+contrato de entrada primária; aliases aceitos: `-XpzPath` (retrocompatível) e `-Path`. Aceita `.xpz`
 (formato compactado padrão GeneXus), `.xml` ou `.import_file.xml` (envelope
 GeneXus com raiz `<ExportFile>`) — qualquer um deles é insumo válido quando o
 envelope já foi validado externamente por `Test-GeneXusImportFileEnvelope.ps1`.
@@ -96,7 +97,8 @@ param(
     [string]$KbPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$XpzPath,
+    [Alias('XpzPath', 'Path')]
+    [string]$InputPath,
 
     [Parameter(Mandatory = $true)]
     [string]$WorkingDirectory,
@@ -346,7 +348,7 @@ function New-ArtifactDirectory {
 }
 
 function Validate-XpzPath {
-    $resolved = Get-FullPathSafe -PathValue $XpzPath
+    $resolved = Get-FullPathSafe -PathValue $InputPath
     if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
         Add-BlockingReason -Reason ("XpzPath inválido: '{0}'." -f $resolved)
         return [ordered]@{
@@ -688,7 +690,7 @@ try {
                 GeneXusDir = (Get-FullPathSafe -PathValue $GeneXusDir)
                 MsBuildPath = (Get-FullPathSafe -PathValue $MsBuildPath)
                 KbPath = (Get-FullPathSafe -PathValue $KbPath)
-                XpzPath = (Get-FullPathSafe -PathValue $XpzPath)
+                XpzPath = (Get-FullPathSafe -PathValue $InputPath)
                 WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
                 LogPath = $resolvedLogPath
             }
@@ -733,7 +735,7 @@ try {
                 GeneXusDir = $probeDiagnostic.resolvedPaths.GeneXusDir
                 MsBuildPath = $probeDiagnostic.resolvedPaths.MsBuildPath
                 KbPath = $probeDiagnostic.resolvedPaths.KbPath
-                XpzPath = (Get-FullPathSafe -PathValue $XpzPath)
+                XpzPath = (Get-FullPathSafe -PathValue $InputPath)
                 WorkingDirectory = $probeDiagnostic.resolvedPaths.WorkingDirectory
                 LogPath = $resolvedLogPath
                 UpdateFilePath = (Get-FullPathSafe -PathValue $UpdateFilePath)
@@ -1310,7 +1312,7 @@ catch {
             GeneXusDir = (Get-FullPathSafe -PathValue $GeneXusDir)
             MsBuildPath = (Get-FullPathSafe -PathValue $MsBuildPath)
             KbPath = (Get-FullPathSafe -PathValue $KbPath)
-            XpzPath = (Get-FullPathSafe -PathValue $XpzPath)
+            XpzPath = (Get-FullPathSafe -PathValue $InputPath)
             WorkingDirectory = (Get-FullPathSafe -PathValue $WorkingDirectory)
             LogPath = $resolvedLogPath
             UpdateFilePath = (Get-FullPathSafe -PathValue $UpdateFilePath)

@@ -27,6 +27,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
     [string[]]$VariableName = @(),

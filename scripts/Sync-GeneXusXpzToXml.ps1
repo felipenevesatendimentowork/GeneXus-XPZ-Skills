@@ -58,6 +58,7 @@ Quando o pacote contiver GUID de tipo desconhecido, grava relatorio JSON de tria
 
 param(
     [Parameter(Mandatory = $true)]
+    [Alias('Path')]
     [string]$InputPath,
 
     [Parameter(Mandatory = $true)]

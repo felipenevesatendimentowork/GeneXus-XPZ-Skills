@@ -43,6 +43,9 @@ Nome opcional do Environment a posicionar antes da exportação.
 
 .PARAMETER ObjectList
 Lista explícita de objetos a exportar, quando ExportAll não estiver habilitado.
+Nome canônico do contrato de seleção de objeto. Aceita uma string única (lista
+separada por vírgula) ou um array de strings; itens vazios são descartados.
+Alias aceito: -ObjectNames.
 
 .PARAMETER DependencyType
 Valor explícito para DependencyType. Em exportação seletiva/cirúrgica com
@@ -114,7 +117,8 @@ param(
 
     [string]$EnvironmentName,
 
-    [string]$ObjectList,
+    [Alias('ObjectNames')]
+    [string[]]$ObjectList,
 
     [string]$DependencyType,
 
@@ -188,6 +192,18 @@ if (-not (Test-Path -LiteralPath $preflightSupportPath -PathType Leaf)) {
 
 if ($FullExport) {
     $ExportAll = 'true'
+}
+
+# Normalizacao do contrato de selecao: -ObjectList (canonico, alias -ObjectNames)
+# aceita string unica ou string[]. O corpo do script consome a forma string com
+# virgulas que a task Export espera; itens vazios sao descartados. Sob StrictMode
+# nao se pode reatribuir o proprio $ObjectList (a restricao [string[]] persiste),
+# por isso usa-se uma variavel string dedicada.
+[string]$objectListSpec = ''
+if ($null -ne $ObjectList -and @($ObjectList).Count -gt 0) {
+    $objectListSpec = (@($ObjectList) |
+        ForEach-Object { [string]$_ } |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join ','
 }
 
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
@@ -413,7 +429,7 @@ function Validate-XpzPath {
 }
 
 function Validate-RequiredExportShape {
-    if ([string]::IsNullOrWhiteSpace($ObjectList) -and $ExportAll -ne 'true') {
+    if ([string]::IsNullOrWhiteSpace($objectListSpec) -and $ExportAll -ne 'true') {
         Add-BlockingReason -Reason 'ObjectList não foi informado e ExportAll não está habilitado.'
         return [ordered]@{
             Result = 'fail'
@@ -422,7 +438,7 @@ function Validate-RequiredExportShape {
         }
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($ObjectList) -and $ExportAll -eq 'true') {
+    if (-not [string]::IsNullOrWhiteSpace($objectListSpec) -and $ExportAll -eq 'true') {
         Add-WarningMessage -Message 'ObjectList foi informado junto com ExportAll=true; o wrapper vai privilegiar ExportAll.'
     }
 
@@ -691,7 +707,7 @@ try {
             requestedContext = [ordered]@{
                 VersionName = $VersionName
                 EnvironmentName = $EnvironmentName
-                ObjectList = $ObjectList
+                ObjectList = $objectListSpec
                 ExportAll = $ExportAll
                 StartWatcherRequested = $StartWatcher.IsPresent
             }
@@ -751,7 +767,7 @@ try {
             requestedContext = [ordered]@{
                 VersionName = $VersionName
                 EnvironmentName = $EnvironmentName
-                ObjectList = $ObjectList
+                ObjectList = $objectListSpec
                 DependencyType = $DependencyType
                 ReferenceType = $ReferenceType
                 ExportKbInfo = $ExportKbInfo
@@ -836,7 +852,7 @@ try {
     }
 
     $preflightResult = Invoke-GeneXusObjectListIdentityPreflight `
-        -ObjectList $ObjectList `
+        -ObjectList $objectListSpec `
         -ExportAll $ExportAll `
         -FullExportRequested $FullExport.IsPresent `
         -ParallelKbRoot $ParallelKbRoot `
@@ -860,7 +876,7 @@ try {
             requestedContext = [ordered]@{
                 VersionName = $VersionName
                 EnvironmentName = $EnvironmentName
-                ObjectList = $ObjectList
+                ObjectList = $objectListSpec
                 ExportAll = $ExportAll
                 ParallelKbRoot = $ParallelKbRoot
                 IndexPath = $IndexPath
@@ -904,7 +920,7 @@ try {
     $resolvedMsBuildPath = [string]$probeStage.Diagnostic.resolvedPaths.MsBuildPath
     $resolvedKbPath = [string]$probeStage.Diagnostic.resolvedPaths.KbPath
     $resolvedXpzPath = $xpzValidation.Path
-    $resolvedObjectList = [string]$ObjectList
+    $resolvedObjectList = $objectListSpec
     $resolvedDependencyType = [string]$DependencyType
     $resolvedReferenceType = [string]$ReferenceType
 
@@ -939,7 +955,7 @@ try {
             requestedContext = [ordered]@{
                 VersionName = $VersionName
                 EnvironmentName = $EnvironmentName
-                ObjectList = $ObjectList
+                ObjectList = $objectListSpec
                 DependencyType = $DependencyType
                 ReferenceType = $ReferenceType
                 ExportKbInfo = $ExportKbInfo
@@ -1135,7 +1151,7 @@ try {
         }
     }
 
-    $isSelectiveObjectList = (-not $FullExport.IsPresent) -and ($ExportAll -ne 'true') -and (-not [string]::IsNullOrWhiteSpace($ObjectList))
+    $isSelectiveObjectList = (-not $FullExport.IsPresent) -and ($ExportAll -ne 'true') -and (-not [string]::IsNullOrWhiteSpace($objectListSpec))
     if ($invalidTypesRejected.Count -gt 0 -and $isSelectiveObjectList) {
         Add-WarningMessage -Message ('Tipo(s) rejeitado(s) na ObjectList: {0}. A task Export pode ter resolvido objetos apenas por nome (risco de homonimia se existir colisao).' -f ($invalidTypesRejected -join ', '))
     }
@@ -1222,7 +1238,7 @@ try {
         $inventoryBlock = New-ExportPackageInventoryBlock `
             -XpzPath $resolvedXpzPath `
             -ArtifactDirectory $artifactDirectory `
-            -ObjectList $ObjectList `
+            -ObjectList $objectListSpec `
             -ExportAll $ExportAll `
             -FullExportRequested $FullExport.IsPresent
         if ($inventoryBlock.inventoryDegraded) {
@@ -1253,7 +1269,7 @@ try {
         requestedContext = [ordered]@{
             VersionName = $VersionName
             EnvironmentName = $EnvironmentName
-            ObjectList = $ObjectList
+            ObjectList = $objectListSpec
             DependencyType = $DependencyType
             ReferenceType = $ReferenceType
             ExportKbInfo = $ExportKbInfo
@@ -1379,7 +1395,7 @@ catch {
         requestedContext = [ordered]@{
             VersionName = $VersionName
             EnvironmentName = $EnvironmentName
-            ObjectList = $ObjectList
+            ObjectList = $objectListSpec
             DependencyType = $DependencyType
             ReferenceType = $ReferenceType
             ExportKbInfo = $ExportKbInfo

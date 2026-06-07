@@ -927,6 +927,19 @@ Regras de uso:
 - `Regra operacional`: identidade nominal da frente nao deve herdar automaticamente do pacote anterior por analogia, recencia, coincidencia de objeto ou habito operacional.
 - `Regra operacional`: quando a continuidade da frente nao estiver explicitamente confirmada nem diretamente evidenciada, o agente deve bloquear a heranca automatica da identidade anterior e tratar a decisao como pendente ou como abertura explicita de frente nova, conforme a documentacao local aplicavel.
 
+## Contrato de nomenclatura de parametros
+
+Vocabulario canonico dos parametros dos wrappers e motores compartilhados XPZ. O objetivo e que um agente chame qualquer membro da familia sem tentativa-erro de flag e parseie a saida de forma uniforme. Aliases sao aditivos: nao quebram chamadas existentes.
+
+- `Regra operacional`: selecao de objeto por nome usa o nome canonico `-ObjectList`; `-ObjectNames` e sinonimo aceito. No motor de export (`Invoke-GeneXusXpzExport.ps1`), `-ObjectList` e `[string[]]` (aceita string unica ou array) com alias `ObjectNames`; o `Copy-GeneXusAcervoToFront.ps1` aceita tanto `-ObjectList` quanto `-ObjectNames`.
+- `Regra operacional`: selecao por GUID usa `-ObjectGuids` (hoje exposto no `Copy-GeneXusAcervoToFront.ps1`) — dimensao de enderecamento distinta da selecao por nome, nao sinonimo de `-ObjectList`, e nao garantido em todo motor (o export, por exemplo, seleciona so por nome).
+- `Regra operacional`: entrada primaria (o artefato que o script consome) usa o nome canonico `-InputPath`, com alias `-Path` em todos os wrappers e motores de entrada simples (ex.: `Sync-GeneXusXpzToXml.ps1`, `Edit-GeneXusXmlSurgical.ps1`, `Extract-XpzObject.ps1`, `Get-GeneXusObjectSummary.ps1`); a lista autoritativa do conjunto coberto esta em `scripts/Test-XpzParameterNamingContract.ps1`.
+- `Regra operacional`: na familia de import (o insumo e um `.xpz`, `.xml` ou envelope `.import_file.xml`), `-InputPath` carrega os aliases `-XpzPath` (retrocompativel) e `-Path`. Vale para `Invoke-GeneXusXpzImport.ps1`, `Invoke-GeneXusXpzImportThenBuild.ps1` e `Test-GeneXusXpzImportPreview.ps1`.
+- `Regra operacional`: regra de direcao — artefato de SAIDA mantem nome por papel e nao vira `-InputPath`. No export (`Invoke-GeneXusXpzExport.ps1`), o `.xpz` produzido e `-XpzPath` (saida) e NAO recebe alias `-InputPath`. A mesma chave `XpzPath` permanece nos diagnosticos JSON de saida — contrato de saida estavel, nao renomear.
+- `Regra operacional`: atencao ao token `XpzPath` — ele e ENTRADA (alias de `-InputPath`) na familia de import e SAIDA (nome canonico do artefato produzido) no export; o papel depende da direcao da operacao, nao do nome.
+- `Regra operacional`: conceitos vizinhos NAO sao selecao de objeto e nao herdam o vocabulario de `-ObjectList`: `-ModifiedObjectNames`/`-ModifiedObjectGuids` (handoff de objetos modificados para envelope/inventario), `-ExpectedItems` (assercao de validacao do que se espera no pacote) e `-IncludeItems`/`-ExcludeItems` (parametros da propria task MSBuild do GeneXus). Cada um conserva nome e semantica proprios.
+- `Regra operacional`: a trava deterministica deste contrato e `scripts/Test-XpzParameterNamingContract.ps1`, que verifica nomes canonicos, aliases, tipo e a regra de direcao via metadados, sem executar os scripts nem exigir KB.
+
 ## Delta estrito
 
 - `Regra operacional`: frente faseada e valida quando a limitacao operacional do GeneXus impedir pacote monolitico seguro.

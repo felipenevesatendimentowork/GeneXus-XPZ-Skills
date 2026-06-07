@@ -33,13 +33,16 @@
 .PARAMETER AcervoFolder
     Caminho da pasta do acervo oficial (ObjetosDaKbEmXml).
 
-.PARAMETER ObjectNames
-    Nomes de objetos a copiar (opcional). Quando omitido, copia todos com drift.
-    Para seed inicial, deve identificar um unico XML no acervo.
-
 .PARAMETER ObjectList
-    Alias operacional para selecao de objetos. Aceita nomes simples ou entradas
-    `Tipo:Nome`; o script usa apenas o nome para localizar o XML no acervo.
+    Nome canonico do contrato de selecao de objeto por nome. Aceita nomes simples
+    ou entradas `Tipo:Nome`; o script usa apenas o nome para localizar o XML no
+    acervo. Quando omitido (junto com -ObjectNames/-ObjectGuids), copia todos com
+    drift. Para seed inicial, deve identificar um unico XML no acervo.
+
+.PARAMETER ObjectNames
+    Sinonimo aceito de -ObjectList (mesma semantica de selecao por nome); mantido
+    por retrocompatibilidade. Itens informados por -ObjectNames e -ObjectList sao
+    combinados.
 
 .PARAMETER ObjectGuids
     GUIDs de objetos a copiar (opcional). Quando omitido, copia todos com drift.

@@ -20,7 +20,8 @@ param(
     [string]$KbPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$XpzPath,
+    [Alias('XpzPath', 'Path')]
+    [string]$InputPath,
 
     [Parameter(Mandatory = $true)]
     [string]$WorkingDirectory,
@@ -406,7 +407,7 @@ function New-ImportArguments {
 
     $arguments = [System.Collections.Generic.List[string]]::new()
     Add-ArgumentPair -Arguments $arguments -Name '-KbPath' -Value $KbPath
-    Add-ArgumentPair -Arguments $arguments -Name '-XpzPath' -Value $XpzPath
+    Add-ArgumentPair -Arguments $arguments -Name '-InputPath' -Value $InputPath
     Add-ArgumentPair -Arguments $arguments -Name '-WorkingDirectory' -Value $ImportWorkingDirectory
     Add-ArgumentPair -Arguments $arguments -Name '-LogPath' -Value $ImportLogPath
     Add-OptionalArgumentPair -Arguments $arguments -Name '-GeneXusDir' -Value $GeneXusDir
@@ -581,7 +582,7 @@ try {
         stage = 'import-then-build'
         requestedContext = [ordered]@{
             KbPath = $KbPath
-            XpzPath = $XpzPath
+            XpzPath = $InputPath
             VersionName = $VersionName
             EnvironmentName = $EnvironmentName
             StartWatcher = $StartWatcher.IsPresent
