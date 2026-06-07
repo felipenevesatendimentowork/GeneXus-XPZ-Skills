@@ -190,3 +190,34 @@ Mecanizar só a classe cuja fonte-de-verdade é derivável do código (paridade 
 - Commit: `173cb9a` (`Preenche hash real nos campos Commit: do historico de junho`)
 - Commit: `19b5859` (`Adiciona gate de paridade de enumeracao de gates e fecha a causa-raiz`)
 - Commit: `2db41f8` (`Corrige gaps dos self-tests da pre-push achados na bateria de harnesses`)
+
+## Contrato de nomenclatura de parametros das skills XPZ
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-07
+
+### Origem
+
+Feedback de uma sessao real operando a pasta paralela de KB com as skills XPZ: num unico ciclo de empacotar/importar, varias chamadas falharam por inconsistencia de contrato entre wrappers. A parte de saida/`-AsJson` ja fora tratada em frente anterior; restava a nomenclatura de parametros, que nunca foi registrada em `999-ideias-pendentes.md` (entrou direto como frente nesta sessao).
+
+### Problema concreto
+
+Conceitos equivalentes apareciam com nomes diferentes entre wrappers/motores: selecao de objeto como `-ObjectNames` (Copy) vs `-ObjectList` (export/preflight/governance); entrada primaria como `-InputPath` (sync/sanity/extract/summary) vs `-XpzPath` (import). Sem vocabulario canonico unico nem aliases, um agente caia em tentativa-erro de flag. Conceitos so aparentemente irmaos (`-ExpectedItems`, `-ModifiedObject*`, `-IncludeItems`/`-ExcludeItems`) corriam risco de unificacao indevida.
+
+### Implementacao
+
+- Selecao por nome: `-ObjectList` canonico, `-ObjectNames` sinonimo. `Invoke-GeneXusXpzExport.ps1` passou `-ObjectList` a `[string[]]` com alias `ObjectNames` e normalizacao interna; `Copy-GeneXusAcervoToFront.ps1` reframeado (aceita ambos).
+- Entrada primaria: `-InputPath` canonico com alias `-Path` em 7 scripts (`Sync-GeneXusXpzToXml`, `Edit-GeneXusXmlSurgical`, `Extract-XpzObject`, `Get-GeneXusObjectSummary`, `Test-GeneXusObjectVariableDelta`, `Test-GeneXusTransactionCoherence`, `New-GeneXusUnknownTypeMaintainerPrompt`).
+- Familia de import (decisao C3): `-InputPath` canonico com aliases `-XpzPath` (retrocompativel) e `-Path` em `Invoke-GeneXusXpzImport.ps1`, `Invoke-GeneXusXpzImportThenBuild.ps1` e `Test-GeneXusXpzImportPreview.ps1`; chaves `XpzPath` do JSON de saida preservadas.
+- Regra de direcao: artefato de saida mantem nome por papel (`-XpzPath` no export, sem alias `-InputPath`).
+- Conceitos distintos preservados: `-ModifiedObjectNames`/`-ModifiedObjectGuids` (handoff), `-ExpectedItems` (assercao), `-IncludeItems`/`-ExcludeItems` (task MSBuild).
+- Trava deterministica nova: `scripts/Test-XpzParameterNamingContract.ps1` (nomes, aliases, tipo e regra de direcao via metadados, sem KB).
+- Vocabulario canonico documentado em `02-regras-operacionais-e-runtime.md`; propagacao em `10-base-operacional-msbuild-headless.md`, `xpz-msbuild-import-export/SKILL.md`, `xpz-kb-parallel-setup/SKILL.md` e no exemplo `Copy-KbAcervoToFront.example.ps1`. `README.md` (trilingue) e `08-guia-para-agente-gpt.md` ja traziam a preferencia canonica.
+
+### Decisao final
+
+Em vez de renomear a familia, fixou-se vocabulario canonico com aliases aditivos (sem quebra), preservando conceitos genuinamente distintos e a regra de direcao entrada/saida. A decisao C3 (renomear o primario do import para `-InputPath` mantendo `-XpzPath` como alias) foi escolhida sobre aliasar so o import, para evitar excecao permanente no canone — preferencia por coerencia de medio/longo prazo. Pre-push revisada tambem por modelo independente: os gates consultivos `newTokenPropagation` e `sharedScriptSkillCoverage` foram integralmente justificados.
+
+### Rastreabilidade
+
+- Commit: `13a33eb` (`Unifica contrato de nomenclatura de parametros nas skills XPZ`)
