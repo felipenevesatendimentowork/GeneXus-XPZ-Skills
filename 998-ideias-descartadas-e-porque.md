@@ -1436,3 +1436,19 @@ prático é baixo sem demanda concreta de automação mobile offline.
 **Não reavaliar salvo** surgimento de KB concreta com Native Mobile Offline em que a
 automação headless do build/deploy seja requisito real, ou solicitação explícita de
 cobertura desse pipeline.
+
+---
+
+## Gate de lint para a regra UTF-8 sem BOM (09:103) na pré-push
+
+**Origem:** bateria de teste de harnesses sobre a frente dos gates pré-push, 2026-06-06. Uma execução GPT-5.5 apontou que self-tests novos usavam `New-Object System.Text.UTF8Encoding($false)` inline em vez de `Get-Utf8NoBomEncoding`, contrariando a regra registrada em `09-inventario-e-rastreabilidade-publica.md`. Cogitou-se mecanizar essa checagem como gate consultivo "regra-de-doc ↔ implementação", no espírito de `Test-PrePushMsBuildProbeDocParity.ps1`.
+
+**Por que foi descartada:**
+
+Distinguir o **contexto de escrita** (deve usar o helper) do **contexto isento** que a própria regra permite (leitura/detecção de encoding, BOM deliberado, validação estrita de bytes) não é grep determinístico — exige rastrear a variável de encoding até seu uso (data-flow), frágil em PowerShell. Um lint ingênuo (flag em todo construtor) dispararia nos usos isentos legítimos → ruído.
+
+O alvo também é o **meio**, não o **fim**: a regra existe para evitar BOM indevido em arquivo do repo. A violação concreta que motivou a ideia tinha impacto ~zero (self-tests escrevem fixtures em `Temp` descartáveis) e baixa frequência. Mecanizar o **fim** (BOM em arquivo commitado) seria mais preciso, mas a base já é amplamente consciente de BOM — provável redundância.
+
+Decisão: corrigir os self-tests para usar `Get-Utf8NoBomEncoding` (feito) e **não** criar gate. Princípio geral: mecanizar só onde a fonte-de-verdade é derivável do código (caso do gate de paridade de enumeração), não convenções de fronteira de detecção suja.
+
+**Não reavaliar salvo** evidência de recorrência frequente da violação em arquivos que produzam artefato commitado (não temp), caso em que um check de BOM-no-fim — não um lint do meio — seria a abordagem.

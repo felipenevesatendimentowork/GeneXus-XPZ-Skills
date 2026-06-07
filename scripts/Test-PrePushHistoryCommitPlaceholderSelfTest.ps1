@@ -19,7 +19,8 @@ $scriptPath = Join-Path $PSScriptRoot 'Test-PrePushHistoryCommitPlaceholder.ps1'
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('xpz-history-commit-placeholder-selftest-{0}' -f ([guid]::NewGuid().ToString('N')))
 [void](New-Item -ItemType Directory -Path $tempRoot -Force)
 
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+. (Join-Path $PSScriptRoot 'Utf8NoBomEncodingSupport.ps1')
+$utf8NoBom = Get-Utf8NoBomEncoding
 function Write-TempFile {
     param([string]$RelativePath, [string]$Content)
     $full = Join-Path $tempRoot $RelativePath
@@ -71,6 +72,12 @@ try {
 ### Rastreabilidade
 
 - Commit: TODO
+
+## Frente W
+
+### Rastreabilidade
+
+- Commit:
 '@
     Write-TempFile -RelativePath 'historico/IdeiasImplementadas_teste.md' -Content $novo
     # arquivo fora de historico/ com placeholder -> nao deve ser candidata.
@@ -99,6 +106,10 @@ try {
     }
     if (@($paths | Where-Object { $_ -eq 'historico/IdeiasImplementadas_teste.md:17' }).Count -eq 0) {
         throw "placeholder 'TODO' deveria virar candidata (linha 17); candidatas: $($paths -join ', ')"
+    }
+    # 'vazio' (campo Commit: sem valor) deve ser candidata.
+    if (@($result.findings | Where-Object { $_.message -match '\(vazio\)' }).Count -eq 0) {
+        throw "placeholder vazio deveria virar candidata; candidatas: $($paths -join ', ')"
     }
     # hash real (linha 11) NAO deve ser candidata.
     if (@($paths | Where-Object { $_ -eq 'historico/IdeiasImplementadas_teste.md:11' }).Count -ne 0) {

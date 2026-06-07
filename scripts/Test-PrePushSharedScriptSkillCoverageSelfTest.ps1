@@ -19,7 +19,8 @@ $scriptPath = Join-Path $PSScriptRoot 'Test-PrePushSharedScriptSkillCoverage.ps1
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('xpz-shared-script-skill-selftest-{0}' -f ([guid]::NewGuid().ToString('N')))
 [void](New-Item -ItemType Directory -Path $tempRoot -Force)
 
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+. (Join-Path $PSScriptRoot 'Utf8NoBomEncodingSupport.ps1')
+$utf8NoBom = Get-Utf8NoBomEncoding
 function Write-TempFile {
     param([string]$RelativePath, [string]$Content)
     $full = Join-Path $tempRoot $RelativePath
