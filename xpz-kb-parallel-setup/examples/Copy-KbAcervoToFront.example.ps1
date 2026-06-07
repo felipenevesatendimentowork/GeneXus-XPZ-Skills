@@ -33,7 +33,14 @@ Mostra o que seria copiado sem gravar.
 Raiz local da base compartilhada GeneXus-XPZ-Skills.
 
 .EXAMPLE
+# Refresh por drift: copia do acervo todos os objetos da frente que estiverem mais antigos.
 .\Copy-KbAcervoToFront.ps1 -FrontName GtaP3_c34f_20260528
+
+.EXAMPLE
+# Seed inicial de objetos especificos do acervo para a frente (ainda nao existem nela).
+# Seed so ocorre com alvo explicito; sem -ObjectList/-ObjectNames/-ObjectGuids nada e
+# semeado e objectsScanned:0 / 'not-applicable' e o resultado esperado, nao um erro.
+.\Copy-KbAcervoToFront.ps1 -FrontName GtaP3_c34f_20260528 -ObjectList 'Procedure:PReabastecerEstoque','SDT_Item'
 #>
 
 param(

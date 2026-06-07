@@ -52,7 +52,14 @@
     Mostra o que seria copiado sem gravar. Util para preview.
 
 .EXAMPLE
+    # Refresh por drift: copia do acervo todos os objetos da frente que estiverem mais antigos.
     .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml
+
+.EXAMPLE
+    # Seed inicial: copia objetos especificos do acervo para uma frente em que eles ainda
+    # nao existem. Seed so ocorre com alvo explicito (-ObjectList/-ObjectNames/-ObjectGuids);
+    # sem alvo, nada e semeado e o status pode vir 'not-applicable'/objectsScanned:0 — esperado, nao erro.
+    .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml -ObjectList 'Procedure:PReabastecerEstoque','SDT_Item'
 #>
 
 [CmdletBinding()]
