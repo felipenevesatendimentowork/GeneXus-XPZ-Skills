@@ -177,6 +177,23 @@ function Test-IsOwnDeclarationLine {
     return $declRegexCache[$Token].IsMatch($Line)
 }
 
+function Get-MentionClass {
+    # Classifica a FORMA da linha onde a candidata foi encontrada. A fase
+    # semantica do 13 usa isso para nao descartar candidatas em lote: 'prose'
+    # admite justificativa coletiva (so cita o nome canonico); 'param-list-item',
+    # 'param-table-cell' e 'command-example' exigem veredito item a item,
+    # confrontados contra a lista/tabela/exemplo gemeo em outro documento.
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Line,
+        [bool]$InFence = $false
+    )
+
+    if ($InFence) { return 'command-example' }
+    if ($Line -match '^\s*\|') { return 'param-table-cell' }
+    if ($Line -match '^\s*[-*]\s+`?-') { return 'param-list-item' }
+    return 'prose'
+}
+
 $resolvedRoot = (Resolve-Path -LiteralPath $RootPath).Path
 
 # Confirma que a ref base existe (sem fallback automatico).
@@ -298,10 +315,18 @@ if ($pairs.Count -gt 0) {
         }
 
         $relPath = ([System.IO.Path]::GetRelativePath($resolvedRoot, $file.FullName) -replace '\\', '/')
+        $inFence = $false
 
         for ($i = 0; $i -lt $fileLines.Count; $i++) {
             if ($truncated) { break }
             $text = $fileLines[$i]
+
+            # Rastreia blocos de codigo cercados (```), para classificar linhas
+            # internas como command-example. O delimitador em si nao e candidato.
+            if ($text -match '^\s*```') {
+                $inFence = -not $inFence
+                continue
+            }
 
             foreach ($pair in $pairs) {
                 # Mencao de contrato do token antigo (prosa/doc/-Param), nao $variavel.
@@ -330,11 +355,14 @@ if ($pairs.Count -gt 0) {
                     break
                 }
 
+                $mentionClass = Get-MentionClass -Line $text -InFence $inFence
+
                 $findings.Add([pscustomobject][ordered]@{
-                    code     = 'NEW_TOKEN_PROPAGATION_CANDIDATE'
-                    severity = 'warn'
-                    path     = ('{0}:{1}' -f $relPath, $lineNumber)
-                    message  = ("termo '{0}' foi introduzido no diff junto de '{1}'; esta mencao tem '{1}' sem '{0}' — confirmar propagacao ou justificar a omissao" -f $pair.newToken, $pair.oldToken)
+                    code         = 'NEW_TOKEN_PROPAGATION_CANDIDATE'
+                    severity     = 'warn'
+                    path         = ('{0}:{1}' -f $relPath, $lineNumber)
+                    mentionClass = $mentionClass
+                    message      = ("termo '{0}' foi introduzido no diff junto de '{1}'; esta mencao tem '{1}' sem '{0}' — confirmar propagacao ou justificar a omissao [classe={2}]" -f $pair.newToken, $pair.oldToken, $mentionClass)
                 })
             }
         }

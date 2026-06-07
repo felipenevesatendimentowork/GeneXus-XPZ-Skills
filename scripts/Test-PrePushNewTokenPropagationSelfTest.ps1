@@ -10,7 +10,10 @@
     exemplo continua mencionando o conjunto antigo sem o alias novo. Confirma:
       - caso positivo: a mencao defasada vira candidata (status=warn);
       - controle negativo: mencao ja propagada nao vira candidata;
-      - declaracao do proprio parametro (.PARAMETER) nao vira candidata.
+      - declaracao do proprio parametro (.PARAMETER) nao vira candidata;
+      - classificacao de forma (mentionClass): prosa corrida -> 'prose',
+        item de lista de parametros -> 'param-list-item', linha em bloco de
+        codigo cercado -> 'command-example'.
 #>
 
 Set-StrictMode -Version Latest
@@ -69,6 +72,24 @@ if ($null -ne $ObjectGuids -and $ObjectGuids.Count -gt 0) { $usaGuids = $true }
     # Controle negativo: mencao ja propagada.
     Write-TempFile -RelativePath 'ok-doc.md' -Content "Use ObjectList, ObjectNames ou ObjectGuids para selecionar objetos.`n"
 
+    # Mencao defasada em item de lista de parametros (classe param-list-item).
+    $paramListDoc = @'
+Parametros:
+
+- `-ObjectNames` nomes de objetos a copiar
+'@
+    Write-TempFile -RelativePath 'param-list.md' -Content ($paramListDoc + "`n")
+
+    # Mencao defasada dentro de bloco de codigo cercado (classe command-example).
+    $cmdDoc = @'
+Exemplo de comando:
+
+```text
+& ./motor.ps1 -ObjectNames Proc:Foo
+```
+'@
+    Write-TempFile -RelativePath 'cmd.md' -Content ($cmdDoc + "`n")
+
     [void](Invoke-TempGit @('add', '-A'))
     [void](Invoke-TempGit @('commit', '-q', '-m', 'base'))
     $baseSha = (Invoke-TempGit @('rev-parse', 'HEAD') | Out-String).Trim()
@@ -125,6 +146,28 @@ if ($null -ne $ObjectGuids -and $ObjectGuids.Count -gt 0) { $usaGuids = $true }
     $motorHit = @($candidatePaths | Where-Object { $_ -like 'motor.ps1:*' })
     if ($motorHit.Count -ne 0) {
         throw "motor.ps1 nao deveria gerar candidata (descricao ja propagada; .PARAMETER e declaracao filtrados); candidatas: $($candidatePaths -join ', ')"
+    }
+
+    # --- Classificacao de forma (mentionClass) ---
+    $exemploFinding = @($result.findings | Where-Object { $_.path -like 'exemplo.md:*' })[0]
+    if ($exemploFinding.mentionClass -ne 'prose') {
+        throw "exemplo.md deveria ter mentionClass='prose'; obtido '$($exemploFinding.mentionClass)'"
+    }
+
+    $paramListFinding = @($result.findings | Where-Object { $_.path -like 'param-list.md:*' })
+    if ($paramListFinding.Count -eq 0) {
+        throw "param-list.md (item de lista defasado) deveria virar candidata; candidatas: $($candidatePaths -join ', ')"
+    }
+    if ($paramListFinding[0].mentionClass -ne 'param-list-item') {
+        throw "param-list.md deveria ter mentionClass='param-list-item'; obtido '$($paramListFinding[0].mentionClass)'"
+    }
+
+    $cmdFinding = @($result.findings | Where-Object { $_.path -like 'cmd.md:*' })
+    if ($cmdFinding.Count -eq 0) {
+        throw "cmd.md (linha em bloco cercado) deveria virar candidata; candidatas: $($candidatePaths -join ', ')"
+    }
+    if ($cmdFinding[0].mentionClass -ne 'command-example') {
+        throw "cmd.md deveria ter mentionClass='command-example'; obtido '$($cmdFinding[0].mentionClass)'"
     }
 
     Write-Output 'OK: Test-PrePushNewTokenPropagationSelfTest.ps1'
