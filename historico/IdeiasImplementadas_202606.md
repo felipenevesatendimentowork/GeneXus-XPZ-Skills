@@ -155,3 +155,38 @@ A trilha passou a ter cobertura executável para o bloqueio nominal dos XMLs de 
 ### Rastreabilidade
 
 - Commit: `2bf4e05` (`Cobre bloqueio de XML de referencia no envelope`)
+
+## Gates consultivos de reforço da fase semântica da pré-push
+
+**Importancia original:** média
+**Status:** concluida em 2026-06-06
+
+### Origem
+
+Uma revisão pré-push perdeu a propagação de um alias novo (`-ObjectList`) a uma menção pré-existente. Investigar a causa levou a um padrão maior: a fase semântica acerta a verificação "para frente" (o que entrou está presente?) e é cega à verificação reversa/invariante (adicionar isto tornou alguma afirmação existente falsa? algum conteúdo viola regra documentada?).
+
+### Problema concreto
+
+Gaps dessa classe não eram capturados de forma reproduzível. Bateria empírica: 12 execuções de revisão pré-push, 6 modelos (Claude/Opus, GPT-5.5, DeepSeek, GLM, MiniMax, Kimi), 3 harnesses; sobre 3 gaps reais plantados, 10 das 12 não acharam nenhum, e só o GPT-5.5 achou algo (2 runs, subconjuntos disjuntos). Diligência, amplitude de busca e nível de raciocínio não mudaram o resultado.
+
+### Implementacao
+
+Quatro gates consultivos no orquestrador `Invoke-PrePushMechanicalChecks.ps1`, cada um com self-test, e reforço conceitual no `13` (passos 2 e 3):
+- `Test-PrePushNewTokenPropagation.ps1` — termo de contrato novo não propagado a menções co-localizadas (transição no diff, filtro por morfema).
+- `Test-PrePushSharedScriptSkillCoverage.ps1` — script compartilhado alterado documentado em `SKILL.md`/`quality-checklist.md` fora do diff.
+- `Test-PrePushHistoryCommitPlaceholder.ps1` — placeholder genérico em campo `Commit:`/`PR:` de `historico/`.
+- `Test-PrePushGateEnumerationParity.ps1` — enumeração de gates na doc que ficou subconjunto próprio do que o orquestrador executa (deriva a verdade do código).
+Também: preenchimento de hashes reais no histórico e correção de gaps nos self-tests (regra UTF-8 `09:103`; cobertura de caso vazio).
+
+### Decisao final
+
+Mecanizar só a classe cuja fonte-de-verdade é derivável do código (paridade de enumeração, propagação de termo). Para o resíduo semântico puro ("o que virou falso"), a salvaguarda é diversidade de modelo na revisão — mitigante probabilístico, não garantia. Ideia de lint UTF-8 avaliada e descartada (`998-ideias-descartadas-e-porque.md`).
+
+### Rastreabilidade
+
+- Commit: `a5b9ef6` (`Adiciona gate consultivo de propagacao de termo novo a pre-push`)
+- Commit: `7b0ff77` (`Adiciona gate consultivo de cobertura de skill transversal a pre-push`)
+- Commit: `7cc62fa` (`Adiciona gate consultivo de placeholder de rastreabilidade a pre-push`)
+- Commit: `173cb9a` (`Preenche hash real nos campos Commit: do historico de junho`)
+- Commit: `19b5859` (`Adiciona gate de paridade de enumeracao de gates e fecha a causa-raiz`)
+- Commit: `2db41f8` (`Corrige gaps dos self-tests da pre-push achados na bateria de harnesses`)
