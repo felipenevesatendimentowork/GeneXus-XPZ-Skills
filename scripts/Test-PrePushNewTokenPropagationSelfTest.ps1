@@ -13,7 +13,10 @@
       - declaracao do proprio parametro (.PARAMETER) nao vira candidata;
       - classificacao de forma (mentionClass): prosa corrida -> 'prose',
         item de lista de parametros -> 'param-list-item', linha em bloco de
-        codigo cercado -> 'command-example'.
+        codigo cercado -> 'command-example';
+      - truncamento ciente de classe: com teto baixo e prosa abundante, a
+        prosa e limitada (truncatedProseCount > 0) mas a candidata nao-prosa
+        sobrevive ao truncamento.
 #>
 
 Set-StrictMode -Version Latest
@@ -168,6 +171,35 @@ if ($null -ne $ObjectGuids -and $ObjectGuids.Count -gt 0) { $usaGuids = $true }
     }
     if ($cmdFinding[0].mentionClass -ne 'command-example') {
         throw "cmd.md deveria ter mentionClass='command-example'; obtido '$($cmdFinding[0].mentionClass)'"
+    }
+
+    # --- Truncamento ciente de classe: prosa e limitada, nao-prosa nunca ---
+    # Acrescenta prosa abundante e roda com teto baixo (-MaxFindings 2); confirma
+    # que a candidata param-list-item (param-list.md) sobrevive ao truncamento e
+    # que a prosa respeita o teto.
+    Write-TempFile -RelativePath 'prose-a.md' -Content "Veja ObjectNames para detalhes do fluxo.`n"
+    Write-TempFile -RelativePath 'prose-b.md' -Content "O fluxo usa ObjectNames neste ponto.`n"
+    Write-TempFile -RelativePath 'prose-c.md' -Content "Confira ObjectNames antes do seed.`n"
+    [void](Invoke-TempGit @('add', '-A'))
+    [void](Invoke-TempGit @('commit', '-q', '-m', 'prosa abundante'))
+
+    $truncOutput = & pwsh -NoProfile -File $scriptPath -RootPath $tempRoot -BaseRef $baseSha -AsJson -MaxFindings 2 2>&1
+    $truncResult = (($truncOutput | Out-String).Trim()) | ConvertFrom-Json
+
+    if (-not $truncResult.truncated) {
+        throw "com -MaxFindings 2 e prosa abundante, truncated deveria ser true"
+    }
+    if ($truncResult.truncatedProseCount -lt 1) {
+        throw "truncatedProseCount deveria ser >= 1; obtido $($truncResult.truncatedProseCount)"
+    }
+    $proseKept = @($truncResult.findings | Where-Object { $_.mentionClass -eq 'prose' })
+    if ($proseKept.Count -gt 2) {
+        throw "prosa retida deveria respeitar o teto (<=2); obtido $($proseKept.Count)"
+    }
+    $truncPaths = @($truncResult.findings | ForEach-Object { $_.path })
+    $paramListKept = @($truncPaths | Where-Object { $_ -like 'param-list.md:*' })
+    if ($paramListKept.Count -eq 0) {
+        throw "candidata param-list-item NAO deveria ser truncada pelo teto; ausente em: $($truncPaths -join ', ')"
     }
 
     Write-Output 'OK: Test-PrePushNewTokenPropagationSelfTest.ps1'

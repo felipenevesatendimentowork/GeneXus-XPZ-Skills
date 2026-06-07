@@ -45,7 +45,11 @@
     dos gates do orquestrador). A deteccao usa o diff e o estado atual do repo.
 
 .PARAMETER MaxFindings
-    Teto de candidatas reportadas. Default: 30.
+    Teto de candidatas de classe `prose` reportadas. Default: 30. Candidatas
+    nao-prosa (`param-list-item`, `param-table-cell`, `command-example`) NAO sao
+    truncadas — sao as mais acionaveis e poderiam estar em arquivos varridos
+    depois que o teto de prosa encheu. `truncatedProseCount` informa quantas
+    candidatas de prosa foram descartadas pelo teto.
 
 .PARAMETER AsJson
     Emite diagnostico estruturado em JSON.
@@ -296,6 +300,8 @@ foreach ($hunk in $hunks) {
 $findings = [System.Collections.Generic.List[object]]::new()
 $findingKeys = [System.Collections.Generic.HashSet[string]]::new()
 $truncated = $false
+$proseCount = 0
+$truncatedProseCount = 0
 
 if ($pairs.Count -gt 0) {
     $files = @(Get-ChildItem -LiteralPath $resolvedRoot -Recurse -File -ErrorAction SilentlyContinue |
@@ -305,8 +311,6 @@ if ($pairs.Count -gt 0) {
         })
 
     foreach ($file in $files) {
-        if ($truncated) { break }
-
         $fileLines = @()
         try {
             $fileLines = @([System.IO.File]::ReadAllLines($file.FullName))
@@ -318,7 +322,6 @@ if ($pairs.Count -gt 0) {
         $inFence = $false
 
         for ($i = 0; $i -lt $fileLines.Count; $i++) {
-            if ($truncated) { break }
             $text = $fileLines[$i]
 
             # Rastreia blocos de codigo cercados (```), para classificar linhas
@@ -350,12 +353,21 @@ if ($pairs.Count -gt 0) {
                     continue
                 }
 
-                if ($findings.Count -ge $MaxFindings) {
-                    $truncated = $true
-                    break
-                }
-
                 $mentionClass = Get-MentionClass -Line $text -InFence $inFence
+
+                # Truncamento ciente de classe: candidatas nao-prosa
+                # (param-list-item/param-table-cell/command-example) NUNCA sao
+                # truncadas — sao as mais acionaveis e podem estar em arquivos
+                # varridos depois que o teto de prosa encheu. So a prosa e
+                # limitada por -MaxFindings.
+                if ($mentionClass -eq 'prose') {
+                    if ($proseCount -ge $MaxFindings) {
+                        $truncated = $true
+                        $truncatedProseCount++
+                        continue
+                    }
+                    $proseCount++
+                }
 
                 $findings.Add([pscustomobject][ordered]@{
                     code         = 'NEW_TOKEN_PROPAGATION_CANDIDATE'
@@ -371,14 +383,25 @@ if ($pairs.Count -gt 0) {
 
 $status = if ($findings.Count -gt 0) { 'warn' } else { 'pass' }
 
+$classCounts = [ordered]@{}
+foreach ($f in $findings) {
+    if ($classCounts.Contains($f.mentionClass)) {
+        $classCounts[$f.mentionClass] = $classCounts[$f.mentionClass] + 1
+    } else {
+        $classCounts[$f.mentionClass] = 1
+    }
+}
+
 $result = [ordered]@{
-    status           = $status
-    range            = $range
-    introducedTokens = @($introducedTokens | Sort-Object)
-    pairsConsidered  = @($pairs)
-    candidateCount   = $findings.Count
-    truncated        = $truncated
-    findings         = @($findings)
+    status              = $status
+    range               = $range
+    introducedTokens    = @($introducedTokens | Sort-Object)
+    pairsConsidered     = @($pairs)
+    candidateCount      = $findings.Count
+    classCounts         = $classCounts
+    truncated           = $truncated
+    truncatedProseCount = $truncatedProseCount
+    findings            = @($findings)
 }
 
 if ($AsJson) {
@@ -392,7 +415,8 @@ if ($AsJson) {
         Write-Output ("NEW_TOKEN_PROPAGATION_CANDIDATE: {0}: {1}" -f $finding.path, $finding.message)
     }
     if ($truncated) {
-        Write-Output 'CANDIDATES_TRUNCATED=true'
+        Write-Output ("PROSE_CANDIDATES_TRUNCATED={0}" -f $truncatedProseCount)
+        Write-Output 'NON_PROSE_CANDIDATES_COMPLETE=true'
     }
 }
 
