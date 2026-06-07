@@ -221,3 +221,33 @@ Em vez de renomear a familia, fixou-se vocabulario canonico com aliases aditivos
 ### Rastreabilidade
 
 - Commit: `13a33eb` (`Unifica contrato de nomenclatura de parametros nas skills XPZ`)
+
+## Endurecimento do gate de propagacao por classe e o teto da revisao de modelo unico
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-07
+
+### Origem
+
+Fechamento da frente de nomenclatura (acima): a revisao pre-push por um modelo distinto (MiniMax) encontrou um gap de propagacao (lista de parametros gemea divergente: `10-base...md:765` vs `xpz-msbuild-import-export/SKILL.md:322`, e `xpz-kb-parallel-setup/SKILL.md:557`) que tres passadas do mesmo modelo (Opus) descartaram em lote sob justificativa coletiva. Investigar levou a uma cadeia de endurecimento do gate `Test-PrePushNewTokenPropagation.ps1` e a um aprendizado sobre o limite do revisor de modelo unico.
+
+### Problema concreto
+
+O gate emitia todas as candidatas com severidade uniforme `warn`, sem distinguir prosa (que cita o nome canonico) de lista de parametros gemea (que de fato divergiu); isso convidava o revisor a descartar tudo em lote. Alem disso, o teto `-MaxFindings` truncava o total em ordem de varredura, derrubando candidatas de subpastas (skills) antes de alcanca-las.
+
+### Implementacao
+
+- `mentionClass` por candidata (`prose`/`param-list-item`/`param-table-cell`/`command-example`), em campo estruturado e no sufixo `[classe=...]` da mensagem; rastreio de blocos de codigo cercados (commit `2485f20`).
+- Truncamento ciente de classe: o teto aplica-se so a `prose`; nao-prosa nunca truncada; campos `classCounts` e `truncatedProseCount` (commit `4b50e62`).
+- Orquestrador segrega as nao-prosa em `nonProseVerdictRequired` e injeta no `agentSemanticChecklist` a exigencia de livro-razao item a item; acima de 5 nao-prosa recomenda segunda passada por modelo distinto (commit `fc8533d`).
+- `13-revisao-pre-push.md`: disciplina de confronto por classe (prosa admite justificativa coletiva, nao-prosa exige veredito individual contra a lista-gemea) e salvaguarda de diversidade de modelo promovida de reserva para recomendada-acima-de-limiar. `08-guia-para-agente-gpt.md` espelhou as regras novas. Self-test do gate estendido com asserts de classe e de truncamento por classe.
+
+### Decisao final
+
+A mecanica foi util mas tem teto: forcar exaustividade num revisor de modelo unico nao garante veredito correto. Em experimento controlado (mesmo prompt minimo, mesmo modelo, so a rotina mudando entre rodadas), o Opus melhorou o processo (passou a confrontar todas as candidatas em livro-razao) mas piorou o veredito — racionalizou cada item como justificado, inclusive revertendo um veredito antes correto. So um modelo distinto pegou os gaps. Conclusao registrada em `998-ideias-descartadas-e-porque.md`: a diversidade de modelo e o backstop; nao tentar mecanicamente consertar o revisor unico. Os gaps de propagacao e o espelho do `08` foram mantidos abertos como fixtures durante os experimentos e corrigidos no fechamento desta frente.
+
+### Rastreabilidade
+
+- Commit: `2485f20` (`Classifica candidatas do gate de propagacao por forma da mencao`)
+- Commit: `4b50e62` (`Torna o truncamento do gate de propagacao ciente de classe`)
+- Commit: `fc8533d` (`Forca veredito individual das candidatas nao-prosa na pre-push`)

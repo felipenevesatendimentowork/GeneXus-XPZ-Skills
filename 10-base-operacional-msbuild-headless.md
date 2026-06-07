@@ -762,7 +762,7 @@ divergente dentro dos wrappers.
 Parâmetros específicos de exportação:
 
 - `-XpzPath`
-- `-ObjectList` (export seletivo: formato `Tipo:Nome`; exige `-ParallelKbRoot` ou `-IndexPath` — pré-validação `objectListPreflight`, estágio `pre-export-identity`, exit **35** se homônimo ou índice inválido; ver `10a-gx-export-task-labels.md`)
+- `-ObjectList` (nome canônico da seleção por nome; sinônimo aceito `-ObjectNames`; tipo `[string[]]`, aceita string única ou array; export seletivo: formato `Tipo:Nome`; exige `-ParallelKbRoot` ou `-IndexPath` — pré-validação `objectListPreflight`, estágio `pre-export-identity`, exit **35** se homônimo ou índice inválido; ver `10a-gx-export-task-labels.md`)
 - `-ParallelKbRoot` / `-IndexPath` / `-CatalogOverridePath` (obrigatórios com `-ObjectList` preenchido e sem `-ExportAll`/exportação full)
 - `-DependencyType` (em export seletivo/cirúrgico que deve conter somente a lista nominal, usar `"None"`)
 - `-ReferenceType` (em export seletivo/cirúrgico que deve conter somente a lista nominal, usar `"None"`)

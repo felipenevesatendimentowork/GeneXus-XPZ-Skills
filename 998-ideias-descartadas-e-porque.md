@@ -1452,3 +1452,29 @@ O alvo também é o **meio**, não o **fim**: a regra existe para evitar BOM ind
 Decisão: corrigir os self-tests para usar `Get-Utf8NoBomEncoding` (feito) e **não** criar gate. Princípio geral: mecanizar só onde a fonte-de-verdade é derivável do código (caso do gate de paridade de enumeração), não convenções de fronteira de detecção suja.
 
 **Não reavaliar salvo** evidência de recorrência frequente da violação em arquivos que produzam artefato commitado (não temp), caso em que um check de BOM-no-fim — não um lint do meio — seria a abordagem.
+
+---
+
+## Endurecer a mecânica da pré-push para garantir veredito correto de um revisor LLM único
+
+**Origem:** cadeia de experimentos sobre o gate de propagação de termo novo (`Test-PrePushNewTokenPropagation.ps1`), 2026-06-07. Um gap real de propagação (lista de parâmetros gêmea que divergiu) passou por três passadas do mesmo modelo (Opus); um modelo distinto (MiniMax) o pegou por leitura.
+
+**O que é:** a hipótese de que, refinando a mecânica do gate/orquestrador, dá para fazer um revisor LLM único (uma passada de um modelo) chegar ao veredito correto de forma confiável na fase semântica.
+
+**O que foi tentado — entrou no repo, é útil, mas não resolve o veredito:**
+
+- `mentionClass`: classificar cada candidata por forma (prose / param-list-item / param-table-cell / command-example), para o revisor não descartar lista-gêmea de parâmetros como se fosse prosa.
+- Truncamento ciente de classe: não-prosa nunca truncada, para o sinal chegar completo mesmo numa frente que inunda a raiz de prosa.
+- Bloco coercitivo (`nonProseVerdictRequired`) + livro-razão item a item obrigatório no `agentSemanticChecklist`, proibindo justificativa coletiva das não-prosa.
+
+**Por que foi descartada (continuar endurecendo a mecânica):**
+
+Cada passo tornou o sinal mais completo e mais forçado, mas o revisor único continuou falhando — e o modo de falha apenas se deslocou:
+
+1. Antes da classe: descarte em lote (passadas Opus varreram a candidata legítima junto com a prosa, sob justificativa coletiva).
+2. Com classe + sem truncamento: omissão por saliência (o Opus pegou um `param-list-item` saliente e nem mencionou outro igualmente sinalizado em subpasta).
+3. Com o livro-razão coercitivo: **racionalização** — o Opus confrontou as não-prosa uma a uma (processo correto) mas se convenceu de «justificado» em cada, inclusive **revertendo** um veredito antes correto. Resultado pior: 0 gaps confirmados.
+
+Forçar exaustividade num único modelo desloca a falha de *omitir* para *confrontar-e-racionalizar* — mais difícil de detectar porque parece diligência. A camada mecânica fez o que podia (sinal completo, ledger forçado, fail-safe que recomenda diversidade), mas não há como mecanicamente obrigar um único LLM a um veredito correto: ele produz justificativas plausíveis. **A diversidade de modelo é o backstop real** — só um modelo distinto pegou os gaps. Por isso a salvaguarda de diversidade do `13` foi promovida de reserva para recomendada-acima-de-limiar, e a engenharia mecânica foi encerrada por decisão nesta frente.
+
+**Não reavaliar salvo** evidência de uma técnica mecânica que comprovadamente eleve a *correção do veredito* (não apenas a exaustividade do processo) de um revisor de modelo único. A direção produtiva é operacionalizar a diversidade de modelo, não refinar mais o gate.

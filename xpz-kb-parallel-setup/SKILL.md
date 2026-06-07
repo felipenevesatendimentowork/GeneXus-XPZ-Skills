@@ -554,7 +554,7 @@ Verificacoes a executar quando acionada:
    - `GeneXusMsBuildWatcherSupport.ps1` (helper carregado obrigatoriamente por preview/import para o contrato de watcher e `timing`)
 2. Acessibilidade da skill `xpz-msbuild-import-export` na sessao atual, pelo caminho publicado pela propria sessao quando houver — sem inferir caminho por heuristica.
 3. Coerencia documental do `SKILL.md` de `xpz-msbuild-import-export`: o documento deve continuar declarando, em texto, ambas as regras abaixo, que sao o contrato que a verificacao da pasta paralela precisa pressupor:
-   - `-InputPath` (alias retrocompatível `-XpzPath`) aceita `.xpz`, `.xml` e `.import_file.xml` com raiz `<ExportFile>` validada por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada
+   - `-InputPath` (aliases retrocompatíveis `-XpzPath` e `-Path`) aceita `.xpz`, `.xml` e `.import_file.xml` com raiz `<ExportFile>` validada por `Test-GeneXusImportFileEnvelope.ps1` na mesma rodada
    - `-ImportKbInformation` e tri-state: omitido ou `false` significam nao emitir o atributo na task `Import`; apenas `true` emite o atributo e exige que a task carregada exponha a propriedade
 
 A verificacao 3 e leitura documental, nao auditoria de comportamento do script — auditar comportamento de `Invoke-GeneXusXpzImport.ps1` continua proibido para esta skill (ver 8.g6.iii).
