@@ -112,7 +112,8 @@ $inputPathWithPathAlias = @(
     'Test-GeneXusImportFileEnvelope.ps1',
     'Test-GeneXusObjectVariableDelta.ps1',
     'Test-GeneXusTransactionCoherence.ps1',
-    'New-GeneXusUnknownTypeMaintainerPrompt.ps1'
+    'New-GeneXusUnknownTypeMaintainerPrompt.ps1',
+    'Set-GeneXusXmlLastUpdate.ps1'
 )
 foreach ($scriptFile in $inputPathWithPathAlias) {
     Assert-CanonicalParameter -ScriptFileName $scriptFile -ParameterName 'InputPath' -RequiredAliases @('Path')

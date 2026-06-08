@@ -251,3 +251,36 @@ A mecanica foi util mas tem teto: forcar exaustividade num revisor de modelo uni
 - Commit: `2485f20` (`Classifica candidatas do gate de propagacao por forma da mencao`)
 - Commit: `4b50e62` (`Torna o truncamento do gate de propagacao ciente de classe`)
 - Commit: `fc8533d` (`Forca veredito individual das candidatas nao-prosa na pre-push`)
+
+## Gate de drift 9-FD fail-closed e motor de re-carimbo de `lastUpdate`
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-07
+
+### Origem
+
+Frente operacional do empacotamento por frente: o gate de drift frente-vs-acervo (9-FD) do `New-XpzImportPackage.ps1` so rodava quando `-AcervoPath` era informado, o que permitia pular silenciosamente a verificacao de `lastUpdate` simplesmente omitindo o parametro. Junto, faltava um motor dedicado para apenas re-carimbar o `lastUpdate` de um XML da frente ja editado em rodadas subsequentes, sem copiar do acervo nem reaplicar delta.
+
+### Problema concreto
+
+Footgun nomeado: um pacote cujo objeto tem `lastUpdate` menor ou igual ao objeto vivo na KB e aceito pelo import sem erro (`exitCode 0`), mas a KB nao atualiza o objeto — desperdicando um ciclo import+build inteiro. O contrato condicional do gate (so com `-AcervoPath`) deixava esse footgun escapar por omissao. Para re-bumpar o timestamp, agentes recorriam a busca-e-troca textual manual do atributo, fragil e sem validacao de well-formedness.
+
+### Implementacao
+
+- `New-XpzImportPackage.ps1`: gate de drift 9-FD tornado **fail-closed** — executa sempre antes do motor Python; `-AcervoPath` virou opcional e, quando omitido, o acervo canonico `<RepoRoot>/ObjetosDaKbEmXml` e auto-resolvido; sem acervo resolvivel o empacotamento e bloqueado; o JSON ganhou `acervoResolvedBy` (`explicit`/`convention`). Self-test do contrato fail-closed: `scripts/Test-NewXpzImportPackageDriftSelfTest.ps1`.
+- Novo motor compartilhado `scripts/Set-GeneXusXmlLastUpdate.ps1` (com `scripts/Test-SetGeneXusXmlLastUpdateSelfTest.ps1`): re-carimba o `lastUpdate` da raiz do Object in-place, recalculando `max(UtcNow + margem, baseline + margem)` via `Get-GeneXusXpzLastUpdate.ps1` e reusando as funcoes de leitura/gravacao/validacao de `GeneXusXmlSurgicalEditSupport.ps1`, com backup `.bak`, restauracao em `XML_NOT_WELLFORMED_AFTER`, `-DryRun` e `-AsJson`. Contrato `-InputPath` (alias `-Path`) adicionado a enumeracao de `scripts/Test-XpzParameterNamingContract.ps1`.
+- Footgun do import inocuo por `lastUpdate` velho/igual nomeado e documentado em `xpz-msbuild-import-export/SKILL.md`, com o limite honesto da protecao (os gates comparam contra o acervo, nao contra a KB viva).
+- Propagacao do contrato fail-closed em `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `README.md` (trilingue), `xpz-builder/SKILL.md`, `xpz-builder/quality-checklist.md`, `xpz-kb-parallel-setup/SKILL.md` e no exemplo `xpz-kb-parallel-setup/examples/New-KbImportPackage.example.ps1`. Entrada correspondente em `CHANGELOG.md` (`Unreleased`, trilingue).
+
+### Decisao final
+
+Optou-se por fail-closed com auto-resolucao canonica em vez de manter o gate condicional: omitir `-AcervoPath` nao pode ser um caminho para pular a verificacao. A protecao cobre o caso comum (esquecer de bumpar), mas nao substitui ressincronizar o acervo quando ha suspeita de defasagem frente a KB viva — limite registrado explicitamente na doc. A propagacao do contrato antigo (condicional) para o novo (fail-closed) foi inicialmente incompleta e so fechada apos revisao pre-push por modelos distintos (GLM, DeepSeek, MiniMax), que tambem apontaram a paridade de enumeracao no gate de parametros, a entrada de CHANGELOG e este registro de historico.
+
+### Rastreabilidade
+
+- Commit: `2c8b699` (`Torna fail-closed o gate de drift de lastUpdate no empacotamento por frente`)
+- Commit: `8949c76` (`Adiciona Set-GeneXusXmlLastUpdate para re-bumpar lastUpdate sem delta`)
+- Commit: `5aa96cb` (`Atualiza o inventario 09 com o contrato fail-closed e o motor Set-`)
+- Commit: `e77c67e` (`Alinha README trilingue e molde da kb-parallel-setup ao contrato fail-closed do gate de drift`)
+- Commit: `94fc0cf` (`Completa a propagacao do contrato fail-closed do gate de drift em 02, 08 e kb-parallel-setup`)
+- O commit de fechamento desta frente (paridade de enumeracao no gate de parametros, entrada de `CHANGELOG.md` e este registro) e majoritariamente meta-documental e permanece visivel via `git blame` no arquivo mensal, conforme `historico/AGENTS.md`
