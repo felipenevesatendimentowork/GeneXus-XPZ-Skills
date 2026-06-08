@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "source": "04b-ucw-gxcontroltype-reference.md",
+  "notes": "Catalogo de User Controls (UCW) usados dentro de GxMultiForm (layout responsivo de WebPanel). A chave e o gxControlType numerico (inteiro negativo fixo, nao GUID) tal como aparece no atributo gxControlType do elemento <ucw>. Consumido por Get-GeneXusObjectSummary.ps1 para resolver o tipo de cada UCW; gxControlType ausente deste catalogo deve ser reportado como desconhecido (numero cru), nunca omitido.",
+  "controls": {
+    "-2133704903": {
+      "name": "Button",
+      "isButton": true,
+      "confidence": "direct-evidence",
+      "keyProperties": ["ControlName", "Event", "CaptionExpression"],
+      "notes": "Botao clicavel que dispara um evento GeneXus nomeado. ControlName/Event/CaptionExpression ficam dentro de PATTERN_ELEMENT_CUSTOM_PROPERTIES, nao como atributos do <ucw>; Event vem entre aspas simples."
+    },
+    "-1987551761": {
+      "name": "FileUpload",
+      "isButton": false,
+      "confidence": "strong-inference-external-kb",
+      "keyProperties": ["ControlName", "UploadedFiles"],
+      "notes": "Controle de upload de arquivo. UploadedFiles referencia variavel de colecao SDT FileUploadData (AttCollection=True). Validar com XML real da KB alvo antes de materializar."
+    },
+    "-1269900845": {
+      "name": "ProgressIndicator",
+      "isButton": false,
+      "confidence": "strong-inference-external-kb",
+      "keyProperties": [],
+      "notes": "Indicador de progresso visual. Propriedades nao documentadas nesta base."
+    },
+    "-1946546103": {
+      "name": "WebNotification",
+      "isButton": false,
+      "confidence": "strong-inference-external-kb",
+      "keyProperties": [],
+      "notes": "Notificacao visual na tela. Propriedades nao documentadas nesta base."
+    }
+  }
+}

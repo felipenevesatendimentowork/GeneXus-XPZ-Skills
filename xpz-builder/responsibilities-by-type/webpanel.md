@@ -10,6 +10,11 @@ This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entr
 
 - Classify the current delta by functional block before editing: `layout`, `events`, `variables`, `serialized functional metadata`, `identity and container`, or `dependencies`.
 
+### Read-only shape inspection (before editing layout or events)
+
+- Before editing a `WebPanel` layout or events, run `scripts/Get-GeneXusObjectSummary.ps1` (the `webpanel` block) to read the shape without dumping `CDATA`: `tables` with `tableType` (Flex vs Responsive) and nesting `depth`, `controls`, `buttons` in both forms (`<action>` and `<ucw>` Button), `eventNames`, and a `coverage` block. Use `tableType` to judge whether inserting a cell is safe (Flex) or touches `responsiveSizes` per breakpoint (Responsive).
+- Treat `coverage` as authoritative about scope: controls outside the `GxMultiForm` are not interpreted, and any `gxControlType` absent from `scripts/gx-ucw-gxcontroltype-catalog.json` is reported in `unknownUcwControlTypes`, never silently omitted. Do NOT read a missing control as proof of absence without checking `coverage`.
+
 ### Events (GeneXus source)
 
 - When the primary edit block is `events`, consult [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md), section `Mecanismos de descarte de codigo de evento pelo gerador GeneXus`, before changing event source — no-op assignments (`&x = &x`, `&sdt.<m> = &sdt.<m>`, etc.) and `Refresh` alone may be stripped silently (mechanism b) or fail at import (mechanism a). For nested Tab with SDT in data attributes (empty inner tab on first outer activation), also consult [04-webpanel-familias-e-templates.md](../../04-webpanel-familias-e-templates.md) and `02`, subsection `WebPanel, Tab aninhada e re-bind de SDT em data attributes`.
@@ -40,3 +45,5 @@ The following WebPanel-specific rules live inside WORKFLOW step 11 (Locate templ
 - [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md) — generator event discard (a)/(b); Tab/SDT re-bind when editing `events` or diagnosing empty inner tabs.
 - [04-webpanel-familias-e-templates.md](../../04-webpanel-familias-e-templates.md) — documented WebPanel families and observed runtime/layout patterns (used in WORKFLOW step 11 for template location).
 - [04b-ucw-gxcontroltype-reference.md](../../04b-ucw-gxcontroltype-reference.md) — UCW catalog (mandatory load when WebPanel contains UCW).
+- [scripts/Get-GeneXusObjectSummary.ps1](../../scripts/Get-GeneXusObjectSummary.ps1) — read-only WebPanel shape (`tables`/`tableType`, `controls`, `buttons`, `eventNames`, `coverage`) without dumping CDATA.
+- [scripts/gx-ucw-gxcontroltype-catalog.json](../../scripts/gx-ucw-gxcontroltype-catalog.json) — `gxControlType` -> control-type map consumed by the shape inspector (documented in `04b`).

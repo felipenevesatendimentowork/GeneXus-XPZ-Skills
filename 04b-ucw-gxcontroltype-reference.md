@@ -29,6 +29,8 @@ O atributo `PATTERN_ELEMENT_CUSTOM_PROPERTIES` contém um fragmento XML escapado
 
 ---
 
+> **Dado versionado:** este documento é a fonte documental do arquivo `scripts/gx-ucw-gxcontroltype-catalog.json`, consumido por `scripts/Get-GeneXusObjectSummary.ps1` para resolver o `gxControlType` de cada `<ucw>` no bloco `webpanel`. Ao acrescentar um UC aqui, refletir a entrada no JSON (chave = `gxControlType`); `gxControlType` ausente do JSON é reportado como desconhecido (`unknownUcwControlTypes`), nunca omitido.
+
 ## Catálogo de gxControlType
 
 ### Button — `-2133704903`

@@ -9,6 +9,13 @@ mais de um objeto, use -ObjectName e opcionalmente -ObjectType. Para Panel, o
 resumo inclui sinais compactos de level/layout, controles, gridData, actions e
 eventos serializados em detail/@events, classificados em namedEventNames,
 standardEventNames, variableEventNames e tapEventNames, com actionEventCoverage.
+Para WebPanel classico, o resumo (bloco webpanel) inclui tables (tableType
+Flex/Responsive e depth por tabela), controls com gxControlType resolvido pelo
+catalogo gx-ucw-gxcontroltype-catalog.json, buttons nas duas formas (<action> e
+<ucw> Button desserializado de PATTERN_ELEMENT_CUSTOM_PROPERTIES), eventNames e
+um bloco coverage que declara o que foi lido e os limites conhecidos (controles
+fora do GxMultiForm nao sao cobertos; gxControlType ausente do catalogo e
+reportado em unknownUcwControlTypes, nunca omitido).
 
 .PARAMETER InputPath
 Caminho do XML ou XPZ.
@@ -40,6 +47,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $PanelObjectTypeGuid = 'd82625fd-5892-40b0-99c9-5c8559c197fc'
+$WebPanelObjectTypeGuid = 'c9584656-94b6-4ccd-890f-332d11fc2c25'
 
 function Read-TextFileFlexible {
     param([string]$Path)
@@ -323,6 +331,194 @@ function Get-PanelSummary {
     }
 }
 
+function Get-UcwControlTypeCatalog {
+    $catalogPath = Join-Path $PSScriptRoot 'gx-ucw-gxcontroltype-catalog.json'
+    $map = @{}
+    if (Test-Path -LiteralPath $catalogPath -PathType Leaf) {
+        $catalog = Get-Content -LiteralPath $catalogPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($prop in $catalog.controls.PSObject.Properties) {
+            $map[$prop.Name] = $prop.Value
+        }
+    }
+    return $map
+}
+
+function ConvertFrom-PatternElementProperties {
+    param([string]$PatternValue)
+
+    # PatternValue chega ja decodificado pelo parser XML do GxMultiForm (entidades resolvidas).
+    $props = [ordered]@{}
+    $failed = $false
+    if ((-not [string]::IsNullOrWhiteSpace($PatternValue)) -and ($PatternValue -match '<Properties\b')) {
+        $pdoc = New-Object System.Xml.XmlDocument
+        try {
+            $pdoc.LoadXml($PatternValue)
+            foreach ($propertyNode in @($pdoc.SelectNodes('//Property'))) {
+                $nameNode = $propertyNode.SelectSingleNode('Name')
+                if (($null -eq $nameNode) -or [string]::IsNullOrWhiteSpace($nameNode.InnerText)) { continue }
+                $valueNode = $propertyNode.SelectSingleNode('Value')
+                $value = ''
+                if ($null -ne $valueNode) { $value = $valueNode.InnerText }
+                $props[$nameNode.InnerText] = $value
+            }
+        } catch {
+            $failed = $true
+        }
+    }
+    return [pscustomobject]@{ Props = $props; Failed = $failed }
+}
+
+function Get-WebPanelLayoutDocs {
+    param([string[]]$Texts)
+
+    $docs = [System.Collections.Generic.List[System.Xml.XmlDocument]]::new()
+    $parseErrors = 0
+    foreach ($text in $Texts) {
+        if ($text -notmatch '<GxMultiForm\b') { continue }
+        $doc = New-Object System.Xml.XmlDocument
+        try {
+            $doc.LoadXml($text)
+            [void]$docs.Add($doc)
+        } catch {
+            $parseErrors++
+        }
+    }
+    return [pscustomobject]@{ Docs = @($docs); ParseErrors = $parseErrors }
+}
+
+function Get-WebPanelSummary {
+    param([System.Xml.XmlElement]$ObjectNode)
+
+    $texts = @(Get-CDataTexts -ObjectNode $ObjectNode)
+    $catalog = Get-UcwControlTypeCatalog
+    $layout = Get-WebPanelLayoutDocs -Texts $texts
+    $layoutDocs = @($layout.Docs)
+
+    $structuralSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($t in @('GxMultiForm', 'Form', 'detail', 'layout', 'table', 'row', 'cell')) { [void]$structuralSet.Add($t) }
+
+    $tables = [System.Collections.Generic.List[object]]::new()
+    $controls = [System.Collections.Generic.List[object]]::new()
+    $buttons = [System.Collections.Generic.List[object]]::new()
+    $unknownSet = [System.Collections.Generic.SortedSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $patternParseErrors = 0
+    $formCount = 0
+
+    foreach ($doc in $layoutDocs) {
+        $formCount += @($doc.SelectNodes('//Form')).Count
+
+        foreach ($tableNode in @($doc.SelectNodes('//table'))) {
+            $responsiveSizes = $tableNode.GetAttribute('responsiveSizes')
+            $responsiveNonEmpty = (-not [string]::IsNullOrWhiteSpace($responsiveSizes)) -and ($responsiveSizes -ne '[]')
+            [void]$tables.Add([ordered]@{
+                controlName = $tableNode.GetAttribute('controlName')
+                tableType = $tableNode.GetAttribute('tableType')
+                responsiveSizesNonEmpty = $responsiveNonEmpty
+                depth = @($tableNode.SelectNodes('ancestor::table')).Count
+            })
+        }
+
+        foreach ($node in @($doc.SelectNodes('//*'))) {
+            $tag = $node.LocalName
+            if ($structuralSet.Contains($tag)) { continue }
+
+            if ($tag -ieq 'ucw') {
+                $gxType = $node.GetAttribute('gxControlType')
+                $resolvedName = $null
+                $isButton = $false
+                if ((-not [string]::IsNullOrWhiteSpace($gxType)) -and $catalog.ContainsKey($gxType)) {
+                    $entry = $catalog[$gxType]
+                    $resolvedName = $entry.name
+                    $isButton = [bool]$entry.isButton
+                } elseif (-not [string]::IsNullOrWhiteSpace($gxType)) {
+                    [void]$unknownSet.Add($gxType)
+                }
+
+                $parsed = ConvertFrom-PatternElementProperties -PatternValue $node.GetAttribute('PATTERN_ELEMENT_CUSTOM_PROPERTIES')
+                if ($parsed.Failed) { $patternParseErrors++ }
+                $props = $parsed.Props
+                $ucwControlName = ''
+                if ($props.Contains('ControlName')) { $ucwControlName = $props['ControlName'] }
+
+                [void]$controls.Add([ordered]@{
+                    tag = $tag
+                    name = $ucwControlName
+                    gxControlType = $gxType
+                    resolvedType = $resolvedName
+                })
+
+                if ($isButton) {
+                    $event = ''
+                    if ($props.Contains('Event')) { $event = ([string]$props['Event']).Trim("'") }
+                    $caption = ''
+                    if ($props.Contains('CaptionExpression')) { $caption = $props['CaptionExpression'] }
+                    [void]$buttons.Add([ordered]@{
+                        form = 'ucw-button'
+                        controlName = $ucwControlName
+                        event = $event
+                        caption = $caption
+                    })
+                }
+                continue
+            }
+
+            $controlName = $node.GetAttribute('controlName')
+            $name = $controlName
+            if ([string]::IsNullOrWhiteSpace($name) -and ($tag -ieq 'data')) {
+                $name = $node.GetAttribute('attribute')
+            }
+            if ((-not [string]::IsNullOrWhiteSpace($name)) -or ($tag -ieq 'action')) {
+                [void]$controls.Add([ordered]@{
+                    tag = $tag
+                    name = $name
+                    gxControlType = $null
+                    resolvedType = $null
+                })
+            }
+
+            if ($tag -ieq 'action') {
+                [void]$buttons.Add([ordered]@{
+                    form = 'action'
+                    controlName = $controlName
+                    event = ([string]$node.GetAttribute('onClickEvent')).Trim("'")
+                    caption = $node.GetAttribute('caption')
+                })
+            }
+        }
+    }
+
+    $namedEvents = @(Get-UniqueRegexMatches -Texts $texts -Pattern "(?im)^\s*Event\s+'(?<name>[^']+)'" -GroupName 'name')
+    $standardEvents = @(Get-UniqueRegexMatches -Texts $texts -Pattern '(?im)^\s*Event\s+(?<name>Start|Refresh|Load|Enter|Back)\s*$' -GroupName 'name')
+    $variableEvents = @(Get-UniqueRegexMatches -Texts $texts -Pattern '(?im)^\s*Event\s+(?<name>&[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*(?:\(\))?)\s*$' -GroupName 'name')
+    $events = @($namedEvents + $standardEvents + $variableEvents | Sort-Object -Unique)
+    $buttonEvents = @(@($buttons) | ForEach-Object { $_['event'] } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+
+    return [ordered]@{
+        tableCount = $tables.Count
+        tables = @($tables)
+        controlCount = $controls.Count
+        controls = @($controls)
+        buttonCount = $buttons.Count
+        buttons = @($buttons)
+        eventNames = $events
+        namedEventNames = $namedEvents
+        standardEventNames = $standardEvents
+        variableEventNames = $variableEvents
+        buttonEventCoverage = [ordered]@{
+            buttonEventsWithoutHandler = @(Get-ListDifference -Left $buttonEvents -Right $events)
+        }
+        coverage = [ordered]@{
+            layoutDocsParsed = $layoutDocs.Count
+            layoutFormsParsed = $formCount
+            layoutParseErrors = $layout.ParseErrors
+            patternParseErrors = $patternParseErrors
+            unknownUcwControlTypes = @($unknownSet)
+            cdataTextCount = $texts.Count
+            notes = 'Enumeracao via parse estrutural do(s) GxMultiForm no Part de layout. Nao cobre controles fora do GxMultiForm (ex.: WebForm/HTML, Conditions em Part propria). Eventos derivados por regex sobre Source/Data; categorias seguem o resumo de Panel e podem nao cobrir todas as formas (ex.: eventos de grid NomeGrid.Load).'
+        }
+    }
+}
+
 function New-Summary {
     param(
         [System.Xml.XmlElement]$ObjectNode,
@@ -349,9 +545,12 @@ function New-Summary {
         partCount = $parts.Count
         partTypes = @($parts)
         panel = $null
+        webpanel = $null
     }
     if ($typeGuid.ToLowerInvariant() -eq $PanelObjectTypeGuid) {
         $summary.panel = Get-PanelSummary -ObjectNode $ObjectNode
+    } elseif ($typeGuid.ToLowerInvariant() -eq $WebPanelObjectTypeGuid) {
+        $summary.webpanel = Get-WebPanelSummary -ObjectNode $ObjectNode
     }
     return $summary
 }
