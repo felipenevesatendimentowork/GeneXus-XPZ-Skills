@@ -35,12 +35,14 @@ This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entr
   - **WorkWithForWeb pattern action:** `<action name="Insert"/>` inside `<actions>` — a Data Pattern structural action, not a free-layout button (see [01j-workwithweb-cdata-padroes.md](../../01j-workwithweb-cdata-padroes.md)).
   - **Property reference in event source:** `Button.Visible`/`.Icon`/`.Enabled` in the events `Source` — manipulates an **already-declared** control; neither a declaration nor an event.
 - **Counting anti-pitfall:** N occurrences of a button's name in `Source` is **not** N buttons. One button = one layout declaration + one Event handler; the rest are property references.
+- To **add** a button safely, prefer `scripts/Add-GeneXusButton.ps1` (`-AfterControlName`, `-Form action|ucw`, `-DryRun`): it inserts a new `<cell>` after a named leaf control's cell in a **Flex** table, emits the correct serialization (including the escaped `ucw` `PATTERN_ELEMENT_CUSTOM_PROPERTIES`) plus an `Event` stub, bumps `lastUpdate`, and validates well-formedness. It **aborts fail-closed** (`RESPONSIVE_UNSAFE`) on a Responsive table with populated `responsiveSizes` rather than risk the breakpoint array — there, generate the snippet and adjust `responsiveSizes` manually.
 
 ## Quality Checklist
 
 - [ ] For `WebPanel`, the primary edit block was declared before editing and any block transition was justified explicitly
 - [ ] When the primary edit block was `events`, `02` descarte mechanisms (a)/(b) were considered before editing source; when nested Tab + SDT data attributes apply, `04` observed pattern and `02` Tab/re-bind subsection were consulted
 - [ ] When editing or counting `WebPanel` buttons, the two forms (`<action>` vs `<ucw>` Button) were distinguished from `<actions>` pattern actions and from `.Visible`/`.Icon` property references; button count was not inferred from raw name occurrences
+- [ ] When adding a button, `scripts/Add-GeneXusButton.ps1` was used (or the equivalent surgical flow); insertion into a populated Responsive table was not forced past the `RESPONSIVE_UNSAFE` gate
 
 ## Related rules in main SKILL.md WORKFLOW
 
@@ -62,3 +64,4 @@ The following WebPanel-specific rules live inside WORKFLOW step 11 (Locate templ
 - [01j-workwithweb-cdata-padroes.md](../../01j-workwithweb-cdata-padroes.md) — WorkWithForWeb `<actions>` hierarchy (list/detail/grid), to distinguish pattern actions from layout buttons.
 - [scripts/Get-GeneXusObjectSummary.ps1](../../scripts/Get-GeneXusObjectSummary.ps1) — read-only WebPanel shape (`tables`/`tableType`, `controls`, `buttons`, `eventNames`, `coverage`) without dumping CDATA.
 - [scripts/gx-ucw-gxcontroltype-catalog.json](../../scripts/gx-ucw-gxcontroltype-catalog.json) — `gxControlType` -> control-type map consumed by the shape inspector (documented in `04b`).
+- [scripts/Add-GeneXusButton.ps1](../../scripts/Add-GeneXusButton.ps1) — surgical button insertion after a named leaf control in a Flex table; fail-closed (`RESPONSIVE_UNSAFE`) on populated Responsive.

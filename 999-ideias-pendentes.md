@@ -1625,7 +1625,9 @@ No FBgx18MCP, build longo vira job em background; o canal MCP devolve `job_id` r
 ## Catálogo semântico de operações em `xpz-builder` (alternativa a edição XML livre)
 
 **Importância:** média
-**Maturidade:** ideia
+**Maturidade:** ideia (primeira operação materializada)
+
+**Atualização (2026-06-08, Frente C):** a primeira operação do catálogo foi **materializada** — `scripts/Add-GeneXusButton.ps1` adiciona botão a `WebPanel` (forma `<action>`/`<ucw>`, inserção em tabela Flex após controle folha nomeado, stub de `Event`, bump de `lastUpdate`, fail-closed `RESPONSIVE_UNSAFE`); regressão em `scripts/Test-GeneXusAddButtonContract.ps1`. O restante do catálogo (outras operações e tipos) permanece ideia.
 
 **Origem:** alinhamento com upstream FBgx18MCP v2.0.0→v2.3.6, sessão 2026-05-17. Commits-âncora:
 
