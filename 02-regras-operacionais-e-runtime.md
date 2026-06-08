@@ -243,6 +243,7 @@ Regras de uso:
 - `Regra operacional`: objeto reenviado apenas por dependencia ou composicao de pacote deve preservar o `lastUpdate` oficial do XML da KB.
 - `Regra operacional`: empacotamento nao deve prosseguir enquanto o `lastUpdate` do arquivo final nao tiver sido conferido no proprio XML salvo.
 - `Regra operacional`: quando o empacotamento usar `scripts/Build-GeneXusImportFileEnvelope.ps1`, informar obrigatoriamente `-AcervoPath <ObjetosDaKbEmXml>`; o script sempre executa o gate de `lastUpdate`, e objetos modificados devem ser declarados por `-ModifiedObjectNames` ou `-ModifiedObjectGuids` para transformar a conferencia em bloqueio mecanico antes da gravacao do pacote.
+- `Regra operacional`: quando o empacotamento usar `scripts/New-XpzImportPackage.ps1` (montagem por frente), o gate de drift frente-vs-acervo (`scripts/Test-GeneXusFrontAcervoDrift.ps1`, 9-FD) e executado sempre antes do empacotamento (fail-closed): `-AcervoPath` e opcional e, quando omitido, o acervo canonico `<RepoRoot>/ObjetosDaKbEmXml` e resolvido automaticamente; sem acervo resolvivel o empacotamento e bloqueado, e o JSON reporta `acervoResolvedBy` (`explicit` ou `convention`). O gate compara contra o acervo (retrato do ultimo sync), nao contra a KB viva — quando houver suspeita de acervo defasado, ressincronizar antes de empacotar.
 
 ## Topologia operacional do workspace
 

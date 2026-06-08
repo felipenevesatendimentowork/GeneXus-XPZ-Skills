@@ -10,10 +10,13 @@
     confirmado pelo template comparavel e warnings quando o par nao e confirmado
     ou nao ha template comparavel.
 
-    Quando -AcervoPath e fornecido, executa o gate de drift frente-vs-acervo
-    (Test-GeneXusFrontAcervoDrift.ps1) ANTES de chamar o motor Python. Se o gate
-    retornar status fail ou alert, o empacotamento e abortado com erro. Findings
-    warn exigem confirmacao explicita ou resolucao antes de nova tentativa.
+    O gate de drift frente-vs-acervo (Test-GeneXusFrontAcervoDrift.ps1) e SEMPRE
+    executado ANTES de chamar o motor Python (fail-closed). -AcervoPath explicito
+    vence; quando omitido, o acervo canonico <RepoRoot>/ObjetosDaKbEmXml e usado.
+    Sem acervo resolvido, o empacotamento e bloqueado — o gate nunca e pulado por
+    omissao. Se o gate retornar status fail ou alert, o empacotamento e abortado.
+    O campo acervoResolvedBy no JSON indica como o acervo foi resolvido
+    (explicit ou convention).
 
 .PARAMETER RepoRoot
     Raiz da pasta paralela da KB.
@@ -33,12 +36,15 @@
     real exportado pela IDE da mesma KB; par confirmado e reportado em information.
 
 .PARAMETER AcervoPath
-    Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Quando fornecido,
-    executa o gate de drift frente-vs-acervo antes do empacotamento. Se o gate
-    detectar que um XML da frente esta mais antigo que o homonimo no acervo
-    (front-older-than-acervo), o empacotamento e abortado. Findings warn
-    (front-equals-acervo ou lastupdate-unparseable) tambem bloqueiam esta
-    chamada automatica ate confirmacao/resolucao fora do wrapper.
+    Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Opcional: quando
+    omitido, o acervo canonico <RepoRoot>/ObjetosDaKbEmXml e resolvido
+    automaticamente. O gate de drift frente-vs-acervo roda sempre antes do
+    empacotamento; sem acervo explicito nem canonico, o empacotamento e
+    bloqueado (fail-closed). Se o gate detectar que um XML da frente esta mais
+    antigo que o homonimo no acervo (front-older-than-acervo), o empacotamento e
+    abortado. Findings warn (front-equals-acervo ou lastupdate-unparseable)
+    tambem bloqueiam esta chamada automatica ate confirmacao/resolucao fora do
+    wrapper.
 
 #>
 
@@ -96,6 +102,99 @@ if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
     }) -ExitCode 20
 }
 
+# Resolucao do acervo (fail-closed): -AcervoPath explicito vence; senao, acervo
+# canonico <RepoRoot>/ObjetosDaKbEmXml. Sem acervo resolvido, o empacotamento e
+# bloqueado — o gate de drift de lastUpdate nunca e pulado por omissao.
+# Footgun nomeado: import com lastUpdate menor ou igual ao objeto vivo na KB
+# passa em silencio (exitCode 0, sem efeito) e desperdica um ciclo import+build.
+$acervoResolvedBy = $null
+$acervoEffective  = $null
+if (-not [string]::IsNullOrWhiteSpace($AcervoPath)) {
+    $acervoEffective  = (Resolve-Path -LiteralPath $AcervoPath -ErrorAction Stop).Path
+    $acervoResolvedBy = 'explicit'
+} else {
+    $conventionAcervo = Join-Path $RepoRoot 'ObjetosDaKbEmXml'
+    if (Test-Path -LiteralPath $conventionAcervo -PathType Container) {
+        $acervoEffective  = (Resolve-Path -LiteralPath $conventionAcervo).Path
+        $acervoResolvedBy = 'convention'
+    } else {
+        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+            status = 'bloqueado'
+            exitCode = 20
+            stage = 'front-acervo-drift'
+            repoRoot = $RepoRoot
+            frontName = $FrontName
+            acervoResolvedBy = $null
+            blockingReasons = @("Acervo nao informado e acervo canonico ausente em '$conventionAcervo'. O gate de drift de lastUpdate nao pode ser pulado por omissao: informe -AcervoPath apontando para ObjetosDaKbEmXml. Footgun: import com lastUpdate menor ou igual ao objeto vivo na KB passa em silencio (exitCode 0, sem efeito) e desperdica um ciclo import+build.")
+            warnings = @()
+        }) -ExitCode 20
+    }
+}
+
+# Gate de drift frente-vs-acervo (sempre executado, antes do motor Python)
+$frontDir = Join-Path $RepoRoot 'ObjetosGeradosParaImportacaoNaKbNoGenexus' $FrontName
+if (-not (Test-Path -LiteralPath $frontDir -PathType Container)) {
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        stage = 'front-acervo-drift'
+        repoRoot = $RepoRoot
+        frontName = $FrontName
+        acervoResolvedBy = $acervoResolvedBy
+        blockingReasons = @("Pasta da frente nao encontrada: $frontDir")
+        warnings = @()
+    }) -ExitCode 20
+}
+$driftGatePath = Join-Path $PSScriptRoot 'Test-GeneXusFrontAcervoDrift.ps1'
+if (-not (Test-Path -LiteralPath $driftGatePath -PathType Leaf)) {
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        stage = 'front-acervo-drift'
+        repoRoot = $RepoRoot
+        frontName = $FrontName
+        acervoResolvedBy = $acervoResolvedBy
+        blockingReasons = @("gate de drift nao encontrado: $driftGatePath")
+        warnings = @()
+    }) -ExitCode 20
+}
+$driftOutput = & $driftGatePath -FrontFolder $frontDir -AcervoFolder $acervoEffective -AsJson 2>&1
+$driftResult = $driftOutput | ConvertFrom-Json
+if ($driftResult.status -eq 'fail') {
+    $failFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'fail' })
+    $blockMsgs = @($failFindings | ForEach-Object { $_.message })
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        stage = 'front-acervo-drift'
+        repoRoot = $RepoRoot
+        frontName = $FrontName
+        acervoResolvedBy = $acervoResolvedBy
+        driftStatus = $driftResult.status
+        driftFindings = $driftResult.findings
+        driftObjectsScanned = $driftResult.objectsScanned
+        blockingReasons = @("gate de drift frente-vs-acervo falhou ($($blockMsgs.Count) finding(s) fatal(is)): $($blockMsgs -join '; ')")
+        warnings = @()
+    }) -ExitCode 20
+}
+if ($driftResult.status -eq 'alert') {
+    $warnFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'warn' })
+    $warnMsgs = @($warnFindings | ForEach-Object { $_.message })
+    Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
+        status = 'bloqueado'
+        exitCode = 20
+        stage = 'front-acervo-drift'
+        repoRoot = $RepoRoot
+        frontName = $FrontName
+        acervoResolvedBy = $acervoResolvedBy
+        driftStatus = $driftResult.status
+        driftFindings = $driftResult.findings
+        driftObjectsScanned = $driftResult.objectsScanned
+        blockingReasons = @("gate de drift frente-vs-acervo retornou alerta ($($warnMsgs.Count) finding(s) warn): confirmacao explicita ou resolucao manual requerida antes de empacotar. $($warnMsgs -join '; ')")
+        warnings = @($warnMsgs)
+    }) -ExitCode 20
+}
+
 $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
 if ($null -eq $pythonCommand) {
     Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
@@ -105,70 +204,6 @@ if ($null -eq $pythonCommand) {
         blockingReasons = @('python nao encontrado no PATH para executar New-XpzImportPackage.py')
         warnings = @()
     }) -ExitCode 20
-}
-
-# Gate de drift frente-vs-acervo (antes do empacotamento)
-$driftResult = $null
-if (-not [string]::IsNullOrWhiteSpace($AcervoPath)) {
-    $acervoResolved = (Resolve-Path -LiteralPath $AcervoPath -ErrorAction Stop).Path
-    $frontDir = Join-Path $RepoRoot 'ObjetosGeradosParaImportacaoNaKbNoGenexus' $FrontName
-    if (-not (Test-Path -LiteralPath $frontDir -PathType Container)) {
-        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
-            status = 'bloqueado'
-            exitCode = 20
-            stage = 'front-acervo-drift'
-            repoRoot = $RepoRoot
-            frontName = $FrontName
-            blockingReasons = @("Pasta da frente nao encontrada: $frontDir")
-            warnings = @()
-        }) -ExitCode 20
-    }
-    $driftGatePath = Join-Path $PSScriptRoot 'Test-GeneXusFrontAcervoDrift.ps1'
-    if (-not (Test-Path -LiteralPath $driftGatePath -PathType Leaf)) {
-        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
-            status = 'bloqueado'
-            exitCode = 20
-            stage = 'front-acervo-drift'
-            repoRoot = $RepoRoot
-            frontName = $FrontName
-            blockingReasons = @("gate de drift nao encontrado: $driftGatePath")
-            warnings = @()
-        }) -ExitCode 20
-    }
-    $driftOutput = & $driftGatePath -FrontFolder $frontDir -AcervoFolder $acervoResolved -AsJson 2>&1
-    $driftResult = $driftOutput | ConvertFrom-Json
-    if ($driftResult.status -eq 'fail') {
-        $failFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'fail' })
-        $blockMsgs = @($failFindings | ForEach-Object { $_.message })
-        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
-            status = 'bloqueado'
-            exitCode = 20
-            stage = 'front-acervo-drift'
-            repoRoot = $RepoRoot
-            frontName = $FrontName
-            driftStatus = $driftResult.status
-            driftFindings = $driftResult.findings
-            driftObjectsScanned = $driftResult.objectsScanned
-            blockingReasons = @("gate de drift frente-vs-acervo falhou ($($blockMsgs.Count) finding(s) fatal(is)): $($blockMsgs -join '; ')")
-            warnings = @()
-        }) -ExitCode 20
-    }
-    if ($driftResult.status -eq 'alert') {
-        $warnFindings = @($driftResult.findings | Where-Object { $_.severity -eq 'warn' })
-        $warnMsgs = @($warnFindings | ForEach-Object { $_.message })
-        Write-XpzPackageJsonAndExit -InputObject ([ordered]@{
-            status = 'bloqueado'
-            exitCode = 20
-            stage = 'front-acervo-drift'
-            repoRoot = $RepoRoot
-            frontName = $FrontName
-            driftStatus = $driftResult.status
-            driftFindings = $driftResult.findings
-            driftObjectsScanned = $driftResult.objectsScanned
-            blockingReasons = @("gate de drift frente-vs-acervo retornou alerta ($($warnMsgs.Count) finding(s) warn): confirmacao explicita ou resolucao manual requerida antes de empacotar. $($warnMsgs -join '; ')")
-            warnings = @($warnMsgs)
-        }) -ExitCode 20
-    }
 }
 
 $engineArgs = @(
@@ -221,6 +256,7 @@ if (-not [string]::IsNullOrWhiteSpace([string]$result.outputPath)) {
     $result | Add-Member -NotePropertyName inventoryError -NotePropertyValue $inventoryBlock.inventoryError -Force
 }
 
+$result | Add-Member -NotePropertyName acervoResolvedBy -NotePropertyValue $acervoResolvedBy -Force
 if ($null -ne $driftResult) {
     $result | Add-Member -NotePropertyName driftStatus -NotePropertyValue $driftResult.status -Force
     $result | Add-Member -NotePropertyName driftFindings -NotePropertyValue $driftResult.findings -Force
