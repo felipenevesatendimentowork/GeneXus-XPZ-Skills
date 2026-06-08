@@ -1686,3 +1686,30 @@ Em **qualquer** pasta paralela com objetos `SmartDevicesApplication` materializa
 ### Limiar para implementar
 
 Implementar quando houver acesso a uma KB com addon SDP materializada **ou** quando um usuário da base reportar `who-uses`/`impact-basic` enganoso para `SmartDevicesApplication`. Não reabrir fixture Evo1 no código de teste.
+
+## Estender `Compare-GeneXusPanelShape` a WebPanel (equivalência de shape em clone)
+
+**Importância:** baixa-média
+**Maturidade:** ideia
+
+**Origem:** decorrência da Frente A (inspetor de shape de WebPanel, sessão 2026-06-08). O relato externo pediu o inspetor, não a comparação; por decisão explícita do usuário, `Compare-GeneXusPanelShape.ps1` permanece Panel-only. Hoje, ao receber WebPanel, o script orienta o usuário ao bloco `webpanel` de `Get-GeneXusObjectSummary.ps1` em vez de comparar.
+
+### Problema concreto que motiva a ideia
+
+`Compare-GeneXusPanelShape.ps1` confronta dois Panels por shape compacto (level/layout, controles, cobertura action/event) para validar equivalência antes de concluir clonagem. Para WebPanel, `xpz-builder/responsibilities-by-type/webpanel.md` já manda validar equivalência em clone (ex.: `fieldSpecifier`), mas não há confronto de shape automatizado análogo. Um `Compare` ciente de WebPanel diffaria `tables`/`tableType`, `controls`, `buttons` e `eventNames` — sinais que o bloco `webpanel` já produz.
+
+### Design em aberto
+
+- **Forma:** estender `Compare-GeneXusPanelShape` para despachar por tipo (Panel vs WebPanel) ou criar `Compare-GeneXusObjectShape` genérico type-aware. O nome atual sugere Panel; um genérico envelheceria melhor.
+- **Sinais a confrontar no WebPanel:** `tables` (controlName+tableType+depth), `controls`, `buttons` (forma/event/caption), `eventNames`, `coverage` — reusando o bloco `webpanel` do summary, como o Compare de Panel já reusa o bloco `panel`.
+- **`Read-Summary`:** hoje força `ObjectType='Panel'`; um Compare type-aware precisaria resolver o tipo real de cada lado.
+
+### Limiar para implementar
+
+Implementar quando surgir necessidade recorrente concreta de confrontar dois WebPanels por shape (ex.: usuário da base validando clone de WebPanel contra template e pedindo confronto automatizado). Sem essa demanda, manter Panel-only com a orientação atual — não construir superfície especulativa.
+
+### Relacionado
+
+- `scripts/Compare-GeneXusPanelShape.ps1` (sede; hoje Panel-only com orientação para WebPanel)
+- `scripts/Get-GeneXusObjectSummary.ps1` (bloco `webpanel` — insumo pronto)
+- `xpz-builder/responsibilities-by-type/webpanel.md` (validação de clone)

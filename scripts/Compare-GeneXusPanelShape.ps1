@@ -127,7 +127,11 @@ function Convert-MapToPairs {
 $left = Read-Summary -Path $LeftPath -Name $LeftObjectName
 $right = Read-Summary -Path $RightPath -Name $RightObjectName
 if ($null -eq $left.panel -or $null -eq $right.panel) {
-    throw 'Ambos os objetos precisam ser Panel.'
+    $hint = ''
+    if (($null -ne $left.webpanel) -or ($null -ne $right.webpanel)) {
+        $hint = ' Para WebPanel classico, use scripts/Get-GeneXusObjectSummary.ps1 (bloco webpanel) para inspecionar o shape; Compare-GeneXusPanelShape cobre apenas Panel.'
+    }
+    throw ('Ambos os objetos precisam ser Panel.' + $hint)
 }
 
 $scalarComparisons = @(
