@@ -186,6 +186,9 @@ if ($null -eq $anchorNode) {
     exit $r.ExitCode
 }
 
+# ancestor-or-self::cell[1]: o [1] e obrigatorio. SelectSingleNode sem predicado
+# escolhe por document order e devolveria a celula mais EXTERNA (o container
+# aninhado), nao a folha; em eixo reverso, [1] = o ancestral mais proximo.
 $cellNode = $anchorNode.SelectSingleNode('ancestor-or-self::cell[1]')
 if ($null -eq $cellNode) {
     $r = New-ButtonError -Code 'ANCHOR_NOT_IN_CELL' -Message "ANCHOR_NOT_IN_CELL: controle '$AfterControlName' nao esta dentro de uma <cell>." -ExitCode 21
