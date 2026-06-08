@@ -964,6 +964,7 @@ Campos relevantes:
 - [ ] `ActiveEnvironment` no JSON foi comparado ao environment de validação resolvido antes de declarar validação deploy OK
 - [ ] Quando a frente exigiu objetivo B (opt-in): deploy validado (A) **e** Build na IDE nos environments secundários que a frente cobre — ou headless repetido documentado como exceção
 - [ ] Validação deploy pós-import usou `-PostImportDeployValidation` (ou `-StrictDeployBinCheck`) com `deployment_hosting_kind` e paths resolvidos por `kb_environment_web_dirs` no metadata; `deployBinFreshness`/`deployBinCheck`/`publicationFreshSinceBuild` foram lidos — **não** declarar deploy OK com `compilou-mas-dll-destino-desatualizada` ou exit **49**; warning de sentinela Core (`GxNetCoreStartup.dll` velho) não substitui gate
+- [ ] Build limpo rebaixado a `operação concluída, pendente de confirmação funcional` por motivo benigno (evento pós-build como sino de fim de build, ruído em stderr) **não** suprimiu `-PostImportDeployValidation`: o gate decide por sucesso operacional (`exitCode` 0 + marcador de conclusão do build), não pela string de status; só falha real (Categoria B, reorg, timeout, KB inacessível, que derrubam `exitCode`) pula o gate
 
 ---
 

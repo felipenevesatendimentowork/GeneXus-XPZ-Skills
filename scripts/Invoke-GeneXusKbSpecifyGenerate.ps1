@@ -1484,13 +1484,18 @@ try {
             $metadataPathDeploy = $script:DeploymentEnvironmentContext['kbSourceMetadataPath']
         }
 
+        # Decide o gate de deploy bin pelo fato (exit 0 + specify e generate concluidos), nao pela
+        # string de status. Rebaixamentos benignos (sino pos-build, ruido de stderr) mantem
+        # ExitCode 0 e nao devem suprimir a validacao pedida; Category B/reorg/timeout ja derrubam ExitCode.
+        $buildOperationallySucceeded = ($buildStatus.ExitCode -eq 0 -and $specifyDone -and $generateDone)
+
         $script:DeployBinClassification = Invoke-GeneXusKbDeployBinPostBuildClassification `
             -KbPath $resolvedKbPath `
             -ValidationEnvironmentName $validationEnvForDeployBin `
             -MetadataPath $metadataPathDeploy `
             -DeploymentHostingKind $null `
             -BuildStartedAt $buildStartedAtDeploy `
-            -BuildSuccessStatus $buildStatus.Status `
+            -BuildOperationallySucceeded $buildOperationallySucceeded `
             -PostImportDeployValidation:$PostImportDeployValidation `
             -SkipDeployBinCheck:$SkipDeployBinCheck `
             -StrictDeployBinCheck:$StrictDeployBinCheck `

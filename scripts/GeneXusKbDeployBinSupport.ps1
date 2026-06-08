@@ -17,31 +17,9 @@ Set-StrictMode -Version Latest
 
 $script:GeneXusKbDeployBinGateExitCode = 49
 $script:GeneXusKbDeployBinStaleStatus = 'compilou-mas-dll-destino-desatualizada'
-$script:GeneXusKbDeployBinSuccessStatuses = @(
-    'compilou limpo'
-    'specify e generate concluidos'
-)
 
 function Get-GeneXusKbDeployBinTimeSlack {
     return [TimeSpan]::FromSeconds(5)
-}
-
-function Test-GeneXusKbDeployBinBuildSuccessStatus {
-    param([string]$Status)
-
-    if ([string]::IsNullOrWhiteSpace($Status)) {
-        return $false
-    }
-
-    $normalized = $Status.Trim().Normalize([Text.NormalizationForm]::FormD) -replace '\p{Mn}', ''
-    foreach ($candidate in $script:GeneXusKbDeployBinSuccessStatuses) {
-        $candidateNorm = $candidate.Normalize([Text.NormalizationForm]::FormD) -replace '\p{Mn}', ''
-        if ($normalized -ieq $candidateNorm) {
-            return $true
-        }
-    }
-
-    return ($Status -ieq 'compilou limpo') -or ($Status -ieq 'specify e generate concluídos')
 }
 
 function Get-GeneXusKbDeployBinHostingKindFromMetadata {
@@ -65,7 +43,7 @@ function Resolve-GeneXusKbDeployBinCheckPolicy {
         [string]$MetadataPath,
         [string]$DeploymentHostingKind,
         [string]$ValidationEnvironmentName,
-        [string]$BuildSuccessStatus
+        [bool]$BuildOperationallySucceeded
     )
 
     $policy = [ordered]@{
@@ -81,8 +59,8 @@ function Resolve-GeneXusKbDeployBinCheckPolicy {
         return [pscustomobject]$policy
     }
 
-    if (-not (Test-GeneXusKbDeployBinBuildSuccessStatus -Status $BuildSuccessStatus)) {
-        $policy.skipReason = 'Build nao classificado como sucesso operacional para checagem de deploy bin.'
+    if (-not $BuildOperationallySucceeded) {
+        $policy.skipReason = 'Build nao concluiu com sucesso operacional (MSBuild exit != 0 ou marcador de conclusao ausente); checagem de deploy bin nao se aplica.'
         return [pscustomobject]$policy
     }
 
@@ -438,7 +416,7 @@ function Invoke-GeneXusKbDeployBinPostBuildClassification {
         [string]$MetadataPath,
         [string]$DeploymentHostingKind,
         [DateTimeOffset]$BuildStartedAt,
-        [string]$BuildSuccessStatus,
+        [bool]$BuildOperationallySucceeded,
         [switch]$PostImportDeployValidation,
         [switch]$SkipDeployBinCheck,
         [switch]$StrictDeployBinCheck,
@@ -452,7 +430,7 @@ function Invoke-GeneXusKbDeployBinPostBuildClassification {
         -MetadataPath $MetadataPath `
         -DeploymentHostingKind $DeploymentHostingKind `
         -ValidationEnvironmentName $ValidationEnvironmentName `
-        -BuildSuccessStatus $BuildSuccessStatus
+        -BuildOperationallySucceeded $BuildOperationallySucceeded
 
     $output = [ordered]@{
         deployBinFreshness = 'skipped'
