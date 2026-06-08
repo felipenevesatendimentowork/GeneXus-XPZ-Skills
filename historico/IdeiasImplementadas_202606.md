@@ -283,4 +283,41 @@ Optou-se por fail-closed com auto-resolucao canonica em vez de manter o gate con
 - Commit: `5aa96cb` (`Atualiza o inventario 09 com o contrato fail-closed e o motor Set-`)
 - Commit: `e77c67e` (`Alinha README trilingue e molde da kb-parallel-setup ao contrato fail-closed do gate de drift`)
 - Commit: `94fc0cf` (`Completa a propagacao do contrato fail-closed do gate de drift em 02, 08 e kb-parallel-setup`)
+
+## Suporte a WebPanel classico: inspetor de shape, regra de botao e Add-GeneXusButton
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-08
+
+### Origem
+
+Prompt de agente externo de pasta paralela de KB (relato de adicionar botoes e remover marcadores de teste no source de eventos de um `WebPanel`). O agente travava em engenharia reversa do `CDATA`, distincao Flex vs Responsive e edicao whitespace-fragil. Campanha de quatro frentes (A, B, C, D) avaliada sob a regua de priorizar a comunidade usuaria das skills no longo prazo, nao o pedido literal.
+
+### Problema concreto
+
+- O `Get-GeneXusObjectSummary.ps1` so calculava shape para `Panel` (SD), devolvendo `panel=null` para `WebPanel` classico — sem inspetor, o agente lia o `CDATA` na mao.
+- A estrutura de botao em `WebPanel` nao estava documentada como regra: duas serializacoes (`<action>` e `<ucw>` Button), confundiveis com `<actions>` de pattern WorkWith e com referencias `.Visible`/`.Icon` em codigo.
+- Nao havia helper para inserir botao com a serializacao correta (em especial o `ucw` escapado) tratando Flex vs Responsive.
+- A skill `xpz-msbuild-import-export` nao demarcava que edicao de source pertence ao `xpz-builder`.
+
+### Implementacao
+
+- Frente A — `scripts/Get-GeneXusObjectSummary.ps1` ganhou o bloco `webpanel` (parse estrutural do `GxMultiForm`): `tables` com `tableType` Flex/Responsive e `depth`, `controls`, `buttons` nas duas formas, `eventNames` e `coverage` honesto (`unknownUcwControlTypes`). Catalogo versionado `scripts/gx-ucw-gxcontroltype-catalog.json` (doc em `04b-ucw-gxcontroltype-reference.md`). Teste `scripts/Test-GeneXusWebPanelShapeContract.ps1`.
+- Frente B — regra interpretativa de botao em `xpz-builder/responsibilities-by-type/webpanel.md` (declaracao unica + On Click Event; desambiguacao layout/`<actions>`/`.Visible`), com cross-ref no `04b`. Sem molde redundante: os moldes do `04` ja cobrem ambas as formas.
+- Frente C — `scripts/Add-GeneXusButton.ps1`: insere `<cell>` com botao (forma action/ucw) apos controle folha em tabela Flex, com stub de Event e bump de `lastUpdate`, reusando `GeneXusXmlSurgicalEditSupport.ps1`; gate fail-closed `RESPONSIVE_UNSAFE`. Teste `scripts/Test-GeneXusAddButtonContract.ps1`.
+- Frente D — fronteira de escopo em `xpz-msbuild-import-export/SKILL.md`, com descarte da alternativa em `998-ideias-descartadas-e-porque.md`.
+- Decisao derivada — `Compare-GeneXusPanelShape.ps1` orienta ao bloco `webpanel` (permanece Panel-only); extensao a WebPanel registrada em `999-ideias-pendentes.md`.
+
+### Decisao final
+
+A distincao `<action>` vs `<ucw>` Button e de serializacao, nao de modelagem (confirmado por evidencia da KB FabricaBrasil, Wiki GeneXus e skill Nexa) — conceitualmente e o mesmo Button. O inspetor declara a propria cobertura para nunca induzir falso negativo; o helper falha de forma segura (`RESPONSIVE_UNSAFE`) no caso Responsive arriscado em vez de reescrever o array de breakpoints.
+
+### Rastreabilidade
+
+- Commit: `83a50b4` (`Demarca fronteira de edicao de source na import-export e registra descarte no 998`)
+- Commit: `8260923` (`Adiciona inspetor de shape de WebPanel classico ao Get-GeneXusObjectSummary`)
+- Commit: `5cb5b30` (`Cita o bloco webpanel do inspetor no guia do agente (08)`)
+- Commit: `5b6add3` (`Orienta WebPanel no Compare-GeneXusPanelShape e registra extensao no 999`)
+- Commit: `9ca850d` (`Documenta a regra interpretativa de botao em WebPanel (Frente B)`)
+- Commit: `8b26fcb` (`Adiciona Add-GeneXusButton: insercao cirurgica de botao em WebPanel (Frente C)`)
 - O commit de fechamento desta frente (paridade de enumeracao no gate de parametros, entrada de `CHANGELOG.md` e este registro) e majoritariamente meta-documental e permanece visivel via `git blame` no arquivo mensal, conforme `historico/AGENTS.md`
