@@ -13,9 +13,11 @@ le
 Este wrapper e recomendado quando a pasta paralela adota empacotamento local
 recorrente e precisa de comando curto, auditavel e aderente a allowlist.
 
-Quando -AcervoPath e fornecido, o gate de drift frente-vs-acervo
-(Test-GeneXusFrontAcervoDrift.ps1) executa antes do empacotamento para detectar
-XMLs na frente com lastUpdate mais antigo que o homonimo no acervo.
+O gate de drift frente-vs-acervo (Test-GeneXusFrontAcervoDrift.ps1) executa
+sempre antes do empacotamento (fail-closed). -AcervoPath e opcional; quando
+omitido, o acervo canonico <RepoRoot>/ObjetosDaKbEmXml e resolvido
+automaticamente. Sem acervo resolvivel, o empacotamento e bloqueado. O gate
+detecta XMLs na frente com lastUpdate mais antigo que o homonimo no acervo.
 
 .PARAMETER FrontName
 Nome da subpasta da frente no formato `NomeCurto_GUID_YYYYMMDD`.
@@ -31,10 +33,12 @@ Attributes. Quando omitido, o motor usa envelope minimo derivado de
 kb-source-metadata.md.
 
 .PARAMETER AcervoPath
-Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Quando fornecido,
-executa o gate de drift frente-vs-acervo antes do empacotamento. Se o gate
-detectar que um XML da frente esta mais antigo que o homonimo no acervo,
-o empacotamento e abortado.
+Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Opcional: quando
+omitido, o acervo canonico <RepoRoot>/ObjetosDaKbEmXml e resolvido
+automaticamente. O gate de drift frente-vs-acervo executa sempre antes do
+empacotamento (fail-closed); sem acervo resolvivel, o empacotamento e bloqueado.
+Se o gate detectar que um XML da frente esta mais antigo que o homonimo no
+acervo, o empacotamento e abortado.
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
