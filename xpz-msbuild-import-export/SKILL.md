@@ -70,6 +70,7 @@ Do NOT use esta skill para:
 - KB de produção ou homologação compartilhada sem janela clara para experimento
 - inferir silenciosamente `KbPath`, versão, `Environment` ou parâmetros sensíveis
 - afirmar sucesso funcional apenas porque a chamada via `MSBuild` terminou sem erro
+- editar ou ajustar o `Source`, `Rules` ou `CDATA` de um objeto de KB — isso pertence ao `xpz-builder`
 
 ---
 

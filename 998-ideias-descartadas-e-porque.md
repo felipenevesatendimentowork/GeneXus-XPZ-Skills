@@ -1478,3 +1478,21 @@ Cada passo tornou o sinal mais completo e mais forçado, mas o revisor único co
 Forçar exaustividade num único modelo desloca a falha de *omitir* para *confrontar-e-racionalizar* — mais difícil de detectar porque parece diligência. A camada mecânica fez o que podia (sinal completo, ledger forçado, fail-safe que recomenda diversidade), mas não há como mecanicamente obrigar um único LLM a um veredito correto: ele produz justificativas plausíveis. **A diversidade de modelo é o backstop real** — só um modelo distinto pegou os gaps. Por isso a salvaguarda de diversidade do `13` foi promovida de reserva para recomendada-acima-de-limiar, e a engenharia mecânica foi encerrada por decisão nesta frente.
 
 **Não reavaliar salvo** evidência de uma técnica mecânica que comprovadamente eleve a *correção do veredito* (não apenas a exaustividade do processo) de um revisor de modelo único. A direção produtiva é operacionalizar a diversidade de modelo, não refinar mais o gate.
+
+---
+
+## Surfaçar `Edit-GeneXusXmlSurgical` na skill `xpz-msbuild-import-export`
+
+**Origem:** prompt de agente externo de pasta paralela de KB (relato de adicionar botões e remover marcadores de teste no source de eventos de um `WebPanel`), avaliado na sessão 2026-06-08. O pedido original era surfaçar `scripts/Edit-GeneXusXmlSurgical.ps1` como caminho canônico de edição cirúrgica de source "nas skills `xpz-builder` **e** `xpz-msbuild-import-export`".
+
+**O que é:** documentar/referenciar o helper de edição cirúrgica de source dentro da skill `xpz-msbuild-import-export`, para o agente não cair em edição ad-hoc por número de linha ao precisar ajustar o `Source` de um objeto.
+
+**Por que foi descartada (apenas a parte do `xpz-msbuild-import-export`):**
+
+Editar `Source`, `Rules` ou `CDATA` de um objeto de KB pertence ao escopo do `xpz-builder` — a skill que cria e edita o XML do objeto antes do empacotamento. Lá o helper já está surfaçado como caminho padrão, com a explicação de por que não usar a ferramenta Edit do harness em XML longo. A `xpz-msbuild-import-export` orquestra import/export de pacotes XPZ via `MSBuild`; não edita source de objeto — quando ela entra em cena, o pacote já foi montado pelo `xpz-builder`. Surfaçar o helper ali significaria a skill se meter no escopo de outra.
+
+Há ainda colisão terminológica: a `xpz-msbuild-import-export` já usa "cirúrgico" para designar export seletivo nominal (`-ObjectList`, "pacote cirúrgico"). Introduzir o "helper de edição cirúrgica de source" na mesma skill faria a palavra significar duas coisas distintas, com risco concreto de confusão para o público-alvo (usuários GeneXus que dependem do bom comportamento do agente).
+
+**O que foi feito em vez disso (Opção 2a da avaliação):** acrescentou-se uma única linha de fronteira no bloco `Do NOT use esta skill para` do `xpz-msbuild-import-export`, demarcando que editar/ajustar o `Source`, `Rules` ou `CDATA` de um objeto pertence ao `xpz-builder` — sem documentar o "como" e sem usar a palavra "cirúrgico". A `xpz-builder` permanece a sede única do `Edit-GeneXusXmlSurgical`.
+
+**Não reavaliar salvo** evidência de um fluxo real em que a edição de source precise ocorrer dentro da própria orquestração de import/export — o que hoje não é o caso, já que o pacote chega ao import-export já montado pelo `xpz-builder`.
