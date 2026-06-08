@@ -23,10 +23,24 @@ This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entr
 
 - For `WebPanel` that includes UCW (`<ucw gxControlType="...">`) in the `GxMultiForm` layout: load [04b-ucw-gxcontroltype-reference.md](../../04b-ucw-gxcontroltype-reference.md) before generating or editing the UCW block; never invent `gxControlType` values — use only documented values from that reference.
 
+### Buttons: declaration, the two forms, and the "action" disambiguation
+
+- A button is declared **once** in the layout, in one of two serialized forms — both are the same GeneXus **Button** control (GeneXus Wiki: *"every button must be associated with an event"*), differing only in serialization:
+  - `<action controlName="X" onClickEvent="'Y'" caption="Z">` — native action form.
+  - `<ucw gxControlType="-2133704903" PATTERN_ELEMENT_CUSTOM_PROPERTIES="…ControlName…Event…CaptionExpression…">` — Button **user control** form (name/event live inside the escaped properties).
+  - Observed corpus pattern: the `ucw` Button form appears in **menu/navigation** panels; `<action>` appears in forms, Work With, and prompts. This is an observed pattern, **not** a product rule — the choice is a serialization detail, not a modeling distinction.
+- Every button's On Click Event is a **named** user event (`Event 'Name'`) or a **standard** one (`Enter`/`Back`).
+- Do **not** confuse the three things that share the word "action" / a button's name in the XML:
+  - **Layout button:** `<action controlName= onClickEvent=>` (or `<ucw>` Button) inside `<layout>`.
+  - **WorkWithForWeb pattern action:** `<action name="Insert"/>` inside `<actions>` — a Data Pattern structural action, not a free-layout button (see [01j-workwithweb-cdata-padroes.md](../../01j-workwithweb-cdata-padroes.md)).
+  - **Property reference in event source:** `Button.Visible`/`.Icon`/`.Enabled` in the events `Source` — manipulates an **already-declared** control; neither a declaration nor an event.
+- **Counting anti-pitfall:** N occurrences of a button's name in `Source` is **not** N buttons. One button = one layout declaration + one Event handler; the rest are property references.
+
 ## Quality Checklist
 
 - [ ] For `WebPanel`, the primary edit block was declared before editing and any block transition was justified explicitly
 - [ ] When the primary edit block was `events`, `02` descarte mechanisms (a)/(b) were considered before editing source; when nested Tab + SDT data attributes apply, `04` observed pattern and `02` Tab/re-bind subsection were consulted
+- [ ] When editing or counting `WebPanel` buttons, the two forms (`<action>` vs `<ucw>` Button) were distinguished from `<actions>` pattern actions and from `.Visible`/`.Icon` property references; button count was not inferred from raw name occurrences
 
 ## Related rules in main SKILL.md WORKFLOW
 
@@ -45,5 +59,6 @@ The following WebPanel-specific rules live inside WORKFLOW step 11 (Locate templ
 - [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md) — generator event discard (a)/(b); Tab/SDT re-bind when editing `events` or diagnosing empty inner tabs.
 - [04-webpanel-familias-e-templates.md](../../04-webpanel-familias-e-templates.md) — documented WebPanel families and observed runtime/layout patterns (used in WORKFLOW step 11 for template location).
 - [04b-ucw-gxcontroltype-reference.md](../../04b-ucw-gxcontroltype-reference.md) — UCW catalog (mandatory load when WebPanel contains UCW).
+- [01j-workwithweb-cdata-padroes.md](../../01j-workwithweb-cdata-padroes.md) — WorkWithForWeb `<actions>` hierarchy (list/detail/grid), to distinguish pattern actions from layout buttons.
 - [scripts/Get-GeneXusObjectSummary.ps1](../../scripts/Get-GeneXusObjectSummary.ps1) — read-only WebPanel shape (`tables`/`tableType`, `controls`, `buttons`, `eventNames`, `coverage`) without dumping CDATA.
 - [scripts/gx-ucw-gxcontroltype-catalog.json](../../scripts/gx-ucw-gxcontroltype-catalog.json) — `gxControlType` -> control-type map consumed by the shape inspector (documented in `04b`).

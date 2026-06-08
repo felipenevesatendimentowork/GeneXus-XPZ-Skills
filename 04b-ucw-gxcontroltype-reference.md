@@ -37,6 +37,7 @@ O atributo `PATTERN_ELEMENT_CUSTOM_PROPERTIES` contém um fragmento XML escapado
 
 - Nível de confiança: **Evidência direta** (WP0004.xml desta base, FabricaBrasil)
 - Uso: botão clicável que dispara um evento GeneXus nomeado
+- Forma alternativa: o Button também aparece como `<action controlName= onClickEvent=>` no layout (mesma semântica, serialização diferente). Para a regra de declaração única e a desambiguação entre botão de layout, `<actions>` de pattern (ver `01j`) e referências `.Visible`/`.Icon` em código, ver [xpz-builder/responsibilities-by-type/webpanel.md](xpz-builder/responsibilities-by-type/webpanel.md).
 
 Propriedades em `PATTERN_ELEMENT_CUSTOM_PROPERTIES`:
 
