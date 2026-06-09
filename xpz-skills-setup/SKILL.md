@@ -413,15 +413,23 @@ detecta o `server.py` defasado comparando o hash instalado com o canônico do re
 9. **Auditoria dos instrucionais globais** (obrigatória quando os passos anteriores
    foram executados nesta mesma sessão como auditoria/setup completo — não adiar nem
    delegar a uma "próxima mensagem"):
-   - Para cada ferramenta **instalada**, determinar **onde está o texto efetivo**
-     (ver tabela em `## AGENTS.MD RECOMENDADO` e o parágrafo sobre centralização);
-     ler com a ferramenta de leitura disponível no agente, ou comando seguro
-     equivalente; no Codex, por exemplo, usar `Get-Content` ou `rg` com caminho
-     explícito. Seguir referências explícitas quando
-     o conteúdo estiver centralizado (ex.: `CLAUDE.md` que remete a `AGENTS.md`)
-   - Comparar com o bloco recomendado nesta skill (seção `## AGENTS.MD RECOMENDADO`):
-     pelo menos os dois tópicos — ferramentas de busca/shell e cherry-pick em
-     worktrees — devem estar cobertos **no texto efetivo** ou declarar gap explícito
+   - Executar o **motor de instrucionais globais** `scripts/Test-XpzGlobalInstructions.ps1`
+     (`-AsJson` para agentes). Ele resolve, para cada ferramenta instalada, **onde está
+     o texto efetivo** (segue centralização e referências `@<caminho>`, `instructions[]`
+     do OpenCode e o `agentsPath` do MCP do Cursor) e sinaliza a cobertura dos tópicos
+     mínimos contra o contrato `scripts/xpz-global-instructions-topics.psd1`. O motor é
+     **somente leitura**.
+   - Interpretar o resultado de forma **conservadora**: por tópico, `presente` =
+     coberto no texto efetivo; `nao_detectado` = **o agente deve revisar manualmente**
+     (NÃO significa ausente — pode ser a mesma regra escrita de outra forma que as
+     âncoras não capturaram). `sourceFound = false` indica que a fonte efetiva não foi
+     encontrada para aquela ferramenta. `overall` = `GLOBAL_INSTRUCTIONS_OK` ou
+     `GLOBAL_INSTRUCTIONS_REVIEW`.
+   - Para cada `nao_detectado` ou `sourceFound = false`, **ler o texto efetivo** e
+     confirmar manualmente antes de tratar como lacuna (o sinal do motor não substitui
+     a leitura; ver tabela em `## AGENTS.MD RECOMENDADO` e o parágrafo sobre
+     centralização). Só então comparar com o bloco recomendado (os dois tópicos —
+     ferramentas de busca/shell e cherry-pick em worktrees) e declarar gap explícito
    - Incluir no relatório uma seção **Instrucionais globais**: por ferramenta,
      caminho auditado, **OK** ou lista do que falta; se o arquivo nominal não
      existir mas houver centralização válida documentada, declarar qual caminho
