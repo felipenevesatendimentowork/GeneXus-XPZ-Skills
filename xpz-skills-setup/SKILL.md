@@ -42,7 +42,11 @@ de um novo usuário.
   cair automaticamente para **junction** e informar ao usuário o que foi usado e por quê
 - Nunca copiar arquivos como alternativa a symlink/junction — cópia gera
   desatualização silenciosa após `git pull`
-- Não instalar as ferramentas — apenas gerenciar o registro das skills dentro delas
+- Não instalar as ferramentas de agente (Codex, Claude Code, Cursor, OpenCode) —
+  apenas gerenciar o registro das skills dentro delas. **Exceção:** o `git` é
+  pré-requisito de versionamento (não é ferramenta de agente) e **pode ser
+  instalado** por esta skill quando ausente, pois sem ele a pasta baixada como
+  ZIP não se liga ao repositório oficial — ver `## BOOTSTRAP DO REPOSITÓRIO`
 - Não registrar skills de outros repositórios (ex: `nexa`)
 - Não alterar configurações gerais das ferramentas fora do âmbito desta skill;
   **exceção explícita:** instrucionais globais cobertos pelo passo 9 do `WORKFLOW`
@@ -162,6 +166,47 @@ Presença isolada de subdiretório de cache não conta como instalação. Em
 particular, `%APPDATA%/opencode/EBWebView/` é apenas cache do Edge WebView do
 desktop app — não é evidência de OpenCode CLI configurado.
 
+O `git` é tratado à parte — é pré-requisito de versionamento, não ferramenta de
+agente. Sua presença é verificada (`Get-Command git` ou caminhos padrão de
+instalação) e, se ausente, a instalação é oferecida no bootstrap — ver
+`## BOOTSTRAP DO REPOSITÓRIO`.
+
+## BOOTSTRAP DO REPOSITÓRIO
+
+O usuário GeneXus tipicamente **baixa o repositório como ZIP** no GitHub,
+descompacta no PC e abre uma sessão pedindo o setup. Nesse caso a pasta tem todo
+o conteúdo, mas **não é um repositório Git** ligado ao oficial.
+
+**Cenário A — pasta com conteúdo, sem `.git`** (coberto por esta skill): a skill
+já existe na pasta, então o setup pode ligá-la ao oficial. O passo 0 do
+`## WORKFLOW` executa `scripts/Initialize-XpzSkillsRepoGit.ps1` (`-AsJson` para
+agentes), que de forma determinística:
+
+1. Garante o `git`: se ausente, instala via `winget` (`Git.Git`); se o `winget`
+   faltar, **bloqueia** orientando download manual (`https://git-scm.com/download/win`);
+   se instalar mas o PATH desta sessão não atualizar, devolve
+   `GIT_INSTALLED_REOPEN_SHELL` (reabrir a sessão e repetir)
+2. `git init` + `remote add origin` (oficial) + `fetch` + `reset --mixed
+   origin/main` — liga a história oficial **sem sobrescrever** os arquivos vindos
+   do ZIP
+3. **Gate anti-destrutivo:** se o working tree divergir do oficial
+   (`GIT_LINKED_WITH_DRIFT`), reporta as divergências e **para**; o alinhamento
+   destrutivo (`reset --hard`, via `-AlignToOfficial`) só roda após confirmação
+   explícita do usuário. ZIP recém-baixado normalmente resulta em
+   `GIT_LINKED_CLEAN`
+
+Repositório oficial:
+`https://github.com/GxBrasilNOficial/GeneXus-XPZ-Skills.git` (público, para a
+comunidade GeneXus). O script aceita `-OfficialRemoteUrl` para outro remoto.
+
+**Cenário B — pasta vazia** (NÃO coberto por esta skill): se a pasta está vazia,
+esta skill nem existe nela para ser executada. O `git clone` é **pré-requisito**
+— orientar o usuário a clonar antes de pedir o setup:
+
+```
+git clone https://github.com/GxBrasilNOficial/GeneXus-XPZ-Skills.git
+```
+
 ## PATH RESOLUTION
 
 - Este `SKILL.md` fica dentro de uma subpasta de skill sob a raiz do repositório.
@@ -175,6 +220,9 @@ desktop app — não é evidência de OpenCode CLI configurado.
 ## TRIGGERS
 
 Use esta skill para:
+- Ligar ao repositório oficial uma pasta recém-baixada como ZIP do GitHub —
+  inicializar o Git e, se necessário, instalar o Git (ver
+  `## BOOTSTRAP DO REPOSITÓRIO`)
 - Verificar se todas as skills XPZ estão registradas globalmente após `git pull`,
   em qualquer ferramenta instalada (Codex, Claude Code, Cursor, OpenCode)
 - Configurar o ambiente de um novo usuário que clonou o repositório de skills XPZ
@@ -314,6 +362,20 @@ fonte efetiva do usuário mudar.
 
 ## WORKFLOW
 
+0. **Garantir que a raiz é um repositório Git ligado ao `origin` oficial** (ver
+   `## BOOTSTRAP DO REPOSITÓRIO`): executar `scripts/Initialize-XpzSkillsRepoGit.ps1`
+   (`-AsJson` para agentes) e interpretar o `label`:
+   - `GIT_ALREADY_LINKED`, `GIT_LINKED_CLEAN`, `ORIGIN_ADDED` → ligado; seguir
+     para o passo 1
+   - `GIT_LINKED_WITH_DRIFT` → ligado, mas o conteúdo do ZIP diverge do oficial;
+     **relatar as divergências e não sobrescrever** — só alinhar com
+     `-AlignToOfficial` após confirmação explícita do usuário
+   - `GIT_INSTALLED_REOPEN_SHELL` → Git instalado agora; pedir para reabrir a
+     sessão e repetir o passo 0
+   - `REMOTE_MISMATCH`, `GIT_MISSING_NO_INSTALLER`, `GIT_INSTALL_FAILED` →
+     bloquear e orientar conforme as mensagens do script
+   - Quando o usuário pedir explicitamente só o registro de skills, e a raiz já
+     for um repositório Git, este passo é um no-op rápido (`GIT_ALREADY_LINKED`)
 1. Localizar a raiz do repositório de skills XPZ (pasta-pai deste `SKILL.md`)
 2. Inventariar todas as subpastas com `SKILL.md` — esse é o conjunto gerenciável
 3. Para cada ferramenta (Codex, Claude Code, Cursor, OpenCode):
