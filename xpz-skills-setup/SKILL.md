@@ -374,8 +374,10 @@ detecta o `server.py` defasado comparando o hash instalado com o canônico do re
      `-AlignToOfficial` após confirmação explícita do usuário
    - `GIT_INSTALLED_REOPEN_SHELL` → Git instalado agora; pedir para reabrir a
      sessão e repetir o passo 0
-   - `REMOTE_MISMATCH`, `GIT_MISSING_NO_INSTALLER`, `GIT_INSTALL_FAILED` →
-     bloquear e orientar conforme as mensagens do script
+   - `REMOTE_MISMATCH`, `GIT_MISSING_NO_INSTALLER` (Git ausente e `winget`
+     indisponível), `GIT_MISSING_NO_INSTALL` (Git ausente e instalação desabilitada
+     via `-InstallGitIfMissing:$false`), `GIT_INSTALL_FAILED` → bloquear e orientar
+     conforme as mensagens do script
    - Quando o usuário pedir explicitamente só o registro de skills, e a raiz já
      for um repositório Git, este passo é um no-op rápido (`GIT_ALREADY_LINKED`)
 1. Localizar a raiz do repositório de skills XPZ (pasta-pai deste `SKILL.md`)
@@ -390,7 +392,10 @@ detecta o `server.py` defasado comparando o hash instalado com o canônico do re
    fonte das regras que o motor implementa.
 3. Ler o resultado do motor:
    - `overall` → `REGISTRATION_OK` (registro íntegro) ou `REGISTRATION_GAPS`
-     (há ausências, quebradas, órfãs e/ou freshness do MCP do Cursor a tratar)
+     (há ausências, quebradas, órfãs e/ou o MCP do Cursor defasado/inválido —
+     `MCP_SERVER_STALE`/`MCP_CONFIG_INVALID`). `MCP_NOT_INSTALLED` **não** marca
+     `REGISTRATION_GAPS` (pode ser intencional), mas é tratado no passo 9 como
+     gatilho de oferta de instalação do MCP
    - `tools[].skills[]` traz o status por skill; `orphans[]` os vínculos que
      apontam para o repo sem skill correspondente; `cursorMcp.label` o estado do
      MCP global do Cursor (tratado no passo 9)
