@@ -150,9 +150,9 @@ Do NOT use esta skill para:
 ## SCRIPTS (em `scripts/`, na raiz do repositório)
 
 Backend opencode:
-- `Invoke-OpenCode.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-Raw] [-TimeoutSec <s>]` — síncrono (prompt → texto). Bloqueia até a resposta.
+- `Invoke-OpenCode.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-Raw] [-AllText] [-TimeoutSec <s>]` — síncrono (prompt → texto). Bloqueia até a resposta. `-AllText` devolve toda a narração (preâmbulos + resposta) em vez de só a resposta final.
 - `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão.
-- `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>]` — monitor incremental; grava `<GUID>.result.json` ao fim.
+- `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`).
 
 Latência por provedor: modelos externos OAuth (`openai/*`) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e `opencode-go/*` costumam responder mais rápido.
 
