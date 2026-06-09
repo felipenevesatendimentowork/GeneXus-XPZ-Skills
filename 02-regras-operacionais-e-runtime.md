@@ -205,6 +205,7 @@ Regras de uso:
 - `Regra operacional`: falha em balanceamento estrutural basico do `Source` bloqueia empacotamento.
 - `Regra operacional`: alerta consultivo isolado nao bloqueia automaticamente, mas deve ser registrado como risco e resolvido quando o trecho ainda estiver sustentado apenas por plausibilidade.
 - `Regra operacional`: cheque automatizado leve de `Source`, quando existir no repositório, deve ser tratado como apoio de triagem e nao como prova completa de importabilidade.
+- `Regra operacional`: o cheque automatizado leve de `Source` no repositorio e `scripts/Test-GeneXusSourceSanity.ps1` (base do wrapper local `Test-*KbSourceSanity.ps1`); recebe `-InputPath` (alias `-Path`) e emite JSON por padrao no stdout, sem `-AsJson` — passar `-AsJson` a esse motor e erro de binding em runtime, sintaticamente valido e portanto invisivel ao parse.
 
 ### Gate de variaveis tocadas por delta de `Source`
 
