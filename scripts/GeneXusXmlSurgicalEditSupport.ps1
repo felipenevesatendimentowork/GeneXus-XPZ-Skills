@@ -97,7 +97,7 @@ function Invoke-GeneXusXmlLiteralPatch {
         [string]$Replacement,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet('Replace', 'InsertAfter')]
+        [ValidateSet('Replace', 'InsertAfter', 'InsertBefore')]
         [string]$EditMode
     )
 
@@ -108,6 +108,10 @@ function Invoke-GeneXusXmlLiteralPatch {
 
     if ($EditMode -eq 'Replace') {
         return $Text.Substring(0, $index) + $Replacement + $Text.Substring($index + $Anchor.Length)
+    }
+
+    if ($EditMode -eq 'InsertBefore') {
+        return $Text.Substring(0, $index) + $Replacement + $Text.Substring($index)
     }
 
     $insertAt = $index + $Anchor.Length
@@ -188,6 +192,11 @@ function Invoke-GeneXusXmlSurgicalEditCore {
         [Parameter(Mandatory = $true)]
         [string]$Replacement,
 
+        # Subconjunto intencional: este core (consumido pelo wrapper geral
+        # Edit-GeneXusXmlSurgical.ps1) so expoe Replace/InsertAfter, pois nao ha
+        # caso de uso para InsertBefore por aqui. O primitivo
+        # Invoke-GeneXusXmlLiteralPatch aceita tambem InsertBefore, consumido
+        # diretamente pelo Add-GeneXusButton.ps1 (ancora -BeforeControlName).
         [Parameter(Mandatory = $true)]
         [ValidateSet('Replace', 'InsertAfter')]
         [string]$EditMode,

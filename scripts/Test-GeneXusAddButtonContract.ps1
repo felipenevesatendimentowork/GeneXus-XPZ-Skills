@@ -9,8 +9,9 @@
     - RespTable Responsive com responsiveSizes preenchido contendo TBResp;
     - Part de eventos (c44bd5ff) com 'Event Start'.
     Valida: insercao action e ucw em Flex (escrita real, bem-formado, Event stub,
-    bump de lastUpdate); gate RESPONSIVE_UNSAFE; ancora inexistente; e que -DryRun
-    nao altera o arquivo.
+    bump de lastUpdate); insercao -BeforeControlName (nova celula antes da ancora);
+    exclusividade mutua das ancoras; gate RESPONSIVE_UNSAFE; ancora inexistente; e
+    que -DryRun nao altera o arquivo.
 #>
 
 [CmdletBinding()]
@@ -128,6 +129,34 @@ try {
     Assert-That ($afterDry -eq $fixtureXml) 'DryRun: arquivo nao foi alterado'
 } finally {
     if (Test-Path -LiteralPath $f5 -PathType Leaf) { Remove-Item -LiteralPath $f5 -Force }
+}
+
+# --- 6) BeforeControlName: nova celula inserida ANTES da celula da ancora --------
+$f6 = New-FixtureFile
+try {
+    $r = Invoke-AddButton -ArgList @('-InputPath', $f6, '-BeforeControlName', 'TBAnchor', '-ButtonControlName', 'BtnBefore', '-EventName', 'EvBefore', '-Caption', 'Antes', '-Form', 'action', '-AsJson')
+    Assert-That ($r.ExitCode -eq 0) "before/Flex: exit 0 (obtido: $($r.ExitCode))"
+    Assert-That (($null -ne $r.Json) -and ($r.Json.Code -eq 'BUTTON_ADDED') -and ($r.Json.Position -eq 'Before') -and ($r.Json.AnchorControlName -eq 'TBAnchor')) 'before/Flex: BUTTON_ADDED, Position Before, AnchorControlName TBAnchor'
+    $written = [System.IO.File]::ReadAllText($f6)
+    $idxBtn = $written.IndexOf('controlName="BtnBefore"', [System.StringComparison]::Ordinal)
+    $idxAnchor = $written.IndexOf('controlName="TBAnchor"', [System.StringComparison]::Ordinal)
+    Assert-That (($idxBtn -ge 0) -and ($idxAnchor -ge 0) -and ($idxBtn -lt $idxAnchor)) 'before/Flex: celula do botao precede a celula da ancora no layout'
+    $wf = $false
+    try { (New-Object System.Xml.XmlDocument).LoadXml($written); $wf = $true } catch { $wf = $false }
+    Assert-That $wf 'before/Flex: XML resultante bem-formado'
+} finally {
+    if (Test-Path -LiteralPath $f6 -PathType Leaf) { Remove-Item -LiteralPath $f6 -Force }
+}
+
+# --- 7) ancoras mutuamente exclusivas (parameter sets) ---------------------------
+$f7 = New-FixtureFile
+try {
+    $r = Invoke-AddButton -ArgList @('-InputPath', $f7, '-AfterControlName', 'TBAnchor', '-BeforeControlName', 'TBAnchor', '-ButtonControlName', 'BtnX', '-EventName', 'EvX', '-Caption', 'X', '-AsJson')
+    Assert-That ($r.ExitCode -ne 0) "ancoras simultaneas: exit nao-zero (obtido: $($r.ExitCode))"
+    $unchanged = [System.IO.File]::ReadAllText($f7)
+    Assert-That ($unchanged -eq $fixtureXml) 'ancoras simultaneas: arquivo nao foi alterado'
+} finally {
+    if (Test-Path -LiteralPath $f7 -PathType Leaf) { Remove-Item -LiteralPath $f7 -Force }
 }
 
 if ($script:failures -gt 0) {

@@ -64,4 +64,4 @@ The following WebPanel-specific rules live inside WORKFLOW step 11 (Locate templ
 - [01j-workwithweb-cdata-padroes.md](../../01j-workwithweb-cdata-padroes.md) — WorkWithForWeb `<actions>` hierarchy (list/detail/grid), to distinguish pattern actions from layout buttons.
 - [scripts/Get-GeneXusObjectSummary.ps1](../../scripts/Get-GeneXusObjectSummary.ps1) — read-only WebPanel shape (`tables`/`tableType`, `controls`, `buttons`, `eventNames`, `coverage`) without dumping CDATA.
 - [scripts/gx-ucw-gxcontroltype-catalog.json](../../scripts/gx-ucw-gxcontroltype-catalog.json) — `gxControlType` -> control-type map consumed by the shape inspector (documented in `04b`).
-- [scripts/Add-GeneXusButton.ps1](../../scripts/Add-GeneXusButton.ps1) — surgical button insertion after a named leaf control in a Flex table; fail-closed (`RESPONSIVE_UNSAFE`) on populated Responsive.
+- [scripts/Add-GeneXusButton.ps1](../../scripts/Add-GeneXusButton.ps1) — surgical button insertion before or after a named leaf control in a Flex table (`-BeforeControlName`/`-AfterControlName`, mutually exclusive); fail-closed (`RESPONSIVE_UNSAFE`) on populated Responsive.

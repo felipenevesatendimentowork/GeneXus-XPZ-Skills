@@ -5,21 +5,28 @@
 
 .DESCRIPTION
     Insere uma nova <cell> com um botao (forma <action> ou <ucw> Button) logo apos
-    a celula de um controle nomeado (-AfterControlName), e opcionalmente um stub de
-    Event de usuario no Part de eventos. Reusa GeneXusXmlSurgicalEditSupport.ps1 para
-    o patch literal, o bump de lastUpdate e a validacao de bem-formado; NAO re-serializa
-    o CDATA do layout.
+    a celula de um controle nomeado (-AfterControlName) ou logo antes dela
+    (-BeforeControlName), e opcionalmente um stub de Event de usuario no Part de
+    eventos. Reusa GeneXusXmlSurgicalEditSupport.ps1 para o patch literal, o bump de
+    lastUpdate e a validacao de bem-formado; NAO re-serializa o CDATA do layout.
 
-    Escopo seguro (MVP): -AfterControlName deve apontar para um controle folha em uma
-    celula simples de tabela Flex (ou Responsive com responsiveSizes vazio). Tabela
-    Responsive com responsiveSizes preenchido aborta fail-closed (RESPONSIVE_UNSAFE),
-    pois inserir celula exigiria reescrever o array de breakpoints.
+    Escopo seguro (MVP): a ancora (-AfterControlName ou -BeforeControlName) deve
+    apontar para um controle folha em uma celula simples de tabela Flex (ou
+    Responsive com responsiveSizes vazio). Tabela Responsive com responsiveSizes
+    preenchido aborta fail-closed (RESPONSIVE_UNSAFE), pois inserir celula exigiria
+    reescrever o array de breakpoints. As duas ancoras sao mutuamente exclusivas
+    (parameter sets); informe exatamente uma.
 
 .PARAMETER InputPath
     Caminho do XML do WebPanel (Object XML).
 
 .PARAMETER AfterControlName
-    Nome do controle folha existente apos cuja celula o novo botao sera inserido.
+    Nome do controle folha existente apos cuja celula o novo botao sera inserido
+    (parameter set 'After'). Mutuamente exclusivo com -BeforeControlName.
+
+.PARAMETER BeforeControlName
+    Nome do controle folha existente antes de cuja celula o novo botao sera inserido
+    (parameter set 'Before'). Mutuamente exclusivo com -AfterControlName.
 
 .PARAMETER ButtonControlName
     ControlName do botao novo.
@@ -41,7 +48,7 @@
     Quando $true (default), insere 'Event <Name> ... EndEvent' no Part de eventos.
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'After')]
 param(
     [Parameter(Mandatory = $true)]
     [Alias('Path')]
@@ -49,8 +56,11 @@ param(
 
     [string]$OutputPath,
 
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $true, ParameterSetName = 'After')]
     [string]$AfterControlName,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'Before')]
+    [string]$BeforeControlName,
 
     [Parameter(Mandatory = $true)]
     [string]$ButtonControlName,
@@ -172,16 +182,28 @@ try {
     exit $r.ExitCode
 }
 
+# resolve a ancora pelo parameter set: 'Before' usa -BeforeControlName e insere a
+# nova celula ANTES da celula da ancora; 'After' (default) insere DEPOIS. Toda a
+# validacao de seguranca (folha, Responsive, unicidade) e identica nos dois casos.
+$position = $PSCmdlet.ParameterSetName
+if ($position -eq 'Before') {
+    $anchorControlName = $BeforeControlName
+    $insertMode = 'InsertBefore'
+} else {
+    $anchorControlName = $AfterControlName
+    $insertMode = 'InsertAfter'
+}
+
 # localizar controle ancora: por atributo controlName ou por ControlName de ucw Button
-$anchorNode = $formDoc.SelectSingleNode("//*[@controlName='$AfterControlName']")
+$anchorNode = $formDoc.SelectSingleNode("//*[@controlName='$anchorControlName']")
 if ($null -eq $anchorNode) {
     foreach ($u in @($formDoc.SelectNodes('//ucw'))) {
         $cn = Get-UcwControlNameFromPattern -PatternValue $u.GetAttribute('PATTERN_ELEMENT_CUSTOM_PROPERTIES')
-        if ($cn -eq $AfterControlName) { $anchorNode = $u; break }
+        if ($cn -eq $anchorControlName) { $anchorNode = $u; break }
     }
 }
 if ($null -eq $anchorNode) {
-    $r = New-ButtonError -Code 'ANCHOR_CONTROL_NOT_FOUND' -Message "ANCHOR_CONTROL_NOT_FOUND: controle '$AfterControlName' nao encontrado no layout." -ExitCode 20
+    $r = New-ButtonError -Code 'ANCHOR_CONTROL_NOT_FOUND' -Message "ANCHOR_CONTROL_NOT_FOUND: controle '$anchorControlName' nao encontrado no layout." -ExitCode 20
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
@@ -191,20 +213,20 @@ if ($null -eq $anchorNode) {
 # aninhado), nao a folha; em eixo reverso, [1] = o ancestral mais proximo.
 $cellNode = $anchorNode.SelectSingleNode('ancestor-or-self::cell[1]')
 if ($null -eq $cellNode) {
-    $r = New-ButtonError -Code 'ANCHOR_NOT_IN_CELL' -Message "ANCHOR_NOT_IN_CELL: controle '$AfterControlName' nao esta dentro de uma <cell>." -ExitCode 21
+    $r = New-ButtonError -Code 'ANCHOR_NOT_IN_CELL' -Message "ANCHOR_NOT_IN_CELL: controle '$anchorControlName' nao esta dentro de uma <cell>." -ExitCode 21
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
 # celula folha: sem <table> ou <cell> aninhada
 if (@($cellNode.SelectNodes('.//table | .//cell')).Count -gt 0) {
-    $r = New-ButtonError -Code 'NOT_LEAF_CELL' -Message "NOT_LEAF_CELL: a celula de '$AfterControlName' contem tabela/celula aninhada; insercao automatica nao suportada (use o snippet manual)." -ExitCode 21
+    $r = New-ButtonError -Code 'NOT_LEAF_CELL' -Message "NOT_LEAF_CELL: a celula de '$anchorControlName' contem tabela/celula aninhada; insercao automatica nao suportada (use o snippet manual)." -ExitCode 21
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
 
 $tableNode = $cellNode.SelectSingleNode('ancestor::table[1]')
 if ($null -eq $tableNode) {
-    $r = New-ButtonError -Code 'TABLE_NOT_FOUND' -Message "TABLE_NOT_FOUND: nenhuma <table> ancestral da celula de '$AfterControlName'." -ExitCode 23
+    $r = New-ButtonError -Code 'TABLE_NOT_FOUND' -Message "TABLE_NOT_FOUND: nenhuma <table> ancestral da celula de '$anchorControlName'." -ExitCode 23
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
@@ -240,20 +262,20 @@ if ($Form -eq 'ucw') {
 
 # --- Deriva a ancora literal da celula do controle ancora -----------------------
 if ($null -ne $anchorNode.SelectSingleNode('@controlName')) {
-    $marker = 'controlName="{0}"' -f $AfterControlName
+    $marker = 'controlName="{0}"' -f $anchorControlName
 } else {
-    $marker = '&lt;Name&gt;ControlName&lt;/Name&gt;&lt;Value&gt;{0}&lt;/Value&gt;' -f $AfterControlName
+    $marker = '&lt;Name&gt;ControlName&lt;/Name&gt;&lt;Value&gt;{0}&lt;/Value&gt;' -f $anchorControlName
 }
 $idxMarker = $sourceText.IndexOf($marker, [System.StringComparison]::Ordinal)
 if ($idxMarker -lt 0) {
-    $r = New-ButtonError -Code 'ANCHOR_TEXT_NOT_FOUND' -Message "ANCHOR_TEXT_NOT_FOUND: marcador literal do controle '$AfterControlName' nao localizado no texto." -ExitCode 20
+    $r = New-ButtonError -Code 'ANCHOR_TEXT_NOT_FOUND' -Message "ANCHOR_TEXT_NOT_FOUND: marcador literal do controle '$anchorControlName' nao localizado no texto." -ExitCode 20
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
 $cellOpen = $sourceText.LastIndexOf('<cell', $idxMarker, [System.StringComparison]::Ordinal)
 $cellCloseStart = $sourceText.IndexOf('</cell>', $idxMarker, [System.StringComparison]::Ordinal)
 if (($cellOpen -lt 0) -or ($cellCloseStart -lt 0)) {
-    $r = New-ButtonError -Code 'ANCHOR_TEXT_NOT_FOUND' -Message "ANCHOR_TEXT_NOT_FOUND: nao foi possivel delimitar a celula literal de '$AfterControlName'." -ExitCode 20
+    $r = New-ButtonError -Code 'ANCHOR_TEXT_NOT_FOUND' -Message "ANCHOR_TEXT_NOT_FOUND: nao foi possivel delimitar a celula literal de '$anchorControlName'." -ExitCode 20
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
@@ -262,13 +284,13 @@ $anchorLayout = $sourceText.Substring($cellOpen, $cellCloseEnd - $cellOpen)
 
 $layoutAnchorCount = Get-AnchorOccurrenceCount -Text $sourceText -Anchor $anchorLayout
 if ($layoutAnchorCount -ne 1) {
-    $r = New-ButtonError -Code 'ANCHOR_NOT_UNIQUE' -Message "ANCHOR_NOT_UNIQUE: a celula literal de '$AfterControlName' ocorre $layoutAnchorCount vezes (esperado 1)." -ExitCode 25
+    $r = New-ButtonError -Code 'ANCHOR_NOT_UNIQUE' -Message "ANCHOR_NOT_UNIQUE: a celula literal de '$anchorControlName' ocorre $layoutAnchorCount vezes (esperado 1)." -ExitCode 25
     Write-ButtonResult -Result $r -Json $AsJson.IsPresent
     exit $r.ExitCode
 }
 
-# --- Aplica patch de layout (InsertAfter a celula ancora) -----------------------
-$patchedText = Invoke-GeneXusXmlLiteralPatch -Text $sourceText -Anchor $anchorLayout -Replacement $cellSnippet -EditMode 'InsertAfter'
+# --- Aplica patch de layout (InsertBefore/InsertAfter a celula ancora) ----------
+$patchedText = Invoke-GeneXusXmlLiteralPatch -Text $sourceText -Anchor $anchorLayout -Replacement $cellSnippet -EditMode $insertMode
 
 # --- Stub de Event no Part de eventos -------------------------------------------
 $eventStubApplied = $false
@@ -379,7 +401,10 @@ $result = [pscustomobject]@{
     ButtonControlName   = $ButtonControlName
     EventName           = $EventName
     EventStubApplied    = $eventStubApplied
+    Position            = $position
+    AnchorControlName   = $anchorControlName
     AfterControlName    = $AfterControlName
+    BeforeControlName   = $BeforeControlName
     TableControlName    = $tableNode.GetAttribute('controlName')
     TableType           = $tableType
     InputPath           = $resolvedInput
