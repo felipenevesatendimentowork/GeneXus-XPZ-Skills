@@ -1715,3 +1715,110 @@ Implementar quando surgir necessidade recorrente concreta de confrontar dois Web
 - `scripts/Compare-GeneXusPanelShape.ps1` (sede; hoje Panel-only com orientação para WebPanel)
 - `scripts/Get-GeneXusObjectSummary.ps1` (bloco `webpanel` — insumo pronto)
 - `xpz-builder/responsibilities-by-type/webpanel.md` (validação de clone)
+
+## Catálogo e rastreabilidade de classes CSS no índice KbIntelligence (camada 1: catálogo; camada 2: uso)
+
+**Importância:** média
+**Maturidade:** pronta para implementar
+
+**Origem:** sessão de 2026-06-08/09, a partir de prompt de outro agente que apontou lacuna de texto livre no índice (classe CSS, captions, SQL/HTML em CDATA) e propôs uma camada full-text geral (SQLite FTS5). Na discussão com o usuário, a proposta foi **afunilada** de "full-text geral" para o que tem valor real e barato: **catalogar as classes CSS e rastrear onde são usadas**. Caso concreto e dados empíricos coletados em `C:\Dev\Prod\Gx_FabricaBrasil\ObjetosDaKbEmXml` na mesma sessão.
+
+### Problema concreto que motiva a ideia
+
+Duas falhas distintas, ambas do tipo **falso "não existe"** (o erro que esta base mais teme):
+
+1. **Inventário incompleto.** As classes do modelo **antigo** de tema viram objeto (`ThemeClass`, 501 na FabricaBrasil) e estão na tabela `objects`. Mas as classes do modelo **moderno** (DesignSystem) são definidas como **texto SCSS dentro do objeto DesignSystem** — não viram objeto nenhum. Um agente que pesquisa `objects`/`search-objects` por `AttributeAvisos` recebe "não existe", quando ela existe (definida no `DesignSystem\dsFabricaBrasil.xml`) e é usada em 14 WebPanels. Quem olha o inventário não tem como saber que vê só metade.
+
+2. **Uso invisível.** Mesmo sabendo que a classe existe, "onde ela é usada" hoje só sai por ripgrep no acervo. E há uma armadilha: o uso **não** está só no layout (`class="..."`); também é atribuído **por código em eventos** (`Controle.Class = ...`). Uma detecção que olhe só o layout deixa centenas de usos invisíveis.
+
+### Dados empíricos coletados (FabricaBrasil, 2026-06-08; reproduzíveis)
+
+Acervo: `C:\Dev\Prod\Gx_FabricaBrasil\ObjetosDaKbEmXml`. `rg` = `C:\Users\ANTONIOJOSE\.local\bin\rg.exe`.
+
+Contagem de objetos por tipo (definição):
+
+```powershell
+$base="C:\Dev\Prod\Gx_FabricaBrasil\ObjetosDaKbEmXml"
+foreach($d in "ThemeClass","Theme","DesignSystem","ColorPalette","ThemeColor","Panel","WebPanel","Transaction"){
+  $n=(Get-ChildItem -Path (Join-Path $base $d) -Recurse -File -Filter *.xml -ErrorAction SilentlyContinue|Measure-Object).Count
+  "{0,-14} {1}" -f $d,$n }
+```
+
+Resultado: `ThemeClass 501`, `ThemeColor 24`, `Theme 7`, `DesignSystem 2`, `ColorPalette 1`, `WebPanel 1200`, `Transaction 184`, `Panel 7`.
+
+Classes definidas como texto SCSS dentro de um único DesignSystem (invisíveis ao inventário):
+
+```
+rg -c "^\s*\.[A-Za-z][A-Za-z0-9_-]*\s*\{" "<base>\DesignSystem\dsFabricaBrasil.xml"   # => 67 (em 1168 linhas; há 2 objetos DesignSystem na KB)
+```
+
+`AttributeAvisos`: definida em `dsFabricaBrasil.xml` linha ~1056 (`.AttributeAvisos { @include Attribute; ... }`); usada em 14 WebPanels (busca textual `(?i)AttributeAvisos` casa 15 arquivos, sendo 1 o próprio DesignSystem da definição).
+
+Uso por tipo (estático no layout vs por código em evento):
+
+```powershell
+$base="<base>\WebPanel"; $files=Get-ChildItem -Path $base -Recurse -File -Filter *.xml
+$static=$files|Select-String -Pattern 'class\s*=\s*"' -AllMatches
+$code  =$files|Select-String -Pattern '\.Class\s*=' -AllMatches
+# WebPanel estatico: arquivos=416  ocorrencias=6229
+# WebPanel codigo:   arquivos=51   ocorrencias=542
+# (Transaction estatico: 2/4 ; Panel estatico: 6/6)
+```
+
+### Desenho proposto
+
+- **Camada 1 — catálogo (tabela nova dedicada, ex. `css_class`).** Toda classe passa a existir no inventário, venha do modelo antigo (`ThemeClass`) ou de texto SCSS dentro de `DesignSystem`/`Theme`. Colunas mínimas: nome da classe, objeto onde é definida, modelo (legacy-theme / design-system). **Não** colocar em `objects`: classe CSS do DesignSystem não é objeto GeneXus real (sem GUID/arquivo próprio), e sujaria contagens e a unicidade `(type,name)`. Decisão do usuário: tabela própria, confirmada.
+- **Camada 2 — uso (tabela nova `css_class_usage` OU reaproveitar `evidence`).** A tabela `evidence` já tem `snippet`/`source_file`/`line` — serve de base. Uma linha por uso **resolvível**: nome da classe, objeto que usa, origem (`layout` vs `event`), trecho de contexto. **Localizador = objeto + snippet, não número de linha**: no layout tudo vem espremido numa linha só (ex.: `wpPesagemAbate.xml`, todo o form na linha 4), então `line` é inútil ali.
+
+### Matriz de formas de uso a cobrir (camada 2)
+
+| forma | exemplo real (FabricaBrasil) | nome extraível? |
+|---|---|---|
+| layout estático | `... readonly="True" class="AttributeAvisos" />` | sim |
+| prefixo `StyleClass:` em código | `GAM_FiltersWW.Class = styleclass:filters-container` | sim |
+| prefixo `ThemeClass:` em código | `TBPrev.Class = ThemeClass:SelectedPagingText` | sim |
+| literal entre aspas em código | `eCodigo.Class = "Hidden"` / `TableGrid.Class = 'Card-Basico'` | sim |
+| literal com várias classes | `&Mensagem.Class = 'AttributeQuebraLinha AttributeAvisos'` | sim (separar por espaço) |
+| calculado | `... = Format(!'%1 %2', styleclass:...)` | parcial |
+| variável | `... = &umaVariavel` | **não** (só em runtime) |
+| código comentado | `// TextblockAviso.Class = '...'` | **ignorar/marcar** (não é uso real) |
+
+### Limite honesto de cobertura (obrigatório declarar)
+
+A camada 2 deve emitir, por objeto/consulta, algo como: "N usos resolvíveis (layout + código); M atribuições dinâmicas (variável/`Format()`) não resolvíveis por nome". Sem essa declaração, a tabela recai no falso "ninguém usa". Tratar comentário (`//`) para não contar uso inexistente.
+
+### Salvaguarda metodológica (mesma postura do `who-uses`)
+
+A tabela é **acelerador de triagem com frescor garantido por gate**, não verdade final exaustiva — exatamente o contrato que o índice já adota ("artefato derivado, não substitui o XML oficial"). Argumento de segurança a favor da tabela: ela **eleva o piso** de correção, porque embute o conhecimento das 4 formas de uso que o agente médio esqueceria (um ripgrep ingênuo de `class="X"` perde os 542 usos por código). Mas para operação **destrutiva** (renomear/remover classe), a regra é: tabela para triagem rápida + **conferência por busca literal no XML** antes de agir.
+
+### Consequência de contrato e paridade (planejar antes de executar)
+
+- Mexer no `Build-KbIntelligenceIndex.py` muda a assinatura (`EXTRACTOR_SIGNATURE_VERSION` hoje `"5"` + hash SHA-256 do arquivo, via `GeneXusKbIntelligenceExtractorContract.ps1`). Isso faz o gate `Test-*KbIndexGate.ps1` **bloquear** até rebuild do índice em **todas** as pastas paralelas que adotam KbIntelligence. O usuário já considerou esse rebuild aceitável (colegas não atualizam as skills diariamente).
+- Bump de `schema_version` (hoje `"2"`) se houver tabela nova.
+- Paridade de documentação obrigatória: `xpz-index-triage/SKILL.md`, `scripts/README-kb-intelligence.md`, `README.md` trilíngue, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, e expor consulta nova no `Query-KbIntelligenceIndex.py` + wrappers locais/`.example.ps1`.
+
+### Requisitos de execução
+
+- Frente grande, multi-arquivo e que quebra contrato — executar em **sessão dedicada com janela limpa**, não no rabo de uma sessão exploratória. (Esta anotação substitui a fidelidade do contexto vivo: reproduzir os dados acima com os comandos embutidos.)
+- Exige **modelo forte** com aderência a etapas (a base desaconselha modelos fracos para skills XPZ). Executor previsto: Claude Code com Opus 4.8.
+- Encerrar pela rotina de **revisão pré-push** (`13-revisao-pre-push.md`): passo mecânico + busca semântica integral + paridade motor↔doc.
+
+### Decisões em aberto (residuais, fechar no início da execução)
+
+- Camada 2 em tabela própria (`css_class_usage`) ou linhas em `evidence` com `evidence_role` dedicado? (preferência inicial: avaliar reuso de `evidence`, já tem snippet/source_file).
+- Nome(s) e granularidade exata das colunas das tabelas.
+- Nome do(s) comando(s) de consulta no wrapper (ex.: `css-classes`, `css-class-usage`) e se enriquece saída existente ou cria capacidade nova.
+- Catálogo (camada 1) unifica `ThemeClass` + classes de DesignSystem numa só tabela, ou só cataloga as que faltam (DesignSystem), deixando `ThemeClass` onde já está? (preferência: catálogo unificado, para o agente ter uma fonte só de "quais classes existem").
+- Camada 3 (texto livre geral: captions/SQL/HTML) fica **fora** desta frente; reabrir só com caso concreto próprio.
+
+### Limiar para implementar
+
+Caso concreto já existe (FabricaBrasil, com inventário comprovadamente incompleto e 6.229+542 usos). Decisões de design fechadas salvo os residuais acima. Implementar quando houver sessão dedicada com modelo forte. Não fatiar em micro-PRs que deixem o índice meio-migrado entre rebuilds.
+
+### Relacionado
+
+- `scripts/Build-KbIntelligenceIndex.py` (motor; schema e regras de extração)
+- `scripts/GeneXusKbIntelligenceExtractorContract.ps1` (assinatura; bump inevitável)
+- `scripts/Query-KbIntelligenceIndex.py` (consultas; nova capacidade)
+- `scripts/README-kb-intelligence.md`, `xpz-index-triage/SKILL.md` (paridade de doc)
+- Não confundir com a frente "LlamaIndex / LangChain + vector store" (descoberta semântica por intenção) nem com "Expansão do índice SQLite para fingerprint de call site" (endereçamento de relações estruturais já conhecidas): esta é uma **terceira** capacidade — catálogo + lookup de classe CSS por nome literal.
