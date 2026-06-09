@@ -452,7 +452,7 @@ e confirmação explícita** por frase exata.
 **Categorias de resultado:**
 
 - `falha operacional com rejeicao MSBuild no log` — Categoria B: `executionEvidence.msBuildExitCode=0` mas `buildErrors` populado; `exitCode=48`, `msBuildCategoryBBlocked=true`, `operationalSubState` tipicamente `build com errors do MSBuild — resultado não confiável`; reproduzir linhas `error :` ao usuário; **não** declarar `compilou limpo`
-- `compilou limpo` — `BuildAll` concluiu com exitCode 0 (classificado pelo wrapper, **sem** Categoria B), sem reorg detectada, stderr vazio após filtro de ruído estrutural conhecido e stdout sem padrões de erro após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo)
+- `compilou limpo` — `BuildAll` concluiu com exitCode 0 (classificado pelo wrapper, **sem** Categoria B), sem reorg detectada, stderr vazio após filtro de ruído estrutural conhecido e stdout sem padrões de erro após filtro de ruído estrutural conhecido em stdout (ver padrões abaixo); eventos pós-build registrados em `kb_environment_post_build_event_hashes` (ou benignos por som, sem registro) são informativos e **não** impedem `compilou limpo` — ver `stdoutSignals.postBuildEventClassification`
 - `compilou-mas-dll-destino-desatualizada` — MSBuild concluiu com exit 0, mas o `web\bin` resolvido por `kb_environment_web_dirs` para o environment de deploy (`deployment_environment_name` + `deployment_hosting_kind` no metadata) não mostra publicação fresca (DLL de objeto ou `*.config` em `bin`); ver `deployBinFreshness`/`deployBinCheck`/`publicationFreshSinceBuild` no JSON. Com `-PostImportDeployValidation` ou `-StrictDeployBinCheck`, o wrapper usa **exit 49**; sem gate, `exitCode` MSBuild permanece 0 mas **não** declarar validação deploy OK. `GxNetCoreStartup.dll` sozinha **não** dispara este status
 - `compilou com erros` — `BuildAll` falhou por erro de compilação
 - `reorg necessária detectada` — `FailIfReorg=true` bloqueou o build; reorg gerada mas
@@ -463,8 +463,9 @@ e confirmação explícita** por frase exata.
   acompanhar a execução em andamento sem depender do chat
 - `KB inacessível` — `OpenKnowledgeBase` falhou antes do build
 - `operação concluída, pendente de confirmação funcional` — exitCode 0, reorg não
-  detectada, mas stderr não vazio após filtro de ruído estrutural, ou marcador de
-  conclusão não detectado; validação funcional depende de inspeção na IDE
+  detectada, mas stderr não vazio após filtro de ruído estrutural, ou evento
+  pós-build não registrado/não reconhecido (`postBuildEventClassification.shouldDowngrade=true`),
+  ou marcador de conclusão não detectado; validação funcional depende de inspeção na IDE
 
 > **Alternativa manual para processo já separado ou retomada após timeout:**
 > Em execução nova de `BuildAll` ou `SpecifyGenerate`, preferir `-StartWatcher` no
