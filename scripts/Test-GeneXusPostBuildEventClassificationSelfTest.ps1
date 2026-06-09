@@ -1,0 +1,61 @@
+#requires -Version 7.4
+<#
+.SYNOPSIS
+    Regressao da classificacao de eventos pos-build (Get-GeneXusPostBuildEventClassification).
+
+.DESCRIPTION
+    Usa os dois eventos reais de um environment FrigoByte (sino + deploy .Bat) como fixture.
+    Cobre: sem registro (sino benigno por som, deploy desconhecido rebaixa), com registro
+    completo (nao rebaixa), registro parcial (deploy nao registrado rebaixa) e linha inerte.
+#>
+
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot 'GeneXusMsBuildPostBuildEventsSupport.ps1')
+
+$sino   = 'start "" powershell -NoProfile -WindowStyle Hidden -Command "(New-Object System.Media.SoundPlayer ''c:\temp\sino.wav'').PlaySync()"'
+$deploy = 'start "" /D "c:\Dropbox\AplicativosFrigobyte\AtualizacaoDoDeploy" "AtualizaDeployFB18PgNetCore.Bat"'
+$inert  = '(commented) REM start c:\temp\antigo.bat'
+
+$sinoHash   = Get-GeneXusPostBuildEventNormalizedHash -Line $sino
+$deployHash = Get-GeneXusPostBuildEventNormalizedHash -Line $deploy
+
+# Caso A: sem registro. Sino reconhecido por som (benigno); deploy desconhecido -> rebaixa.
+$a = Get-GeneXusPostBuildEventClassification -PostBuildEventLines @($sino, $deploy) -RegisteredHashes @()
+if (-not $a.shouldDowngrade) { throw 'ASSERT_FAILED: caso A deveria rebaixar (deploy desconhecido sem registro)' }
+if ($a.benignFallback.Count -ne 1 -or $a.benignFallback[0] -ne $sino) { throw 'ASSERT_FAILED: caso A sino deveria ser benignFallback' }
+if ($a.unknownFallback.Count -ne 1 -or $a.unknownFallback[0] -ne $deploy) { throw 'ASSERT_FAILED: caso A deploy deveria ser unknownFallback' }
+if ($a.registryAvailable) { throw 'ASSERT_FAILED: caso A nao deveria ter registro' }
+
+# Caso B: ambos registrados -> esperados, nao rebaixa.
+$b = Get-GeneXusPostBuildEventClassification -PostBuildEventLines @($sino, $deploy) -RegisteredHashes @($sinoHash, $deployHash)
+if ($b.shouldDowngrade) { throw 'ASSERT_FAILED: caso B nao deveria rebaixar (ambos registrados)' }
+if ($b.expected.Count -ne 2) { throw "ASSERT_FAILED: caso B deveria ter 2 esperados, atual=$($b.expected.Count)" }
+if (-not $b.registryAvailable) { throw 'ASSERT_FAILED: caso B deveria ter registro' }
+
+# Caso C: so o sino registrado -> deploy inesperado rebaixa.
+$c = Get-GeneXusPostBuildEventClassification -PostBuildEventLines @($sino, $deploy) -RegisteredHashes @($sinoHash)
+if (-not $c.shouldDowngrade) { throw 'ASSERT_FAILED: caso C deveria rebaixar (deploy nao registrado)' }
+if ($c.expected.Count -ne 1 -or $c.expected[0] -ne $sino) { throw 'ASSERT_FAILED: caso C sino deveria ser esperado' }
+if ($c.unexpected.Count -ne 1 -or $c.unexpected[0] -ne $deploy) { throw 'ASSERT_FAILED: caso C deploy deveria ser inesperado' }
+
+# Caso D: linha inerte (REM comentada) ignorada; sozinha nao rebaixa.
+$d = Get-GeneXusPostBuildEventClassification -PostBuildEventLines @($inert) -RegisteredHashes @()
+if ($d.shouldDowngrade) { throw 'ASSERT_FAILED: caso D inerte nao deveria rebaixar' }
+if ($d.inert.Count -ne 1) { throw "ASSERT_FAILED: caso D deveria ter 1 inerte, atual=$($d.inert.Count)" }
+
+# Caso E: sem registro, so o sino -> alivio sem registro (nao rebaixa).
+$e = Get-GeneXusPostBuildEventClassification -PostBuildEventLines @($sino) -RegisteredHashes @()
+if ($e.shouldDowngrade) { throw 'ASSERT_FAILED: caso E sino-only sem registro nao deveria rebaixar' }
+
+# Hash estavel a variacao inocua de espacos/caixa.
+$sinoSpaced = '  start ""   powershell -NoProfile -WindowStyle Hidden -Command "(New-Object System.Media.SoundPlayer ''C:\TEMP\SINO.WAV'').PlaySync()"  '
+if ((Get-GeneXusPostBuildEventNormalizedHash -Line $sinoSpaced) -ne $sinoHash) {
+    throw 'ASSERT_FAILED: hash deveria ser estavel a espacos/caixa (path Windows case-insensitive)'
+}
+
+'GENEXUS_POST_BUILD_EVENT_CLASSIFICATION_SELFTEST_OK'

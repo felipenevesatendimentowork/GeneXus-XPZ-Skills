@@ -1750,6 +1750,7 @@ try {
     $environmentRemediationHints = $null
     $detectedBlockingPattern = $null
     $postBuildEventLines = @()
+    $pbClassification = $null
     $buildWarningLines = @()
     $buildErrors = @()
     $knownStdOutNoiseBuild = @()
@@ -1801,11 +1802,37 @@ try {
     }
 
     if ($postBuildEventLines.Count -gt 0) {
-        Add-WarningMessage -Message "Evento pos-build detectado em stdout — processo externo pode ter sido disparado: '$($postBuildEventLines[0])'"
-        if ($buildStatus.Status -eq 'compilou limpo') {
+        # Classifica os eventos contra o conjunto registrado do environment ativo em
+        # kb-source-metadata.md (kb_environment_post_build_event_hashes). Evento registrado =
+        # esperado (informativo); nao registrado = inesperado (rebaixa). Sem registro para o
+        # environment, cai na rede de seguranca por padrao de som. So rebaixa se houver evento
+        # inesperado/nao reconhecido — sino e deploy registrados nao rebaixam mais.
+        $metadataPathForPostBuild = $null
+        if ($null -ne $script:DeploymentEnvironmentContext) {
+            $metadataPathForPostBuild = $script:DeploymentEnvironmentContext['kbSourceMetadataPath']
+        }
+        $registeredPostBuildHashes = Get-GeneXusRegisteredPostBuildEventHashesForEnvironment `
+            -MetadataPath $metadataPathForPostBuild -EnvironmentName $activeEnvironmentOutput
+        $pbClassification = Get-GeneXusPostBuildEventClassification `
+            -PostBuildEventLines $postBuildEventLines -RegisteredHashes $registeredPostBuildHashes
+
+        foreach ($evt in $pbClassification.expected) {
+            Add-WarningMessage -Message "Evento pos-build registrado reconhecido (nao afeta a classificacao): '$evt'"
+        }
+        foreach ($evt in $pbClassification.benignFallback) {
+            Add-WarningMessage -Message "Evento pos-build benigno reconhecido sem registro (player de som): '$evt'. Registre via xpz-kb-parallel-setup (Register-GeneXusKbPostBuildEvents.ps1) para reconhecimento explicito."
+        }
+        foreach ($evt in $pbClassification.unexpected) {
+            Add-WarningMessage -Message "Evento pos-build NAO registrado detectado: '$evt'. Se for legitimo, registre via xpz-kb-parallel-setup (Register-GeneXusKbPostBuildEvents.ps1); status rebaixado por cautela."
+        }
+        foreach ($evt in $pbClassification.unknownFallback) {
+            Add-WarningMessage -Message "Evento pos-build nao reconhecido detectado: '$evt'. Processo externo pode ter sido disparado; status rebaixado por cautela."
+        }
+
+        if ($pbClassification.shouldDowngrade -and $buildStatus.Status -eq 'compilou limpo') {
             $buildStatus = [ordered]@{
                 Status   = 'operacao concluida, pendente de confirmacao funcional'
-                Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stdout indica evento pos-build. Verifique stdoutSignals.postBuildEvents no diagnostico.'
+                Summary  = 'BuildAll concluiu sem erro de MSBuild, mas stdout indica evento pos-build nao registrado/nao reconhecido. Verifique stdoutSignals.postBuildEvents no diagnostico.'
                 ExitCode = 0
             }
         }
@@ -2054,6 +2081,7 @@ try {
         stdoutSignals        = [ordered]@{
             blockingPattern = $detectedBlockingPattern
             postBuildEvents = $postBuildEventLines
+            postBuildEventClassification = $pbClassification
             buildWarnings   = $buildWarningLines
             buildErrors     = @($buildErrors)
             knownStdOutNoise = @($knownStdOutNoiseBuild)

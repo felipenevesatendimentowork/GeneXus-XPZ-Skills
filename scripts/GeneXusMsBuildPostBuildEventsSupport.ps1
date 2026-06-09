@@ -108,3 +108,98 @@ function Get-GeneXusMsBuildPostBuildEventLines {
     return @([regex]::Matches($fallbackText, '(?im)^\s*(REM\s+)?(start\s+c:|start\s+cmd)[^\r\n]*') |
              ForEach-Object { Convert-GeneXusPostBuildEventLine -Line $_.Value })
 }
+
+function Test-GeneXusPostBuildEventInert {
+    param([AllowNull()][string]$Line)
+
+    # Linha comentada (REM) ja vem prefixada por Convert-GeneXusPostBuildEventLine; nao executa.
+    if ([string]::IsNullOrWhiteSpace($Line)) {
+        return $true
+    }
+    return ($Line -match '^\(commented\)')
+}
+
+function Get-GeneXusPostBuildEventNormalizedHash {
+    param([Parameter(Mandatory = $true)][string]$Line)
+
+    # Normalizacao tolerante a variacao inocua: trim, colapso de espacos internos, lowercase
+    # (paths e comandos no Windows sao case-insensitive). SHA-256 hex, a prova de delimitador
+    # para caber no encoding plano `env=h1,h2; env=h3` do kb-source-metadata.md.
+    $normalized = (($Line.Trim()) -replace '\s+', ' ').ToLowerInvariant()
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
+    $hashBytes = [System.Security.Cryptography.SHA256]::HashData($bytes)
+    return [System.Convert]::ToHexString($hashBytes).ToLowerInvariant()
+}
+
+function Test-GeneXusPostBuildEventBenignBySound {
+    param([AllowNull()][string]$Line)
+
+    # Rede de seguranca (fallback) quando o environment ainda nao tem eventos registrados:
+    # reconhece tocadores de som como benignos. Exige token especifico de som — nao um
+    # `start` generico — para nao confiar em comando arbitrario disfarcado.
+    if ([string]::IsNullOrWhiteSpace($Line)) {
+        return $false
+    }
+    if ($Line -match '(?i)System\.Media\.SoundPlayer') { return $true }
+    if ($Line -match '(?i)\bPlaySync\b') { return $true }
+    if ($Line -match '(?i)\bPlaySound\b') { return $true }
+    if ($Line -match '(?i)\bstart\b.*\.(wav|mp3|wma|wave|mid|midi|aac|ogg|flac)\b') { return $true }
+    return $false
+}
+
+function Get-GeneXusPostBuildEventClassification {
+    param(
+        [AllowNull()][string[]]$PostBuildEventLines,
+        [AllowNull()][string[]]$RegisteredHashes
+    )
+
+    $events = @(@($PostBuildEventLines) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+
+    $registeredSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($h in @($RegisteredHashes)) {
+        if (-not [string]::IsNullOrWhiteSpace($h)) {
+            [void]$registeredSet.Add($h.Trim().ToLowerInvariant())
+        }
+    }
+    $hasRegistry = ($registeredSet.Count -gt 0)
+
+    $inert           = [System.Collections.Generic.List[string]]::new()
+    $expected        = [System.Collections.Generic.List[string]]::new()
+    $unexpected      = [System.Collections.Generic.List[string]]::new()
+    $benignFallback  = [System.Collections.Generic.List[string]]::new()
+    $unknownFallback = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($line in $events) {
+        if (Test-GeneXusPostBuildEventInert -Line $line) {
+            [void]$inert.Add($line)
+            continue
+        }
+
+        if ($hasRegistry) {
+            $hash = Get-GeneXusPostBuildEventNormalizedHash -Line $line
+            if ($registeredSet.Contains($hash)) {
+                [void]$expected.Add($line)
+            } else {
+                [void]$unexpected.Add($line)
+            }
+        } else {
+            if (Test-GeneXusPostBuildEventBenignBySound -Line $line) {
+                [void]$benignFallback.Add($line)
+            } else {
+                [void]$unknownFallback.Add($line)
+            }
+        }
+    }
+
+    $shouldDowngrade = ($unexpected.Count -gt 0) -or ($unknownFallback.Count -gt 0)
+
+    return [pscustomobject][ordered]@{
+        registryAvailable = $hasRegistry
+        inert             = @($inert)
+        expected          = @($expected)
+        unexpected        = @($unexpected)
+        benignFallback    = @($benignFallback)
+        unknownFallback   = @($unknownFallback)
+        shouldDowngrade   = $shouldDowngrade
+    }
+}

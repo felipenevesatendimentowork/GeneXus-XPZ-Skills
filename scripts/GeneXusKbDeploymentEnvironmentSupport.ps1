@@ -121,6 +121,7 @@ function Read-GeneXusKbDeploymentMetadataFields {
         kb_environment_names          = @()
         kb_environment_output_dirs    = [ordered]@{}
         kb_environment_web_dirs       = [ordered]@{}
+        kb_environment_post_build_event_hashes = [ordered]@{}
     }
 
     if ([string]::IsNullOrWhiteSpace($MetadataPath) -or -not (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
@@ -174,7 +175,55 @@ function Read-GeneXusKbDeploymentMetadataFields {
         $result.kb_environment_web_dirs = Split-GeneXusKbEnvironmentMap -MapRaw $webDirsRaw
     }
 
+    $postBuildHashesRaw = Normalize-GeneXusKbMetadataScalar (
+        Get-GeneXusKbSourceMetadataDirectField -Lines $lines -FieldName 'kb_environment_post_build_event_hashes'
+    )
+    if ($postBuildHashesRaw) {
+        $postBuildMap = Split-GeneXusKbEnvironmentMap -MapRaw $postBuildHashesRaw
+        $postBuildResult = [ordered]@{}
+        foreach ($envKey in $postBuildMap.Keys) {
+            $hashesValue = $postBuildMap[$envKey]
+            if ([string]::IsNullOrWhiteSpace($hashesValue)) {
+                $postBuildResult[$envKey] = @()
+                continue
+            }
+            $postBuildResult[$envKey] = @(
+                $hashesValue -split ',' |
+                ForEach-Object { $_.Trim() } |
+                Where-Object { $_.Length -gt 0 }
+            )
+        }
+        $result.kb_environment_post_build_event_hashes = $postBuildResult
+    }
+
     return [pscustomobject]$result
+}
+
+function Get-GeneXusRegisteredPostBuildEventHashesForEnvironment {
+    param(
+        [AllowNull()][string]$MetadataPath,
+        [AllowNull()][string]$EnvironmentName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($MetadataPath) -or [string]::IsNullOrWhiteSpace($EnvironmentName)) {
+        return @()
+    }
+    if (-not (Test-Path -LiteralPath $MetadataPath -PathType Leaf)) {
+        return @()
+    }
+
+    $fields = Read-GeneXusKbDeploymentMetadataFields -MetadataPath $MetadataPath
+    $map = $fields.kb_environment_post_build_event_hashes
+    if ($null -eq $map -or $map.Count -eq 0) {
+        return @()
+    }
+
+    foreach ($envKey in $map.Keys) {
+        if ($envKey -ieq $EnvironmentName) {
+            return @($map[$envKey])
+        }
+    }
+    return @()
 }
 
 function Resolve-GeneXusKbValidationEnvironment {
