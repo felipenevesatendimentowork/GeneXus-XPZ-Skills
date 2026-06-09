@@ -35,6 +35,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Funcoes compartilhadas de parsing do stream do opencode (dot-source)
+. (Join-Path $PSScriptRoot 'OpenCodeStreamSupport.ps1')
+
 $base       = Join-Path $TempDir $JobId
 $streamPath = "$base.stream.jsonl"
 $reqPath    = "$base.request.json"
@@ -194,17 +197,8 @@ try {
         Start-Sleep -Seconds $IntervalSeconds
     }
 } finally {
-    # Resposta final = concatenacao das partes de texto da ultima mensagem (messageID);
-    # robusto a mensagem final fragmentada. Run truncado ainda devolve o ultimo texto.
-    $final = ''
-    if ($script:textParts.Count -gt 0) {
-        $lastMid = [string]$script:textParts[$script:textParts.Count - 1].mid
-        if (-not [string]::IsNullOrEmpty($lastMid)) {
-            $final = (@($script:textParts | Where-Object { [string]$_.mid -eq $lastMid } | ForEach-Object { [string]$_.text }) -join '')
-        } else {
-            $final = [string]$script:textParts[$script:textParts.Count - 1].text
-        }
-    }
+    # Resposta final = concatenacao das partes da ultima mensagem (via OpenCodeStreamSupport)
+    $final = Get-OpenCodeFinalText -TextParts $script:textParts
 
     $errText = ''
     if (Test-Path -LiteralPath $errPath -PathType Leaf) {

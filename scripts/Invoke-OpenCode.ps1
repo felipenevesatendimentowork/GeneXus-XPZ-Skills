@@ -49,14 +49,8 @@ $ErrorActionPreference = 'Stop'
 # Garante saida UTF-8 (acentos) ao devolver o texto pelo stdout
 try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
 
-# Acesso seguro a propriedade sob Set-StrictMode (objetos de ConvertFrom-Json)
-function Get-Prop {
-    param($Obj, [string]$Name)
-    if ($null -ne $Obj -and $Obj.PSObject.Properties[$Name]) {
-        return $Obj.PSObject.Properties[$Name].Value
-    }
-    return $null
-}
+# Funcoes compartilhadas de parsing do stream do opencode (dot-source)
+. (Join-Path $PSScriptRoot 'OpenCodeStreamSupport.ps1')
 
 # 1) Resolve o .exe real por tras do shim .ps1/.cmd do npm
 $exe = Get-ChildItem -Path "$env:APPDATA\npm\node_modules\opencode-ai" `
@@ -85,32 +79,18 @@ try {
     $lines = Get-Content -LiteralPath $out -Encoding utf8
     if ($Raw) { return $lines }
 
-    $events = @($lines | ForEach-Object { try { $_ | ConvertFrom-Json } catch { } } | Where-Object { $null -ne $_ })
+    $events = ConvertFrom-OpenCodeStreamLines -Lines $lines
 
     # Erro explicito do agente no stream tem prioridade sobre a ausencia de texto
-    $errors = @($events | Where-Object { (Get-Prop $_ 'type') -eq 'error' })
-    if ($errors.Count -gt 0) {
-        $msg = Get-Prop (Get-Prop (Get-Prop $errors[-1] 'error') 'data') 'message'
-        if ([string]::IsNullOrWhiteSpace($msg)) { $msg = ($errors[-1] | ConvertTo-Json -Compress) }
-        throw "BLOCK: opencode retornou erro no stream: $msg"
-    }
+    $errMsg = Get-OpenCodeStreamErrorMessage -Events $events
+    if ($errMsg) { throw "BLOCK: opencode retornou erro no stream: $errMsg" }
 
-    $textEvents = @($events | Where-Object { (Get-Prop $_ 'type') -eq 'text' -and -not [string]::IsNullOrEmpty([string](Get-Prop (Get-Prop $_ 'part') 'text')) })
-    if ($textEvents.Count -eq 0) { throw "BLOCK: nenhum evento de texto na resposta. Use -Raw para inspecionar." }
+    $parts = @(Get-OpenCodeTextParts -Events $events)
+    if ($parts.Count -eq 0) { throw "BLOCK: nenhum evento de texto na resposta. Use -Raw para inspecionar." }
 
-    # -AllText: toda a narracao (preambulos de passo + resposta final), em ordem
-    if ($AllText) {
-        return (($textEvents | ForEach-Object { [string](Get-Prop (Get-Prop $_ 'part') 'text') }) -join "`n`n")
-    }
-
-    # Resposta final = todas as partes de texto da ULTIMA mensagem (messageID), concatenadas em ordem;
-    # robusto a mensagem final fragmentada em varias partes. Run truncado ainda devolve o ultimo texto.
-    $lastMsgId = [string](Get-Prop (Get-Prop $textEvents[-1] 'part') 'messageID')
-    if (-not [string]::IsNullOrEmpty($lastMsgId)) {
-        $finalParts = @($textEvents | Where-Object { [string](Get-Prop (Get-Prop $_ 'part') 'messageID') -eq $lastMsgId } | ForEach-Object { [string](Get-Prop (Get-Prop $_ 'part') 'text') })
-        return ($finalParts -join '')
-    }
-    return [string](Get-Prop (Get-Prop $textEvents[-1] 'part') 'text')
+    # -AllText: toda a narracao; default: resposta final (ultima mensagem concatenada)
+    if ($AllText) { return (Get-OpenCodeAllText -TextParts $parts) }
+    return (Get-OpenCodeFinalText -TextParts $parts)
 }
 finally {
     Remove-Item $out, $err, $in -Force -ErrorAction SilentlyContinue
