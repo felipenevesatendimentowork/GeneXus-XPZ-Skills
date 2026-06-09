@@ -154,6 +154,8 @@ Backend opencode:
 - `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão.
 - `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>]` — monitor incremental; grava `<GUID>.result.json` ao fim.
 
+Latência por provedor: modelos externos OAuth (`openai/*`) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e `opencode-go/*` costumam responder mais rápido.
+
 Núcleo backend-agnóstico:
 - `Resolve-OpenCodeModelLocality.ps1` e `Resolve-LlmDelegateAuthorization.ps1` (ver `## CONFIDENCIALIDADE`).
 
