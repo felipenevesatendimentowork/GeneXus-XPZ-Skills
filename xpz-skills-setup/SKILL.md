@@ -356,7 +356,9 @@ como `user-xpz-global-instructions` na sessão (pasta `mcps/` do projeto com
 
 **Atualização:** após `git pull` que altere `server.py`, reexecutar o instalador (ou
 copiar o `server.py` canônico) e recarregar MCPs; `config.json` só precisa mudar quando a
-fonte efetiva do usuário mudar.
+fonte efetiva do usuário mudar. O motor de auditoria `scripts/Test-XpzSkillsRegistration.ps1`
+detecta o `server.py` defasado comparando o hash instalado com o canônico do repositório
+(`cursorMcp.label = MCP_SERVER_STALE`), evitando depender de inspeção manual.
 
 ---
 
@@ -377,19 +379,23 @@ fonte efetiva do usuário mudar.
    - Quando o usuário pedir explicitamente só o registro de skills, e a raiz já
      for um repositório Git, este passo é um no-op rápido (`GIT_ALREADY_LINKED`)
 1. Localizar a raiz do repositório de skills XPZ (pasta-pai deste `SKILL.md`)
-2. Inventariar todas as subpastas com `SKILL.md` — esse é o conjunto gerenciável
-3. Para cada ferramenta (Codex, Claude Code, Cursor, OpenCode):
-   - Verificar se a ferramenta está instalada na máquina (ver
-     `## DETECÇÃO DE INSTALAÇÃO`); se não estiver, pular para a próxima
-   - Verificar se o diretório nativo de skills existe (ver
-     `## CAMINHOS DE SKILLS POR FERRAMENTA`)
-   - Listar os vínculos presentes no diretório nativo e também nos diretórios
-     que aquela ferramenta lê por compatibilidade
-   - Codex: incluir sempre **dois** diretórios USER ao inventariar vínculos —
-     `~/.codex/skills/` e `~/.agents/skills/` — porque o Codex indexa ambos em
-     paralelo (ver `## CAMINHOS DE SKILLS POR FERRAMENTA` e `### Classificação ao auditar`)
-   - Classificar cada skill do inventário: **OK**, **coberta por
-     compatibilidade**, **ausente**, **órfã** ou **quebrada**
+2. Executar o **motor de auditoria** `scripts/Test-XpzSkillsRegistration.ps1`
+   (`-AsJson` para agentes), que de forma determinística inventaria as subpastas
+   com `SKILL.md`, detecta as ferramentas instaladas e classifica cada skill ×
+   ferramenta como **OK**, **coberta por compatibilidade**, **ausente**, **órfã**
+   ou **quebrada** — aplicando as regras de `## CAMINHOS DE SKILLS POR FERRAMENTA`
+   e `### Classificação ao auditar` (Codex indexa `.codex` + `.agents`; OpenCode
+   exige nativo; Cursor lê `.claude`/`.codex` por compatibilidade). O motor é
+   **somente leitura**: não cria nem remove vínculos. Este `SKILL.md` permanece a
+   fonte das regras que o motor implementa.
+3. Ler o resultado do motor:
+   - `overall` → `REGISTRATION_OK` (registro íntegro) ou `REGISTRATION_GAPS`
+     (há ausências, quebradas, órfãs e/ou freshness do MCP do Cursor a tratar)
+   - `tools[].skills[]` traz o status por skill; `orphans[]` os vínculos que
+     apontam para o repo sem skill correspondente; `cursorMcp.label` o estado do
+     MCP global do Cursor (tratado no passo 9)
+   - O `summary` (ok / coveredByCompat / missing / broken / orphans / cursorMcp)
+     alimenta o relatório
 4. Apresentar relatório consolidado por ferramenta, declarando explicitamente
    qual estratégia de registro está em uso (compacta por padrão; expansiva se o
    usuário tiver indicado) — ver `## ESTRATÉGIA DE REGISTRO`
@@ -427,12 +433,16 @@ fonte efetiva do usuário mudar.
      (**Cursor**, **OpenCode**); tratar **Codex** e **Claude Code** igualmente quando
      o texto efetivo não cumprir os tópicos mínimos.
      Orientação prática por destino:
-     - **Cursor:** verificar se o MCP `xpz-global-instructions` está registrado em
-       `~/.cursor/mcp.json`, se `~/.cursor/xpz-global-instructions-mcp/config.json`
-       aponta para a **fonte efetiva** correta (respeitando ferramentas instaladas — ver
-       `## CURSOR — INSTRUCIONAIS GLOBAIS VIA MCP`) e se o conteúdo dessa fonte cobre os
-       tópicos mínimos. Se faltar MCP ou a fonte estiver errada/ausente: **ofertar**
-       executar `scripts/Install-CursorGlobalInstructionsMcp.ps1` do repositório de skills
+     - **Cursor:** o motor de auditoria do passo 2 já classifica o estado do MCP em
+       `cursorMcp.label`: `MCP_OK`, `MCP_SERVER_STALE` (o `server.py` instalado
+       difere do canônico do repo — típico após `git pull`), `MCP_CONFIG_INVALID`
+       (sem registro em `mcp.json` ou `agentsPath` inexistente) ou `MCP_NOT_INSTALLED`.
+       Verificar também se o `config.json` aponta para a **fonte efetiva** correta
+       (respeitando ferramentas instaladas — ver `## CURSOR — INSTRUCIONAIS GLOBAIS
+       VIA MCP`) e se o conteúdo dessa fonte cobre os tópicos mínimos. Quando o
+       `label` for `MCP_SERVER_STALE`, `MCP_CONFIG_INVALID`, faltar MCP ou a fonte
+       estiver errada/ausente: **ofertar** executar
+       `scripts/Install-CursorGlobalInstructionsMcp.ps1` do repositório de skills
        (com `-AgentsPath` só quando a resolução automática não for possível), após
        confirmação. Se faltar texto nos tópicos mínimos na fonte efetiva, alinhar o arquivo
        da ferramenta dona (Codex/Claude/OpenCode), não inventar cópia paralela só no Cursor.
