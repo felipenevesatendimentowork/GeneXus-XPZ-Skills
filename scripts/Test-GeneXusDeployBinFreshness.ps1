@@ -14,7 +14,13 @@
     Nome do environment de deploy. Se omitido, usa deployment_environment_name do metadata.
 
 .PARAMETER BuildStartedAt
-    Timestamp ISO de inicio do build usado como linha de corte.
+    Timestamp ISO de inicio do build usado como linha de corte. Opcional quando
+    -BuildResultJsonPath for informado; se ambos vierem, -BuildStartedAt prevalece.
+
+.PARAMETER BuildResultJsonPath
+    Caminho do JSON de um build (Invoke-GeneXusKbBuildAll.ps1 / Invoke-GeneXusKbSpecifyGenerate.ps1).
+    Quando informado e -BuildStartedAt for omitido, a linha de corte vem de timing.msbuildStart
+    do proprio build — elimina a extracao manual do timestamp.
 
 .PARAMETER ParallelKbRoot
     Raiz da pasta paralela para resolver kb-source-metadata.md.
@@ -36,8 +42,9 @@ param(
 
     [string]$EnvironmentName,
 
-    [Parameter(Mandatory = $true)]
     [string]$BuildStartedAt,
+
+    [string]$BuildResultJsonPath,
 
     [string]$ParallelKbRoot,
 
@@ -74,11 +81,45 @@ if ([string]::IsNullOrWhiteSpace($hostingKind) -and $null -ne $fields) {
     $hostingKind = $fields.deployment_hosting_kind
 }
 
+# Linha de corte: -BuildStartedAt explicito prevalece; senao vem de timing.msbuildStart
+# do JSON do build (-BuildResultJsonPath), eliminando a extracao manual do timestamp.
+$buildStartedAtRaw = $BuildStartedAt
+$buildStartedAtSource = 'parameter'
+if ([string]::IsNullOrWhiteSpace($buildStartedAtRaw)) {
+    if ([string]::IsNullOrWhiteSpace($BuildResultJsonPath)) {
+        throw 'Informe -BuildStartedAt (timestamp ISO) ou -BuildResultJsonPath (JSON de build com timing.msbuildStart).'
+    }
+    if (-not (Test-Path -LiteralPath $BuildResultJsonPath -PathType Leaf)) {
+        throw "BuildResultJsonPath invalido: $BuildResultJsonPath"
+    }
+    $buildJson = (Get-Content -LiteralPath $BuildResultJsonPath -Raw) | ConvertFrom-Json
+    $msbuildStartValue = $null
+    if ($null -ne $buildJson.PSObject.Properties['timing'] -and $null -ne $buildJson.timing -and
+        $null -ne $buildJson.timing.PSObject.Properties['msbuildStart']) {
+        $msbuildStartValue = $buildJson.timing.msbuildStart
+    }
+    # ConvertFrom-Json auto-converte string ISO para [datetime] local; normalizar para ISO
+    # preservando o instante, sem round-trip dependente de cultura.
+    if ($msbuildStartValue -is [datetime]) {
+        $buildStartedAtRaw = ([DateTimeOffset]$msbuildStartValue).ToString('o')
+    }
+    elseif ($msbuildStartValue -is [System.DateTimeOffset]) {
+        $buildStartedAtRaw = $msbuildStartValue.ToString('o')
+    }
+    else {
+        $buildStartedAtRaw = [string]$msbuildStartValue
+    }
+    if ([string]::IsNullOrWhiteSpace($buildStartedAtRaw)) {
+        throw "timing.msbuildStart ausente ou vazio em: $BuildResultJsonPath"
+    }
+    $buildStartedAtSource = 'build-json'
+}
+
 try {
-    $buildStartedAtDt = [DateTimeOffset]::Parse($BuildStartedAt)
+    $buildStartedAtDt = [DateTimeOffset]::Parse($buildStartedAtRaw)
 }
 catch {
-    throw "BuildStartedAt nao e timestamp valido: '$BuildStartedAt'"
+    throw "BuildStartedAt nao e timestamp valido: '$buildStartedAtRaw'"
 }
 
 $result = [ordered]@{
@@ -87,6 +128,7 @@ $result = [ordered]@{
     deploymentHostingKind     = $hostingKind
     metadataPath              = $metadataPathResolved
     buildStartedAt            = $buildStartedAtDt.ToString('o')
+    buildStartedAtSource      = $buildStartedAtSource
     deployBinCheck            = $null
     summary                   = ''
 }
