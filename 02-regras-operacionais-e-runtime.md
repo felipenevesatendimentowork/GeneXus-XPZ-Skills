@@ -1833,6 +1833,14 @@ Nao confundir `src0056` em `Transaction` `Rules` com o playbook de `Procedure` d
 - nunca usar entusiasmo estrutural para atropelar heuristica que mandou exigir molde ou abortar
 - nunca gerar bloco especial de KB (`KnowledgeBase`, `Settings` ou elemento top-level com o nome da KB) em `.xpz` normal de objetos
 
+## Delegacao a LLM secundario (xpz-llm-delegate)
+
+- delegacao a um modelo secundario via opencode e sempre **acionada por humano** (pedido do usuario ou concordancia explicita a uma sugestao do agente); nunca automatica
+- nunca delegar juizo estrutural GeneXus (classificacao de risco/familia/tipo, seguranca de import/build, veredito de gate) ao subagente; isso fica com o agente forte, que tambem **valida** toda saida delegada antes de usar
+- confidencialidade por gate deterministico: antes de enviar payload a um modelo, classificar `kb-sensitive` vs `public` e passar por `scripts/Resolve-LlmDelegateAuthorization.ps1` (que chama `scripts/Resolve-OpenCodeModelLocality.ps1`); conteudo de pasta paralela so vai a modelo externo com autorizacao, conteudo publico e livre
+- localidade e deterministica (provider com baseURL loopback na config do opencode = local; caso contrario externo); sensibilidade do payload ancora no contexto/origem, nao em varredura de texto
+- autorizacao duravel por KB em `opencode-delegation-policy.json` (granularidade fina por `provider/modelo`, curinga de provider e `defaultExternal`; ausente => `ask`); detalhe em `xpz-llm-delegate/SKILL.md`
+
 ## Origem incorporada - 02-genexus-xpz-generation-rules.md
 
 ## Papel do documento

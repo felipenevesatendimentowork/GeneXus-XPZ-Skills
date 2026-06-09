@@ -29,7 +29,7 @@
 
 ## Trabalho nas skills XPZ
 
-- Esta raiz contém a documentação metodológica de múltiplas skills (xpz-reader, xpz-builder, xpz-sync, xpz-doc-builder, xpz-daemon, xpz-kb-parallel-setup, xpz-msbuild-import-export, xpz-msbuild-build, xpz-index-triage e xpz-skills-setup) e outros artefatos compartilhados.
+- Esta raiz contém a documentação metodológica de múltiplas skills (xpz-reader, xpz-builder, xpz-sync, xpz-doc-builder, xpz-daemon, xpz-kb-parallel-setup, xpz-msbuild-import-export, xpz-msbuild-build, xpz-index-triage, xpz-llm-delegate e xpz-skills-setup) e outros artefatos compartilhados.
 - Ao trabalhar na melhoria de uma skill, estudar sua documentação de forma crítica e compreender seu propósito antes de propor mudanças.
 - Quando receber um prompt de outro agente solicitando mudança em uma skill, não invoque essa skill como ferramenta — consulte sua documentação, analise o impacto e apresente um plano.
 - Neste repositório (desenvolvimento das skills XPZ; conversa setada **fora** de qualquer pasta paralela), consultar uma pasta paralela de KB real (ex.: `Gx_FabricaBrasil/ObjetosDaKbEmXml`) como **corpus de amostras** — estudar a estrutura real de objetos para construir/validar scripts e documentação — é **consulta de fora**: leitura de referência permitida, sem invocar `xpz-kb-parallel-setup` (ver a distinção trabalhar-vs-consultar no `AGENTS.md` global). O setup só seria exigido se a frente passasse a **escrever** na pasta paralela.

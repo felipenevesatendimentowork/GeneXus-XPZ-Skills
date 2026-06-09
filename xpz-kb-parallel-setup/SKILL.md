@@ -154,6 +154,15 @@ Depois de classificar o subestado transitorio (`setup_apto`, `setup_apto_com_met
 
 `auditar_setup` **nao** fecha apenas com diagnostico. Fecha com diagnostico **+** plano consolidado oferecido **+** registro da decisao do usuario (executar agora, recusar, adiar ou executar subconjunto). Se o usuario aprovar execucao, o agente pode transitar para `atualizar_bootstrap_local` e/ou `corrigir_wrapper_local` na mesma sessao sem exigir novo pedido do usuario.
 
+### Politica de delegacao a LLM (opcional, adiavel, nao-bloqueante)
+
+A skill `xpz-llm-delegate` usa um arquivo de politica por-KB, `opencode-delegation-policy.json` na raiz da pasta paralela, para autorizar de forma duravel o envio de conteudo desta KB a modelos externos (ver `xpz-llm-delegate/SKILL.md`).
+
+- Este item **nunca** e gate de setup, nao entra na matriz de wrappers exigidos e **nao** bloqueia nenhum estado de conclusao. O setup fecha normalmente sem ele.
+- Ao concluir o setup, **oferecer** (sem cobrar) definir a politica, com pergunta em prosa e opcao explicita de **adiar** — no setup o usuario costuma ter muito a digerir.
+- Ausencia do arquivo ⇒ comportamento `ask` no gate (`Resolve-LlmDelegateAuthorization.ps1`); adiar nunca abre brecha.
+- Se o usuario aceitar, gravar `opencode-delegation-policy.json` com `schemaVersion`, `defaultExternal` e entradas finas por `provider/modelo` conforme a escolha; nunca presumir `allow-external` por conta propria.
+
 ## PATH RESOLUTION
 
 - Este `SKILL.md` fica dentro de uma subpasta de skill sob a raiz do repositório.

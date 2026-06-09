@@ -207,6 +207,13 @@ Pre-varredura obrigatoria antes de sync full ou primeira materializacao longa:
   - casos com `query` pertencem a validacao de consulta e devem rodar com `Test-KbIntelligenceQueries.ps1 -ValidationCasesPath`
 - se um caso de relacao com `expected_rule` for enviado ao validador de consultas, tratar o erro como uso de executor incompatível antes de concluir regressao real
 
+## Regra de delegacao a LLM secundario
+
+- delegar tarefa menor ou pedir segunda opiniao a um modelo secundario (skill `xpz-llm-delegate`, backend opencode) so **a pedido do usuario ou com concordancia explicita dele**; nunca por iniciativa propria
+- manter no agente forte todo juizo estrutural GeneXus; o subagente serve para tarefa mecanica ou segunda opiniao, e sua saida deve ser validada pelo agente forte antes de usar
+- antes de enviar conteudo a um modelo, classificar `kb-sensitive` (pasta paralela de KB) vs `public` (repo publico/molde sanitizado) e rodar `scripts/Resolve-LlmDelegateAuthorization.ps1`: `deny` nao envia, `ask` exige autorizacao explicita do usuario, `allow` segue anunciando o destino ao usuario
+- preferir modelo local (loopback) para conteudo de KB; conteudo de pasta paralela so vai a modelo externo com autorizacao; ver `02-regras-operacionais-e-runtime.md` e `xpz-llm-delegate/SKILL.md`
+
 ## Regra de triagem exploratoria
 
 - quando a frente exigir decidir se existe massa suficiente para abrir novo incremento, priorizar triagem exploratoria curta e auditavel antes de propor alteracao metodologica ou de codigo
