@@ -42,7 +42,8 @@ $errPath    = "$base.stderr.txt"
 $resultPath = "$base.result.json"
 
 # Acumuladores de resultado
-$script:texts      = [System.Collections.Generic.List[string]]::new()
+$script:textParts  = [System.Collections.Generic.List[object]]::new()
+$script:lastError  = $null
 $script:totalCost  = [double]0
 $script:lastTokens = 0
 
@@ -102,7 +103,8 @@ function Show-Event {
         'text' {
             $t = Get-Prop $part 'text'
             if ($t) {
-                $script:texts.Add([string]$t)
+                $mid = [string](Get-Prop $part 'messageID')
+                $script:textParts.Add([pscustomobject]@{ mid = $mid; text = [string]$t })
                 $preview = [string]$t
                 if ($preview.Length -gt 100) { $preview = $preview.Substring(0, 100) + '...' }
                 Write-Line ("TEXTO: {0}" -f $preview) 'Green'
@@ -117,7 +119,10 @@ function Show-Event {
             Write-Line ("passo concluido | custo parcial USD {0:N5} | tokens {1}" -f $script:totalCost, $script:lastTokens) 'DarkCyan'
         }
         'error' {
-            Write-Line ("ERRO no agente: {0}" -f ($Json | ConvertTo-Json -Compress)) 'Red'
+            $emsg = Get-Prop (Get-Prop (Get-Prop $Json 'error') 'data') 'message'
+            if ([string]::IsNullOrWhiteSpace($emsg)) { $emsg = ($Json | ConvertTo-Json -Compress) }
+            $script:lastError = [string]$emsg
+            Write-Line ("ERRO no agente: {0}" -f $emsg) 'Red'
         }
         default { }
     }
@@ -189,19 +194,29 @@ try {
         Start-Sleep -Seconds $IntervalSeconds
     }
 } finally {
-    # Resposta final = ultimo evento de texto
-    $final = if ($script:texts.Count -gt 0) { $script:texts[$script:texts.Count - 1] } else { '' }
+    # Resposta final = concatenacao das partes de texto da ultima mensagem (messageID);
+    # robusto a mensagem final fragmentada. Run truncado ainda devolve o ultimo texto.
+    $final = ''
+    if ($script:textParts.Count -gt 0) {
+        $lastMid = [string]$script:textParts[$script:textParts.Count - 1].mid
+        if (-not [string]::IsNullOrEmpty($lastMid)) {
+            $final = (@($script:textParts | Where-Object { [string]$_.mid -eq $lastMid } | ForEach-Object { [string]$_.text }) -join '')
+        } else {
+            $final = [string]$script:textParts[$script:textParts.Count - 1].text
+        }
+    }
 
     $errText = ''
     if (Test-Path -LiteralPath $errPath -PathType Leaf) {
         $errText = (Get-Content -LiteralPath $errPath -Raw -ErrorAction SilentlyContinue)
     }
-    $status = if ([string]::IsNullOrWhiteSpace($final)) { 'sem-texto' } else { 'completed' }
+    $status = if ($script:lastError) { 'error' } elseif ([string]::IsNullOrWhiteSpace($final)) { 'sem-texto' } else { 'completed' }
 
     $result = [ordered]@{
         jobId      = $JobId
         status     = $status
         finalText  = $final
+        error      = $script:lastError
         totalCost  = $script:totalCost
         tokens     = $script:lastTokens
         stderr     = $errText
