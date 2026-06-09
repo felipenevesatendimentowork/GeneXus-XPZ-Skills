@@ -480,6 +480,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
   - [Test-KbSetupFreshness.example.ps1](examples/Test-KbSetupFreshness.example.ps1)
   - [Set-KbSetupAuditTimestamp.example.ps1](examples/Set-KbSetupAuditTimestamp.example.ps1)
   - [Set-KbSourceMetadataDeployment.example.ps1](examples/Set-KbSourceMetadataDeployment.example.ps1)
+  - [Register-KbPostBuildEvents.example.ps1](examples/Register-KbPostBuildEvents.example.ps1)
   - [Resolve-KbGeneratedCsPath.example.ps1](examples/Resolve-KbGeneratedCsPath.example.ps1)
 - Esses `.example.ps1` sao exemplos metodologicos importantes para bootstrap tecnico e reconstrucao assistida dos wrappers locais finais.
 - Quando os wrappers locais precisarem nascer do zero no setup inicial, preferir adaptar os exemplos sanitizados completos desta skill como base do bootstrap tecnico, em vez de improvisar wrappers curtos ou parciais que ainda exijam correcao na etapa seguinte.
