@@ -321,3 +321,39 @@ A distincao `<action>` vs `<ucw>` Button e de serializacao, nao de modelagem (co
 - Commit: `9ca850d` (`Documenta a regra interpretativa de botao em WebPanel (Frente B)`)
 - Commit: `8b26fcb` (`Adiciona Add-GeneXusButton: insercao cirurgica de botao em WebPanel (Frente C)`)
 - O commit de fechamento desta frente (paridade de enumeracao no gate de parametros, entrada de `CHANGELOG.md` e este registro) e majoritariamente meta-documental e permanece visivel via `git blame` no arquivo mensal, conforme `historico/AGENTS.md`
+
+## Eventos pos-build declarativos e gate de deploy bin por sucesso operacional factual
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-08
+
+### Origem
+
+Relato de sessao real: build do environment `NETPostgreSQL` da KB FabricaBrasil com `-PostImportDeployValidation` apos importar um WebPanel. Um evento pos-build benigno — um "sino" de fim de build (`SoundPlayer ... PlaySync()`) configurado na KB — rebaixava o status do build e, como efeito colateral, suprimia o gate de validacao de deploy que o usuario pedira; o hand-off manual de `-BuildStartedAt` para o diagnostico avulso completava a friccao.
+
+### Problema concreto
+
+- O gate de `web\bin` (`-PostImportDeployValidation`) decidia rodar pela **string de status**: qualquer rebaixamento (inclusive um sino benigno) tirava o status de `compilou limpo` e pulava a validacao pedida.
+- O rebaixamento por evento pos-build era cego: qualquer item em `stdoutSignals.postBuildEvents` rebaixava, mesmo um deploy `.Bat` legitimo configurado pelo usuario.
+- `Test-GeneXusDeployBinFreshness.ps1` exigia `-BuildStartedAt` manual, forcando extracao do `timing.msbuildStart` do JSON do build na mao.
+
+### Implementacao
+
+- Frente 1 — `scripts/GeneXusKbDeployBinSupport.ps1`: a decisao do gate passou de string (`-BuildSuccessStatus`) para sucesso operacional factual (`-BuildOperationallySucceeded`: MSBuild exit 0 + marcador de conclusao); funcao `Test-GeneXusKbDeployBinBuildSuccessStatus` e array `GeneXusKbDeployBinSuccessStatuses` removidos. Teste `scripts/Test-GeneXusDeployBinPolicySelfTest.ps1`.
+- Frente 2 — `scripts/GeneXusMsBuildPostBuildEventsSupport.ps1` ganhou classificacao declarativa (`Get-GeneXusPostBuildEventClassification` + `Get-GeneXusPostBuildEventNormalizedHash` SHA-256, `Test-GeneXusPostBuildEventInert` para `REM`, `Test-GeneXusPostBuildEventBenignBySound`); campo novo `kb_environment_post_build_event_hashes` em `kb-source-metadata.md`, lido por `Get-GeneXusRegisteredPostBuildEventHashesForEnvironment` em `scripts/GeneXusKbDeploymentEnvironmentSupport.ps1`; `scripts/Register-GeneXusKbPostBuildEvents.ps1` registra os eventos conhecidos por environment (campo de fingerprints + secao-espelho legivel; confirmacao por frase exata interativa ou `-ConfirmRegistration` em modo agente). Evento registrado = esperado (nao rebaixa); nao registrado/nao reconhecido = rebaixa por cautela. Testes `scripts/Test-GeneXusPostBuildEventClassificationSelfTest.ps1` e `scripts/Test-GeneXusKbPostBuildEventsRegistrationSelfTest.ps1`.
+- Frente 3 — `scripts/Test-GeneXusDeployBinFreshness.ps1` ganhou `-BuildResultJsonPath` (deriva a linha de corte de `timing.msbuildStart` do build; `-BuildStartedAt` opcional, explicito prevalece; `buildStartedAtSource` no resultado). Teste `scripts/Test-GeneXusDeployBinFreshnessBuildStartedAtSelfTest.ps1`.
+- Paridade documental: `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `10-base-operacional-msbuild-headless.md`, README trilingue, `CHANGELOG.md` trilingue, `xpz-kb-parallel-setup/SKILL.md` (+ molde `examples/Register-KbPostBuildEvents.example.ps1`), `xpz-msbuild-build/SKILL.md` (catalogo de status do BuildAll) e `xpz-msbuild-import-export/SKILL.md` (propagacao das flags de validacao de deploy bin pelo wrapper integrador, como categoria distinta dos gates de autorizacao).
+
+### Decisao final
+
+O gate de deploy e uma verificacao factual e ortogonal a cautela de seguranca do status — por isso decide por exit 0 + marcador de conclusao, nao pela narrativa. Eventos pos-build legitimos sao reconhecidos por registro declarativo por environment (fingerprint), nao por heuristica de padrao, porque ambientes reais tem comandos legitimos (ex.: deploy `.Bat`) que nenhuma allowlist generica pode confiar; uma rede de seguranca reconhece player de som como benigno quando nao ha registro. A revisao pre-push por multiplos modelos independentes (prompt nu, sem contaminacao do contexto) fechou os gaps de paridade restantes.
+
+### Rastreabilidade
+
+- Commit: `07e5408` (`Desacopla gate de deploy bin da string de status (Frente 1)`)
+- Commit: `cd92f41` (`Classifica eventos pos-build por registro declarativo (Frente 2)`)
+- Commit: `a083dd1` (`Deriva BuildStartedAt do JSON do build no diagnostico avulso (Frente 3)`)
+- Commit: `b7df50f` (`Fecha gaps de paridade documental da campanha pos-build (revisao pre-push)`)
+- Commit: `5a5681e` (`Fecha gap do 08 e adiciona molde de registro de eventos pos-build`)
+- Commit: `328bf92` (`Espelha classificacao de evento pos-build no catalogo de status do BuildAll`)
+- Commit: `cafa134` (`Documenta propagacao das flags de validacao de deploy bin no import-then-build`)
