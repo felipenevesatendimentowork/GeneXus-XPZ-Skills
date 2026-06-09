@@ -43,6 +43,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Garante saida UTF-8 (acentos) ao devolver o texto pelo stdout
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
+
 # 1) Resolve o .exe real por tras do shim .ps1/.cmd do npm
 $exe = Get-ChildItem -Path "$env:APPDATA\npm\node_modules\opencode-ai" `
     -Recurse -Filter 'opencode.exe' -ErrorAction SilentlyContinue |
@@ -67,7 +70,7 @@ try {
         throw "BLOCK: opencode saiu com codigo $($p.ExitCode).`nstderr:`n$(Get-Content $err -Raw)"
     }
 
-    $lines = Get-Content $out
+    $lines = Get-Content -LiteralPath $out -Encoding utf8
     if ($Raw) { return $lines }
 
     $text = $lines | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} } |
