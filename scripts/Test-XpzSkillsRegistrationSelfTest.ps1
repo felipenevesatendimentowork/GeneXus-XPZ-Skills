@@ -101,6 +101,11 @@ try {
     # Tornar skill-c quebrada: remover o alvo do junction
     Remove-Item -LiteralPath $brokenTarget -Recurse -Force
 
+    # Marca ClaudeCode como instalada de forma deterministica (independe do PATH real):
+    # garante ao menos uma ferramenta instalada para que a skill externa nexa (ausente
+    # no fixture) seja avaliada e externalOverall resulte em EXTERNAL_SKILLS_GAPS.
+    Set-Content -LiteralPath (Join-Path $fakeProfile '.claude\settings.json') -Value '{}' -Encoding utf8
+
     $env:USERPROFILE = $fakeProfile
     $json = & $scriptUnderTest -RepoRoot $fakeRepo -AsJson | Out-String
     $env:USERPROFILE = $originalProfile
@@ -132,6 +137,21 @@ try {
         $script:failures++
         Write-Output ("FAIL: overall esperado REGISTRATION_GAPS, obtido {0}" -f $report.overall)
     }
+
+    # Skills externas gerenciadas: a nexa deve aparecer na secao separada, e o veredito
+    # externo deve ser independente do overall (aqui GAPS, pois a nexa esta ausente).
+    $script:cases++
+    $nexaEntry = @($report.externalSkills | Where-Object { $_.name -eq 'nexa' })
+    if ($nexaEntry.Count -eq 1) {
+        Write-Output 'PASS: externalSkills contem nexa'
+    }
+    else {
+        $script:failures++
+        Write-Output ("FAIL: externalSkills deveria conter exatamente um nexa (obtido {0})" -f $nexaEntry.Count)
+    }
+
+    Assert-Equal 'externalOverall GAPS' 'EXTERNAL_SKILLS_GAPS' ([string]$report.externalOverall)
+    Assert-Equal 'summary.externalOverall espelha topo' ([string]$report.externalOverall) ([string]$report.summary.externalOverall)
 }
 finally {
     $env:USERPROFILE = $originalProfile
