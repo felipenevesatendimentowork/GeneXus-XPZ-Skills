@@ -357,3 +357,32 @@ O gate de deploy e uma verificacao factual e ortogonal a cautela de seguranca do
 - Commit: `5a5681e` (`Fecha gap do 08 e adiciona molde de registro de eventos pos-build`)
 - Commit: `328bf92` (`Espelha classificacao de evento pos-build no catalogo de status do BuildAll`)
 - Commit: `cafa134` (`Documenta propagacao das flags de validacao de deploy bin no import-then-build`)
+
+## Catalogo e rastreabilidade de classes CSS no indice KbIntelligence (camadas 1 e 2)
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-10
+
+### Origem
+
+Registrada em `999-ideias-pendentes.md` (pronta para implementar, decisoes de design fechadas em 2026-06-10). Surgiu de prompt de agente externo que apontou lacuna de texto livre no indice e propos uma camada full-text geral (FTS5); na discussao com o usuario foi afunilada para o que tinha valor barato e imediato: catalogar as classes CSS e rastrear onde sao usadas. A camada 3 (texto livre geral) ficou de fora e virou entrada propria no `999`.
+
+### Problema concreto
+
+Dois falsos "nao existe", o erro que a base mais teme: (1) inventario incompleto — as classes do modelo moderno (DesignSystem) sao texto SCSS dentro do objeto, nao viram objeto, entao `search-objects` por uma delas devolvia "nao existe"; (2) uso invisivel — o uso nao esta so no layout (`class="..."`); tambem e atribuido por codigo em eventos (`Controle.Class = ...`), e uma deteccao que olhe so o layout perde centenas de usos.
+
+### Implementacao
+
+- Camada 1 — `scripts/Build-KbIntelligenceIndex.py` cataloga classes na tabela nova `css_class`: `model` `legacy-theme` (de `ThemeClass`, nome pela propriedade `Name` — nunca o stem, que corrompe `:` em `_`, ex.: `ImageHandCenter_hover.xml` cujo Name real e `ImageHandCenter:hover`) / `design-system` (de SCSS no Part Styles `c6b14574-...` de `DesignSystem` e de `DesignSystem` aninhado em `PackagedModule`); `origin` `kb-authored`/`packaged-module`; `parent_class` de heranca; `UNIQUE(model, class_name, defining_object_name)` que de proposito nao colapsa entre modelos (mesma classe em legacy e DS = sinal de migracao). `INSERT OR IGNORE` + dedup por `@media`.
+- Camada 2 — uso reusa `relations`+`evidence` (sem tabela nova): `uses_css_class` resolvivel (`evidence_role` `css_layout`/`css_event`) e `uses_css_class_dynamic` para `.Class=` por variavel/`Format()` (`target_name` = a expressao, nao um sentinela; M conta por `relation_kind`, nunca por `COUNT(DISTINCT target_name)`). Cobre as 7 formas da matriz; vetores de layout `class`/`cellClass`/`rowClass`/`formClass` (nao o `gxObjClass` numerico); ignora comentarios `//` e `/* */`. Localizador = objeto + snippet.
+- Consultas `css-classes` (catalogo; visao padrao so `kb-authored`, lookup nominal `case-sensitive` nunca filtra origem, `legacy-theme` marcado depreciado) e `css-class-usage` (uso; declara `dynamic_uses_total`/`found_in_catalog` e lista usadas-mas-nao-catalogadas) em `scripts/Query-KbIntelligenceIndex.py` e no wrapper `.ps1` (`-Model`/`-Origin`/`-IncludeImported`). Bump `schema_version` `2`->`3` e `EXTRACTOR_SIGNATURE_VERSION` `5`->`6` (rebuild esperado nas pastas paralelas).
+- Self-test `scripts/Test-KbIntelligenceCssClassExtractionSelfTest.ps1` (7 formas + `:hover` + heranca + dedup `@media` + comentarios + `PackagedModule` + classe usada-mas-nao-catalogada); 4 self-tests KbIntelligence existentes seguem verdes.
+- Paridade de doc: `README.md` (trilingue), `scripts/README-kb-intelligence.md`, `xpz-index-triage/SKILL.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `CHANGELOG.md` (trilingue) e correcao de `schema_version=2`->`>=2` em 4 docs de writability.
+
+### Decisao final
+
+O design foi fechado com o usuario em quatro pontos (dinamico via expressao; nome legacy pela propriedade `Name`; escopo inclui `PackagedModule` com `origin` filtrado por padrao; tabela `css_class` fora de `objects`), com dois confirmados por subagente Opus e o plano revisado por painel multi-modelo (DeepSeek V4 Pro, GLM 5.1, MiniMax M3 via opencode). A validacao empirica no corpus FabricaBrasil reproduziu a regua e corrigiu dois numeros do `999`: AttributeAvisos esta em **15** WebPanels (verdade de campo: 16 arquivos = 1 DS + 15 WebPanels), nao 14; e o layout tem **6077** vetores reais de classe (`class`+`cellClass`+`rowClass`+`formClass`), nao 6229 — a regua antiga incluia o `gxObjClass` numerico. A validacao tambem pegou um gap real de regra de ouro (sem `cellClass` eu perderia 1.746 usos), corrigido antes do commit.
+
+### Rastreabilidade
+
+- Commit: `c33f82f` (`Adiciona catalogo e rastreabilidade de classes CSS ao indice KbIntelligence`)
