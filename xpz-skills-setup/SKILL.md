@@ -241,6 +241,13 @@ Labels: `NEXA_ALREADY_LINKED`, `NEXA_ORIGIN_ADDED`, `NEXA_REPO_CLONED`,
 `NEXA_REMOTE_MISMATCH` (bloqueia), `NEXA_DIR_NOT_REPO` (bloqueia),
 `GIT_*` (mesma família do bootstrap XPZ).
 
+**Convenção de labels de simulação:** os labels de caminho `-WhatIf` (status
+`ACTION_REQUIRED`, sufixo `*_SKIPPED` — ex.: `NEXA_CLONE_SKIPPED`,
+`NEXA_ORIGIN_ADD_SKIPPED`, `GIT_INSTALL_SKIPPED`) seguem padrão uniforme
+(`ShouldProcess` recusou, nada foi feito) e **não são enumerados individualmente**;
+só ocorrem em modo simulação (`-WhatIf`). Mesma convenção vale para o bootstrap
+XPZ (passo 0 do `## WORKFLOW`).
+
 **Auditoria de registro da `nexa`:** o motor `scripts/Test-XpzSkillsRegistration.ps1`
 já classifica a `nexa` em uma seção separada (`externalSkills` / `externalOverall`),
 aplicando a **mesma** classificação OK / coberta_por_compatibilidade / ausente /
@@ -433,6 +440,12 @@ detecta o `server.py` defasado comparando o hash instalado com o canônico do re
      conforme as mensagens do script
    - Quando o usuário pedir explicitamente só o registro de skills, e a raiz já
      for um repositório Git, este passo é um no-op rápido (`GIT_ALREADY_LINKED`)
+   - **Convenção de labels de simulação:** os labels de caminho `-WhatIf` (status
+     `ACTION_REQUIRED`, sufixo `*_SKIPPED` — ex.: `GIT_INSTALL_SKIPPED`,
+     `ORIGIN_ADD_SKIPPED`, `BOOTSTRAP_SKIPPED`, `ALIGN_SKIPPED`) seguem padrão
+     uniforme (`ShouldProcess` recusou, nada foi feito) e **não são enumerados
+     individualmente** acima; só ocorrem em modo simulação (`-WhatIf`). Mesma
+     convenção na seção `## SKILL EXTERNA GERENCIADA: NEXA`.
 1. Localizar a raiz do repositório de skills XPZ (pasta-pai deste `SKILL.md`)
 2. Executar o **motor de auditoria** `scripts/Test-XpzSkillsRegistration.ps1`
    (`-AsJson` para agentes), que de forma determinística inventaria as subpastas
