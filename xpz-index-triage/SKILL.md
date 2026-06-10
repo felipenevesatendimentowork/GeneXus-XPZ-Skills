@@ -84,6 +84,8 @@ Do NOT use this skill for:
   - `show-evidence`
   - `impact-basic`
   - `functional-trace-basic`
+  - `css-classes`
+  - `css-class-usage`
 - Quando a pergunta ou solicitação de edição vier ancorada em fluxo de navegação ("nesta tela clico em X", "o popup aberto por Y", "o objeto chamado pelo evento Z"), executar sub-fluxo obrigatório de resolução de alvo antes de liberar leitura ou edição:
   1. Identificar o objeto caller citado pelo usuário
   2. Localizar o evento ou ação real no XML do caller (`Event`, `Action`, `Link`, `Window.Object`, `Create(...)`, `formatLink`, `context.NewWindow`, URL gerada)
@@ -104,7 +106,7 @@ Do NOT use this skill for:
 - Quando o índice ou a busca textual pontual retornar **mais de um** candidato plausível, listar **todos**, cruzar com pistas do usuário (action, botão, evento, Procedure/WebPanel citados, tokens no nome do arquivo, fluxo declarado), declarar **recomendação explícita com motivo** e **confirmar com o usuário** antes de abrir XML ou responder como se o alvo estivesse fechado.
 
 - Executar a triagem inicial apropriada
-- Não executar consulta substantiva do índice antes de `GATE_OK`; `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` e `functional-trace-basic` só podem rodar depois que o gate terminar liberado
+- Não executar consulta substantiva do índice antes de `GATE_OK`; `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic`, `functional-trace-basic`, `css-classes` e `css-class-usage` só podem rodar depois que o gate terminar liberado
 - Depois de `GATE_OK`, ir direto para a consulta substantiva mínima necessária; não abrir `scripts/README-kb-intelligence.md`, não listar `scripts` e não reinspecionar o wrapper local se a pergunta já puder ser atendida com consulta simples como `search-objects`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
 - Em pergunta simples de existência/localização nominal, listagem por tipo ou consulta pontual de atributo (`attribute-info`) ou gravabilidade materializada (`transaction-attributes`, `transaction-writable-attributes`), considerar a própria skill suficiente para escolher a consulta mínima; usar os parâmetros documentados em **QUERY PARAMETER REFERENCE**; não abrir o wrapper só para "confirmar assinatura" antes de chamar `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes` ou `transaction-writable-attributes`
 - Devolver leitura técnica curta, auditável e limitada ao recorte do índice
@@ -182,6 +184,8 @@ Para as consultas mais frequentes, o wrapper `Query-*KbIntelligence.ps1` aceita 
 - **who-uses** / **what-uses** em `Procedure` (e alvos resolvidos em `Formula` de `Attribute`): o índice inclui dependências via `Property Formula` quando o padrão de chamada coincide com `Source` efetivo; para semântica da expressão ou funções não indexadas, abrir o XML do atributo
 - **transaction-writable-attributes**: classificação completa materializada no índice (paridade com `Test-GeneXusTransactionWritability.ps1`, que delega ao núcleo Python); use para triagem e impacto de `New` em atributos; `unclassified-*` exige XML; blocos `New` em `Procedure` ainda passam por `Test-GeneXusNewWritableTargets.ps1`
 - **transaction-attributes** / **transaction-writable-attributes**: `-ObjectName` (obrigatório, nome exato da Transaction); lista atributos por Level com classificação materializada; para empacote com atribuições ou blocos `New`, use os gates completos da skill `xpz-builder`
+- **css-classes**: catálogo de classes CSS (tabela `css_class`, estilo-inventário; não exige `queryableByKbIntelligence`). `-Model` (opcional: `legacy-theme` | `design-system`), `-Origin` (opcional: `kb-authored` | `packaged-module`), `-IncludeImported` (opcional, inclui libs importadas na visão sem lookup), `-ObjectName` (opcional, lookup nominal **case-sensitive** de uma classe; nunca filtra origem, para não dar falso "não existe" de classe importada), `-Limit`. `legacy-theme` sai marcado `deprecated=true` (candidato a migração para DesignSystem)
+- **css-class-usage**: onde uma classe é usada (relações `uses_css_class`/`uses_css_class_dynamic`). `-ObjectName` (opcional: classe específica; sem ele devolve overview com totais e a lista de **usadas mas não catalogadas**), `-Limit`. Declara cobertura honesta: `dynamic_uses_total` = atribuições `.Class=` dinâmicas (variável/`Format()`) não atribuíveis a uma classe; `found_in_catalog=false` = classe usada mas não catalogada, **não** inexistente. Para operação destrutiva (renomear/remover classe), conferir por busca literal no XML antes de agir
 
 A documentação completa de todas as consultas e seus parâmetros está em [scripts/README-kb-intelligence.md](../scripts/README-kb-intelligence.md).
 
@@ -269,7 +273,7 @@ Se qualquer `BLOCK:` ocorrer, encerrar a pergunta de negócio e oferecer `xpz-kb
 - NUNCA testar, listar ou abrir caminho filho de uma camada do gate antes de confirmar a camada pai; por exemplo, não testar `KbIntelligence\kb-intelligence.sqlite` antes de `KbIntelligence`
 - NUNCA listar `scripts` ou procurar wrappers alternativos quando o wrapper local documentado estiver ausente; isso é defasagem da pasta paralela, não descoberta de fallback
 - NUNCA continuar a triagem substantiva quando `index-metadata` falhar, retornar vazio ou não trouxer timestamp de build do índice
-- NUNCA executar `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic` ou `functional-trace-basic` antes de `GATE_OK`
+- NUNCA executar `search-objects`, `list-by-type`, `object-info`, `attribute-info`, `transaction-attributes`, `transaction-writable-attributes`, `who-uses`, `what-uses`, `show-evidence`, `impact-basic`, `functional-trace-basic`, `css-classes` ou `css-class-usage` antes de `GATE_OK`
 - NUNCA procurar `last_xpz_materialization_run_at` antes de confirmar que `kb-source-metadata.md` existe como arquivo
 - NUNCA intercalar `Get-Date` entre etapas internas do gate; usar horário local apenas para updates/respostas ao usuário ou registro operacional necessário
 - NUNCA descrever bloqueio pós-`index-metadata` como proibição total de consultar o índice; `index-metadata` é consulta de gate, o bloqueio impede triagem substantiva

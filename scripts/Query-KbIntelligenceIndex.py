@@ -18,7 +18,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 from GeneXusObjectTypeCatalogCore import resolve_effective_object_type_catalog_for_query  # noqa: E402
 
 
-EXPECTED_SCHEMA_VERSION = "2"
+EXPECTED_SCHEMA_VERSION = "3"
 LEVEL_RE = re.compile(r"<Level\b(?P<attrs>[^>]*)>(?P<body>.*?)</Level>", re.IGNORECASE | re.DOTALL)
 LEVEL_ATTRIBUTE_RE = re.compile(
     r"<Attribute\b(?P<attrs>[^>]*)>(?P<name>.*?)</Attribute>",
@@ -671,6 +671,158 @@ def list_by_type(conn: sqlite3.Connection, object_type: str, limit: int | None) 
     }
 
 
+def css_classes(
+    conn: sqlite3.Connection,
+    class_name: str | None,
+    model: str | None,
+    origin: str | None,
+    include_imported: bool,
+    limit: int | None,
+) -> dict[str, object]:
+    where: list[str] = []
+    params: list[object] = []
+    if class_name:
+        if "*" in class_name:
+            where.append("class_name LIKE ?")
+            params.append(class_name.replace("*", "%"))
+        else:
+            # Casamento exato e case-sensitive: classes CSS sao case-sensitive.
+            where.append("class_name = ?")
+            params.append(class_name)
+    if model:
+        where.append("model = ?")
+        params.append(model)
+    if origin:
+        where.append("origin = ?")
+        params.append(origin)
+    elif not include_imported and not class_name:
+        # Visao padrao (sem lookup nominal e sem origin explicito): so classes autorais da KB.
+        # Um lookup por nome NUNCA filtra origem, para nao produzir falso "nao existe" de classe importada.
+        where.append("origin = 'kb-authored'")
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    rows = fetch_all(
+        conn,
+        f"""
+        SELECT class_name, model, origin, defining_object_type,
+               defining_object_name, defining_file, parent_class, extractor_rule
+        FROM css_class
+        {clause}
+        ORDER BY model, class_name, defining_object_name
+        """,
+        tuple(params),
+    )
+    for row in rows:
+        row["deprecated"] = row.get("model") == "legacy-theme"
+    total = len(rows)
+    return {
+        "query": "css-classes",
+        "filters": {
+            "class_name": class_name,
+            "model": model,
+            "origin": origin,
+            "include_imported": include_imported,
+        },
+        "total": total,
+        "shown": len(limit_rows(rows, limit)),
+        "results": limit_rows(rows, limit),
+        "notice": (
+            "model='legacy-theme' marcado deprecated=true (modelo antigo, candidato a migracao para DesignSystem). "
+            "Sem lookup nominal e sem --origin, a visao lista so origin='kb-authored'; use --include-imported "
+            "ou --origin packaged-module para classes de libs importadas."
+        ),
+    }
+
+
+def css_class_usage(
+    conn: sqlite3.Connection,
+    class_name: str | None,
+    limit: int | None,
+) -> dict[str, object]:
+    dynamic_row = fetch_one(
+        conn,
+        "SELECT COUNT(*) AS count FROM relations WHERE relation_kind = 'uses_css_class_dynamic'",
+        (),
+    )
+    dynamic_total = dynamic_row["count"] if dynamic_row else 0
+    honest_notice = (
+        "Cobertura honesta: resolvable_uses sao usos com nome literal da classe (layout + codigo). "
+        "dynamic_uses_total e o total de atribuicoes .Class= dinamicas (variavel/Format) no acervo, "
+        "NAO atribuiveis a uma classe especifica por nome. found_in_catalog=false indica classe usada "
+        "mas nao catalogada (ex.: importada nao varrida), nao inexistente. Operacao destrutiva exige "
+        "conferencia por busca literal no XML."
+    )
+
+    if not class_name:
+        resolvable_row = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS count FROM relations WHERE relation_kind = 'uses_css_class'",
+            (),
+        )
+        uncatalogued_rows = fetch_all(
+            conn,
+            """
+            SELECT DISTINCT r.target_name AS class_name
+            FROM relations r
+            WHERE r.relation_kind = 'uses_css_class'
+              AND r.target_name NOT IN (SELECT class_name FROM css_class)
+            ORDER BY r.target_name
+            """,
+            (),
+        )
+        uncatalogued = [str(row["class_name"]) for row in uncatalogued_rows]
+        return {
+            "query": "css-class-usage",
+            "scope": "overview",
+            "resolvable_uses_total": resolvable_row["count"] if resolvable_row else 0,
+            "dynamic_uses_total": dynamic_total,
+            "used_but_uncatalogued_total": len(uncatalogued),
+            "used_but_uncatalogued": uncatalogued if limit is None or limit <= 0 else uncatalogued[:limit],
+            "notice": honest_notice,
+        }
+
+    catalog = fetch_all(
+        conn,
+        """
+        SELECT class_name, model, origin, defining_object_type, defining_object_name, defining_file, parent_class
+        FROM css_class
+        WHERE class_name = ?
+        ORDER BY model, defining_object_name
+        """,
+        (class_name,),
+    )
+    uses = fetch_all(
+        conn,
+        """
+        SELECT
+            o.type AS source_type,
+            o.name AS source_name,
+            o.file_path AS source_file,
+            r.relation_kind,
+            e.evidence_role,
+            e.line,
+            e.snippet
+        FROM relations r
+        JOIN objects o ON o.object_id = r.source_object_id
+        JOIN evidence e ON e.evidence_id = r.evidence_id
+        WHERE r.target_type = 'CssClass' AND r.target_name = ? AND r.relation_kind = 'uses_css_class'
+        ORDER BY o.type, o.name, e.evidence_role
+        """,
+        (class_name,),
+    )
+    return {
+        "query": "css-class-usage",
+        "scope": "class",
+        "class_name": class_name,
+        "found_in_catalog": len(catalog) > 0,
+        "catalog": catalog,
+        "resolvable_uses_total": len(uses),
+        "resolvable_uses_shown": len(limit_rows(uses, limit)),
+        "resolvable_uses": limit_rows(uses, limit),
+        "dynamic_uses_total": dynamic_total,
+        "notice": honest_notice,
+    }
+
+
 def show_evidence(
     conn: sqlite3.Connection,
     relation_id: int | None,
@@ -753,6 +905,68 @@ def format_text(result: dict[str, object]) -> str:
                 if key == "last_index_build_run_at":
                     continue
                 lines.append(f"{key}: {metadata[key]}")
+        return "\n".join(lines)
+
+    if query == "css-classes":
+        lines.append(f"css-classes: {result.get('shown', 0)}/{result.get('total', 0)}")
+        if result.get("notice"):
+            lines.append(str(result.get("notice")))
+        rows = result.get("results", [])
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                deprecated = " [deprecated]" if row.get("deprecated") else ""
+                lines.append(
+                    f"- {row.get('class_name')} [{row.get('model')}/{row.get('origin')}]{deprecated}"
+                )
+                lines.append(
+                    f"  def: {row.get('defining_object_type')}:{row.get('defining_object_name')} "
+                    f"({row.get('defining_file')})"
+                    + (f" parent={row.get('parent_class')}" if row.get("parent_class") else "")
+                )
+        return "\n".join(lines)
+
+    if query == "css-class-usage":
+        if result.get("scope") == "overview":
+            lines.append("css-class-usage: overview")
+            lines.append(f"resolvable_uses_total: {result.get('resolvable_uses_total', 0)}")
+            lines.append(f"dynamic_uses_total: {result.get('dynamic_uses_total', 0)}")
+            lines.append(f"used_but_uncatalogued_total: {result.get('used_but_uncatalogued_total', 0)}")
+            uncat = result.get("used_but_uncatalogued", [])
+            if isinstance(uncat, list):
+                for name in uncat:
+                    lines.append(f"  - {name}")
+            if result.get("notice"):
+                lines.append(str(result.get("notice")))
+            return "\n".join(lines)
+        lines.append(f"css-class-usage: {result.get('class_name')}")
+        lines.append(f"found_in_catalog: {result.get('found_in_catalog')}")
+        catalog = result.get("catalog", [])
+        if isinstance(catalog, list):
+            for entry in catalog:
+                if not isinstance(entry, dict):
+                    continue
+                lines.append(
+                    f"  catalog: [{entry.get('model')}/{entry.get('origin')}] "
+                    f"{entry.get('defining_object_type')}:{entry.get('defining_object_name')}"
+                )
+        lines.append(
+            f"resolvable_uses: {result.get('resolvable_uses_shown', 0)}/{result.get('resolvable_uses_total', 0)}"
+        )
+        uses = result.get("resolvable_uses", [])
+        if isinstance(uses, list):
+            for row in uses:
+                if not isinstance(row, dict):
+                    continue
+                lines.append(
+                    f"  - {row.get('source_type')}:{row.get('source_name')} "
+                    f"[{row.get('evidence_role')}] {row.get('source_file')}"
+                )
+                lines.append(f"    {row.get('snippet')}")
+        lines.append(f"dynamic_uses_total: {result.get('dynamic_uses_total', 0)}")
+        if result.get("notice"):
+            lines.append(str(result.get("notice")))
         return "\n".join(lines)
 
     obj = result.get("object")
@@ -935,10 +1149,19 @@ def parse_args() -> argparse.Namespace:
             "impact-basic",
             "functional-trace-basic",
             "index-metadata",
+            "css-classes",
+            "css-class-usage",
         ],
     )
     parser.add_argument("--object-type")
     parser.add_argument("--object-name")
+    parser.add_argument("--model", help="Filtro de modelo para css-classes: legacy-theme | design-system.")
+    parser.add_argument("--origin", help="Filtro de origem para css-classes: kb-authored | packaged-module.")
+    parser.add_argument(
+        "--include-imported",
+        action="store_true",
+        help="css-classes: inclui classes de PackagedModule (libs importadas) na visao sem lookup nominal.",
+    )
     parser.add_argument("--relation-id", type=int)
     parser.add_argument("--source-type")
     parser.add_argument("--source-name")
@@ -1030,6 +1253,17 @@ def main() -> int:
             if not args.object_type or not args.object_name:
                 raise SystemExit("functional-trace-basic requires --object-type and --object-name.")
             result = functional_trace_basic(conn, args.object_type, args.object_name, args.limit)
+        elif args.query == "css-classes":
+            result = css_classes(
+                conn,
+                args.object_name,
+                args.model,
+                args.origin,
+                args.include_imported,
+                args.limit,
+            )
+        elif args.query == "css-class-usage":
+            result = css_class_usage(conn, args.object_name, args.limit)
         else:
             result = show_evidence(
                 conn,

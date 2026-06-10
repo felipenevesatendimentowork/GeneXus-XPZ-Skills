@@ -9,7 +9,7 @@ param(
     [string]$IndexPath,
 
     [Parameter(Mandatory = $true)]
-    [ValidateSet("object-info", "attribute-info", "search-objects", "list-by-type", "transaction-attributes", "transaction-writable-attributes", "who-uses", "what-uses", "show-evidence", "impact-basic", "functional-trace-basic", "index-metadata")]
+    [ValidateSet("object-info", "attribute-info", "search-objects", "list-by-type", "transaction-attributes", "transaction-writable-attributes", "who-uses", "what-uses", "show-evidence", "impact-basic", "functional-trace-basic", "index-metadata", "css-classes", "css-class-usage")]
     [string]$Query,
 
     [string]$ObjectType,
@@ -19,6 +19,9 @@ param(
     [string]$SourceName,
     [string]$TargetType,
     [string]$TargetName,
+    [string]$Model,
+    [string]$Origin,
+    [switch]$IncludeImported,
     [int]$Limit,
     [ValidateSet("json", "text")]
     [string]$Format = "json",
@@ -58,6 +61,9 @@ if ($SourceType) { $arguments += @("--source-type", $SourceType) }
 if ($SourceName) { $arguments += @("--source-name", $SourceName) }
 if ($TargetType) { $arguments += @("--target-type", $TargetType) }
 if ($TargetName) { $arguments += @("--target-name", $TargetName) }
+if ($Model) { $arguments += @("--model", $Model) }
+if ($Origin) { $arguments += @("--origin", $Origin) }
+if ($IncludeImported) { $arguments += @("--include-imported") }
 if ($Limit) { $arguments += @("--limit", $Limit) }
 if ($Format) { $arguments += @("--format", $Format) }
 if ($ParallelKbRoot) { $arguments += @("--parallel-kb-root", $ParallelKbRoot) }

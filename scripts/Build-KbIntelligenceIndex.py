@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Iterable
 
 # Incrementar quando a cobertura ou regras do indexador mudarem de forma material (nao em refator inerte).
-EXTRACTOR_SIGNATURE_VERSION = "5"
+EXTRACTOR_SIGNATURE_VERSION = "6"
 
 
 def compute_extractor_signature_hash() -> str:
@@ -102,6 +102,33 @@ FORMULA_PROPERTY_RE = re.compile(
 )
 OBJECT_TYPE_GUID_RE = re.compile(r'<Object\b[^>]*\btype="([^"]+)"')
 ATTRIBUTE_ROOT_RE = re.compile(r"^\s*(?:<\?xml[^>]*\?>\s*)?<Attribute\b", re.IGNORECASE)
+
+# Catalogo e rastreabilidade de classes CSS (camada 1: catalogo css_class; camada 2: uso via relations/evidence).
+# O SCSS de classes do modelo design-system vive no Part "Styles" deste type GUID, tanto em objetos
+# DesignSystem autorais quanto em DesignSystem aninhados dentro de PackagedModule (libs importadas).
+DESIGN_SYSTEM_STYLES_PART_GUID = "c6b14574-4f5f-4e35-aaa7-e322e88a9a10"
+CSS_USAGE_SOURCE_TYPES = ("WebPanel", "Panel", "Transaction")
+# Identificador de classe CSS aceita hifen e digito (ex.: Card-Basico) — distinto do identificador GeneXus.
+CSS_SELECTOR_RE = re.compile(r"^\s*\.(?P<name>[A-Za-z][A-Za-z0-9_-]*)\s*\{", re.MULTILINE)
+CSS_CLASS_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+PART_RE = re.compile(r"<Part\b[^>]*\btype=\"(?P<type>[^\"]+)\"[^>]*>(?P<body>.*?)</Part>", re.IGNORECASE | re.DOTALL)
+NAME_PROPERTY_RE = re.compile(
+    r"<Property>\s*<Name>Name</Name>\s*<Value>(?P<value>.*?)</Value>\s*</Property>",
+    re.IGNORECASE | re.DOTALL,
+)
+OBJECT_PARENT_ATTR_RE = re.compile(r"<Object\b[^>]*?\bparent=\"(?P<value>[^\"]*)\"", re.IGNORECASE)
+SCSS_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+SCSS_LINE_COMMENT_RE = re.compile(r"//[^\n]*")
+DOT_CLASS_ASSIGN_RE = re.compile(r"\.Class\s*=\s*(?P<rhs>\S.*)$", re.IGNORECASE)
+CSS_QUOTED_LITERAL_RE = re.compile(r"(?P<q>['\"])(?P<value>.*?)(?P=q)", re.DOTALL)
+CSS_PREFIX_CLASS_RE = re.compile(r"\b(?:style|theme)class\s*:\s*(?P<name>[A-Za-z][A-Za-z0-9_-]*)", re.IGNORECASE)
+CSS_DYNAMIC_HINT_RE = re.compile(r"&[A-Za-z_]|\bFormat\s*\(", re.IGNORECASE)
+# Vetores reais de classe de tema no layout GeneXus: class (controle), cellClass (celula),
+# rowClass (linha), formClass (form). gxObjClass NAO entra (valor numerico, nao e classe CSS).
+LAYOUT_CLASS_ATTR_RE = re.compile(
+    r"\b(?:class|cellClass|rowClass|formClass)\s*=\s*\"(?P<value>[^\"]*)\"",
+    re.IGNORECASE,
+)
 
 from GeneXusObjectTypeCatalogCore import (  # noqa: E402
     build_type_guid_index,
@@ -204,6 +231,18 @@ class Evidence:
     evidence_role: str
     extractor_rule: str
     confidence: str
+
+
+@dataclass(frozen=True)
+class CssClass:
+    class_name: str
+    model: str  # legacy-theme | design-system
+    origin: str  # kb-authored | packaged-module
+    defining_object_type: str
+    defining_object_name: str
+    defining_file: str
+    parent_class: str | None
+    extractor_rule: str
 
 
 def read_text(path: Path) -> str:
@@ -1740,9 +1779,188 @@ def extract_table_index_member_attribute_evidence(
     return evidences
 
 
+def strip_scss_comments(text: str) -> str:
+    """Remove comentarios SCSS/GeneXus (/* */ e //) preservando a contagem de linhas."""
+    text = SCSS_BLOCK_COMMENT_RE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+    text = SCSS_LINE_COMMENT_RE.sub("", text)
+    return text
+
+
+def design_system_styles_scss(xml_text: str) -> Iterable[str]:
+    """SCSS dos Parts 'Styles' (mesmo type GUID em DesignSystem autoral e aninhado em PackagedModule)."""
+    for part_match in PART_RE.finditer(xml_text):
+        if part_match.group("type").lower() != DESIGN_SYSTEM_STYLES_PART_GUID:
+            continue
+        for source_match in SOURCE_RE.finditer(part_match.group("body")):
+            scss = unwrap_source_body(source_match.group("body"))
+            if scss.strip():
+                yield strip_scss_comments(scss)
+
+
+def collect_legacy_theme_css_classes(theme_class_objects: Iterable[ObjectInfo]) -> list[CssClass]:
+    rows: list[CssClass] = []
+    seen: set[tuple[str, str]] = set()
+    for source in theme_class_objects:
+        xml_text = read_text(source.path)
+        name_match = NAME_PROPERTY_RE.search(xml_text)
+        class_name = html.unescape(name_match.group("value")).strip() if name_match else ""
+        if not class_name:
+            class_name = source.name
+        parent_match = OBJECT_PARENT_ATTR_RE.search(xml_text)
+        parent_class = None
+        if parent_match:
+            candidate = html.unescape(parent_match.group("value")).strip()
+            parent_class = candidate or None
+        key = (class_name, source.name)
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(
+            CssClass(
+                class_name=class_name,
+                model="legacy-theme",
+                origin="kb-authored",
+                defining_object_type="ThemeClass",
+                defining_object_name=source.name,
+                defining_file=source.rel_path,
+                parent_class=parent_class,
+                extractor_rule="theme_class_name_property",
+            )
+        )
+    return rows
+
+
+def collect_design_system_css_classes(
+    objects: Iterable[ObjectInfo],
+    *,
+    defining_object_type: str,
+    origin: str,
+    extractor_rule: str,
+) -> list[CssClass]:
+    rows: list[CssClass] = []
+    seen: set[tuple[str, str]] = set()
+    for source in objects:
+        xml_text = read_text(source.path)
+        for scss in design_system_styles_scss(xml_text):
+            for selector in CSS_SELECTOR_RE.finditer(scss):
+                class_name = selector.group("name")
+                key = (class_name, source.name)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(
+                    CssClass(
+                        class_name=class_name,
+                        model="design-system",
+                        origin=origin,
+                        defining_object_type=defining_object_type,
+                        defining_object_name=source.name,
+                        defining_file=source.rel_path,
+                        parent_class=None,
+                        extractor_rule=extractor_rule,
+                    )
+                )
+    return rows
+
+
+def dedup_evidences(evidences: list[Evidence]) -> list[Evidence]:
+    unique: dict[tuple[str, str, str, str, int, str, str], Evidence] = {}
+    for evidence in evidences:
+        key = (
+            evidence.source_type,
+            evidence.source_name,
+            evidence.target_type,
+            evidence.target_name,
+            evidence.line,
+            evidence.extractor_rule,
+            evidence.evidence_role,
+        )
+        unique[key] = evidence
+    return list(unique.values())
+
+
+def extract_css_layout_usage_evidence(usage_objects: Iterable[ObjectInfo]) -> list[Evidence]:
+    """Uso estatico de classe no layout: atributo class="..." (uma ou varias classes por espaco)."""
+    evidences: list[Evidence] = []
+    for source in usage_objects:
+        xml_text = read_text(source.path)
+        for match in LAYOUT_CLASS_ATTR_RE.finditer(xml_text):
+            value = html.unescape(match.group("value"))
+            if not value.strip():
+                continue
+            line_no = line_number_at(xml_text, match.start())
+            for token in value.split():
+                if not CSS_CLASS_NAME_RE.match(token):
+                    continue
+                add_evidence(
+                    evidences,
+                    source=source,
+                    target_type="CssClass",
+                    target_name=token,
+                    relation_kind="uses_css_class",
+                    line=line_no,
+                    column=1,
+                    snippet=match.group(0),
+                    extractor_rule="css_layout_class_attribute",
+                    evidence_role="css_layout",
+                )
+    return dedup_evidences(evidences)
+
+
+def extract_css_event_usage_evidence(usage_objects: Iterable[ObjectInfo]) -> list[Evidence]:
+    """Uso por codigo: atribuicao Controle.Class = <expr> em eventos (Source). Cobre as 7 formas da matriz."""
+    evidences: list[Evidence] = []
+    for source in usage_objects:
+        xml_text = read_text(source.path)
+        for block in source_blocks(xml_text):
+            block_text = strip_scss_comments(block.text)
+            for offset, line in enumerate(block_text.splitlines()):
+                if not line.strip():
+                    continue
+                line_no = block.start_line + offset
+                for match in DOT_CLASS_ASSIGN_RE.finditer(line):
+                    rhs = match.group("rhs").strip()
+                    resolvable: set[str] = set()
+                    for literal in CSS_QUOTED_LITERAL_RE.finditer(rhs):
+                        for token in literal.group("value").split():
+                            if CSS_CLASS_NAME_RE.match(token):
+                                resolvable.add(token)
+                    for prefix_match in CSS_PREFIX_CLASS_RE.finditer(rhs):
+                        resolvable.add(prefix_match.group("name"))
+                    for class_name in sorted(resolvable):
+                        add_evidence(
+                            evidences,
+                            source=source,
+                            target_type="CssClass",
+                            target_name=class_name,
+                            relation_kind="uses_css_class",
+                            line=line_no,
+                            column=match.start("rhs") + 1,
+                            snippet=line,
+                            extractor_rule="css_event_class_assignment",
+                            evidence_role="css_event",
+                        )
+                    is_dynamic = bool(CSS_DYNAMIC_HINT_RE.search(rhs)) or not resolvable
+                    if is_dynamic:
+                        add_evidence(
+                            evidences,
+                            source=source,
+                            target_type="CssClass",
+                            target_name=compact_snippet(rhs, 120),
+                            relation_kind="uses_css_class_dynamic",
+                            line=line_no,
+                            column=match.start("rhs") + 1,
+                            snippet=line,
+                            extractor_rule="css_event_class_dynamic",
+                            evidence_role="css_dynamic",
+                        )
+    return dedup_evidences(evidences)
+
+
 def create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
+        DROP TABLE IF EXISTS css_class;
         DROP TABLE IF EXISTS transaction_attribute_writability;
         DROP TABLE IF EXISTS relations;
         DROP TABLE IF EXISTS evidence;
@@ -1811,6 +2029,23 @@ def create_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX idx_writability_transaction ON transaction_attribute_writability(transaction_name);
         CREATE INDEX idx_writability_transaction_object ON transaction_attribute_writability(transaction_object_id);
         CREATE INDEX idx_writability_attribute ON transaction_attribute_writability(attribute_name);
+
+        CREATE TABLE css_class (
+            css_class_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            class_name TEXT NOT NULL,
+            model TEXT NOT NULL,
+            origin TEXT NOT NULL,
+            defining_object_type TEXT,
+            defining_object_name TEXT,
+            defining_file TEXT,
+            parent_class TEXT,
+            extractor_rule TEXT NOT NULL,
+            UNIQUE(model, class_name, defining_object_name)
+        );
+
+        CREATE INDEX idx_css_class_name ON css_class(class_name);
+        CREATE INDEX idx_css_class_model ON css_class(model);
+        CREATE INDEX idx_css_class_origin ON css_class(origin);
         """
     )
 
@@ -1898,6 +2133,7 @@ def write_index(
     source_root: Path,
     objects: list[ObjectInfo],
     evidences: list[Evidence],
+    css_classes: list[CssClass],
     index_build_run_at: str,
     inventory_semantics: dict[str, object],
 ) -> None:
@@ -1915,7 +2151,7 @@ def write_index(
             [
                 ("last_index_build_run_at", index_build_run_at),
                 ("source_root", str(source_root)),
-                ("schema_version", "2"),
+                ("schema_version", "3"),
                 ("writability_rule_version", WRITABILITY_RULE_VERSION),
                 ("extractor_signature_version", EXTRACTOR_SIGNATURE_VERSION),
                 ("extractor_signature_hash", extractor_signature_hash),
@@ -1986,6 +2222,33 @@ def write_index(
             ("writability_rows_written", str(writability_written)),
         )
 
+        css_classes_written = 0
+        for css in css_classes:
+            cursor = conn.execute(
+                """
+                INSERT OR IGNORE INTO css_class(
+                    class_name, model, origin, defining_object_type,
+                    defining_object_name, defining_file, parent_class, extractor_rule
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    css.class_name,
+                    css.model,
+                    css.origin,
+                    css.defining_object_type,
+                    css.defining_object_name,
+                    css.defining_file,
+                    css.parent_class,
+                    css.extractor_rule,
+                ),
+            )
+            css_classes_written += cursor.rowcount if cursor.rowcount and cursor.rowcount > 0 else 0
+        conn.execute(
+            "INSERT INTO metadata(key, value) VALUES (?, ?)",
+            ("css_class_rows_written", str(css_classes_written)),
+        )
+
         conn.commit()
     finally:
         conn.close()
@@ -1995,6 +2258,7 @@ def validation_report(
     source_root: Path,
     objects_by_type: dict[str, dict[str, ObjectInfo]],
     evidences: list[Evidence],
+    css_classes: list[CssClass],
     validation_cases_path: Path | None,
     index_build_run_at: str,
     inventory_semantics: dict[str, object],
@@ -2072,12 +2336,19 @@ def validation_report(
                 case_result["failures"] = failures
             cases.append(case_result)
 
+    css_classes_by_model: dict[str, int] = {}
+    for css in css_classes:
+        bucket = f"{css.model}/{css.origin}"
+        css_classes_by_model[bucket] = css_classes_by_model.get(bucket, 0) + 1
+
     return {
         "last_index_build_run_at": index_build_run_at,
         "source_root": str(source_root),
         "objects_read_by_type": {key: len(value) for key, value in objects_by_type.items()},
         "objects_written": sum(len(value) for value in objects_by_type.values()),
         "relations_written": len(evidences),
+        "css_classes_written": len(css_classes),
+        "css_classes_by_model": dict(sorted(css_classes_by_model.items())),
         "inventory_semantics": inventory_semantics,
         "validation_cases_path": str(validation_cases_path) if validation_cases_path else None,
         "cases": cases,
@@ -2253,6 +2524,24 @@ def main() -> int:
         tables.values(),
         attribute_names=set(attributes),
     )
+    css_classes = (
+        collect_legacy_theme_css_classes(objects_by_type.get("ThemeClass", {}).values())
+        + collect_design_system_css_classes(
+            objects_by_type.get("DesignSystem", {}).values(),
+            defining_object_type="DesignSystem",
+            origin="kb-authored",
+            extractor_rule="design_system_scss_selector",
+        )
+        + collect_design_system_css_classes(
+            objects_by_type.get("PackagedModule", {}).values(),
+            defining_object_type="PackagedModule",
+            origin="packaged-module",
+            extractor_rule="packaged_module_scss_selector",
+        )
+    )
+    css_usage_objects = [obj for obj in objects if obj.object_type in CSS_USAGE_SOURCE_TYPES]
+    css_layout_usage_evidences = extract_css_layout_usage_evidence(css_usage_objects)
+    css_event_usage_evidences = extract_css_event_usage_evidence(css_usage_objects)
     evidences = [
         *source_evidences,
         *source_for_each_explicit_table_evidences,
@@ -2278,9 +2567,19 @@ def main() -> int:
         *transaction_level_table_evidences,
         *table_key_attribute_evidences,
         *table_index_member_attribute_evidences,
+        *css_layout_usage_evidences,
+        *css_event_usage_evidences,
     ]
     index_build_run_at = datetime.now(timezone.utc).isoformat()
-    write_index(args.output_path.resolve(), source_root, objects, evidences, index_build_run_at, inventory_semantics)
+    write_index(
+        args.output_path.resolve(),
+        source_root,
+        objects,
+        evidences,
+        css_classes,
+        index_build_run_at,
+        inventory_semantics,
+    )
 
     validation_cases_path = args.validation_cases_path.resolve() if args.validation_cases_path else None
     if validation_cases_path and not validation_cases_path.exists():
@@ -2290,6 +2589,7 @@ def main() -> int:
         source_root,
         objects_by_type,
         evidences,
+        css_classes,
         validation_cases_path,
         index_build_run_at,
         inventory_semantics,

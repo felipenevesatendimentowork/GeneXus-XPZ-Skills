@@ -61,7 +61,7 @@ Use este ramo somente quando a pergunta for **triagem tecnica** sobre atributos 
 
 1. escolher a consulta minima conforme `xpz-index-triage` (**QUERY PARAMETER REFERENCE**):
    - `attribute-info` — um atributo; sinais **leves** (`Formula`, `idBasedOn`, etc.)
-   - `transaction-attributes` ou `transaction-writable-attributes` — uma Transaction; classificacao **materializada** no indice (`schema_version=2`), com paridade contra `Test-GeneXusTransactionWritability.ps1`
+   - `transaction-attributes` ou `transaction-writable-attributes` — uma Transaction; classificacao **materializada** no indice (`schema_version>=2`), com paridade contra `Test-GeneXusTransactionWritability.ps1`
 2. registrar o comando, o objeto e os sinais retornados como **evidencia direta**
 3. declarar explicitamente o **tipo de consulta**:
    - `attribute-info`: leve; **nao** substitui classificacao completa de gravabilidade

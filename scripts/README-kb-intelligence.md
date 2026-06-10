@@ -157,14 +157,14 @@ O gate `Test-*KbIndexGate.ps1` (molde em `xpz-kb-parallel-setup/examples/Test-Kb
 
 ## Schema e versionamento
 
-O indice armazena `schema_version` na tabela `metadata`. O valor atual e `"2"` (inclui tabela `transaction_attribute_writability` e `writability_rule_version`).
+O indice armazena `schema_version` na tabela `metadata`. O valor atual e `"3"` (inclui a tabela `transaction_attribute_writability` com `writability_rule_version` e a tabela `css_class` do catalogo de classes CSS).
 
 O design e deliberado: o indice e artefato derivado e sempre regeneravel. Por isso nao existe caminho de migracao de schema — qualquer mudanca estrutural no motor exige rebuild completo.
 
 Consequencias operacionais:
 
 - todo indice gerado antes da introducao de `schema_version` e tratado automaticamente como incompativel e bloqueia qualquer consulta com mensagem explicita de rebuild
-- quando o motor evoluir para schema `"2"`, todo indice `"1"` bloqueia da mesma forma — comportamento esperado, nao bug
+- a cada evolucao de schema (`"1"` → `"2"` → `"3"`), todo indice em versao anterior bloqueia da mesma forma — comportamento esperado, nao bug
 - o erro de schema version e detectado pelo proprio `Query-KbIntelligenceIndex.py` antes de qualquer query, incluindo `index-metadata`; portanto o gate `Test-*KbIndexGate.ps1` tambem falha com `BLOCK:` em indices incompativeis
 - a resposta correta a qualquer bloqueio por schema e rebuild via `Build-KbIntelligenceIndex.ps1`, nunca contorno por leitura direta do SQLite ou dos XMLs
 
@@ -252,7 +252,7 @@ Para consulta leve de atributo, sem varrer XMLs em massa:
   -Format text
 ```
 
-Para listar atributos de uma Transaction com classificacao **materializada** de gravabilidade (paridade com o gate; exige indice `schema_version=2`):
+Para listar atributos de uma Transaction com classificacao **materializada** de gravabilidade (paridade com o gate; exige indice `schema_version>=2`):
 
 ```powershell
 .\scripts\Query-KbIntelligenceIndex.ps1 `
@@ -268,7 +268,7 @@ As consultas `attribute-info`, `transaction-attributes` e `transaction-writable-
 
 ## Validar consultas de atributo e gravabilidade transacional
 
-Depois de gerar ou localizar um indice SQLite com `source_root` valido, snapshot materializado no caminho esperado e `schema_version=2`, valide `attribute-info` (leve), `transaction-attributes` e `transaction-writable-attributes` (materializadas) com:
+Depois de gerar ou localizar um indice SQLite com `source_root` valido, snapshot materializado no caminho esperado e `schema_version>=2`, valide `attribute-info` (leve), `transaction-attributes` e `transaction-writable-attributes` (materializadas) com:
 
 ```powershell
 .\scripts\Test-KbIntelligenceQueries.ps1 `
@@ -359,6 +359,34 @@ Ele nao abre XML automaticamente, nao interpreta regra de negocio e nao substitu
   -Limit 20 `
   -Format text
 ```
+
+## Catalogo e uso de classes CSS (`css-classes`, `css-class-usage`)
+
+O indice cataloga as classes CSS da KB (tabela `css_class`) e rastreia onde sao usadas (relacoes `uses_css_class` / `uses_css_class_dynamic` em `relations`/`evidence`), cobrindo as duas falhas de falso "nao existe": o inventario incompleto (classes do `DesignSystem` nao viram objeto) e o uso invisivel (atribuicao por codigo `Controle.Class = ...`, nao so `class="..."` no layout).
+
+Camada 1 — catalogo. `css_class` unifica os dois modelos de tema, com `model` (`legacy-theme` de objetos `ThemeClass` | `design-system` de SCSS em `DesignSystem`) e `origin` (`kb-authored` | `packaged-module` de libs importadas). `legacy-theme` e marcado `deprecated=true` (candidato a migracao para DesignSystem). A visao padrao lista so `kb-authored`; um lookup nominal (`-ObjectName`) **nunca** filtra origem, para nao produzir falso "nao existe" de classe importada.
+
+```powershell
+# catalogo autoral (kb-authored); use -IncludeImported ou -Origin packaged-module para libs
+.\scripts\Query-KbIntelligenceIndex.ps1 `
+  -IndexPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence.sqlite" `
+  -Query css-classes -Model design-system -Format text
+
+# lookup de uma classe especifica (case-sensitive; acha tambem importada)
+.\scripts\Query-KbIntelligenceIndex.ps1 `
+  -IndexPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence.sqlite" `
+  -Query css-classes -ObjectName AttributeAvisos -Format text
+```
+
+Camada 2 — uso. `css-class-usage -ObjectName <classe>` lista os usos resolviveis (layout em `class`/`cellClass`/`rowClass`/`formClass`; codigo em `Controle.Class = "..." | 'A B' | StyleClass:x | ThemeClass:y`) com **localizador = objeto + snippet** (no layout tudo vem numa linha so, entao `line` e pouco util). Sem `-ObjectName`, devolve um overview com os totais e a lista de classes **usadas mas nao catalogadas** (cross-check da regra de ouro). A saida declara honestamente a cobertura: `dynamic_uses_total` conta as atribuicoes `.Class=` dinamicas (variavel `&v` / `Format()`) que **nao** sao atribuiveis a uma classe por nome. `found_in_catalog=false` significa classe usada mas nao catalogada (ex.: importada nao varrida), **nao** inexistente.
+
+```powershell
+.\scripts\Query-KbIntelligenceIndex.ps1 `
+  -IndexPath "C:\KB\KBExemplo\KbIntelligence\kb-intelligence.sqlite" `
+  -Query css-class-usage -ObjectName AttributeAvisos -Format text
+```
+
+Salvaguarda: a tabela e acelerador de triagem com frescor por gate, nao verdade exaustiva. Para operacao destrutiva (renomear/remover classe), conferir por busca literal no XML antes de agir.
 
 ## Validar consultas de impacto basico
 
