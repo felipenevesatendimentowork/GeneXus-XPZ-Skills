@@ -26,7 +26,13 @@
 
     Orfas: vinculos sob um diretorio de skills cujo alvo aponta para DENTRO do
     repositorio de skills XPZ, mas cujo nome nao esta mais no inventario da raiz.
-    Vinculos para outros repositorios (ex.: nexa) ficam fora de escopo.
+    Vinculos para outros repositorios nao contam como orfas do repo XPZ.
+
+    Skills externas gerenciadas (ex.: nexa): vivem em outro repositorio (nexa esta
+    em genexuslabs/genexus-skills) mas sao auditadas por nome em uma secao separada
+    (externalSkills / externalOverall), com a mesma classificacao OK / coberta /
+    ausente / quebrada. So `nexa` e gerenciada por nome; demais skills do repo
+    externo (ex.: gx-sap) ficam dormentes e nao sao auditadas nem reportadas.
 
     Freshness do MCP do Cursor (Candidato B): compara o server.py instalado com o
     canonico do repositorio e valida config.json/registro em mcp.json.
@@ -154,6 +160,42 @@ function Get-EntryInfo {
         $info.targetValid = $true
     }
     return $info
+}
+
+function Get-SkillToolStatus {
+    # Classifica UMA skill em UMA ferramenta, aplicando as mesmas regras nativo/compat
+    # do loop interno. Usado para as skills externas gerenciadas (ex.: nexa), que vivem
+    # fora do repo XPZ mas sao auditadas por nome.
+    param(
+        [Parameter(Mandatory = $true)][string]$Skill,
+        [Parameter(Mandatory = $true)]$ToolDef,
+        [Parameter(Mandatory = $true)][string]$ProfileRoot
+    )
+
+    $status = 'ausente'; $linkType = ''; $target = ''
+
+    foreach ($rel in $ToolDef.Native) {
+        $entry = Get-EntryInfo -DirPath (Join-Path $ProfileRoot $rel) -Name $Skill
+        if ($entry.present) {
+            if ($entry.targetValid) {
+                return [ordered]@{ status = 'OK'; linkType = $entry.linkType; target = $entry.target }
+            }
+            else {
+                $status = 'quebrada'; $linkType = $entry.linkType; $target = $entry.target
+            }
+        }
+    }
+
+    if ($status -eq 'ausente') {
+        foreach ($rel in $ToolDef.Compat) {
+            $entry = Get-EntryInfo -DirPath (Join-Path $ProfileRoot $rel) -Name $Skill
+            if ($entry.present -and $entry.targetValid) {
+                return [ordered]@{ status = 'coberta_por_compatibilidade'; linkType = $entry.linkType; target = $entry.target }
+            }
+        }
+    }
+
+    return [ordered]@{ status = $status; linkType = $linkType; target = $target }
 }
 
 # --- Setup --------------------------------------------------------------------
@@ -317,6 +359,48 @@ function Get-CursorMcpReport {
 
 $cursorMcp = Get-CursorMcpReport -ProfileRoot $profileRoot -RepoRoot $root
 
+# --- Skills externas gerenciadas (apenas nexa) --------------------------------
+# nexa vive em genexuslabs/genexus-skills; auditada por nome em secao separada.
+# Demais skills do repo externo (ex.: gx-sap) ficam dormentes e nao sao auditadas.
+$externalSkillDefs = @(
+    [ordered]@{ name = 'nexa'; repo = 'genexus-skills'; officialUrl = 'https://github.com/genexuslabs/genexus-skills.git' }
+)
+
+$externalSkills = @()
+$extHasGap = $false
+foreach ($ext in $externalSkillDefs) {
+    $perTool = @()
+    $repoRootDetected = ''
+    foreach ($def in $toolDefs) {
+        $installed = Test-ToolInstalled -Tool $def.Name
+        if (-not $installed) {
+            $perTool += [ordered]@{ name = $def.Name; installed = $false; status = 'nao_avaliada'; linkType = ''; target = '' }
+            continue
+        }
+        $cls = Get-SkillToolStatus -Skill $ext.name -ToolDef $def -ProfileRoot $profileRoot
+        if ($cls.status -eq 'ausente' -or $cls.status -eq 'quebrada') { $extHasGap = $true }
+        if ([string]::IsNullOrWhiteSpace($repoRootDetected) -and -not [string]::IsNullOrWhiteSpace($cls.target)) {
+            # O vinculo aponta para <repo>\<skill>; a raiz do repo externo e a pasta-pai.
+            $repoRootDetected = [System.IO.Path]::GetDirectoryName($cls.target)
+        }
+        $perTool += [ordered]@{
+            name      = $def.Name
+            installed = $true
+            status    = $cls.status
+            linkType  = $cls.linkType
+            target    = $cls.target
+        }
+    }
+    $externalSkills += [ordered]@{
+        name             = $ext.name
+        repo             = $ext.repo
+        officialUrl      = $ext.officialUrl
+        repoRootDetected = $repoRootDetected
+        tools            = $perTool
+    }
+}
+if ($extHasGap) { $externalOverall = 'EXTERNAL_SKILLS_GAPS' } else { $externalOverall = 'EXTERNAL_SKILLS_OK' }
+
 # --- Veredito -----------------------------------------------------------------
 $mcpIsGap = @('MCP_SERVER_STALE', 'MCP_CONFIG_INVALID') -contains $cursorMcp.label
 $hasGaps = ($sumMissing -gt 0) -or ($sumBroken -gt 0) -or (@($orphans).Count -gt 0) -or $mcpIsGap
@@ -324,11 +408,13 @@ if ($hasGaps) { $overall = 'REGISTRATION_GAPS' } else { $overall = 'REGISTRATION
 
 $result = [ordered]@{
     overall         = $overall
+    externalOverall = $externalOverall
     repoRoot        = $root
     strategy        = $Strategy
     skillsInventory = @($inventory)
     tools           = $toolsReport
     orphans         = @($orphans)
+    externalSkills  = @($externalSkills)
     cursorMcp       = $cursorMcp
     summary         = [ordered]@{
         ok              = $sumOk
@@ -337,6 +423,7 @@ $result = [ordered]@{
         broken          = $sumBroken
         orphans         = @($orphans).Count
         cursorMcp       = $cursorMcp.label
+        externalOverall = $externalOverall
     }
 }
 
@@ -375,5 +462,15 @@ else {
 Write-Output ("MCP Cursor: {0} (server atualizado={1}; registrado={2}; agentsPath valido={3})" -f `
         $cursorMcp.label, $cursorMcp.serverHashMatches, $cursorMcp.registeredInMcpJson, $cursorMcp.agentsPathValid)
 Write-Output ''
-Write-Output ("Resumo: OK={0} compat={1} ausentes={2} quebradas={3} orfas={4}" -f `
-        $sumOk, $sumCompat, $sumMissing, $sumBroken, @($orphans).Count)
+Write-Output ("Skills externas gerenciadas: {0}" -f $externalOverall)
+foreach ($ext in $externalSkills) {
+    $repoInfo = if ([string]::IsNullOrWhiteSpace($ext.repoRootDetected)) { '(repo local nao detectado)' } else { $ext.repoRootDetected }
+    Write-Output ("  [{0}] repo={1} | local={2}" -f $ext.name, $ext.repo, $repoInfo)
+    foreach ($pt in $ext.tools) {
+        if (-not $pt.installed) { continue }
+        Write-Output ("      {0,-12} {1}" -f $pt.name, $pt.status)
+    }
+}
+Write-Output ''
+Write-Output ("Resumo: OK={0} compat={1} ausentes={2} quebradas={3} orfas={4} | externas={5}" -f `
+        $sumOk, $sumCompat, $sumMissing, $sumBroken, @($orphans).Count, $externalOverall)
