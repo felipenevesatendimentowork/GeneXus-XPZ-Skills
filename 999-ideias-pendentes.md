@@ -1769,3 +1769,45 @@ Há texto útil para triagem que hoje só sai por `rg` no acervo, não pelo índ
 
 - `historico/IdeiasImplementadas_202606.md` (entrada-mãe das classes CSS, camadas 1 e 2)
 - `scripts/Build-KbIntelligenceIndex.py`, `scripts/Query-KbIntelligenceIndex.py`
+
+## Gate para `Transaction` com `Generate Object = False` carregando Events/Rules/WorkWithPlus
+
+**Importância:** média
+**Maturidade:** ideia (bloqueada por falta de XML real de KB com WorkWithPlus)
+
+**Origem:** relato de validação de outro agente (KB `CPJAPP`, frente NFS-e), 2026-06-10. O agente reportou erros de import/build (`LoadWWPContext`, referência a `<Nome>WW`, pattern WorkWithPlus quebrado) em Transactions com `Generate Object = False` que ainda carregavam Events/Rules e bagagem WWP. Não avaliado na frente atual dele (só Procedures); levantado como recomendação ("item 10 / recomendação 4"). Faz parte de um lote de 4 gaps do mesmo relato (ver também Frente B — contrato `-AsJson`, já parcialmente coberta pela entrada "Eliminar globalmente o uso de `-AsJson`" — e Frente C — preflight único).
+
+### Problema concreto que motiva a ideia
+
+Uma `Transaction` com `Generate Object = Não` continua definindo tabela/estrutura, mas o GeneXus **não gera o programa/tela** dela. Se o pacote XPZ ainda traz blocos de `Events`/`Rules` de tela e/ou o pattern WorkWithPlus (`Apply:WWP` + derivados `*WW`, `*WWDS`, etc.), esses artefatos pressupõem runtime que não será gerado. Resultado: erros de import/build referenciando contexto WWP/objeto gerado inexistente. É o cenário **oposto** ao do `wwp-packaging.md`, que cobre só a completude do pacote WWP, não a contradição "estrutura não-gerável + bagagem de geração".
+
+### O que já se sabe (não repesquisar)
+
+- `xpz-builder/responsibilities-by-type/transaction.md` **não menciona** `Generate Object = False` em lugar nenhum.
+- `xpz-builder/wwp-packaging.md` cobre só completude WWP; nada sobre o caso inverso.
+- Não há gate nem busca textual (`LoadWWPContext`, `<Nome>WW`, `PatternInstance WorkWithPlus*`, `Events`/`Rules` inesperados) acionada por esse cenário.
+- Sintomas vêm do relato externo, **não** confirmados nesta base: `LoadWWPContext`, `<TransactionName>WW`, `WorkWithPlus*`.
+
+### Bloqueio de evidência (motivo de continuar `ideia`)
+
+O corpus preferencial (FabricaBrasil, ~15k objetos) **não exercita** este cenário: não usa WorkWithPlus e as Transactions estão com `Generate Object` no default (`True`, que nem chega a ser serializado — verificado em `Animal.xml` em 2026-06-10). Daqui não dá para confirmar nem onde a propriedade `Generate Object=False` aparece no XML, nem o formato exato dos derivados WWP. Pela política de evidência do próprio `transaction.md`, sem XML real qualquer gate cairia em `padrao-gx-nao-verificado` — orientação documental ok, mas não cabe afirmar detecção estrutural não verificada.
+
+### O que precisa do acervo de uma KB com WWP (pedido enviado ao outro agente em 2026-06-10)
+
+- onde/como `Generate Object = False` é serializado no XML de uma `Transaction`;
+- como `Apply:WWP` e a `PatternInstance WorkWithPlus*` aparecem;
+- forma dos objetos derivados (`*WW`, `*WWDS`, `*LoadDVCombo`, `*WWGetFilterData`);
+- exemplo de blocos `Events`/`Rules` carregados numa Transaction estrutural;
+- texto/contexto real dos erros (`LoadWWPContext` etc.) e versão do GeneXus.
+
+### Decisões em aberto
+
+- Gate determinístico vs orientação documental + busca textual conservadora.
+- Se detecta-e-bloqueia (fail) ou só alerta (warn) quando há `Generate Object=False` + Events/Rules/WWP.
+- Onde mora: novo script + entradas em `transaction.md`/`wwp-packaging.md`, ou só doc.
+- Relação com a Frente C (preflight único): se vira mais um gate orquestrado.
+
+### Relacionado
+
+- `xpz-builder/responsibilities-by-type/transaction.md`, `xpz-builder/wwp-packaging.md`
+- Entrada "Eliminar globalmente o uso de `-AsJson`" (Frente B do mesmo lote)
