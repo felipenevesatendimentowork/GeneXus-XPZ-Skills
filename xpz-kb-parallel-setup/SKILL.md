@@ -402,6 +402,7 @@ Referencia rapida para decidir o peso operacional da ausencia de cada wrapper. A
 - Quando a pasta paralela da KB operar com `ObjetosGeradosParaImportacaoNaKbNoGenexus` e `PacotesGeradosParaImportacaoNaKbNoGenexus`, recomendar tambem wrapper local fino para gate de `Source`, por exemplo `Test-*KbSourceSanity.ps1`:
   - recebe um XML especifico em `-InputPath`; `-Path`, quando aceito, e alias de compatibilidade
   - delega para `scripts\Test-GeneXusSourceSanity.ps1` da base compartilhada
+  - nao repassa `-AsJson` ao motor compartilhado: `Test-GeneXusSourceSanity.ps1` ja emite JSON por padrao e NAO aceita `-AsJson` (trava confirmada por `Test-XpzParameterNamingContract.ps1`); o motor tambem espera um arquivo, nao uma pasta — se o wrapper local precisar varrer varios XML ou montar JSON proprio, faz isso no wrapper sem propagar a flag para baixo
   - retorna JSON por padrao no stdout, suficiente para distinguir `xmlWellFormed`, `sourceSanityStatus` e `probablyImportable`
   - bloqueia empacotamento local quando encontrar `sourceSanityStatus=fail`
   - em `warn`, devolve a lista de warnings e exige revisao conservadora antes do pacote

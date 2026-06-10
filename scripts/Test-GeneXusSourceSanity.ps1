@@ -1,4 +1,21 @@
 #requires -Version 7.4
+<#
+.SYNOPSIS
+    Gate de sanidade estrutural de Source em XML GeneXus/XPZ.
+
+.DESCRIPTION
+    Recebe um unico arquivo XML em -InputPath (alias -Path) e valida a
+    sanidade estrutural dos blocos Source: balanceamento de blocos
+    (If/For/Do/Sub) e avisos de estilo conservador. Nao itera pastas.
+
+.OUTPUTS
+    Emite SEMPRE JSON no stdout (xmlWellFormed, sourceSanityStatus,
+    probablyImportable, findings). Este motor NAO expoe -AsJson; a flag e
+    proibida por contrato (ver Test-XpzParameterNamingContract.ps1).
+    Wrappers locais nao devem repassar -AsJson nem passar uma pasta; se
+    precisarem varrer varios XML ou montar JSON proprio, fazem isso no
+    proprio wrapper, sem propagar a flag para baixo.
+#>
 
 [CmdletBinding()]
 param(
