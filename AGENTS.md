@@ -55,6 +55,7 @@
 - Resumo obrigatório antes de push: executar `scripts/Invoke-PrePushMechanicalChecks.ps1` (`-AsJson` para agentes), depois a busca semântica integral descrita no `13` — **não** basta grep de termos em `.md`; validar implementação dos motores citados.
 - Escopo: análise e relatório ao usuário; correções só após aprovação explícita **depois** do relatório pré-push.
 - **Gate semântico incondicional:** a fase semântica produz relatório e para. Nenhuma edição de arquivo, commit ou push acontece entre o relatório e a aprovação explícita do usuário — sem exceção, independentemente do tamanho ou obviedade do gap.
+- **Tier reforçado (opcional):** revisão por painel multi-modelo diverso e régua de convergência (push-ready só quando o painel inteiro responde "sem gap" sobre o estado final) em [14-revisao-pre-push-reforcada.md](14-revisao-pre-push-reforcada.md).
 
 ## Rastreabilidade privada de moldes sanitizados
 

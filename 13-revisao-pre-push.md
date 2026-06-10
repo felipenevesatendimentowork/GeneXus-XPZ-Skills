@@ -4,6 +4,8 @@
 
 Fonte **autoritativa** da rotina pré-push deste repositório. O `AGENTS.md` na raiz apenas aponta para este arquivo; agentes e mantenedores devem seguir o conteúdo integral aqui antes de considerar push liberado.
 
+Para o tier **reforçado e opcional** desta rotina — revisão por **painel multi-modelo diverso** e régua de convergência (push-ready só quando o painel inteiro responde "sem gap" sobre o estado final) — ver [`14-revisao-pre-push-reforcada.md`](14-revisao-pre-push-reforcada.md).
+
 ## Escopo
 
 A rotina pré-push é de **análise, busca de coerência e relatório** ao usuário. **Não** inclui alterar arquivos nem criar commits com base no relatório. Em face dos gaps, o agente **apresenta** o diagnóstico e, se fizer sentido, um diff ou lista de alterações sugeridas, e **só grava** no repositório após **aprovação explícita** do usuário **depois** do relatório — mesmo que a intenção inicial da sessão fosse aplicar correções; a pré-push não autoriza aplicar automaticamente com base apenas nessa intenção inicial. Uma única aprovação explícita (ex.: «ok, aplica os gaps do relatório») cobre o **conjunto** de alterações sugeridas, salvo o usuário pedir confirmação item a item.

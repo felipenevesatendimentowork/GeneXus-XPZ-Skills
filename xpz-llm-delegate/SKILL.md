@@ -21,6 +21,11 @@ quanto, com regras mais estreitas, em sessão dentro de uma **pasta paralela de 
 Ela não manipula XPZ/XML; o prefixo `xpz-` é marcador de família, como em
 `xpz-skills-setup`.
 
+Um caso de uso documentado deste mecanismo é o **painel multi-modelo de revisão
+pré-push reforçada** — ver [`14-revisao-pre-push-reforcada.md`](../14-revisao-pre-push-reforcada.md)
+na raiz do repositório, que guarda a política (régua de convergência); esta skill
+guarda o mecanismo de delegação.
+
 ---
 
 ## GUIDELINE
