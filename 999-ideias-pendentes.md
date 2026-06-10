@@ -1793,8 +1793,8 @@ $code  =$files|Select-String -Pattern '\.Class\s*=' -AllMatches
 
 ### Desenho proposto
 
-- **Camada 1 — catálogo (tabela nova dedicada, ex. `css_class`).** Toda classe passa a existir no inventário, venha do modelo antigo (`ThemeClass`) ou de texto SCSS dentro de `DesignSystem`/`Theme`. Colunas mínimas: nome da classe, objeto onde é definida, modelo (legacy-theme / design-system). **Não** colocar em `objects`: classe CSS do DesignSystem não é objeto GeneXus real (sem GUID/arquivo próprio), e sujaria contagens e a unicidade `(type,name)`. Decisão do usuário: tabela própria, confirmada.
-- **Camada 2 — uso (tabela nova `css_class_usage` OU reaproveitar `evidence`).** A tabela `evidence` já tem `snippet`/`source_file`/`line` — serve de base. Uma linha por uso **resolvível**: nome da classe, objeto que usa, origem (`layout` vs `event`), trecho de contexto. **Localizador = objeto + snippet, não número de linha**: no layout tudo vem espremido numa linha só (ex.: `wpPesagemAbate.xml`, todo o form na linha 4), então `line` é inútil ali.
+- **Camada 1 — catálogo (tabela nova dedicada `css_class`).** Toda classe passa a existir no inventário, venha do modelo antigo (`ThemeClass`) ou de texto SCSS dentro de `DesignSystem`/`Theme`. Colunas mínimas: nome da classe, objeto onde é definida, `model` (`legacy-theme` / `design-system`) — esta última como **dimensão de primeira classe** (filtro + rótulo de depreciado; ver «Decisões fechadas (2026-06-10)»). **Não** colocar em `objects`: classe CSS do DesignSystem não é objeto GeneXus real (sem GUID/arquivo próprio), e sujaria contagens e a unicidade `(type,name)`. Decisão do usuário: tabela própria, confirmada.
+- **Camada 2 — uso (reusar `relations` + `evidence`; ver «Decisões fechadas (2026-06-10)»).** Cada uso vira relação `source_object_id` → (`target_type='CssClass'`, `target_name=<classe>`) com `relation_kind='uses_css_class'`; `evidence` (`snippet`/`source_file`/`line`) recebe `evidence_role` dedicado (`css_layout` vs `css_event`). Uma linha por uso **resolvível**: nome da classe, objeto que usa, origem (`layout` vs `event`), trecho de contexto. **Localizador = objeto + snippet, não número de linha**: no layout tudo vem espremido numa linha só (ex.: `wpPesagemAbate.xml`, todo o form na linha 4), então `line` é inútil ali.
 
 ### Matriz de formas de uso a cobrir (camada 2)
 
@@ -1829,17 +1829,20 @@ A tabela é **acelerador de triagem com frescor garantido por gate**, não verda
 - Exige **modelo forte** com aderência a etapas (a base desaconselha modelos fracos para skills XPZ). Executor previsto: Claude Code com Opus 4.8.
 - Encerrar pela rotina de **revisão pré-push** (`13-revisao-pre-push.md`): passo mecânico + busca semântica integral + paridade motor↔doc.
 
-### Decisões em aberto (residuais, fechar no início da execução)
+### Decisões fechadas (2026-06-10)
 
-- Camada 2 em tabela própria (`css_class_usage`) ou linhas em `evidence` com `evidence_role` dedicado? (preferência inicial: avaliar reuso de `evidence`, já tem snippet/source_file).
-- Nome(s) e granularidade exata das colunas das tabelas.
-- Nome do(s) comando(s) de consulta no wrapper (ex.: `css-classes`, `css-class-usage`) e se enriquece saída existente ou cria capacidade nova.
-- Catálogo (camada 1) unifica `ThemeClass` + classes de DesignSystem numa só tabela, ou só cataloga as que faltam (DesignSystem), deixando `ThemeClass` onde já está? (preferência: catálogo unificado, para o agente ter uma fonte só de "quais classes existem").
-- Camada 3 (texto livre geral: captions/SQL/HTML) fica **fora** desta frente; reabrir só com caso concreto próprio.
+Fechadas em sessão de planejamento; substituem os residuais antes listados. Confirmar no arranque da execução, sem reabrir.
+
+- **Camada 2 — persistência:** reaproveitar as tabelas existentes `relations` + `evidence`, **não** criar `css_class_usage`. Cada uso vira relação `source_object_id` → (`target_type='CssClass'`, `target_name=<classe>`) com `relation_kind='uses_css_class'`; `evidence` recebe `evidence_role` dedicado distinguindo origem (`css_layout` vs `css_event`). `target_type`/`target_name` são TEXT livres (não FK para `objects`), então a infra já comporta sem tabela nova. Localizador = objeto + snippet, não `line`.
+- **Camada 1 — catálogo:** tabela `css_class` **unificada** (legacy-theme + design-system), fonte única de "quais classes existem". Não entra em `objects`.
+- **Modelo legacy × DS como dimensão de primeira classe:** coluna `model` (`legacy-theme` / `design-system`) sempre presente e nunca nula; as consultas filtram e rotulam por modelo, e a saída marca `legacy-theme` como **depreciado**. Justificativa (pedido do usuário): o modelo antigo tende a ser extirpado da KB, e "listar classes legacy + onde ainda são usadas" é a consulta-chave para migrar com segurança ao DesignSystem.
+- **Nomes das consultas:** `css-classes` (catálogo) e `css-class-usage` (uso), como capacidades novas no `Query-KbIntelligenceIndex.py` (não enriquecer saída existente).
+- **Bumps de contrato:** `EXTRACTOR_SIGNATURE_VERSION` `"5"`→`"6"`; `schema_version` `"2"`→`"3"`.
+- **Camada 3 (texto livre geral: captions/SQL/HTML em CDATA):** permanece **fora** desta frente. No encerramento, quando esta entrada migrar para `historico/IdeiasImplementadas`, criar **entrada própria nova** no `999` para a Camada 3, para que não saia do radar junto com a entrada-mãe.
 
 ### Limiar para implementar
 
-Caso concreto já existe (FabricaBrasil, com inventário comprovadamente incompleto e 6.229+542 usos). Decisões de design fechadas salvo os residuais acima. Implementar quando houver sessão dedicada com modelo forte. Não fatiar em micro-PRs que deixem o índice meio-migrado entre rebuilds.
+Caso concreto já existe (FabricaBrasil, com inventário comprovadamente incompleto e 6.229+542 usos). Decisões de design fechadas (ver «Decisões fechadas (2026-06-10)» acima). Implementar quando houver sessão dedicada com modelo forte. Não fatiar em micro-PRs que deixem o índice meio-migrado entre rebuilds.
 
 ### Relacionado
 
