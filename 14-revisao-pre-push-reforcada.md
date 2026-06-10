@@ -18,17 +18,17 @@ Acionamento é **sempre humano**, como toda delegação (ver `xpz-llm-delegate`)
 - **Voltar ao dissidente:** após corrigir, **re-passar pelo revisor que objetou**, para confirmar que a correção fecha a objeção **nos termos dele** — não declarar vitória só porque os mais lenientes passaram.
 - **Convergência é o pronto:** encerra quando o painel diverso inteiro converge em **zero gaps no HEAD atual**. Só então o estado é push-ready (o push em si continua exigindo autorização explícita do usuário, conforme o `13`).
 
-## Papéis: montagem mecânica (agente) vs juízo (humano)
+## Papéis: montagem e opinião (agente) vs decisão (humano)
 
 A reforçada tem **três** tipos de passo:
 
 - **(a) Montagem mecânica do painel** — disparar os revisores diversos (modelos via [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md) + subagentes), cada um com o prompt mínimo verbatim `execute a rotina pre push, sem push`, e **colher os vereditos**. Um agente **pode** fazer isso, como mãos do humano, **sob acionamento humano** (o pedido "execute a reforçada" é esse acionamento).
-- **(b) Nós de juízo** — triar o gap (decidir o que é gap real vs convenção/falso positivo), decidir a convergência, declarar push-ready. **Só humano.** Um agente **nunca** ocupa esses nós.
+- **(b) Nós de decisão — a OPINIÃO do agente é esperada; a DECISÃO é humana.** Quem **decide** se o gap é real (vs convenção/falso positivo), **declara** a convergência e **autoriza** o push é o humano. Mas o agente, como orquestrador, **deve dar sua opinião e recomendação** sobre cada ponto — ele tem o contexto e o humano espera esse insumo **antes** de decidir. O que o agente **não** faz é **decidir e agir sozinho**: auto-triar e já aplicar a correção, declarar convergência por conta própria, ou dar push.
 - **(c) Ser um revisor** — rodar a rotina do [`13`](13-revisao-pre-push.md). Qualquer revisor, humano ou agente.
 
-**O que um agente DEVE fazer ao receber "Execute a Revisão Pré-Push Reforçada":** **montar o painel** (a) — disparar os revisores **em sequência**, pausando no **1º gap** para a triagem humana — entregando os vereditos. Não disparar o lote inteiro de uma vez (perde-se o parar-no-1º-gap).
+**O que um agente DEVE fazer ao receber "Execute a Revisão Pré-Push Reforçada":** **montar o painel** (a) — disparar os revisores **em sequência**, pausando no **1º gap**. Ali, **entregar os vereditos com a sua própria triagem recomendada** — não fatos neutros e silêncio: dizer o que **você acha** que é gap real vs convenção, e por quê — deixando a **decisão** ao humano. Não disparar o lote inteiro de uma vez (perde-se o parar-no-1º-gap).
 
-**Proibição (o guardrail):** um agente **não** pode (1) ocupar os nós de juízo (b) — auto-triar, decidir convergência, declarar push-ready — nem (2) **fingir** que um solo (só o passo c) é a reforçada. A triagem de gaps é nó humano; sem ele, ou se colapsa a salvaguarda, ou se degenera na rotina do `13`. O erro **não** é montar o painel (isso o agente deve); o erro é o agente **julgar** no lugar do humano.
+**Proibição (o guardrail):** um agente **não** pode (1) **decidir e agir** no lugar do humano — auto-triar e aplicar correção, declarar convergência, dar push — nem (2) **fingir** que um solo (só o passo c) é a reforçada. A **decisão** de triagem/convergência/push é nó humano; sem ele, ou se colapsa a salvaguarda, ou se degenera na rotina do `13`. O erro **não** é montar o painel **nem opinar** (isso o agente deve); o erro é o agente **decidir/agir** no lugar do humano.
 
 ## Relação com os outros documentos
 
