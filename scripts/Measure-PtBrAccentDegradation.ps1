@@ -182,6 +182,35 @@ function Get-Segment {
     return 'outros-md'
 }
 
+# ---------------------------------------------------------------------------
+# Fronteira pt-BR em arquivos trilingues (PT/ES/EN).
+# Este medidor cobre SO o pt-BR. Em arquivos com secao '## Español'/'## English'
+# (ex.: README, CHANGELOG, CODE_OF_CONDUCT, SECURITY, CONTRIBUTING), palavras
+# espanholas validas colidem com a forma pt-ascii (repositorio, usuario,
+# criterio, experiencia, existencia, transferencia) e gerariam falso positivo
+# e re-corrupcao se medidas/editadas. So a faixa do inicio ate o primeiro
+# cabecalho ES/EN e dominio deste detector e dos aplicadores que o reusam.
+# Retorna a contagem de linhas pt-BR (todas, se monolingue).
+function Get-PtBrLineCount {
+    param([Parameter(Mandatory)] [AllowEmptyString()] [string] $Text)
+    $lines = @($Text -split "`r?`n")
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^#{1,6}\s+(Español|Espanol|English|Spanish)\b') { return $i }
+    }
+    return $lines.Count
+}
+
+# Devolve so o prefixo pt-BR do texto (para medicao). Preserva numeracao de
+# linha 1..N do prefixo (identica a do arquivo, por ser o inicio).
+function Get-PtBrText {
+    param([Parameter(Mandatory)] [AllowEmptyString()] [string] $Text)
+    $end = Get-PtBrLineCount -Text $Text
+    $lines = @($Text -split "`r?`n")
+    if ($end -ge $lines.Count) { return $Text }
+    if ($end -le 0) { return '' }
+    return (($lines[0..($end - 1)]) -join "`n")
+}
+
 $includedSegments = @('skill-md', 'skill-satelite', 'raiz-md', 'outros-md', 'example-ps1', 'ps1')
 
 # ---------------------------------------------------------------------------
@@ -203,7 +232,9 @@ foreach ($rel in $targets) {
     $text = [System.IO.File]::ReadAllText($full)
     $isPs = $rel -match '\.ps1$'
     $seg = Get-Segment -RelPath $rel
-    $res = Measure-AccentInText -Text $text -IsPowerShell:$isPs
+    # Mede so a faixa pt-BR (em .md trilingue, ignora secoes ES/EN).
+    if ($isPs) { $measureText = $text } else { $measureText = Get-PtBrText -Text $text }
+    $res = Measure-AccentInText -Text $measureText -IsPowerShell:$isPs
 
     $ambTotal = 0
     foreach ($k in $res.Ambiguous.Keys) { $ambTotal += $res.Ambiguous[$k] }

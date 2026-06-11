@@ -1,19 +1,19 @@
-# 01g - Moldes Sanitizados Componentes e Fisico
+# 01g - Moldes Sanitizados Componentes e Físico
 
 ## Papel do documento
 empirico e materializavel
 
 ## Objetivo
-Concentrar moldes sanitizados de componentes, tipos estruturais auxiliares e camada fisica principal.
+Concentrar moldes sanitizados de componentes, tipos estruturais auxiliares e camada física principal.
 
 ## Moldes sanitizados completos de ExternalObject, UserControl e Module
 
 - Evidência direta: o acervo usado nesta base contem 18 ExternalObject, 7 UserControl e 279 Module.
-- Inferência forte: nesses tipos vale separar um perfil minimo e outro mais rico quando houver contrato declarativo ou script suficiente para justificar a diferenca.
+- Inferência forte: nesses tipos vale separar um perfil mínimo e outro mais rico quando houver contrato declarativo ou script suficiente para justificar a diferenca.
 
 ### Molde sanitizado de ExternalObject 1 - ObjetoExternoGenerico
 
-- Perfil: ExternalObject minimo, sem metodos declarados, apenas metadados de namespace e tipo externo.
+- Perfil: ExternalObject mínimo, sem métodos declarados, apenas metadados de namespace e tipo externo.
 - Uso operacional: boa referencia para objetos externos nativos ou wrappers muito pequenos.
 
 ```xml
@@ -74,7 +74,7 @@ Concentrar moldes sanitizados de componentes, tipos estruturais auxiliares e cam
 
 ### Molde sanitizado de ExternalObject 2 - ServicoEnderecoExemplo
 
-- Perfil: ExternalObject com varios ExternalMethod, parametros, tipos externos e endereco de servico.
+- Perfil: ExternalObject com varios ExternalMethod, parâmetros, tipos externos e endereco de servico.
 - Uso operacional: boa referencia para integracoes SOAP/RPC ou wrappers declarativos mais ricos.
 
 ```xml
@@ -1222,7 +1222,7 @@ swalWithBootstrapButtons.fire({
 ### Molde sanitizado de Module - IntegracoesExemplo
 
 - Perfil: Module enxuto, sem partes internas complexas, funcionando como unidade organizacional declarativa.
-- Uso operacional: boa referencia para modulos simples e hierarquia nominal.
+- Uso operacional: boa referencia para módulos simples e hierarquia nominal.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1429,8 +1429,8 @@ swalWithBootstrapButtons.fire({
 
 ### Molde sanitizado de Image 1 - `AcaoCancelarExemplo`
 
-- Perfil: Image simples com um unico item referenciado a tema e caminho original sanitizado.
-- Uso operacional: boa referencia para icones pontuais e imagens pequenas com um unico recurso embutido.
+- Perfil: Image simples com um único item referenciado a tema e caminho original sanitizado.
+- Uso operacional: boa referencia para icones pontuais e imagens pequenas com um único recurso embutido.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1499,7 +1499,7 @@ MDlUMTU6MDg6MTgrMDA6MDDKB3HyAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDE1LTA3LTA5VDE1OjA4OjE4
 ### Molde sanitizado de Image 2 - `AcaoExcluirExemplo`
 
 - Perfil: Image com varios `ImageItem`, misturando referencias com e sem tema.
-- Uso operacional: boa referencia para imagens com multiplas variantes do mesmo ativo visual.
+- Uso operacional: boa referencia para imagens com múltiplas variantes do mesmo ativo visual.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1772,8 +1772,8 @@ MTUtMDctMDNUMTQ6Mzg6MzQrMDA6MDCOGKHvAAAAAElFTkSuQmCC
 
 ### Molde sanitizado de Table 1 - `CadastroModeloExemplo`
 
-- Perfil: Table enxuta, com chave simples, um indice unico e poucos indices auxiliares embutidos.
-- Uso operacional: boa referencia para tabelas pequenas com ordenacao basica e um indice descendente de apoio.
+- Perfil: Table enxuta, com chave simples, um índice único e poucos índices auxiliares embutidos.
+- Uso operacional: boa referencia para tabelas pequenas com ordenacao básica e um índice descendente de apoio.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1852,8 +1852,8 @@ MTUtMDctMDNUMTQ6Mzg6MzQrMDA6MDCOGKHvAAAAAElFTkSuQmCC
 
 ### Molde sanitizado de Table 2 - `RegistroBaseExemplo`
 
-- Perfil: Index denso, com chave composta e varios `TableIndex` automaticos e de usuario.
-- Uso operacional: boa referencia para estruturas com muitos indices derivados e combinacoes de ordem crescente/descendente.
+- Perfil: Index denso, com chave composta e varios `TableIndex` automáticos e de usuário.
+- Uso operacional: boa referencia para estruturas com muitos índices derivados e combinacoes de ordem crescente/descendente.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>

@@ -3,26 +3,26 @@
 ## Papel do documento
 guia operacional
 
-## Nivel de confianca predominante
+## Nível de confianca predominante
 medio
 
 ## Depende de
 scripts/README-kb-intelligence.md, 02-regras-operacionais-e-runtime.md, 08-guia-para-agente-gpt.md
 
 ## Usado por
-agentes que precisem responder perguntas funcionais curtas ou de impacto tecnico usando o KB Intelligence como trilha de triagem, sem substituir a leitura do XML oficial
+agentes que precisem responder perguntas funcionais curtas ou de impacto técnico usando o KB Intelligence como trilha de triagem, sem substituir a leitura do XML oficial
 
 ---
 
 ## Principio metodologico
 
-O indice orienta a ordem de leitura. O XML oficial fecha a conclusao quando a pergunta depender de semantica GeneXus.
+O índice orienta a ordem de leitura. O XML oficial fecha a conclusao quando a pergunta depender de semantica GeneXus.
 
 O KB Intelligence pode reduzir custo de busca, orientar a trilha de leitura e organizar evidencias, mas a resposta final depende de:
 
-- evidencia direta do indice, quando existir
+- evidencia direta do índice, quando existir
 - leitura adicional do XML oficial, quando a pergunta exigir semantica GeneXus
-- classificacao explicita do que e inferencia forte, inferencia fraca ou hipotese
+- classificação explicita do que e inferencia forte, inferencia fraca ou hipotese
 
 ---
 
@@ -33,56 +33,56 @@ O KB Intelligence pode reduzir custo de busca, orientar a trilha de leitura e or
 - confirmar o objeto sempre por `tipo + nome`
 - localizar `KbIntelligence\kb-intelligence.sqlite`
 - tratar `KbIntelligence\kb-intelligence.sqlite` como artefato canonico derivado da pasta paralela da KB
-- tratar o SQLite como indice derivado, nao como fonte normativa
-- se a triagem funcional sugerir que o canonico esta defasado em relacao ao comportamento esperado, nao regenerar durante a propria investigacao
-- tratar regeneracao do canonico como acao operacional separada, explicita e validada
+- tratar o SQLite como índice derivado, não como fonte normativa
+- se a triagem funcional sugerir que o canonico está defasado em relacao ao comportamento esperado, não regenerar durante a própria investigacao
+- tratar regeneracao do canonico como ação operacional separada, explicita e validada
 - usar `ObjetosDaKbEmXml` como fonte normativa quando a pergunta depender de semantica GeneXus
-- nao usar `ArquivoMorto`, salvo pedido explicito de analise historica
-- nao tocar em `logs/` locais, salvo pedido explicito
+- não usar `ArquivoMorto`, salvo pedido explicito de análise histórica
+- não tocar em `logs/` locais, salvo pedido explicito
 
 ---
 
-## Ordem minima de triagem
+## Ordem mínima de triagem
 
-1. executar `object-info` para confirmar existencia e caminho do objeto
+1. executar `object-info` para confirmar existência e caminho do objeto
 2. se o nome ou tipo ainda estiver incerto, executar `search-objects`
-3. antes de `who-uses`, `what-uses`, `impact-basic` ou `functional-trace-basic`, conferir no catalogo efetivo (`scripts/gx-object-type-catalog.json` + override local da pasta paralela) se o tipo tem `queryableByKbIntelligence=true`; quando for `false`, o `Query-KbIntelligenceIndex` devolve exit `11` e `blocked=true` — **nao** tratar como zero dependencias; usar `object-info`, `search-objects`, `list-by-type` ou XML pontual
+3. antes de `who-uses`, `what-uses`, `impact-basic` ou `functional-trace-basic`, conferir no catalogo efetivo (`scripts/gx-object-type-catalog.json` + override local da pasta paralela) se o tipo tem `queryableByKbIntelligence=true`; quando for `false`, o `Query-KbIntelligenceIndex` devolve exit `11` e `blocked=true` — **não** tratar como zero dependencias; usar `object-info`, `search-objects`, `list-by-type` ou XML pontual
 4. executar `impact-basic` (ou `who-uses` / `what-uses`) **somente** quando o tipo for `queryableByKbIntelligence=true`, para obter dependentes e dependencias diretas; para grafo assimétrico esperado (`API`, `DataSelector`, `WorkWithForWeb`, `ExternalObject`), ver `scripts/README-kb-intelligence.md`
 5. escolher apenas as relacoes que mudam a trilha de leitura
 6. executar `show-evidence` nessas relacoes
-7. abrir o XML oficial somente nos pontos necessarios
+7. abrir o XML oficial somente nos pontos necessários
 8. responder separando evidencia direta, leitura adicional, inferencia forte e hipotese
 
 Para perguntas funcionais curtas, `functional-trace-basic` pode substituir os passos 1 a 6, respeitando o mesmo gate de `queryableByKbIntelligence` no passo 3; a resposta final continua exigindo separacao explicita de evidencia e limite.
 
-### Ramo: atributo ou gravabilidade de Transaction (triagem via indice)
+### Ramo: atributo ou gravabilidade de Transaction (triagem via índice)
 
-Use este ramo somente quando a pergunta for **triagem tecnica** sobre atributos ou gravabilidade — nao quando o objetivo for **gerar ou empacotar** XML/XPZ.
+Use este ramo somente quando a pergunta for **triagem técnica** sobre atributos ou gravabilidade — não quando o objetivo for **gerar ou empacotar** XML/XPZ.
 
-1. escolher a consulta minima conforme `xpz-index-triage` (**QUERY PARAMETER REFERENCE**):
+1. escolher a consulta mínima conforme `xpz-index-triage` (**QUERY PARAMETER REFERENCE**):
    - `attribute-info` — um atributo; sinais **leves** (`Formula`, `idBasedOn`, etc.)
-   - `transaction-attributes` ou `transaction-writable-attributes` — uma Transaction; classificacao **materializada** no indice (`schema_version>=2`), com paridade contra `Test-GeneXusTransactionWritability.ps1`
+   - `transaction-attributes` ou `transaction-writable-attributes` — uma Transaction; classificação **materializada** no índice (`schema_version>=2`), com paridade contra `Test-GeneXusTransactionWritability.ps1`
 2. registrar o comando, o objeto e os sinais retornados como **evidencia direta**
 3. declarar explicitamente o **tipo de consulta**:
-   - `attribute-info`: leve; **nao** substitui classificacao completa de gravabilidade
-   - `transaction-writable-attributes`: classificacao completa materializada; **nao** substitui empacote nem blocos `New` em `Procedure` (`Test-GeneXusNewWritableTargets.ps1`)
-4. se a pergunta evoluir para geracao de atribuicao em `Rules`, `Events`, `New` ou empacotamento, **parar a triagem** e encaminhar para `xpz-builder` com `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1` (fachadas sobre `GeneXusTransactionWritabilityCore.py`)
+   - `attribute-info`: leve; **não** substitui classificação completa de gravabilidade
+   - `transaction-writable-attributes`: classificação completa materializada; **não** substitui empacote nem blocos `New` em `Procedure` (`Test-GeneXusNewWritableTargets.ps1`)
+4. se a pergunta evoluir para geração de atribuicao em `Rules`, `Events`, `New` ou empacotamento, **parar a triagem** e encaminhar para `xpz-builder` com `Test-GeneXusTransactionWritability.ps1` ou `Test-GeneXusNewWritableTargets.ps1` (fachadas sobre `GeneXusTransactionWritabilityCore.py`)
 
-Para sintaxe, parametros e validacao operacional das consultas, preferir `scripts/README-kb-intelligence.md`; este guia nao duplica esse catalogo.
+Para sintaxe, parâmetros e validação operacional das consultas, preferir `scripts/README-kb-intelligence.md`; este guia não duplica esse catalogo.
 
 ---
 
-## Quando parar no indice
+## Quando parar no índice
 
-Parar no indice quando a pergunta pedir apenas:
+Parar no índice quando a pergunta pedir apenas:
 
 - onde revisar primeiro
 - quais objetos cercam tecnicamente um objeto
-- qual relacao tecnica justifica abrir determinado XML
-- qual trilha minima de leitura deve ser seguida
-- quais atributos de uma Transaction merecem leitura primeiro, quais sinais leves (`attribute-info`) ou quais classificacoes materializadas de gravabilidade (`transaction-writable-attributes`) o indice expoe (sem fechar ainda regra de negocio nem autorizar geracao)
+- qual relacao técnica justifica abrir determinado XML
+- qual trilha mínima de leitura deve ser seguida
+- quais atributos de uma Transaction merecem leitura primeiro, quais sinais leves (`attribute-info`) ou quais classificacoes materializadas de gravabilidade (`transaction-writable-attributes`) o índice expoe (sem fechar ainda regra de negocio nem autorizar geração)
 
-Nesses casos, declarar que se trata de triagem tecnica direta, nao de prova funcional completa.
+Nesses casos, declarar que se trata de triagem técnica direta, não de prova funcional completa.
 
 ## Quando abrir o XML oficial
 
@@ -95,24 +95,24 @@ Abrir o XML oficial quando a pergunta depender de:
 - formulas
 - propriedades com efeito semantico
 - cadeia imediata de chamadas
-- tipo de variavel, `ATTCUSTOMTYPE`, BC, `SDT`, `Domain` ou `ExternalObject`
-- interpretacao de efeito funcional, validacao, persistencia, navegacao ou regra de negocio
-- empacotamento ou blocos `New` em `Procedure` que exijam gate dedicado (`Test-GeneXusNewWritableTargets.ps1`), mesmo quando `transaction-writable-attributes` ja trouxe classificacao materializada no indice
+- tipo de variável, `ATTCUSTOMTYPE`, BC, `SDT`, `Domain` ou `ExternalObject`
+- interpretacao de efeito funcional, validação, persistencia, navegacao ou regra de negocio
+- empacotamento ou blocos `New` em `Procedure` que exijam gate dedicado (`Test-GeneXusNewWritableTargets.ps1`), mesmo quando `transaction-writable-attributes` já trouxe classificação materializada no índice
 
 ---
 
-## Estrutura obrigatoria da resposta funcional
+## Estrutura obrigatória da resposta funcional
 
 ### Evidencia direta
 
-Registrar somente o que veio do indice ou da evidencia armazenada:
+Registrar somente o que veio do índice ou da evidencia armazenada:
 
 - comando usado
 - objeto origem e destino com `tipo + nome`
 - arquivo relativo
 - linha registrada
 - regra de extracao
-- trecho tecnico curto
+- trecho técnico curto
 
 ### Leitura adicional do XML
 
@@ -127,16 +127,16 @@ Registrar o que foi confirmado no XML oficial:
 
 Usar somente quando houver sinais convergentes:
 
-- relacao tecnica direta no indice
+- relacao técnica direta no índice
 - evidencia ancorada em linha
 - XML oficial confirmando o contexto do trecho
-- tipo ou variavel resolvida com seguranca
+- tipo ou variável resolvida com seguranca
 
-Mesmo nesses casos, nao transformar a inferencia em garantia runtime.
+Mesmo nesses casos, não transformar a inferencia em garantia runtime.
 
 ### Hipotese
 
-Usar para o que ainda depende de leitura adicional, teste externo, build, execucao ou conhecimento funcional fora do recorte lido.
+Usar para o que ainda depende de leitura adicional, teste externo, build, execução ou conhecimento funcional fora do recorte lido.
 
 ---
 
@@ -145,32 +145,32 @@ Usar para o que ainda depende de leitura adicional, teste externo, build, execuc
 - "o sistema certamente faz"
 - "isso prova a regra de negocio"
 - "o impacto funcional completo e"
-- "basta olhar o indice"
-- "nao precisa abrir o XML"
+- "basta olhar o índice"
+- "não precisa abrir o XML"
 - "a procedure salva sempre"
 - "o SDT e o payload completo"
 - "a tela depende sempre dessa procedure"
 
 ## Frases preferidas
 
-- "o indice mostra evidencia tecnica direta"
+- "o índice mostra evidencia técnica direta"
 - "o XML oficial confirma este trecho"
 - "a inferencia forte e"
 - "permanece como hipotese"
 - "para fechar a regra funcional completa, a leitura precisa seguir para"
-- "isto e triagem tecnica, nao prova runtime completa"
+- "isto é triagem técnica, não prova runtime completa"
 
 ---
 
 ## Exemplos sanitizados
 
-Os exemplos abaixo usam nomes genericos de objetos GeneXus, sem referencia a KBs reais. Correspondencias com nomes reais de KB estao registradas em `GeneXus-XPZ-PrivateMap`.
+Os exemplos abaixo usam nomes genéricos de objetos GeneXus, sem referencia a KBs reais. Correspondencias com nomes reais de KB estao registradas em `GeneXus-XPZ-PrivateMap`.
 
-### Exemplo 1 - Triagem de impacto tecnico antes de alterar uma Procedure
+### Exemplo 1 - Triagem de impacto técnico antes de alterar uma Procedure
 
-**Cenario:** o agente precisa avaliar o impacto de alterar `Procedure:procCalculaMovimentoEstoque` antes de modificar sua logica interna.
+**Cenário:** o agente precisa avaliar o impacto de alterar `Procedure:procCalculaMovimentoEstoque` antes de modificar sua lógica interna.
 
-**Trilha minima:**
+**Trilha mínima:**
 
 ```powershell
 # Passo 1: confirmar existencia
@@ -196,7 +196,7 @@ Os exemplos abaixo usam nomes genericos de objetos GeneXus, sem referencia a KBs
 - dependentes diretos: `WebPanel:wpConsultaMovimentos`, `DataProvider:dpResumoMovimentos`
 - dependencias diretas: `Procedure:procRegistraLogOperacao`, `Transaction:TrnMovimento`
 
-**Passo 3 (opcional): auditar relacao especifica**
+**Passo 3 (opcional): auditar relacao específica**
 
 ```powershell
 .\scripts\Query-KbIntelligenceIndex.ps1 `
@@ -212,15 +212,15 @@ Os exemplos abaixo usam nomes genericos de objetos GeneXus, sem referencia a KBs
 **Resposta estruturada esperada:**
 
 - Evidencia direta: chamada `procCalculaMovimentoEstoque.Call(...)` em `WebPanel/wpConsultaMovimentos.xml`, linha N, regra `procedure_dot_call`, confianca `direct`
-- Leitura adicional do XML: abrir `Procedure/procCalculaMovimentoEstoque.xml` para revisar parametros e `Source` efetivo antes de alterar
+- Leitura adicional do XML: abrir `Procedure/procCalculaMovimentoEstoque.xml` para revisar parâmetros e `Source` efetivo antes de alterar
 - Inferencia forte: a alteracao pode afetar `wpConsultaMovimentos` e `dpResumoMovimentos`
-- Hipotese: efeito em runtime depende da logica interna da procedure; nao confirmavel apenas pelo indice
+- Hipotese: efeito em runtime depende da lógica interna da procedure; não confirmavel apenas pelo índice
 
 ---
 
-### Exemplo 2 - Triagem funcional basica com `functional-trace-basic`
+### Exemplo 2 - Triagem funcional básica com `functional-trace-basic`
 
-**Cenario:** o agente recebe pergunta funcional curta sobre `API:apiIntegracaoExterna` e precisa montar trilha inicial antes de abrir XML.
+**Cenário:** o agente recebe pergunta funcional curta sobre `API:apiIntegracaoExterna` e precisa montar trilha inicial antes de abrir XML.
 
 ```powershell
 .\scripts\Query-KbIntelligenceIndex.ps1 `
@@ -241,16 +241,16 @@ Os exemplos abaixo usam nomes genericos de objetos GeneXus, sem referencia a KBs
 
 **Resposta estruturada esperada:**
 
-- Evidencia direta: relacoes tecnicas diretas retornadas pelo indice para `apiIntegracaoExterna`
-- Leitura adicional do XML: abrir `API/apiIntegracaoExterna.xml` para revisar contrato da API e parametros; abrir `Procedure/procProcessaEntradaItem.xml` para verificar o que a procedure faz com os dados recebidos
+- Evidencia direta: relacoes tecnicas diretas retornadas pelo índice para `apiIntegracaoExterna`
+- Leitura adicional do XML: abrir `API/apiIntegracaoExterna.xml` para revisar contrato da API e parâmetros; abrir `Procedure/procProcessaEntradaItem.xml` para verificar o que a procedure faz com os dados recebidos
 - Inferencia forte: a API recebe entrada e delega processamento a `procProcessaEntradaItem`; o SDT `sdtItemDadosBasicos` e o tipo de dados trafegado
-- Hipotese: persistencia, validacoes e regras de negocio dependem de leitura do `Source` efetivo das procedures; nao confirmavel apenas pelo indice
+- Hipotese: persistencia, validacoes e regras de negocio dependem de leitura do `Source` efetivo das procedures; não confirmavel apenas pelo índice
 
 ---
 
-### Exemplo 3 - Objeto nao encontrado
+### Exemplo 3 - Objeto não encontrado
 
-**Cenario:** o agente consulta um objeto que nao existe no indice.
+**Cenário:** o agente consulta um objeto que não existe no índice.
 
 ```powershell
 .\scripts\Query-KbIntelligenceIndex.ps1 `
@@ -261,12 +261,12 @@ Os exemplos abaixo usam nomes genericos de objetos GeneXus, sem referencia a KBs
   -Format text
 ```
 
-**Resultado esperado:** falha clara com indicacao de que o objeto nao foi encontrado. Nao tentar localizar por heuristica fora do indice, nao buscar por nome parecido, nao varrer `ObjetosDaKbEmXml`.
+**Resultado esperado:** falha clara com indicacao de que o objeto não foi encontrado. Não tentar localizar por heuristica fora do índice, não buscar por nome parecido, não varrer `ObjetosDaKbEmXml`.
 
 **Resposta estruturada esperada:**
 
-- Evidencia direta: objeto nao encontrado no indice
-- Proximos passos: confirmar nome e tipo com o usuario; se o indice puder estar defasado, oferecer regeneracao
+- Evidencia direta: objeto não encontrado no índice
+- Próximos passos: confirmar nome e tipo com o usuário; se o índice puder estar defasado, oferecer regeneracao
 
 ---
 
@@ -274,15 +274,15 @@ Os exemplos abaixo usam nomes genericos de objetos GeneXus, sem referencia a KBs
 
 Este exemplo registra a terminologia correta para descrever as duas formas de interacao com uma `Transaction` GeneXus.
 
-**Via edicao web:** fluxo pelo formulario da transacao na IDE ou no runtime web. As `Rules` e `Events` com tag `[web]` se aplicam. O usuario (ou um WebPanel de entrada) salva, cancela ou edita o registro pela interface da propria transacao.
+**Via edicao web:** fluxo pelo formulario da transacao na IDE ou no runtime web. As `Rules` e `Events` com tag `[web]` se aplicam. O usuário (ou um WebPanel de entrada) salva, cancela ou edita o registro pela interface da própria transacao.
 
-**Via BC (Business Component):** a `Transaction` e instanciada como Business Component por uma procedure ou outro objeto GeneXus. As chamadas `.Load(...)`, `.Save()`, `.Delete()`, `.Check()`, `.Insert()` e `.Update()` sao feitas programaticamente. As `Rules` com tag `[bc]` se aplicam.
+**Via BC (Business Component):** a `Transaction` e instanciada como Business Component por uma procedure ou outro objeto GeneXus. As chamadas `.Load(...)`, `.Save()`, `.Delete()`, `.Check()`, `.Insert()` e `.Update()` são feitas programaticamente. As `Rules` com tag `[bc]` se aplicam.
 
 **Quando usar cada termo na resposta:**
 
-- ao descrever acoes do usuario (salvar formulario, cancelar registro, editar campo): usar "via edicao web"
+- ao descrever ações do usuário (salvar formulario, cancelar registro, editar campo): usar "via edicao web"
 - ao descrever chamadas feitas por procedures ou automacoes: usar "via BC"
-- nao misturar os dois contextos na mesma afirmacao sem declarar explicitamente a qual contexto cada parte se refere
+- não misturar os dois contextos na mesma afirmacao sem declarar explicitamente a qual contexto cada parte se refere
 
 ---
 
@@ -291,9 +291,9 @@ Este exemplo registra a terminologia correta para descrever as duas formas de in
 Antes de responder, confirmar:
 
 - o objeto foi tratado por `tipo + nome`
-- a evidencia direta nao foi misturada com inferencia
+- a evidencia direta não foi misturada com inferencia
 - a leitura do XML foi citada separadamente quando ocorreu
 - toda conclusao funcional tem limite declarado
-- hipoteses nao foram escritas como fatos
-- o indice nao foi descrito como fonte normativa
+- hipoteses não foram escritas como fatos
+- o índice não foi descrito como fonte normativa
 - o XML oficial prevalece quando houver tensao interpretativa

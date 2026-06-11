@@ -10,7 +10,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
 
 - Evidência direta: o acervo usado nesta base contem 593 objetos Domain.
 - Evidência direta: 229 desses 593 objetos carregam `IDEnumDefinedValues`.
-- Evidência direta: entre os dominios enumerados, os perfis mais frequentes do corpus atual sao `bas:VarChar` com `AddEmptyItem=True` (87 casos), `bas:Character` sem `AddEmptyItem` (71 casos) e `bas:Numeric` com ou sem `AddEmptyItem` (28 casos somados).
+- Evidência direta: entre os dominios enumerados, os perfis mais frequentes do corpus atual são `bas:VarChar` com `AddEmptyItem=True` (87 casos), `bas:Character` sem `AddEmptyItem` (71 casos) e `bas:Numeric` com ou sem `AddEmptyItem` (28 casos somados).
 - Inferência forte: o tipo se divide bem entre dominios escalares simples e dominios enumerados com perfis recorrentes, o que justifica documentar um molde escalar e tres moldes enumerados representativos.
 
 ### Molde sanitizado de Domain 1 - `NumeroExemplo`
@@ -116,7 +116,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
 ### Molde sanitizado de Domain 3 - `DomainExemploUfA`
 
 - Perfil: Domain enumerado baseado em `bas:Character`, com `IDEnumDefinedValues` e sem `AddEmptyItem`.
-- Uso operacional: boa referencia para dominios enumerados compactos, de codigo curto e sem item vazio adicional.
+- Uso operacional: boa referencia para dominios enumerados compactos, de código curto e sem item vazio adicional.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -238,9 +238,9 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
 
 - Perfil: Theme mobile com PredefinedTypes, KmwSchemaVersion e conjunto grande de classes visuais.
 - Uso operacional: boa referencia para temas de plataforma e estilos visuais baseados em classes internas.
-- Evidência direta: a validacao posterior no acervo real mostrou que classes como `TableDetail`, `TableSection` e `TextBlockGroupCaption` fazem parte do conjunto minimo usado por temas simples validos.
-- Inferência forte: ao reduzir este molde, o agente nao deve podar classes apenas por parecerem acessorias; referencias internas entre classes podem quebrar o import mesmo quando o envelope estiver correto.
-- Inferência forte: para clonagem segura, preservar `PredefinedTypes`, `Styles` e o grafo minimo de referencias de classe e mais importante do que simplificar agressivamente o XML.
+- Evidência direta: a validação posterior no acervo real mostrou que classes como `TableDetail`, `TableSection` e `TextBlockGroupCaption` fazem parte do conjunto mínimo usado por temas simples validos.
+- Inferência forte: ao reduzir este molde, o agente não deve podar classes apenas por parecerem acessorias; referencias internas entre classes podem quebrar o import mesmo quando o envelope estiver correto.
+- Inferência forte: para clonagem segura, preservar `PredefinedTypes`, `Styles` e o grafo mínimo de referencias de classe e mais importante do que simplificar agressivamente o XML.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -681,7 +681,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //@import PackageExemploReports.QueryViewer;
     //@import PackageExemploReports.DashboardViewer;
 
-    //nao salvou o problema do conteudo do tab nao aparecer sem clicar.
+    //nao salvou o problema do conteúdo do tab não aparecer sem clicar.
     //.tab-displayblock{
     //    @include Tab;
     //    display: block;
@@ -723,7 +723,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
         margin-bottom: 1px;
     }
 
-    //usado pelo menos em tables de web components como WCExemploVolumesA, tambem em transacoes
+    //usado pelo menos em tables de web components como WCExemploVolumesA, também em transacoes
     .form-horizontal .form-group {
         margin-inline-start: 15px;
         margin-inline-end: 15px;
@@ -836,7 +836,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //gx-label col-xs-8 col-sm-3 col-md-2 col-lg-12 AttributeLabel control-label
     //text-align: left!important;
 
-    //legenda de atributo em caso mais especifico, mas alem da transacao
+    //legenda de atributo em caso mais específico, mas além da transacao
     //.gx-label.col-sm-3.AttributeLabel.control-label {
     //      text-align: right;
     //}
@@ -846,7 +846,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //    text-align: right;
     //}
     
-    //nao Ã© especifico o sufiente, pra funcionar apenas pra crud de transacao
+    //nao Ã© específico o sufiente, pra funcionar apenas pra crud de transacao
     //.form-group.gx-form-group label.gx-label.col-sm-3.AttributeLabel.control-label {
     //     //text-align: right;
     //     color: red;
@@ -883,7 +883,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
         min-height: 15px;
     }
 
-    //Usado em transacao, junto aos atributos. Tambem em TransacaoGeneral, junto aos atributos
+    //Usado em transacao, junto aos atributos. Também em TransacaoGeneral, junto aos atributos
     .form__cell {
         padding-block: 1px;
     }
@@ -899,13 +899,13 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //   overflow-wrap:normal;
     //}
 
-    ///faz quebrar linha por padrao em grid do ww
+    ///faz quebrar linha por padrão em grid do ww
     ///.Attribute[data-gx-readonly]{
     ///    white-space: normal;
     ///    overflow-wrap:normal !important;
     ///}
 
-    //funciona pra aba cadastros externos nao ficar com largura fixa nas colunas
+    //funciona pra aba cadastros externos não ficar com largura fixa nas colunas
     ///.gx-tab-spacing-fix-2.ViewGrid.table-responsive{
     ///    table-layout: auto;
     ///    display:table-caption; 
@@ -1134,7 +1134,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //     background-color: Gray;
     // }
 
-    //funciona mudar, mas nao precisou
+    //funciona mudar, mas não precisou
     // .Title
     // {
      
@@ -1327,7 +1327,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //padrao pra telas de 768 atÃ© 991 px ( mas testando em 800 px de largura )
     @media screen and (min-width: 768px) and (max-width: 991px) {
         .LarguraMinima_ConformeTela {
-            min-width: 10px; //praticamente sem minimo
+            min-width: 10px; //praticamente sem mínimo
         }
     }
 
@@ -1335,7 +1335,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
     //padrao pra telas atÃ© 767 px  ( mas testando em 360 px que imita celular em retrato )  
     @media screen and (max-width: 767px) {
         .LarguraMinima_ConformeTela {
-            min-width: 10px; //praticamente sem minimo
+            min-width: 10px; //praticamente sem mínimo
         }
     }
 
@@ -1345,7 +1345,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
         width: fit-content;
     }
 
-    // //toda tentativa falhou, nao escondendo o date picker
+    // //toda tentativa falhou, não escondendo o date picker
     // .DatePickerDesligado {
     //     //pointer-events: none;   //evitaria clicar no campo
     //     //appearance: textfield; /* Remove o estilo de datepicker */
@@ -1392,7 +1392,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
 
     #endregion
 
-    //funciona pra aba cadastros externos nao ficar fixa
+    //funciona pra aba cadastros externos não ficar fixa
     .gx-tab-spacing-fix-2.ViewGrid.table-responsive{
         table-layout: auto;
         display:table-caption; 
@@ -1594,7 +1594,7 @@ Concentrar moldes sanitizados ligados a dados declarativos, tema, pacote visual 
 
     }
     
-    //coluna em wwgrid para atributo marcado como descricao
+    //coluna em wwgrid para atributo marcado como descrição
     .attribute-description {
         white-space: nowrap; //nao quebra em linhas
     }

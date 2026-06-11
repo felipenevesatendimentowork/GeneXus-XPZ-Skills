@@ -1120,7 +1120,7 @@ Implementar quando houver: (a) caso real recente de migração em lote (10+ call
 ## Correção de acentuação pt-BR degradada nos SKILL.md
 
 **Importância:** alta
-**Maturidade:** pronta para implementar
+**Maturidade:** raiz `.md` concluída em 2026-06-11 (ver «Execução 2026-06-11» ao fim desta seção); segmentos `skill-md`/`ps1`/`outros-md`/`example-ps1` ainda pendentes
 
 **Origem:** avaliação de prompt externo em 2026-05-11 com verificação empírica feita na mesma sessão.
 
@@ -1222,6 +1222,21 @@ Qualquer palavra cujo acento muda o sentido — `e/é`, `esta/está`, `tem/têm`
 ### Limiar para implementar
 
 **Pronto agora.** Não há gate técnico, não há pesquisa pendente, não há decisão de design em aberto. Falta apenas alocar sessão dedicada com escopo declarado.
+
+### Execução 2026-06-11 (raiz `.md` concluída)
+
+Sessão dedicada executou a correção nos `.md` da raiz, partindo do mapa regenerado pelo detector. Resultado e decisões:
+
+- **Inequívocas:** corrigidas em todos os `.md` da raiz pelo aplicador determinístico versionado `scripts/Repair-PtBrAccentDegradation.ps1` (contraparte do detector; reusa lista, regex e supressão de código; preserva caixa, EOL LF e UTF-8 sem BOM). O total do repositório caiu de 7.812 para 2.535 inequívocas; na raiz, de 5.304 para 0 reais — o resíduo medido na raiz (43) são apenas os exemplos degradados de propósito deste `999` e do `998`.
+- **Tokens ambíguos:** `so`→`só` (verificado: nenhum «so» inglês na prosa pt-BR; as duas ocorrências inglesas em `README`/`CHANGELOG` foram excluídas), `numero`→`número` (substantivo) e `esta`→`está` decididos linha a linha (verbo vira `está`; demonstrativo «esta base/família/frente/seção/raiz» permanece). `tem`/`vem` no singular permanecem.
+- **`e/é` — molduras de alta precisão** aplicadas por serem determinísticas: `não e`, `qual e`, `(esta|este|esse|essa|isso|isto) e`, `e:`. A **cópula geral** (`<sujeito> e <predicado>`) **não** é coberta: o detector não a mede, a forma colide com a conjunção e o risco de regressão é alto. Fica como **dívida documentada**; só o `02-regras-operacionais-e-runtime.md` recebeu a cópula completa (caso-modelo, com âncoras verificadas a mão).
+
+Endurecimentos do instrumento (detector + lista curada), feitos nesta frente:
+
+- **Demoção de 7 formas verbais** de `entries` para `ambiguousTokens`: `analise`, `calculo`, `especifico`, `especifica`, `pratico`, `pratica`, `modulo` — são substantivo/adjetivo acentuado **e** flexão verbal válida sem acento (mesma natureza do `numero` já demovido antes). Motivador: o aplicador trocou uma forma imperativa («analise o impacto») por «análise» no `AGENTS.md`, revertido. Os plurais (`especificos`/`especificas`/`modulos`) permanecem no piso firme. Há guard no self-test travando a regressão.
+- **Consciência de seção pt-BR** no detector e nos aplicadores (`Get-PtBrLineCount`/`Get-PtBrText`): em arquivos trilíngues (PT/ES/EN — `README`, `CHANGELOG`, `CODE_OF_CONDUCT`, `SECURITY`, `CONTRIBUTING`), só a faixa pt-BR (até o primeiro cabeçalho `## Español`/`## English`) é medida e editada. Motivo: várias entradas colidem com **espanhol** válido sem acento (`repositorio`, `usuario`, `criterio`, `experiencia`, `existencia`, `transferencia`); a lista, vetada apenas contra inglês, corrompeu o espanhol antes do fix (revertido e reaplicado só à faixa pt-BR). O self-test ganhou golden multilíngue (18 asserts no total).
+
+Pendente (frentes separadas, fora do «maior retorno = raiz» desta sessão): `skill-md` (~1.396), comentários de `.ps1` (~786), `outros-md` (~211) e `.example.ps1` (~98). A cópula geral `e/é` permanece como dívida em toda a base.
 
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 

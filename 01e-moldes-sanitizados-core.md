@@ -9,12 +9,12 @@ Concentrar moldes sanitizados centrais de tipos core e contratos recorrentes usa
 ## Moldes sanitizados completos de Procedure e DataProvider
 
 - Evidencia direta: esta base agora contem 2 moldes XML sanitizados completos de `Procedure` e 2 de `DataProvider`.
-- Inferencia forte: esse conjunto complementa os moldes ja existentes de `WebPanel` e `Transaction`, reduzindo a necessidade de consulta adicional ao acervo bruto para prototipos controlados desses dois tipos.
-- Hipotese: para `Procedure` muito densa ou `DataProvider` com saida muito especializada, ainda pode ser necessario buscar molde bruto comparavel adicional.
+- Inferencia forte: esse conjunto complementa os moldes já existentes de `WebPanel` e `Transaction`, reduzindo a necessidade de consulta adicional ao acervo bruto para prototipos controlados desses dois tipos.
+- Hipotese: para `Procedure` muito densa ou `DataProvider` com saida muito especializada, ainda pode ser necessário buscar molde bruto comparavel adicional.
 
 ### Molde sanitizado de Procedure 1 - `PRCExemploMinimo`
 
-- Perfil: `Procedure` minima, com inventario recorrente de `Part` e quase nenhum conteudo interno.
+- Perfil: `Procedure` mínima, com inventario recorrente de `Part` e quase nenhum conteúdo interno.
 - Uso operacional: boa casca para testes de serializacao, stub server-side e verificacao do envelope estrutural do tipo.
 
 ```xml
@@ -68,8 +68,8 @@ Concentrar moldes sanitizados centrais de tipos core e contratos recorrentes usa
 
 ### Molde sanitizado de Procedure 2 - `PRCExemploParm`
 
-- Perfil: `Procedure` curta com `parm(out:...)` e variavel baseada em dominio.
-- Uso operacional: boa referencia para clonagem controlada quando o alvo tiver parametro simples e variavel associada.
+- Perfil: `Procedure` curta com `parm(out:...)` e variável baseada em dominio.
+- Uso operacional: boa referencia para clonagem controlada quando o alvo tiver parâmetro simples e variável associada.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -146,12 +146,12 @@ Concentrar moldes sanitizados centrais de tipos core e contratos recorrentes usa
 
 ### Recorte sanitizado de Procedure grande - `PRCExemploRelatorioVolumesPendentes`
 
-- Perfil: `Procedure` densa com `if/endif`, `do case/endcase` e comentarios estruturais `//if` ja existentes no `Source`.
+- Perfil: `Procedure` densa com `if/endif`, `do case/endcase` e comentarios estruturais `//if` já existentes no `Source`.
 - Uso operacional: recorte de apoio para o `Gate visual de Source`; preservar os comentarios estruturais humanos ajuda a leitura na IDE e evita piorar legibilidade herdada.
 - Evidencia direta: no objeto real examinado na KB, os comentarios `//if` aparecem como apoio de leitura em blocos com aninhamento e fechamento visual relevante.
-- Inferencia forte: quando uma edicao local mexe em fechamento de bloco, o foco da revisao deve incluir o trecho afetado e o contorno visual imediato, sem tentar "limpar" comentarios estruturais uteis.
+- Inferencia forte: quando uma edicao local mexe em fechamento de bloco, o foco da revisao deve incluir o trecho afetado e o contorno visual imediato, sem tentar "limpar" comentarios estruturais úteis.
 - Inferencia forte: o mesmo recorte serve como apoio para um gate leve de sanidade do `Source`, revisando pares como `If/EndIf` e `Do Case/EndCase` antes do empacotamento.
-- Uso operacional: quando um bloco novo for inserido em `Source` grande, preferir sintaxe conservadora e comparar o delta com um bloco semelhante ja existente no mesmo objeto antes de aceitar a consolidacao.
+- Uso operacional: quando um bloco novo for inserido em `Source` grande, preferir sintaxe conservadora e comparar o delta com um bloco semelhante já existente no mesmo objeto antes de aceitar a consolidacao.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -182,7 +182,7 @@ endif]]></Source>
 
 ### Molde sanitizado de DataProvider 1 - `DPExemploLista`
 
-- Perfil: `DataProvider` simples com saida de colecao declarada no proprio `Source`.
+- Perfil: `DataProvider` simples com saida de colecao declarada no próprio `Source`.
 - Uso operacional: boa referencia para saida pequena baseada em estrutura repetida.
 
 ```xml
@@ -302,7 +302,7 @@ endif]]></Source>
 ### Molde sanitizado de DataProvider 2 - `DPExemploParm`
 
 - Perfil: `DataProvider` com `parm(in:...)`, `OutputCollection=True` e composicao textual mais rica no `Source`.
-- Uso operacional: boa referencia para `DataProvider` orientado por parametros e saida em colecao.
+- Uso operacional: boa referencia para `DataProvider` orientado por parâmetros e saida em colecao.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -597,11 +597,11 @@ endif]]></Source>
 
 ### Molde sanitizado de API 1 - `APIExemploIntegracao`
 
-- Perfil: API com bloco Service, multiplos RestMethod, eventos .Before/.After e conjunto denso de variaveis.
-- Uso operacional: boa referencia para o unico caso real de API observado nesta KB, construido de forma manual/local e com servicos REST coordenados por eventos e logica auxiliar interna.
-- Evidência direta: a validacao posterior no acervo real confirmou que `API` usa `ATTCUSTOMTYPE` concretos para `EXO` e `SDT`, como `exo:GAMSession, GeneXusSecurity` e `sdt:Messages, GeneXus.Common`.
-- Inferência forte: este molde so deve ser materializado quando os `Procedure`, `EXO` e `SDT` referenciados existirem de fato na KB de destino.
-- Inferência forte: trocar nomes e codigo sem revisar os `ATTCUSTOMTYPE` e as dependencias chamadas em `Source` tende a produzir falha semantica, nao falha de envelope.
+- Perfil: API com bloco Service, múltiplos RestMethod, eventos .Before/.After e conjunto denso de variáveis.
+- Uso operacional: boa referencia para o único caso real de API observado nesta KB, construido de forma manual/local e com servicos REST coordenados por eventos e lógica auxiliar interna.
+- Evidência direta: a validação posterior no acervo real confirmou que `API` usa `ATTCUSTOMTYPE` concretos para `EXO` e `SDT`, como `exo:GAMSession, GeneXusSecurity` e `sdt:Messages, GeneXus.Common`.
+- Inferência forte: este molde só deve ser materializado quando os `Procedure`, `EXO` e `SDT` referenciados existirem de fato na KB de destino.
+- Inferência forte: trocar nomes e código sem revisar os `ATTCUSTOMTYPE` e as dependencias chamadas em `Source` tende a produzir falha semantica, não falha de envelope.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1561,8 +1561,8 @@ Endsub
 
 ### Molde sanitizado de WorkWithForWeb 1 - `WorkWithWebGrupoExemplo`
 
-- Perfil: WorkWithForWeb enxuto com uma selecao simples, poucos atributos e uma aba tabular basica.
-- Uso operacional: boa referencia para pattern web ligado a transaction simples, com leitura facil da selecao, filtro e view.
+- Perfil: WorkWithForWeb enxuto com uma selecao simples, poucos atributos e uma aba tabular básica.
+- Uso operacional: boa referencia para pattern web ligado a transaction simples, com leitura fácil da selecao, filtro e view.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1780,7 +1780,7 @@ Esqueleto estrutural publico:
     <MinorVersion>...</MinorVersion>
     <Build>...</Build>
   </KMW>
-  <Source kb="GUID_VALIDO" username="USUARIO" UNCPath="\\SERVIDOR\KB">
+  <Source kb="GUID_VALIDO" username="USUÁRIO" UNCPath="\\SERVIDOR\KB">
     <Version guid="GUID_VALIDO" name="KB" />
   </Source>
   <Objects>

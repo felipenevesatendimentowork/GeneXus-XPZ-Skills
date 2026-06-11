@@ -3,7 +3,7 @@
 ## Papel do documento
 empirico e operacional
 
-## Nivel de confianca predominante
+## Nível de confianca predominante
 medio
 
 ## Depende de
@@ -13,7 +13,7 @@ medio
 08-guia-para-agente-gpt.md
 
 ## Objetivo
-Concentrar familias estruturais de WebPanel, templates representativos sanitizados e regras especificas de selecao e clonagem.
+Concentrar familias estruturais de WebPanel, templates representativos sanitizados e regras específicas de selecao e clonagem.
 
 ## Fontes consolidadas
 - 27-familias-estruturais-de-webpanel.md
@@ -23,7 +23,7 @@ Concentrar familias estruturais de WebPanel, templates representativos sanitizad
 ## Papel do documento
 empirico e operacional
 
-## Nivel de confianca predominante
+## Nível de confianca predominante
 medio
 
 ## Depende de
@@ -36,53 +36,53 @@ medio
 Identificar familias estruturais reais de `WebPanel` a partir do acervo XML da KB `KBBase18`.
 Permitir escolha automatizavel de template interno real, reduzindo dependencia de selecao manual caso a caso.
 
-## Metodo
+## Método
 
 - Evidencia direta: foram analisados 1196 XMLs de `WebPanel` em `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel`.
-- Evidencia direta: o agrupamento abaixo nao usa nome do objeto como criterio principal; usa assinatura estrutural baseada em inventario de `Part`, presenca de `events`, `grid`, `table`, `action`, `textblock`, `image`, `tab`, uso de variaveis e tamanho do XML.
-- Inferencia forte: as familias foram consolidadas para uso pratico; em alguns casos uma familia junta assinaturas raras vizinhas quando isso reduz ruido sem esconder variabilidade.
-- Hipotese: a selecao automatica de template deve primeiro casar a familia estrutural e so depois refinar por `parent`, `module` e blocos internos.
+- Evidencia direta: o agrupamento abaixo não usa nome do objeto como critério principal; usa assinatura estrutural baseada em inventario de `Part`, presenca de `events`, `grid`, `table`, `action`, `textblock`, `image`, `tab`, uso de variáveis e tamanho do XML.
+- Inferencia forte: as familias foram consolidadas para uso prático; em alguns casos uma familia junta assinaturas raras vizinhas quando isso reduz ruido sem esconder variabilidade.
+- Hipotese: a selecao automática de template deve primeiro casar a familia estrutural e só depois refinar por `parent`, `module` e blocos internos.
 
 ## Visao geral
 
 - Evidencia direta: em praticamente todo o acervo de `WebPanel`, repetem-se 7 `Part type`: `d24a58ad-57ba-41b7-9e6e-eaca3543c778`, `9b0a32a3-de6d-4be1-a4dd-1b85d3741534`, `c44bd5ff-f918-415b-98e6-aca44fed84fa`, `763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9`, `e4c4ade7-53f0-4a56-bdfd-843735b66f47`, `ad3ca970-19d0-44e1-a7b7-db05556e820c`, `babf62c5-0111-49e9-a1c3-cc004d90900a`.
-- Evidencia direta: os sinais estruturais mais discriminantes neste recorte foram `grid`, `action`, `textblock`, `image`, `tab`, presenca real de codigo em eventos e uso de layout tabular.
+- Evidencia direta: os sinais estruturais mais discriminantes neste recorte foram `grid`, `action`, `textblock`, `image`, `tab`, presenca real de código em eventos e uso de layout tabular.
 - Evidencia direta: contagens agregadas no universo de 1196 `WebPanel`: `variables` em 1196, `events` em 463, `action` em 323, `textblock` em 227, `image` em 77, `grid` em 25, `tab` em 14.
-- Inferencia forte: para geracao pratica, a familia estrutural e um pre-filtro melhor do que o nome do objeto.
+- Inferencia forte: para geração prática, a familia estrutural e um pre-filtro melhor do que o nome do objeto.
 
-## Familia 1 - Casca minima sem eventos
+## Familia 1 - Casca mínima sem eventos
 
-- Evidencia direta: 3 objetos com assinatura estrutural minima `table;variables`.
-- Evidencia direta: tamanho medio aproximado de 2986 bytes; minimo 2193; maximo 3920.
+- Evidencia direta: 3 objetos com assinatura estrutural mínima `table;variables`.
+- Evidencia direta: tamanho medio aproximado de 2986 bytes; mínimo 2193; máximo 3920.
 - Inferencia forte: variabilidade interna baixa.
 - Template base: `WP0001`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0001.xml`.
-- Justificativa da escolha: menor exemplar observado e layout praticamente vazio, bom como referencia de casca minima.
+- Justificativa da escolha: menor exemplar observado e layout praticamente vazio, bom como referencia de casca mínima.
 
 ### Part types recorrentes
 
 - Evidencia direta: recorrencia da familia observada sobre os 7 `Part type` fixos do tipo.
-- Obrigatorios (~100% nesta familia): `d24a58ad-57ba-41b7-9e6e-eaca3543c778`, `9b0a32a3-de6d-4be1-a4dd-1b85d3741534`, `c44bd5ff-f918-415b-98e6-aca44fed84fa`, `763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9`, `e4c4ade7-53f0-4a56-bdfd-843735b66f47`, `ad3ca970-19d0-44e1-a7b7-db05556e820c`, `babf62c5-0111-49e9-a1c3-cc004d90900a`.
-- Comuns: nenhum sinal adicional recorrente alem da casca.
-- Raros: nao ha `grid`, `action`, `image`, `tab` ou eventos relevantes.
+- Obrigatórios (~100% nesta familia): `d24a58ad-57ba-41b7-9e6e-eaca3543c778`, `9b0a32a3-de6d-4be1-a4dd-1b85d3741534`, `c44bd5ff-f918-415b-98e6-aca44fed84fa`, `763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9`, `e4c4ade7-53f0-4a56-bdfd-843735b66f47`, `ad3ca970-19d0-44e1-a7b7-db05556e820c`, `babf62c5-0111-49e9-a1c3-cc004d90900a`.
+- Comuns: nenhum sinal adicional recorrente além da casca.
+- Raros: não ha `grid`, `action`, `image`, `tab` ou eventos relevantes.
 
 ### Edicao e preservacao
 
-- Evidencia direta: `Source` do layout e minimo e composto por uma unica `table`.
-- Inferencia forte: blocos mais seguros para edicao controlada sao nome do objeto, descricao e texto/layout minimo dentro do `Source`.
-- Inferencia forte: devem ser preservados o inventario de `Part`, a existencia da `table` raiz e a relacao de `parent` do template escolhido.
-- Hipotese: esta familia serve como ponto de partida para tela muito simples ou casca de navegacao basica.
+- Evidencia direta: `Source` do layout e mínimo e composto por uma única `table`.
+- Inferencia forte: blocos mais seguros para edicao controlada são nome do objeto, descrição e texto/layout mínimo dentro do `Source`.
+- Inferencia forte: devem ser preservados o inventario de `Part`, a existência da `table` raiz e a relacao de `parent` do template escolhido.
+- Hipotese: esta familia serve como ponto de partida para tela muito simples ou casca de navegacao básica.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para `home/menu` muito simples, pagina em branco ou redirecionamento minimo.
-- Inferencia forte: clonar preservando todos os `Part type` e alterando o minimo possivel no layout.
-- Hipotese: abortar se o alvo precisar `grid`, acoes clicaveis, controles customizados ou regras/eventos nao presentes no template.
+- Inferencia forte: uso ideal para `home/menu` muito simples, pagina em branco ou redirecionamento mínimo.
+- Inferencia forte: clonar preservando todos os `Part type` e alterando o mínimo possível no layout.
+- Hipotese: abortar se o alvo precisar `grid`, ações clicaveis, controles customizados ou regras/eventos não presentes no template.
 
 ## Familia 2 - Casca gerada por defaults ou pattern
 
 - Evidencia direta: 726 objetos com assinatura estrutural dominada por `variables`, sem sinais fortes de `grid`, `action`, `textblock`, `image` ou `tab`.
-- Evidencia direta: tamanho medio aproximado de 3534 bytes; minimo 3242; maximo 3839.
+- Evidencia direta: tamanho medio aproximado de 3534 bytes; mínimo 3242; máximo 3839.
 - Evidencia direta: exemplos inspecionados exibem `Defaults=WorkWith:Templates...`, `WEB_COMP=Yes`, `IsGeneratedObject=True` e `parent` ligado a objetos `WorkWith`.
 - Inferencia forte: variabilidade interna baixa na casca, mas dependencia contextual alta.
 - Template base: `WP0003`.
@@ -92,30 +92,30 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` fixos se repetem nesta familia.
-- Obrigatorios (~100% nesta familia): os mesmos 7 `Part type` base do tipo.
-- Comuns: propriedades internas de geracao em `layout`, `events` e `variables`.
-- Raros: controles visuais ricos; nao ha indicio forte de `grid`, `image` ou `tab`.
+- Obrigatórios (~100% nesta familia): os mesmos 7 `Part type` base do tipo.
+- Comuns: propriedades internas de geração em `layout`, `events` e `variables`.
+- Raros: controles visuais ricos; não ha indicio forte de `grid`, `image` ou `tab`.
 
 ### Edicao e preservacao
 
-- Evidencia direta: parte relevante do conteudo aparece em propriedades e defaults, nao em layout funcional rico.
+- Evidencia direta: parte relevante do conteúdo aparece em propriedades e defaults, não em layout funcional rico.
 - Inferencia forte: nomes textuais e alguns valores de propriedades recorrentes parecem mais editaveis do que o esqueleto interno.
-- Inferencia forte: devem ser preservados `parent`, `parentGuid`, marcadores de geracao e inventario completo de `Part`.
+- Inferencia forte: devem ser preservados `parent`, `parentGuid`, marcadores de geração e inventario completo de `Part`.
 - Hipotese: alterar esta familia longe do contexto `WorkWith` pode introduzir risco estrutural alto.
-- Evidencia direta (WWP): objetos WW panels gerados pelo padrao WorkWithPlus seguem a convencao `WW` + nome da Transaction (ex.: `WWCliente`); o campo `MasterPage` aponta tipicamente para `WWMasterPage`.
-- Inferencia forte (WWP): `WWPBaseObjects` e infraestrutura de suporte compartilhada do ecossistema WWP -- nao deve ser clonado nem modificado diretamente; sua presenca no `parent` ou nas dependencias e sinal de que o objeto e parte da familia gerada e de alto acoplamento.
+- Evidencia direta (WWP): objetos WW panels gerados pelo padrão WorkWithPlus seguem a convencao `WW` + nome da Transaction (ex.: `WWCliente`); o campo `MasterPage` aponta tipicamente para `WWMasterPage`.
+- Inferencia forte (WWP): `WWPBaseObjects` e infraestrutura de suporte compartilhada do ecossistema WWP -- não deve ser clonado nem modificado diretamente; sua presenca no `parent` ou nas dependencias e sinal de que o objeto e parte da familia gerada e de alto acoplamento.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal quando o alvo tambem for casca gerada ou fortemente dependente de objeto pai.
-- Inferencia forte: clonar apenas com template interno de mesma familia e `parent` estruturalmente proximo.
-- Hipotese: abortar quando o objetivo for um `WebPanel` autoral ou quando o clone exigir retirar propriedades opacas de geracao.
+- Inferencia forte: uso ideal quando o alvo também for casca gerada ou fortemente dependente de objeto pai.
+- Inferencia forte: clonar apenas com template interno de mesma familia e `parent` estruturalmente próximo.
+- Hipotese: abortar quando o objetivo for um `WebPanel` autoral ou quando o clone exigir retirar propriedades opacas de geração.
 
 ## Familia 3 - Navegacional com eventos
 
 - Evidencia direta: 94 objetos com assinatura `table;events;variables`.
-- Evidencia direta: tamanho medio aproximado de 14152 bytes; minimo 3853; maximo 75534.
-- Evidencia direta: exemplos inspecionados trazem `table` responsiva, controles `ucw` e codigo explicito em eventos.
+- Evidencia direta: tamanho medio aproximado de 14152 bytes; mínimo 3853; máximo 75534.
+- Evidencia direta: exemplos inspecionados trazem `table` responsiva, controles `ucw` e código explicito em eventos.
 - Inferencia forte: variabilidade interna media.
 - Template base: `WP0004`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0004.xml`.
@@ -124,26 +124,26 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): `layout`, `rules`, `events`, `conditions`, `variables`, `help`, `inner html` nos GUIDs recorrentes do tipo.
-- Comuns: `table`, eventos nomeados, variaveis de apoio e controles `ucw`.
+- Obrigatórios (~100% nesta familia): `layout`, `rules`, `events`, `conditions`, `variables`, `help`, `inner html` nos GUIDs recorrentes do tipo.
+- Comuns: `table`, eventos nomeados, variáveis de apoio e controles `ucw`.
 - Raros: `grid`, `tab`, imagem e blocos de lista mais densos.
 
 ### Edicao e preservacao
 
-- Inferencia forte: textos, captions e trechos pequenos de `Event` sao candidatos mais seguros para edicao incremental.
-- Inferencia forte: layout responsivo, controles `ucw`, bindings e nomes de eventos ja referenciados devem ser preservados.
+- Inferencia forte: textos, captions e trechos pequenos de `Event` são candidatos mais seguros para edicao incremental.
+- Inferencia forte: layout responsivo, controles `ucw`, bindings e nomes de eventos já referenciados devem ser preservados.
 - Hipotese: a retirada de controles customizados tende a quebrar a semelhanca estrutural da familia.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para `home/menu` e navegacao basica com acoes dirigidas por evento.
+- Inferencia forte: uso ideal para `home/menu` e navegacao básica com ações dirigidas por evento.
 - Inferencia forte: clonar escolhendo template do mesmo contexto de `parent` e com quantidade parecida de controles.
 - Hipotese: abortar quando o alvo pedir grade/listagem, abas ou forte densidade de elementos textuais/imagem.
 
-## Familia 4 - Formulario com acao
+## Familia 4 - Formulario com ação
 
 - Evidencia direta: 121 objetos com assinatura `table;action;events;variables`.
-- Evidencia direta: tamanho medio aproximado de 18099 bytes; minimo 4000; maximo 96196.
+- Evidencia direta: tamanho medio aproximado de 18099 bytes; mínimo 4000; máximo 96196.
 - Evidencia direta: exemplos inspecionados mostram campos de dados, pelo menos uma `action` e eventos de inicializacao/acao.
 - Inferencia forte: variabilidade interna media.
 - Template base: `WP0854`.
@@ -153,26 +153,26 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base de `Part` do tipo.
-- Comuns: `action`, `table`, codigo em `events`, variaveis e elementos `data`.
+- Obrigatórios (~100% nesta familia): inventario base de `Part` do tipo.
+- Comuns: `action`, `table`, código em `events`, variáveis e elementos `data`.
 - Raros: `grid`, `tab`, imagem e blocos informativos ricos.
 
 ### Edicao e preservacao
 
-- Inferencia forte: textos de botao, descricao, nomes e trechos pequenos do `Source` visual sao os pontos menos agressivos para mudanca.
-- Inferencia forte: devem ser preservados o esqueleto da `table`, os bindings de `data`, `action` e a presenca dos eventos ja conectados.
+- Inferencia forte: textos de botao, descrição, nomes e trechos pequenos do `Source` visual são os pontos menos agressivos para mudanca.
+- Inferencia forte: devem ser preservados o esqueleto da `table`, os bindings de `data`, `action` e a presenca dos eventos já conectados.
 - Hipotese: a remocao de uma `action` existente pode mudar a familia alvo e deve ser evitada sem template melhor.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para `cadastro simples`, acao unica ou formulario curto com confirmacao.
-- Inferencia forte: clonar mantendo o mesmo numero basico de acoes e a distribuicao geral dos controles.
+- Inferencia forte: uso ideal para `cadastro simples`, ação única ou formulario curto com confirmacao.
+- Inferencia forte: clonar mantendo o mesmo número básico de ações e a distribuicao geral dos controles.
 - Hipotese: abortar quando houver necessidade de grade, abas, imagem forte ou grande volume de navegacao cruzada.
 
-## Familia 5 - Formulario textual com acao
+## Familia 5 - Formulario textual com ação
 
 - Evidencia direta: 106 objetos com assinatura `table;action;textblock;events;variables`.
-- Evidencia direta: tamanho medio aproximado de 24550 bytes; minimo 7056; maximo 107986.
+- Evidencia direta: tamanho medio aproximado de 24550 bytes; mínimo 7056; máximo 107986.
 - Evidencia direta: a familia acrescenta densidade de `textblock` sobre a familia anterior.
 - Inferencia forte: variabilidade interna media para alta.
 - Template base: `WP0181`.
@@ -182,83 +182,83 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base do tipo.
-- Comuns: `textblock`, `table`, eventos reais, variaveis e pelo menos uma area de acao em grande parte da familia.
+- Obrigatórios (~100% nesta familia): inventario base do tipo.
+- Comuns: `textblock`, `table`, eventos reais, variáveis e pelo menos uma area de ação em grande parte da familia.
 - Raros: `grid`, `tab` e uso de imagem.
 
 ### Edicao e preservacao
 
-- Inferencia forte: textos, captions e blocos claramente rotulados sao os candidatos mais seguros de edicao.
-- Inferencia forte: devem ser preservados estrutura do layout, ordem geral das secoes, controles customizados e nomes de bindings.
-- Hipotese: se o alvo exigir forte acoplamento com componente especifico, convem template ainda mais proximo do que o representante desta familia.
+- Inferencia forte: textos, captions e blocos claramente rotulados são os candidatos mais seguros de edicao.
+- Inferencia forte: devem ser preservados estrutura do layout, ordem geral das seções, controles customizados e nomes de bindings.
+- Hipotese: se o alvo exigir forte acoplamento com componente específico, convem template ainda mais próximo do que o representante desta familia.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para painel textual, formulario guiado ou pagina explicativa com uma ou mais acoes.
-- Inferencia forte: clonar preservando hierarquia das tabelas internas e a distribuicao entre texto e acao.
+- Inferencia forte: uso ideal para painel textual, formulario guiado ou pagina explicativa com uma ou mais ações.
+- Inferencia forte: clonar preservando hierarquia das tabelas internas e a distribuicao entre texto e ação.
 - Hipotese: abortar quando o alvo exigir grade/lista ou quando a semelhanÃ§a textual esconder dependencias de componentes opacos.
 
-## Familia 6 - Painel textual sem acao dominante
+## Familia 6 - Painel textual sem ação dominante
 
 - Evidencia direta: 33 objetos com assinatura `table;textblock;events;variables`.
-- Evidencia direta: tamanho medio aproximado de 17310 bytes; minimo 3945; maximo 72722.
+- Evidencia direta: tamanho medio aproximado de 17310 bytes; mínimo 3945; máximo 72722.
 - Inferencia forte: variabilidade interna media.
 - Template base: `WP0189`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0189.xml`.
-- Justificativa da escolha: ha `textblock`, evento real, variaveis e um componente central, com pouca enfase em `action`.
+- Justificativa da escolha: ha `textblock`, evento real, variáveis e um componente central, com pouca enfase em `action`.
 
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base do tipo.
-- Comuns: `textblock`, `table`, eventos, variaveis e controle central informativo.
+- Obrigatórios (~100% nesta familia): inventario base do tipo.
+- Comuns: `textblock`, `table`, eventos, variáveis e controle central informativo.
 - Raros: `action` relevante, `grid`, `tab` e imagem.
 
 ### Edicao e preservacao
 
-- Inferencia forte: captions, titulos e textos explicativos sao os trechos mais seguros.
-- Inferencia forte: devem ser preservados layout principal, componente central e variaveis associadas.
-- Hipotese: alterar o componente central tende a mover o objeto para outra familia pratica.
+- Inferencia forte: captions, titulos e textos explicativos são os trechos mais seguros.
+- Inferencia forte: devem ser preservados layout principal, componente central e variáveis associadas.
+- Hipotese: alterar o componente central tende a mover o objeto para outra familia prática.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para `home/menu` informativo, painel de resumo ou navegacao basica sem grade.
-- Inferencia forte: clonar quando o alvo for centrado em exibicao de informacao e eventos simples.
+- Inferencia forte: uso ideal para `home/menu` informativo, painel de resumo ou navegacao básica sem grade.
+- Inferencia forte: clonar quando o alvo for centrado em exibicao de informação e eventos simples.
 - Hipotese: abortar se o objetivo real depender de operacoes CRUD ou lista tabular.
 
 ## Familia 7 - Painel informativo com imagem
 
 - Evidencia direta: 39 objetos com assinatura `table;action;textblock;image;events;variables`.
-- Evidencia direta: tamanho medio aproximado de 57176 bytes; minimo 5109; maximo 530462.
+- Evidencia direta: tamanho medio aproximado de 57176 bytes; mínimo 5109; máximo 530462.
 - Inferencia forte: variabilidade interna alta.
 - Template base: `WP0172`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0172.xml`.
-- Justificativa da escolha: combina imagem, texto, acao e eventos em um painel rico, sem ainda exigir grade.
+- Justificativa da escolha: combina imagem, texto, ação e eventos em um painel rico, sem ainda exigir grade.
 
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base do tipo.
-- Comuns: `textblock`, `image`, `action`, `table`, eventos e variaveis.
+- Obrigatórios (~100% nesta familia): inventario base do tipo.
+- Comuns: `textblock`, `image`, `action`, `table`, eventos e variáveis.
 - Raros: `grid` e `tab`.
 
 ### Edicao e preservacao
 
-- Inferencia forte: textos, captions e algumas referencias visuais aparentes sao editaveis com risco menor do que o esqueleto.
-- Inferencia forte: devem ser preservados layout das secoes, posicoes de imagem, bindings e quaisquer blocos visuais raros.
-- Hipotese: trocar imagem por controle nao equivalente pode exigir familia mais adequada.
+- Inferencia forte: textos, captions e algumas referencias visuais aparentes são editaveis com risco menor do que o esqueleto.
+- Inferencia forte: devem ser preservados layout das seções, posicoes de imagem, bindings e quaisquer blocos visuais raros.
+- Hipotese: trocar imagem por controle não equivalente pode exigir familia mais adequada.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para tela informativa, mensagem orientada ao usuario, confirmacao ou passo guiado com apoio visual.
+- Inferencia forte: uso ideal para tela informativa, mensagem orientada ao usuário, confirmacao ou passo guiado com apoio visual.
 - Inferencia forte: clonar com template de densidade visual parecida.
 - Hipotese: abortar quando o alvo exigir grade, tabs ou navegacao pesada entre componentes.
 
 ## Familia 8 - Tabulado com abas
 
 - Evidencia direta: 14 objetos com assinatura `table;action;textblock;tab;events;variables`.
-- Evidencia direta: tamanho medio aproximado de 91334 bytes; minimo 33256; maximo 294996.
-- Evidencia direta: exemplar inspecionado possui `tab`, acoes, blocos internos aninhados, `embeddedpage` e eventos longos.
+- Evidencia direta: tamanho medio aproximado de 91334 bytes; mínimo 33256; máximo 294996.
+- Evidencia direta: exemplar inspecionado possui `tab`, ações, blocos internos aninhados, `embeddedpage` e eventos longos.
 - Inferencia forte: variabilidade interna alta.
 - Template base: `WP0981`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0981.xml`.
@@ -267,79 +267,79 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base do tipo.
-- Comuns: `tab`, `action`, `textblock`, `table`, eventos, variaveis e tabelas internas aninhadas.
-- Raros: `grid`; a combinacao com imagem nao foi dominante nesta subfamilia.
+- Obrigatórios (~100% nesta familia): inventario base do tipo.
+- Comuns: `tab`, `action`, `textblock`, `table`, eventos, variáveis e tabelas internas aninhadas.
+- Raros: `grid`; a combinacao com imagem não foi dominante nesta subfamilia.
 
 ### Edicao e preservacao
 
-- Inferencia forte: textos, nomes e conteudo local de abas sao mais seguros do que alteracoes no container de abas.
+- Inferencia forte: textos, nomes e conteúdo local de abas são mais seguros do que alteracoes no container de abas.
 - Inferencia forte: devem ser preservados a estrutura do `tab`, ordem das paginas, controles embutidos e nomes ligados aos eventos.
 - Hipotese: remover abas ou mover controles entre paginas tende a elevar muito o risco estrutural.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para consulta/edicao com multiplas secoes visuais ou navegacao basica por abas.
-- Inferencia forte: clonar apenas quando o alvo realmente precisar abas e houver template interno muito proximo.
-- Hipotese: abortar se nao houver familia tabulada identificavel ou se o alvo pedir simplificacao radical da estrutura.
+- Inferencia forte: uso ideal para consulta/edicao com múltiplas seções visuais ou navegacao básica por abas.
+- Inferencia forte: clonar apenas quando o alvo realmente precisar abas e houver template interno muito próximo.
+- Hipotese: abortar se não houver familia tabulada identificavel ou se o alvo pedir simplificacao radical da estrutura.
 
-### Padrao observado: tab aninhada com SDT em data attributes
+### Padrão observado: tab aninhada com SDT em data attributes
 
-- `Evidência direta`: quando uma aba externa contem outra Tab interna cujas sub-abas exibem campos bindados em `&Sdt.<membro>` via data attributes, a sub-aba default da Tab interna pode aparecer vazia na primeira ativacao da aba externa; o re-bind so acontece apos `ajax_rsp_assign_sdt_attri` ser emitida pelo gerador, o que exige que o SDT entre no `oparms` do evento server-side.
-- `Referência cruzada`: ver `02-regras-operacionais-e-runtime.md`, secao `WebPanel, Tab aninhada e re-bind de SDT em data attributes`, para causa estrutural, solucao validada (`TabChanged` + touch em membro de SDT via proc helper identidade + `SelectTab(2);SelectTab(1)`), anti-padroes testados e sinais de verificacao no `.cs` gerado.
+- `Evidência direta`: quando uma aba externa contem outra Tab interna cujas sub-abas exibem campos bindados em `&Sdt.<membro>` via data attributes, a sub-aba default da Tab interna pode aparecer vazia na primeira ativacao da aba externa; o re-bind só acontece após `ajax_rsp_assign_sdt_attri` ser emitida pelo gerador, o que exige que o SDT entre no `oparms` do evento server-side.
+- `Referência cruzada`: ver `02-regras-operacionais-e-runtime.md`, seção `WebPanel, Tab aninhada e re-bind de SDT em data attributes`, para causa estrutural, solucao validada (`TabChanged` + touch em membro de SDT via proc helper identidade + `SelectTab(2);SelectTab(1)`), anti-padroes testados e sinais de verificacao no `.cs` gerado.
 
 ## Familia 9 - Lista com grid
 
-- Evidencia direta: 21 objetos nas assinaturas dominadas por `grid`, consolidadas aqui como familia unica de lista com grade.
-- Evidencia direta: tamanho medio aproximado de 67625 bytes; minimo 10626; maximo 240342.
+- Evidencia direta: 21 objetos nas assinaturas dominadas por `grid`, consolidadas aqui como familia única de lista com grade.
+- Evidencia direta: tamanho medio aproximado de 67625 bytes; mínimo 10626; máximo 240342.
 - Evidencia direta: exemplos inspecionados mostram `grid` interna combinada com `action`, `textblock` e eventos.
 - Inferencia forte: variabilidade interna alta.
 - Template base: `WP0195`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0195.xml`.
-- Justificativa da escolha: traz `grid` explicita, acoes, texto e eventos, servindo como referencia concreta para familia de lista.
+- Justificativa da escolha: traz `grid` explicita, ações, texto e eventos, servindo como referencia concreta para familia de lista.
 
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base do tipo.
-- Comuns: `grid`, `table`, `events`, `variables`; em parte relevante tambem `action` e `textblock`.
-- Raros: `tab`; imagem aparece so em subgrupos menores.
+- Obrigatórios (~100% nesta familia): inventario base do tipo.
+- Comuns: `grid`, `table`, `events`, `variables`; em parte relevante também `action` e `textblock`.
+- Raros: `tab`; imagem aparece só em subgrupos menores.
 
 ### Edicao e preservacao
 
-- Inferencia forte: textos, titulos, captions de acoes e alguns trechos de evento sao mais seguros do que a grade em si.
+- Inferencia forte: textos, titulos, captions de ações e alguns trechos de evento são mais seguros do que a grade em si.
 - Inferencia forte: devem ser preservados a estrutura do `grid`, tabela interna da grade, bindings das colunas e eventos ligados a carga ou selecao.
-- Hipotese: mudar a forma da grade, remover linhas de layout ou alterar bindings sem template muito proximo tende a falhar.
+- Hipotese: mudar a forma da grade, remover linhas de layout ou alterar bindings sem template muito próximo tende a falhar.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
-- Inferencia forte: uso ideal para `consulta/lista` e navegacao basica baseada em itens.
-- Inferencia forte: clonar sempre a partir de template que ja tenha `grid` e complexidade semelhante.
-- Hipotese: abortar quando o alvo exigir tela puramente formular sem grade ou quando nao houver equivalencia clara de bindings.
+- Inferencia forte: uso ideal para `consulta/lista` e navegacao básica baseada em itens.
+- Inferencia forte: clonar sempre a partir de template que já tenha `grid` e complexidade semelhante.
+- Hipotese: abortar quando o alvo exigir tela puramente formular sem grade ou quando não houver equivalencia clara de bindings.
 
 ## Familia 10 - Residual misto de baixa repeticao
 
 - Evidencia direta: 26 objetos distribuidos em assinaturas raras vizinhas, incluindo combinacoes com `image` sem `textblock` dominante e outras misturas pouco frequentes.
-- Evidencia direta: tamanho medio aproximado de 43354 bytes; minimo 2762; maximo 114888.
+- Evidencia direta: tamanho medio aproximado de 43354 bytes; mínimo 2762; máximo 114888.
 - Inferencia forte: variabilidade interna muito alta.
 - Template base: `WP0978`.
 - XML original: `C:\SANITIZED\ObjetosDaKbEmXml\WebPanel\WP0978.xml`.
-- Justificativa da escolha: objeto real pequeno e compreensivel, util como representante de painel informativo misto fora das familias maiores.
+- Justificativa da escolha: objeto real pequeno e compreensivel, útil como representante de painel informativo misto fora das familias maiores.
 
 ### Part types recorrentes
 
 - Evidencia direta: os 7 `Part type` base se repetem.
-- Obrigatorios (~100% nesta familia): inventario base do tipo.
-- Comuns: `table`, eventos, variaveis e algum elemento visual adicional.
-- Raros: qualquer combinacao especifica desta familia residual deve ser tratada como pouco padronizada.
+- Obrigatórios (~100% nesta familia): inventario base do tipo.
+- Comuns: `table`, eventos, variáveis e algum elemento visual adicional.
+- Raros: qualquer combinacao específica desta familia residual deve ser tratada como pouco padronizada.
 
 ### Edicao e preservacao
 
-- Inferencia forte: so convem editar textos, nomes e ajustes visuais localizados.
-- Inferencia forte: devem ser preservados o layout completo e todos os controles nao triviais.
+- Inferencia forte: só convem editar textos, nomes e ajustes visuais localizados.
+- Inferencia forte: devem ser preservados o layout completo e todos os controles não triviais.
 - Hipotese: esta familia funciona melhor como fallback quando nenhuma familia principal casa bem.
 
-### Uso pratico e clonagem
+### Uso prático e clonagem
 
 - Inferencia forte: uso ideal para tela informativa simples ou caso isolado visualmente diferente.
 - Inferencia forte: clonar apenas com semelhanca muito clara ao template.
@@ -348,44 +348,44 @@ Permitir escolha automatizavel de template interno real, reduzindo dependencia d
 ## Regras operacionais por familia
 
 - Evidencia direta: todas as familias aqui descritas foram observadas no mesmo `Object/@type` de `WebPanel`.
-- Inferencia forte: o algoritmo pratico mais seguro e `identificar familia -> escolher template interno da mesma familia -> preservar inventario de Part e esqueleto -> editar blocos textuais/Source local -> validar diff estrutural`.
+- Inferencia forte: o algoritmo prático mais seguro e `identificar familia -> escolher template interno da mesma familia -> preservar inventario de Part e esqueleto -> editar blocos textuais/Source local -> validar diff estrutural`.
 - Inferencia forte: nunca remover `Part type` recorrente do template.
 - Inferencia forte: nunca generalizar `WebPanel` como tipo homogeneo; a familia estrutural deve ser decidida antes da clonagem.
-- Hipotese: se dois templates possiveis parecerem proximos, preferir o de menor complexidade que ainda contenha todos os sinais necessarios do alvo.
+- Hipotese: se dois templates possíveis parecerem próximos, preferir o de menor complexidade que ainda contenha todos os sinais necessários do alvo.
 
 ## Quando abortar
 
-- Inferencia forte: abortar quando nao houver familia claramente identificavel.
+- Inferencia forte: abortar quando não houver familia claramente identificavel.
 - Inferencia forte: abortar quando o alvo exigir `grid`, `tab`, imagem forte ou componente customizado ausente na familia escolhida.
-- Inferencia forte: abortar quando o `parent` observado no template parecer parte estrutural do objeto e nao houver equivalente interno proximo.
-- Hipotese: abortar tambem quando a mudanca pretendida exigir eliminar bindings ou controles opacos ainda nao entendidos.
+- Inferencia forte: abortar quando o `parent` observado no template parecer parte estrutural do objeto e não houver equivalente interno próximo.
+- Hipotese: abortar também quando a mudanca pretendida exigir eliminar bindings ou controles opacos ainda não entendidos.
 
 ## Tabela resumo
 
 | Familia | Quando usar | Risco | Template base |
 | --- | --- | --- | --- |
-| Casca minima sem eventos | casca simples, pagina em branco, navegacao minima | medio | `WP0001` |
+| Casca mínima sem eventos | casca simples, pagina em branco, navegacao mínima | medio | `WP0001` |
 | Casca gerada por defaults ou pattern | clone de objeto gerado ou dependente de `WorkWith` | alto | `WP0003` |
-| Navegacional com eventos | menu, home navegacional, acoes por evento | medio-alto | `WP0004` |
-| Formulario com acao | cadastro simples, acao unica, formulario curto | medio-alto | `WP0854` |
-| Formulario textual com acao | painel guiado, formulario com explicacao textual | alto | `WP0181` |
-| Painel textual sem acao dominante | resumo informativo, painel simples | medio-alto | `WP0189` |
-| Painel informativo com imagem | telas orientadas ao usuario com apoio visual | alto | `WP0172` |
-| Tabulado com abas | multiplas secoes visuais, navegacao por abas | muito alto | `WP0981` |
+| Navegacional com eventos | menu, home navegacional, ações por evento | medio-alto | `WP0004` |
+| Formulario com ação | cadastro simples, ação única, formulario curto | medio-alto | `WP0854` |
+| Formulario textual com ação | painel guiado, formulario com explicacao textual | alto | `WP0181` |
+| Painel textual sem ação dominante | resumo informativo, painel simples | medio-alto | `WP0189` |
+| Painel informativo com imagem | telas orientadas ao usuário com apoio visual | alto | `WP0172` |
+| Tabulado com abas | múltiplas seções visuais, navegacao por abas | muito alto | `WP0981` |
 | Lista com grid | consulta/lista baseada em grade | muito alto | `WP0195` |
 | Residual misto de baixa repeticao | fallback somente quando nenhuma familia principal encaixa | muito alto | `WP0978` |
 
 ## Sintese final
 
-- Evidencia direta: o acervo de `WebPanel` nao e homogeneo; a distribuicao estrutural observada forma familias recorrentes e uma cauda residual rara.
-- Inferencia forte: a geracao pratica de `XPZ` para `WebPanel` deve partir de selecao automatica de familia estrutural antes da escolha do template.
-- Inferencia forte: `Casca minima`, `Navegacional com eventos` e `Formulario com acao` sao os pontos de entrada mais previsiveis para clonagem interna.
+- Evidencia direta: o acervo de `WebPanel` não é homogeneo; a distribuicao estrutural observada forma familias recorrentes e uma cauda residual rara.
+- Inferencia forte: a geração prática de `XPZ` para `WebPanel` deve partir de selecao automática de familia estrutural antes da escolha do template.
+- Inferencia forte: `Casca minima`, `Navegacional com eventos` e `Formulario com acao` são os pontos de entrada mais previsiveis para clonagem interna.
 - Inferencia forte: `Grid`, `Tab` e familias residuais exigem selecao de template muito mais cuidadosa.
-- Hipotese: este mapa ja reduz a necessidade de escolha manual de template, mas ainda depende de validacao por tentativa real de importacao para refinar fronteiras entre familias proximas.
+- Hipotese: este mapa já reduz a necessidade de escolha manual de template, mas ainda depende de validação por tentativa real de importação para refinar fronteiras entre familias próximas.
 ## Anexos - Templates sanitizados
 - Evidencia direta: os quatro anexos abaixo preservam a quantidade de Part, a ordem dos blocos, Object/@type, parent*, moduleGuid e a hierarquia XML dos templates originais.
-- Inferencia forte: eles podem servir como base de clonagem rapida por familia, desde que o agente continue respeitando o mapa estrutural deste documento.
-- Hipotese: os anexos sao mais uteis como molde estrutural do que como objeto pronto para importacao, pois alguns nomes e textos foram anonimizados de forma deliberada.
+- Inferencia forte: eles podem servir como base de clonagem rápida por familia, desde que o agente continue respeitando o mapa estrutural deste documento.
+- Hipotese: os anexos são mais úteis como molde estrutural do que como objeto pronto para importação, pois alguns nomes e textos foram anonimizados de forma deliberada.
 ### Template 1 - Menu/Home
 - Familia associada: Navegacional com eventos
 - Origem estrutural: WP0004.xml
@@ -542,12 +542,12 @@ Endevent
 ```
 ### Sanitizacao aplicada
 - nomes de objeto e de chamadas semanticamente identificaveis foram anonimizados
-- captions e textos visiveis foram trocados por equivalentes genericos
+- captions e textos visiveis foram trocados por equivalentes genéricos
 - parent*, moduleGuid, Part type e hierarquia XML foram preservados
 ### Template 2 - Formulario
-- Familia associada: Formulario com acao
+- Familia associada: Formulario com ação
 - Origem estrutural: WP0854.xml
-- Objetivo do anexo: oferecer um formulario minimo com parametros, acao e evento de inicializacao.
+- Objetivo do anexo: oferecer um formulario mínimo com parâmetros, ação e evento de inicializacao.
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Object parentGuid="ce54ed93-ebec-4ed1-b829-873e61f7f6d5" user="SANITIZED\\USER" versionDate="0001-01-01T00:00:00.0000000" lastUpdate="2026-02-04T00:44:11.0000000Z" checksum="e5b302b839ff70d5d68c7d908ca2d8a6" fullyQualifiedName="WPExemploFormulario" moduleGuid="afa47377-41d5-4ae8-9755-6f53150aa361" guid="7c374c60-a2fe-4e23-9d2e-49a89b28695e" name="WPExemploFormulario" type="c9584656-94b6-4ccd-890f-332d11fc2c25" description="WP Exemplo Formulario" parent="Arquivo" parentType="00000000-0000-0000-0000-000000000008">
@@ -667,13 +667,13 @@ Endevent
 </Object>
 ```
 ### Sanitizacao aplicada
-- nomes de objeto e variaveis semanticas foram generalizados
+- nomes de objeto e variáveis semanticas foram generalizados
 - labels e descricoes textuais foram trocadas por termos neutros
 - bindings estruturais, Part type e ordem dos blocos foram preservados
 ### Template 3 - Lista/Grid
 - Familia associada: Lista com grid
 - Origem estrutural: WP0195.xml
-- Objetivo do anexo: oferecer um template rico com grid, acoes, eventos e variaveis suficientes para clonagem por familia de lista.
+- Objetivo do anexo: oferecer um template rico com grid, ações, eventos e variáveis suficientes para clonagem por familia de lista.
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Object parentGuid="2896f7a3-4874-40c9-ac7e-f57685983b0f" user="SANITIZED\\USER" versionDate="0001-01-01T00:00:00.0000000" lastUpdate="2025-09-06T18:59:50.0000000Z" checksum="c08b667bb1c14f04fd07448ce5c20b4c" fullyQualifiedName="WPExemploLista" moduleGuid="afa47377-41d5-4ae8-9755-6f53150aa361" guid="891f84b2-0377-4aa3-b0b8-60cb3d882caf" name="WPExemploLista" type="c9584656-94b6-4ccd-890f-332d11fc2c25" description="Acesso ao Sistema" parent="GAM_Frontend" parentType="00000000-0000-0000-0000-000000000008">
@@ -1510,12 +1510,12 @@ EndSub
 ```
 ### Sanitizacao aplicada
 - nome do objeto, nomes visiveis e varios identificadores semanticos foram anonimizados
-- chamadas de objetos auxiliares foram substituidas por nomes genericos preservando o padrao sintatico
+- chamadas de objetos auxiliares foram substituidas por nomes genéricos preservando o padrão sintatico
 - parent*, moduleGuid, Part type, grid, eventos e hierarquia XML foram preservados
 ### Template 4 - Eventos
-- Familia associada: Painel textual sem acao dominante
+- Familia associada: Painel textual sem ação dominante
 - Origem estrutural: WP0189.xml
-- Objetivo do anexo: oferecer um painel enxuto com evento Start, variaveis e componente central.
+- Objetivo do anexo: oferecer um painel enxuto com evento Start, variáveis e componente central.
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Object parentGuid="fdf9baf8-1249-463c-b803-76e914f87c2d" user="SANITIZED\\USER" versionDate="0001-01-01T00:00:00.0000000" lastUpdate="2026-02-19T14:42:31.0000000Z" checksum="506b2b1a2139bb6343200fccce10bd23" fullyQualifiedName="WPExemploEventos" moduleGuid="afa47377-41d5-4ae8-9755-6f53150aa361" guid="1cbbba77-a1f2-4bf5-af50-b58237e01eb9" name="WPExemploEventos" type="c9584656-94b6-4ccd-890f-332d11fc2c25" description="Painel de Eventos" parent="GAM_General" parentType="00000000-0000-0000-0000-000000000008">
@@ -1687,9 +1687,9 @@ Endevent
 </Object>
 ```
 ### Sanitizacao aplicada
-- nome do objeto, captions e nomes semanticamente explicitos foram trocados por equivalentes genericos
+- nome do objeto, captions e nomes semanticamente explicitos foram trocados por equivalentes genéricos
 - referencia ao painel interno foi anonimizada sem alterar a estrutura do bloco de eventos
-- parent*, moduleGuid, Part type e a sequencia dos blocos foram preservados
+- parent*, moduleGuid, Part type e a sequência dos blocos foram preservados
 
 
 

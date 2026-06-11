@@ -1,10 +1,10 @@
-# 01c - Campos Estaveis vs Variaveis
+# 01c - Campos Estaveis vs Variáveis
 
 ## Papel do documento
 empirico estrutural
 
 ## Objetivo
-Concentrar os campos mais estaveis, variaveis e contextuais do no `<Object>` e de estruturas relacionadas por tipo.
+Concentrar os campos mais estaveis, variáveis e contextuais do no `<Object>` e de estruturas relacionadas por tipo.
 
 ## Origem incorporada - 11-campos-estaveis-vs-variaveis.md
 
@@ -35,19 +35,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 1 | 100 | quase sempre | papel ainda nao fechado |
-| description | 1 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 1 | 100 | quase sempre | papel ainda não fechado |
+| description | 1 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda não fechado |
 | guid | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 1 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | name | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 1 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | parentType | 1 | 100 | quase sempre | ligado a parent/module |
 | type | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 1 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| user | 1 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 1 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em API\\EXEMPLO-SANITIZADO.xml.
 
@@ -59,17 +59,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 1 | 100 | quase sempre | papel ainda nao fechado |
-| description | 1 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 1 | 100 | quase sempre | papel ainda não fechado |
+| description | 1 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda não fechado |
 | guid | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 1 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | name | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | type | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 1 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| user | 1 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 1 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em ColorPalette\\EXEMPLO-SANITIZADO.xml.
 
@@ -81,19 +81,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 1 | 100 | quase sempre | papel ainda nao fechado |
-| description | 1 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 1 | 100 | quase sempre | papel ainda não fechado |
+| description | 1 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda não fechado |
 | guid | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 1 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | name | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 1 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | parentType | 1 | 100 | quase sempre | ligado a parent/module |
 | type | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 1 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| user | 1 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 1 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Dashboard\\EXEMPLO-SANITIZADO.xml.
 
@@ -105,19 +105,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 24 | 100 | quase sempre | papel ainda nao fechado |
-| description | 24 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 24 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 24 | 100 | quase sempre | papel ainda não fechado |
+| description | 24 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 24 | 100 | quase sempre | papel ainda não fechado |
 | guid | 24 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 24 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 24 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 24 | 100 | quase sempre | ligado a parent/module |
 | name | 24 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 24 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 24 | 100 | quase sempre | ligado a parent/module |
 | parentType | 24 | 100 | quase sempre | ligado a parent/module |
 | type | 24 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 24 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 24 | 100 | quase sempre | papel ainda nao fechado |
+| user | 24 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 24 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em DataProvider\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em DataProvider\\EXEMPLO-SANITIZADO.xml.
@@ -132,19 +132,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 2 | 100 | quase sempre | papel ainda nao fechado |
-| description | 2 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 2 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 2 | 100 | quase sempre | papel ainda não fechado |
+| description | 2 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 2 | 100 | quase sempre | papel ainda não fechado |
 | guid | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 2 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 2 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 2 | 100 | quase sempre | ligado a parent/module |
 | name | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 2 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 2 | 100 | quase sempre | ligado a parent/module |
 | parentType | 2 | 100 | quase sempre | ligado a parent/module |
 | type | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 2 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 2 | 100 | quase sempre | papel ainda nao fechado |
+| user | 2 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 2 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em DataSelector\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em DataSelector\\EXEMPLO-SANITIZADO.xml.
@@ -157,17 +157,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 1 | 100 | quase sempre | papel ainda nao fechado |
-| description | 1 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 1 | 100 | quase sempre | papel ainda não fechado |
+| description | 1 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda não fechado |
 | guid | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 1 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | name | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | type | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 1 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| user | 1 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 1 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em DeploymentUnit\\EXEMPLO-SANITIZADO.xml.
 
@@ -179,19 +179,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 2 | 100 | quase sempre | papel ainda nao fechado |
-| description | 2 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 2 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 2 | 100 | quase sempre | papel ainda não fechado |
+| description | 2 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 2 | 100 | quase sempre | papel ainda não fechado |
 | guid | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 2 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 2 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 2 | 100 | quase sempre | ligado a parent/module |
 | name | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 1 | 50 | as vezes | ligado a parent/module |
 | parentGuid | 2 | 100 | quase sempre | ligado a parent/module |
 | parentType | 1 | 50 | as vezes | ligado a parent/module |
 | type | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 2 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 2 | 100 | quase sempre | papel ainda nao fechado |
+| user | 2 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 2 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em DesignSystem\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em DesignSystem\\EXEMPLO-SANITIZADO.xml.
@@ -204,17 +204,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 3 | 100 | quase sempre | papel ainda nao fechado |
-| description | 3 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 3 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 3 | 100 | quase sempre | papel ainda não fechado |
+| description | 3 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 3 | 100 | quase sempre | papel ainda não fechado |
 | guid | 3 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 3 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 3 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 3 | 100 | quase sempre | ligado a parent/module |
 | name | 3 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 3 | 100 | quase sempre | ligado a parent/module |
 | type | 3 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 3 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 3 | 100 | quase sempre | papel ainda nao fechado |
+| user | 3 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 3 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Document\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Document\\EXEMPLO-SANITIZADO.xml.
@@ -228,19 +228,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 593 | 100 | quase sempre | papel ainda nao fechado |
-| description | 593 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 593 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 593 | 100 | quase sempre | papel ainda não fechado |
+| description | 593 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 593 | 100 | quase sempre | papel ainda não fechado |
 | guid | 593 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 593 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 593 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 593 | 100 | quase sempre | ligado a parent/module |
 | name | 593 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 3 | 0.5 | raro | ligado a parent/module |
 | parentGuid | 593 | 100 | quase sempre | ligado a parent/module |
 | parentType | 3 | 0.5 | raro | ligado a parent/module |
 | type | 593 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 593 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 593 | 100 | quase sempre | papel ainda nao fechado |
+| user | 593 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 593 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Domain\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Domain\\EXEMPLO-SANITIZADO.xml.
@@ -255,19 +255,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 18 | 100 | quase sempre | papel ainda nao fechado |
-| description | 18 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 18 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 18 | 100 | quase sempre | papel ainda não fechado |
+| description | 18 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 18 | 100 | quase sempre | papel ainda não fechado |
 | guid | 18 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 18 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 18 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 18 | 100 | quase sempre | ligado a parent/module |
 | name | 18 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 18 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 18 | 100 | quase sempre | ligado a parent/module |
 | parentType | 18 | 100 | quase sempre | ligado a parent/module |
 | type | 18 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 18 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 18 | 100 | quase sempre | papel ainda nao fechado |
+| user | 18 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 18 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em ExternalObject\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em ExternalObject\\EXEMPLO-SANITIZADO.xml.
@@ -282,17 +282,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 81 | 100 | quase sempre | papel ainda nao fechado |
-| description | 81 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 81 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 81 | 100 | quase sempre | papel ainda não fechado |
+| description | 81 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 81 | 100 | quase sempre | papel ainda não fechado |
 | guid | 81 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 81 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 81 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 81 | 100 | quase sempre | ligado a parent/module |
 | name | 81 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 81 | 100 | quase sempre | ligado a parent/module |
 | type | 81 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 81 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 81 | 100 | quase sempre | papel ainda nao fechado |
+| user | 81 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 81 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em File\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em File\\EXEMPLO-SANITIZADO.xml.
@@ -307,17 +307,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 7 | 100 | quase sempre | papel ainda nao fechado |
-| description | 7 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 7 | 100 | quase sempre | papel ainda não fechado |
+| description | 7 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda não fechado |
 | guid | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 7 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | name | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | type | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 7 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| user | 7 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 7 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Folder\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Folder\\EXEMPLO-SANITIZADO.xml.
@@ -332,19 +332,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 250 | 100 | quase sempre | papel ainda nao fechado |
-| description | 250 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 250 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 250 | 100 | quase sempre | papel ainda não fechado |
+| description | 250 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 250 | 100 | quase sempre | papel ainda não fechado |
 | guid | 250 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 250 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 250 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 250 | 100 | quase sempre | ligado a parent/module |
 | name | 250 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 16 | 6.4 | raro | ligado a parent/module |
 | parentGuid | 250 | 100 | quase sempre | ligado a parent/module |
 | parentType | 16 | 6.4 | raro | ligado a parent/module |
 | type | 250 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 250 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 250 | 100 | quase sempre | papel ainda nao fechado |
+| user | 250 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 250 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Image\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Image\\EXEMPLO-SANITIZADO.xml.
@@ -355,22 +355,22 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 - Evidência direta: 228 objetos top-level de `Table` analisados.
 - Evidência direta: objetos com parent: 0; com moduleGuid: 228.
-- Evidência direta: os indices reais observados nesta trilha aparecem embutidos dentro desses objetos de `Table`.
+- Evidência direta: os índices reais observados nesta trilha aparecem embutidos dentro desses objetos de `Table`.
 - Inferência forte: atributos ligados a parent/module tendem a importar contexto estrutural do objeto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 228 | 100 | quase sempre | papel ainda nao fechado |
-| description | 228 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 228 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 228 | 100 | quase sempre | papel ainda não fechado |
+| description | 228 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 228 | 100 | quase sempre | papel ainda não fechado |
 | guid | 228 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 228 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 228 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 228 | 100 | quase sempre | ligado a parent/module |
 | name | 228 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 228 | 100 | quase sempre | ligado a parent/module |
 | type | 228 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 228 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 228 | 100 | quase sempre | papel ainda nao fechado |
+| user | 228 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 228 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Table\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Table\\EXEMPLO-SANITIZADO.xml.
@@ -385,17 +385,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 1 | 100 | quase sempre | papel ainda nao fechado |
-| description | 1 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 1 | 100 | quase sempre | papel ainda não fechado |
+| description | 1 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 1 | 100 | quase sempre | papel ainda não fechado |
 | guid | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 1 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | name | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 1 | 100 | quase sempre | ligado a parent/module |
 | type | 1 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 1 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 1 | 100 | quase sempre | papel ainda nao fechado |
+| user | 1 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 1 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Language\\EXEMPLO-SANITIZADO.xml.
 
@@ -407,28 +407,28 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| author | 10 | 62.5 | as vezes | papel ainda nao fechado |
-| checksum | 16 | 100 | quase sempre | papel ainda nao fechado |
-| description | 16 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 16 | 100 | quase sempre | papel ainda nao fechado |
+| author | 10 | 62.5 | as vezes | papel ainda não fechado |
+| checksum | 16 | 100 | quase sempre | papel ainda não fechado |
+| description | 16 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 16 | 100 | quase sempre | papel ainda não fechado |
 | guid | 16 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 16 | 100 | quase sempre | papel ainda nao fechado |
-| licenseUrl | 3 | 18.8 | raro | papel ainda nao fechado |
-| moduleDescription | 10 | 62.5 | as vezes | papel ainda nao fechado |
+| lastUpdate | 16 | 100 | quase sempre | papel ainda não fechado |
+| licenseUrl | 3 | 18.8 | raro | papel ainda não fechado |
+| moduleDescription | 10 | 62.5 | as vezes | papel ainda não fechado |
 | moduleGuid | 16 | 100 | quase sempre | ligado a parent/module |
-| moduleVersion | 10 | 62.5 | as vezes | papel ainda nao fechado |
+| moduleVersion | 10 | 62.5 | as vezes | papel ainda não fechado |
 | name | 16 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| Owner | 10 | 62.5 | as vezes | papel ainda nao fechado |
-| PackagedModuleName | 10 | 62.5 | as vezes | papel ainda nao fechado |
+| Owner | 10 | 62.5 | as vezes | papel ainda não fechado |
+| PackagedModuleName | 10 | 62.5 | as vezes | papel ainda não fechado |
 | parent | 2 | 12.5 | raro | ligado a parent/module |
 | parentGuid | 16 | 100 | quase sempre | ligado a parent/module |
 | parentType | 2 | 12.5 | raro | ligado a parent/module |
-| projectUrl | 4 | 25 | as vezes | papel ainda nao fechado |
-| serverUrl | 3 | 18.8 | raro | papel ainda nao fechado |
-| tags | 3 | 18.8 | raro | papel ainda nao fechado |
+| projectUrl | 4 | 25 | as vezes | papel ainda não fechado |
+| serverUrl | 3 | 18.8 | raro | papel ainda não fechado |
+| tags | 3 | 18.8 | raro | papel ainda não fechado |
 | type | 16 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 16 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 16 | 100 | quase sempre | papel ainda nao fechado |
+| user | 16 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 16 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em PackagedModule\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em PackagedModule\\EXEMPLO-SANITIZADO.xml.
@@ -443,19 +443,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 7 | 100 | quase sempre | papel ainda nao fechado |
-| description | 7 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 7 | 100 | quase sempre | papel ainda não fechado |
+| description | 7 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda não fechado |
 | guid | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 7 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | name | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 7 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | parentType | 7 | 100 | quase sempre | ligado a parent/module |
 | type | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 7 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| user | 7 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 7 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Panel\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Panel\\EXEMPLO-SANITIZADO.xml.
@@ -470,17 +470,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 2 | 100 | quase sempre | papel ainda nao fechado |
-| description | 2 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 2 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 2 | 100 | quase sempre | papel ainda não fechado |
+| description | 2 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 2 | 100 | quase sempre | papel ainda não fechado |
 | guid | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 2 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 2 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 2 | 100 | quase sempre | ligado a parent/module |
 | name | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 2 | 100 | quase sempre | ligado a parent/module |
 | type | 2 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 2 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 2 | 100 | quase sempre | papel ainda nao fechado |
+| user | 2 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 2 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em PatternSettings\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em PatternSettings\\EXEMPLO-SANITIZADO.xml.
@@ -493,19 +493,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 2281 | 100 | quase sempre | papel ainda nao fechado |
-| description | 2281 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 2281 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 2281 | 100 | quase sempre | papel ainda não fechado |
+| description | 2281 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 2281 | 100 | quase sempre | papel ainda não fechado |
 | guid | 2281 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 2281 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 2281 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 2281 | 100 | quase sempre | ligado a parent/module |
 | name | 2281 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 2281 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 2281 | 100 | quase sempre | ligado a parent/module |
 | parentType | 2281 | 100 | quase sempre | ligado a parent/module |
 | type | 2281 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 2281 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 2281 | 100 | quase sempre | papel ainda nao fechado |
+| user | 2281 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 2281 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Procedure\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Procedure\\EXEMPLO-SANITIZADO.xml.
@@ -520,19 +520,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 594 | 100 | quase sempre | papel ainda nao fechado |
-| description | 594 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 594 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 594 | 100 | quase sempre | papel ainda não fechado |
+| description | 594 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 594 | 100 | quase sempre | papel ainda não fechado |
 | guid | 594 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 594 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 594 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 594 | 100 | quase sempre | ligado a parent/module |
 | name | 594 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 591 | 99.5 | quase sempre | ligado a parent/module |
 | parentGuid | 594 | 100 | quase sempre | ligado a parent/module |
 | parentType | 591 | 99.5 | quase sempre | ligado a parent/module |
 | type | 594 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 594 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 594 | 100 | quase sempre | papel ainda nao fechado |
+| user | 594 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 594 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em SDT\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em SDT\\EXEMPLO-SANITIZADO.xml.
@@ -547,19 +547,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 11 | 100 | quase sempre | papel ainda nao fechado |
-| description | 11 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 11 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 11 | 100 | quase sempre | papel ainda não fechado |
+| description | 11 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 11 | 100 | quase sempre | papel ainda não fechado |
 | guid | 11 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 11 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 11 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 11 | 100 | quase sempre | ligado a parent/module |
 | name | 11 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 11 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 11 | 100 | quase sempre | ligado a parent/module |
 | parentType | 11 | 100 | quase sempre | ligado a parent/module |
 | type | 11 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 11 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 11 | 100 | quase sempre | papel ainda nao fechado |
+| user | 11 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 11 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Stencil\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Stencil\\EXEMPLO-SANITIZADO.xml.
@@ -574,19 +574,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 709 | 100 | quase sempre | papel ainda nao fechado |
-| description | 709 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 709 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 709 | 100 | quase sempre | papel ainda não fechado |
+| description | 709 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 709 | 100 | quase sempre | papel ainda não fechado |
 | guid | 709 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 709 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 709 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 709 | 100 | quase sempre | ligado a parent/module |
 | name | 709 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 709 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 709 | 100 | quase sempre | ligado a parent/module |
 | parentType | 709 | 100 | quase sempre | ligado a parent/module |
 | type | 709 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 709 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 709 | 100 | quase sempre | papel ainda nao fechado |
+| user | 709 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 709 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em SubTypeGroup\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em SubTypeGroup\\EXEMPLO-SANITIZADO.xml.
@@ -601,17 +601,17 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 7 | 100 | quase sempre | papel ainda nao fechado |
-| description | 7 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 7 | 100 | quase sempre | papel ainda não fechado |
+| description | 7 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda não fechado |
 | guid | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 7 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | name | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parentGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | type | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 7 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| user | 7 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 7 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Theme\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Theme\\EXEMPLO-SANITIZADO.xml.
@@ -626,19 +626,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 183 | 100 | quase sempre | papel ainda nao fechado |
-| description | 183 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 183 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 183 | 100 | quase sempre | papel ainda não fechado |
+| description | 183 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 183 | 100 | quase sempre | papel ainda não fechado |
 | guid | 183 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 183 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 183 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 183 | 100 | quase sempre | ligado a parent/module |
 | name | 183 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 183 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 183 | 100 | quase sempre | ligado a parent/module |
 | parentType | 183 | 100 | quase sempre | ligado a parent/module |
 | type | 183 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 183 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 183 | 100 | quase sempre | papel ainda nao fechado |
+| user | 183 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 183 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em Transaction\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em Transaction\\EXEMPLO-SANITIZADO.xml.
@@ -653,19 +653,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 7 | 100 | quase sempre | papel ainda nao fechado |
-| description | 7 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 7 | 100 | quase sempre | papel ainda não fechado |
+| description | 7 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 7 | 100 | quase sempre | papel ainda não fechado |
 | guid | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 7 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | name | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 7 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 7 | 100 | quase sempre | ligado a parent/module |
 | parentType | 7 | 100 | quase sempre | ligado a parent/module |
 | type | 7 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 7 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 7 | 100 | quase sempre | papel ainda nao fechado |
+| user | 7 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 7 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em UserControl\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em UserControl\\EXEMPLO-SANITIZADO.xml.
@@ -680,19 +680,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 1196 | 100 | quase sempre | papel ainda nao fechado |
-| description | 1196 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 1196 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 1196 | 100 | quase sempre | papel ainda não fechado |
+| description | 1196 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 1196 | 100 | quase sempre | papel ainda não fechado |
 | guid | 1196 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 1196 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 1196 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 1196 | 100 | quase sempre | ligado a parent/module |
 | name | 1196 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 1195 | 99.9 | quase sempre | ligado a parent/module |
 | parentGuid | 1196 | 100 | quase sempre | ligado a parent/module |
 | parentType | 1195 | 99.9 | quase sempre | ligado a parent/module |
 | type | 1196 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 1196 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 1196 | 100 | quase sempre | papel ainda nao fechado |
+| user | 1196 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 1196 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em WebPanel\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em WebPanel\\EXEMPLO-SANITIZADO.xml.
@@ -707,19 +707,19 @@ Dar base empírica para cautela em clonagem e preservação de contexto.
 
 | Attribute | ObjectsWithAttribute | PresencePct | PresenceBucket | Reading |
 | --- | --- | --- | --- | --- |
-| checksum | 183 | 100 | quase sempre | papel ainda nao fechado |
-| description | 183 | 100 | quase sempre | papel ainda nao fechado |
-| fullyQualifiedName | 183 | 100 | quase sempre | papel ainda nao fechado |
+| checksum | 183 | 100 | quase sempre | papel ainda não fechado |
+| description | 183 | 100 | quase sempre | papel ainda não fechado |
+| fullyQualifiedName | 183 | 100 | quase sempre | papel ainda não fechado |
 | guid | 183 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| lastUpdate | 183 | 100 | quase sempre | papel ainda nao fechado |
+| lastUpdate | 183 | 100 | quase sempre | papel ainda não fechado |
 | moduleGuid | 183 | 100 | quase sempre | ligado a parent/module |
 | name | 183 | 100 | quase sempre | forte indicio de criticidade estrutural |
 | parent | 183 | 100 | quase sempre | ligado a parent/module |
 | parentGuid | 183 | 100 | quase sempre | ligado a parent/module |
 | parentType | 183 | 100 | quase sempre | ligado a parent/module |
 | type | 183 | 100 | quase sempre | forte indicio de criticidade estrutural |
-| user | 183 | 100 | quase sempre | papel ainda nao fechado |
-| versionDate | 183 | 100 | quase sempre | papel ainda nao fechado |
+| user | 183 | 100 | quase sempre | papel ainda não fechado |
+| versionDate | 183 | 100 | quase sempre | papel ainda não fechado |
 
 - Evidência direta: exemplo citado: alias sanitizado em WorkWithForWeb\\EXEMPLO-SANITIZADO.xml.
 - Evidência direta: exemplo citado: alias sanitizado em WorkWithForWeb\\EXEMPLO-SANITIZADO.xml.

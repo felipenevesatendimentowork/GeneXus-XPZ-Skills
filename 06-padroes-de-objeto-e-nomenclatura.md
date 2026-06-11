@@ -1,9 +1,9 @@
-# 06 - Padroes de Objeto e Nomenclatura
+# 06 - Padrões de Objeto e Nomenclatura
 
 ## Papel do documento
 conceitual
 
-## Nivel de confianca predominante
+## Nível de confianca predominante
 medio
 
 ## Depende de
@@ -13,7 +13,7 @@ medio
 08-guia-para-agente-gpt.md, 07-open-points-e-checklist.md
 
 ## Objetivo
-Reunir padroes de nomeacao, organizacao e relacoes aparentes observadas no acervo, sem promover esses padroes a garantia estrutural.
+Reunir padrões de nomeacao, organizacao e relacoes aparentes observadas no acervo, sem promover esses padrões a garantia estrutural.
 
 ## Fontes consolidadas
 - 03-genexus-object-design-patterns.md
@@ -91,16 +91,16 @@ Este documento registra padrões observáveis no inventário bruto e nos XMLs ex
 
 - `Evidência direta`: nesta KB, objetos sob `Folder` podem trazer `parent` preenchido sem repetir esse nome em `fullyQualifiedName`.
 - `Evidência direta`: em `Procedure` sob `Folder`, o padrão observado foi `fullyQualifiedName="NomeDoObjeto"` com `parent="NomeDaPasta"`.
-- `Evidência direta`: em `WebPanel` sob `Folder`, o padrão observado foi o mesmo: a pasta organiza o objeto em `parent`, mas nao qualifica o `fullyQualifiedName`.
+- `Evidência direta`: em `WebPanel` sob `Folder`, o padrão observado foi o mesmo: a pasta organiza o objeto em `parent`, mas não qualifica o `fullyQualifiedName`.
 - `Evidência direta`: em objetos sob `Module`, o `fullyQualifiedName` pode aparecer qualificado pelo módulo.
 - `Evidência direta`: também há caso de objeto sob `Folder` dentro de `Module`; nesse perfil, a qualificação do módulo permanece em `fullyQualifiedName`, enquanto a pasta continua aparecendo apenas em `parent`.
-- `Inferência forte`: nesta trilha, `Folder` deve ser tratado primeiro como contêiner organizacional; ele nao deve ser promovido automaticamente a prefixo de namespace no `fullyQualifiedName`.
+- `Inferência forte`: nesta trilha, `Folder` deve ser tratado primeiro como contêiner organizacional; ele não deve ser promovido automaticamente a prefixo de namespace no `fullyQualifiedName`.
 - `Inferência forte`: a distinção correta entre `Folder` e `Module` depende de leitura conjunta de `fullyQualifiedName`, `name`, `parent`, `parentGuid`, `parentType` e `moduleGuid`, não de heurística textual sobre o nome do contêiner.
 
 ## Padrões de referência entre objetos
 
 - `Evidência direta`: em `WebPanel\MODExemploAMenu.xml` o código referencia outros objetos nominais, como `wpEntradaMODExemploA`, `WWEntradaMODExemploA`, `WWPesagemMODExemploA` e `wpEscolhaPesagemMODExemploA`.
-- `Evidência direta`: no unico caso real de `API` observado nesta KB, representado aqui pelo alias sanitizado `APIExemploIntegracaoA.xml`, aparecem chamadas para procedures como `PRCExemploA`, `procSdtTributacaoDadosBasicosSelecaoConformeParametros` e `PRCExemploB`.
+- `Evidência direta`: no único caso real de `API` observado nesta KB, representado aqui pelo alias sanitizado `APIExemploIntegracaoA.xml`, aparecem chamadas para procedures como `PRCExemploA`, `procSdtTributacaoDadosBasicosSelecaoConformeParametros` e `PRCExemploB`.
 - `Inferência forte`: nomes de objetos no acervo não são apenas rótulos; eles também aparecem como pontos de acoplamento explícito entre artefatos.
 
 ## Regra operacional: qualificação por tipo ao referenciar objetos

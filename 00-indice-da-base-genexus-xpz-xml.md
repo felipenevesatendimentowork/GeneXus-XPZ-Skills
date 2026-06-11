@@ -1,9 +1,9 @@
-# 00 - Indice da Base GeneXus XPZ XML
+# 00 - Índice da Base GeneXus XPZ XML
 
 ## Papel do documento
-indice
+índice
 
-## Nivel de confianca predominante
+## Nível de confianca predominante
 alto
 
 ## Depende de
@@ -21,7 +21,7 @@ Ser o ponto de entrada principal da base consolidada, com ordem de leitura, limi
 ## Origem incorporada - 00-indice-da-base-genexus-xpz-xml.md
 
 ## Papel do documento
-indice
+índice
 
 ## Nível de confiança predominante
 alto
@@ -125,44 +125,44 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 
 ## Sobre o XPZ observado
 
-- `Evidência direta`: no export real inspecionado nesta trilha, o arquivo `.xpz` continha um unico XML principal com raiz `<ExportFile>`.
-- `Evidência direta`: no export full/especial observado, os blocos de primeiro nivel foram `KMW`, `Source`, um bloco especial de KB, `Objects`, `Attributes` e `Dependencies`.
-- `Evidência direta`: no formato normal mais frequente de export de objetos, a base passou a tratar esse bloco especial de KB como excepcional, e nao como parte obrigatoria do contêiner.
+- `Evidência direta`: no export real inspecionado nesta trilha, o arquivo `.xpz` continha um único XML principal com raiz `<ExportFile>`.
+- `Evidência direta`: no export full/especial observado, os blocos de primeiro nível foram `KMW`, `Source`, um bloco especial de KB, `Objects`, `Attributes` e `Dependencies`.
+- `Evidência direta`: no formato normal mais frequente de export de objetos, a base passou a tratar esse bloco especial de KB como excepcional, e não como parte obrigatória do contêiner.
 - `Evidência direta`: o bloco `KMW` trouxe `MajorVersion`, `MinorVersion` e `Build`.
-- `Inferência forte`: para geracao orientada por esta base, o agente deve pensar primeiro em `objeto <Object>` e depois em `envelope XPZ observado`, e nao em um suposto `Objects.xml` isolado sem prova local.
+- `Inferência forte`: para geração orientada por esta base, o agente deve pensar primeiro em `objeto <Object>` e depois em `envelope XPZ observado`, e não em um suposto `Objects.xml` isolado sem prova local.
 - `Inferência forte`: os detalhes executaveis desse envelope ficam centralizados em `02-regras-operacionais-e-runtime.md`.
 
 ## Limites atuais da base
 
-- `Evidência direta`: a base deriva principalmente de XMLs extraidos de `XPZ`, mas esta trilha ja incorporou tambem testes documentados de importacao de `XPZ` montado fora da IDE do GeneXus.
-- `Inferência forte`: ela reduz bastante tentativa e erro de serializacao e empacotamento, mas ainda nao substitui validacao completa de comportamento de IDE, build ou runtime.
+- `Evidência direta`: a base deriva principalmente de XMLs extraidos de `XPZ`, mas esta trilha já incorporou também testes documentados de importação de `XPZ` montado fora da IDE do GeneXus.
+- `Inferência forte`: ela reduz bastante tentativa e erro de serializacao e empacotamento, mas ainda não substitui validação completa de comportamento de IDE, build ou runtime.
 - `Hipótese`: alguns padrões podem se repetir em outras KBs GeneXus 18, mas isso ainda precisa de validação externa.
-- `Regra operacional`: esta base documenta **rejeicoes e contratos XPZ** verificados pelos scripts e skills desta raiz (importacao, envelope, gates). O **uso correto** de rules, gatilhos e linguagem GeneXus cabe a documentacao de produto e skills dedicadas (ex.: **nexa**); **nao** se pretende catalogar aqui todas as formas possiveis de uso incorreto da linguagem.
+- `Regra operacional`: esta base documenta **rejeicoes e contratos XPZ** verificados pelos scripts e skills desta raiz (importação, envelope, gates). O **uso correto** de rules, gatilhos e linguagem GeneXus cabe a documentação de produto e skills dedicadas (ex.: **nexa**); **não** se pretende catalogar aqui todas as formas possíveis de uso incorreto da linguagem.
 
 ## Dependencias entre documentos
 
 - `01` e `02` fundamentam a leitura conceitual.
 - `04` e `05` sustentam as familias estruturais mais detalhadas.
-- `06` e `09` ajudam com nomenclatura, rastreabilidade e contexto historico separado.
+- `06` e `09` ajudam com nomenclatura, rastreabilidade e contexto histórico separado.
 - `08` diz como um agente GPT deve consumir o conjunto atual.
 
 
 ## Regra de encaminhamento
 
 - `Evidência direta`: as orientacoes detalhadas de consumo por agente GPT ficam centralizadas em `08-guia-para-agente-gpt.md`.
-- `Inferência forte`: este `00` deve funcionar como porta de entrada curta e estavel, evitando duplicar regras operacionais que ja estao mantidas e atualizadas no `08`.
+- `Inferência forte`: este `00` deve funcionar como porta de entrada curta e estavel, evitando duplicar regras operacionais que já estao mantidas e atualizadas no `08`.
 
 - `Evidência direta`: em teste real de `Import File Load`, um XML isolado de objeto com raiz `<Object>` falhou com erro `Invalid format, MajorVersion not found`.
-- `Evidência direta`: o mesmo conteudo, encapsulado em `import_file.xml` com `ExportFile`, `KMW`, `Source`, `Objects`, `Dependencies` e `ObjectsIdentityMapping`, carregou e importou com sucesso.
-- `Evidência direta`: em teste real de renomeacao de `Procedure`, a IDE preservou historico do mesmo objeto quando o pacote manteve o mesmo `Object/@guid` e alterou apenas `name`, `fullyQualifiedName`, `description` e conteudo.
+- `Evidência direta`: o mesmo conteúdo, encapsulado em `import_file.xml` com `ExportFile`, `KMW`, `Source`, `Objects`, `Dependencies` e `ObjectsIdentityMapping`, carregou e importou com sucesso.
+- `Evidência direta`: em teste real de renomeacao de `Procedure`, a IDE preservou histórico do mesmo objeto quando o pacote manteve o mesmo `Object/@guid` e alterou apenas `name`, `fullyQualifiedName`, `description` e conteúdo.
 - `Regra operacional`: para qualquer alteracao de objeto existente, inclusive renomeacao, preservar o mesmo `guid`; `guid` novo faz a IDE tratar como objeto novo.
 
 ## Regras minimas adicionais
 
-- o agente deve manter `Source/@kb` e `Source/Version/@guid` em formato GUID valido; placeholders textuais ja causaram falha real de parse nesta trilha
-- antes de empacotar, validar parse XML, presenca de todos os `Part type` recorrentes e coerencia entre objeto clonado e molde-base
-- o agente nao deve afirmar “sem erro de importacao”; deve afirmar apenas que seguiu a especificacao mais conservadora disponivel
-- ao revisar `Source` grande com fechamento de bloco ou aninhamento relevante, releia o trecho salvo e preserve comentarios estruturais humanos que ajudam a leitura, sem tentar "limpar" apoio visual util
+- o agente deve manter `Source/@kb` e `Source/Version/@guid` em formato GUID valido; placeholders textuais já causaram falha real de parse nesta trilha
+- antes de empacotar, validar parse XML, presenca de todos os `Part type` recorrentes e coerência entre objeto clonado e molde-base
+- o agente não deve afirmar “sem erro de importação”; deve afirmar apenas que seguiu a especificacao mais conservadora disponível
+- ao revisar `Source` grande com fechamento de bloco ou aninhamento relevante, releia o trecho salvo e preserve comentarios estruturais humanos que ajudam a leitura, sem tentar "limpar" apoio visual útil
 
 ## Regras de fonte
 
@@ -172,4 +172,4 @@ Organizar conhecimento operacional e empírico sobre XMLs extraídos de `XPZ` Ge
 - Fonte invalida: markdown desta base
 - Fonte invalida: exemplos sanitizados incompletos ou meramente ilustrativos
 - Fonte invalida: reconstrucoes livres baseadas em tabelas, frequencias ou descricoes
-- Inferência forte: esta base documental decide, classifica e orienta; a materializacao final deve usar XML bruto comparavel ou molde sanitizado completo documentado nesta propria base
+- Inferência forte: esta base documental decide, classifica e orienta; a materialização final deve usar XML bruto comparavel ou molde sanitizado completo documentado nesta própria base

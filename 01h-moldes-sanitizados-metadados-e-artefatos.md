@@ -47,8 +47,8 @@ Concentrar moldes sanitizados de metadados, artefatos auxiliares, identidade est
 
 ### Molde sanitizado de Document 1 - `DocumentoReferenciaExemplo`
 
-- Perfil: Document enxuto, com um unico bloco `InnerHtml` curto e referencia textual simples.
-- Uso operacional: boa referencia para documentos de anotacao, links ou lembretes tecnicos curtos.
+- Perfil: Document enxuto, com um único bloco `InnerHtml` curto e referencia textual simples.
+- Uso operacional: boa referencia para documentos de anotação, links ou lembretes tecnicos curtos.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -77,7 +77,7 @@ Concentrar moldes sanitizados de metadados, artefatos auxiliares, identidade est
 
 ### Molde sanitizado de Document 2 - `DocumentoNotasExemplo`
 
-- Perfil: Document mais rico, com HTML maior e varias anotacoes internas.
+- Perfil: Document mais rico, com HTML maior e varias anotações internas.
 - Uso operacional: boa referencia para documentos de observacoes, instrucoes e listas de itens em HTML embutido.
 
 ```xml
@@ -123,8 +123,8 @@ Concentrar moldes sanitizados de metadados, artefatos auxiliares, identidade est
 
 ### Molde sanitizado de DataSelector 1 - `dsMovimentoAtivoOuCanceladoExemplo`
 
-- Perfil: DataSelector enxuto com duas `Condition`, uma variavel booleana e um `InnerHtml` curto de apoio.
-- Uso operacional: boa referencia para filtros binarios simples e seletores com uma unica variavel de entrada.
+- Perfil: DataSelector enxuto com duas `Condition`, uma variável booleana e um `InnerHtml` curto de apoio.
+- Uso operacional: boa referencia para filtros binarios simples e seletores com uma única variável de entrada.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -205,7 +205,7 @@ Concentrar moldes sanitizados de metadados, artefatos auxiliares, identidade est
 ### Molde sanitizado de DataSelector 2 - `dsRegistrosPorMovimentoExemplo`
 
 - Perfil: DataSelector denso, com muitas `Condition`, `Variables` customizadas e filtro parametrico mais rico.
-- Uso operacional: boa referencia para seletores baseados em varias condicoes combinadas e SDT de parametros.
+- Uso operacional: boa referencia para seletores baseados em varias condições combinadas e SDT de parâmetros.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -496,8 +496,8 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de Generator 1 - `GeneratorPadraoExemplo`
 
-- Perfil: `Generator` minimo com categoria default e sem `DefaultType`.
-- Uso operacional: boa referencia para definicoes basicas de gerador padrao.
+- Perfil: `Generator` mínimo com categoria default e sem `DefaultType`.
+- Uso operacional: boa referencia para definicoes basicas de gerador padrão.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -529,7 +529,7 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de Generator 2 - `GeneratorFrontendExemplo`
 
-- Perfil: `Generator` customizado de usuario, sem categoria default.
+- Perfil: `Generator` customizado de usuário, sem categoria default.
 - Uso operacional: boa referencia para geradores adicionais definidos na KB.
 
 ```xml
@@ -601,11 +601,11 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de PatternSettings 1 - `PatternWebExemplo`
 
-- Perfil: configuracao enxuta de `PatternSettings` para `Work With for Web`, com `StandardActions`, `Context` e `Security`.
-- Uso operacional: boa referencia para padroes web centralizados que preservam a hierarquia `<Config>`.
-- Evidência direta: a validacao posterior no acervo real confirmou que `PatternSettings` depende de `Pattern="..."`, `ContextVariable`, `LoadProcedure` e referencias de seguranca presentes no ambiente.
-- Inferência forte: este molde nao deve ser tratado como objeto autocontido; ele so fecha comportamento quando o pattern correspondente estiver registrado no destino.
-- Inferência forte: se o ambiente nao reconhecer o pattern citado, o resultado esperado e importacao sem mudanca util ou aviso de pattern nao registrado.
+- Perfil: configuração enxuta de `PatternSettings` para `Work With for Web`, com `StandardActions`, `Context` e `Security`.
+- Uso operacional: boa referencia para padrões web centralizados que preservam a hierarquia `<Config>`.
+- Evidência direta: a validação posterior no acervo real confirmou que `PatternSettings` depende de `Pattern="..."`, `ContextVariable`, `LoadProcedure` e referencias de seguranca presentes no ambiente.
+- Inferência forte: este molde não deve ser tratado como objeto autocontido; ele só fecha comportamento quando o pattern correspondente estiver registrado no destino.
+- Inferência forte: se o ambiente não reconhecer o pattern citado, o resultado esperado e importação sem mudanca útil ou aviso de pattern não registrado.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -651,8 +651,8 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de PatternSettings 2 - `PatternDevicesExemplo`
 
-- Perfil: configuracao de `PatternSettings` voltada a multiplas plataformas, com bloco denso de `Platforms`.
-- Uso operacional: boa referencia para padroes mobile/web com segmentacao por dispositivo e tema.
+- Perfil: configuração de `PatternSettings` voltada a múltiplas plataformas, com bloco denso de `Platforms`.
+- Uso operacional: boa referencia para padrões mobile/web com segmentacao por dispositivo e tema.
 - Evidência direta: o `Pattern` e os `Theme` referenciados no bloco de plataformas importam contexto real do ambiente.
 - Inferência forte: editar apenas nomes e plataformas sem validar GUIDs de `Pattern` e referencias de `Theme` pode manter o XML bem-formado e ainda assim torná-lo inutilizavel no destino.
 
@@ -722,7 +722,7 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de DataStore 1 - `DataStorePadraoExemplo`
 
-- Perfil: `DataStore` minimo com propriedades de categoria default.
+- Perfil: `DataStore` mínimo com propriedades de categoria default.
 - Uso operacional: boa referencia para definicoes simples de datastore sem metadados adicionais.
 
 ```xml
@@ -751,7 +751,7 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de DataStore 2 - `DataStoreSegurancaExemplo`
 
-- Perfil: `DataStore` simples sem categoria default, util para variação minima de propriedades.
+- Perfil: `DataStore` simples sem categoria default, útil para variação mínima de propriedades.
 - Uso operacional: boa referencia para datastores secundarios ou especializados.
 
 ```xml
@@ -871,7 +871,7 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 ### Molde sanitizado de DeploymentUnit 1 - `DeploymentUnitExemplo`
 
 - Perfil: `DeploymentUnit` com poucos `Member` e um `Part` principal declarativo.
-- Uso operacional: boa referencia para unidades de deploy que apenas agregam objetos ja existentes.
+- Uso operacional: boa referencia para unidades de deploy que apenas agregam objetos já existentes.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1498,10 +1498,10 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Molde sanitizado de Folder 1 - `PastaRefinamentoExemplo`
 
-- Perfil: `Folder` minimo com apenas `Name` e propriedades basicas.
+- Perfil: `Folder` mínimo com apenas `Name` e propriedades basicas.
 - Uso operacional: boa referencia para pastas simples de organizacao sem metadados extras.
-- Evidência direta: a validacao posterior no acervo real confirmou que este shape minimo e coerente com exemplos reais de `Folder`.
-- Inferência forte: a divergencia observada na bateria, em que a IDE exibiu o objeto como `Category`, nao invalida este molde; por enquanto ela deve ser lida como diferenca de reconhecimento semantico/nomenclatura da IDE.
+- Evidência direta: a validação posterior no acervo real confirmou que este shape mínimo e coerente com exemplos reais de `Folder`.
+- Inferência forte: a divergencia observada na bateria, em que a IDE exibiu o objeto como `Category`, não invalida este molde; por enquanto ela deve ser lida como diferenca de reconhecimento semantico/nomenclatura da IDE.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1562,16 +1562,16 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ## Exemplos sanitizados de identidade estrutural em Folder e Module
 
-- Evidência direta: em `Procedure` sob `Folder`, o nome da pasta aparece em `parent`, mas nao entra em `fullyQualifiedName`.
-- Evidência direta: em `WebPanel` sob `Folder`, o padrao observado e o mesmo.
-- Evidência direta: em `Module`, o `fullyQualifiedName` pode ser qualificado pelo nome do modulo.
-- Evidência direta: em objeto sob `Folder` dentro de `Module`, o modulo pode permanecer em `fullyQualifiedName`, mas a pasta continua restrita a `parent`.
-- Inferência forte: a decisao correta entre `Folder` e `Module` depende da leitura conjunta de `fullyQualifiedName`, `name`, `parent`, `parentGuid`, `parentType` e `moduleGuid`.
+- Evidência direta: em `Procedure` sob `Folder`, o nome da pasta aparece em `parent`, mas não entra em `fullyQualifiedName`.
+- Evidência direta: em `WebPanel` sob `Folder`, o padrão observado e o mesmo.
+- Evidência direta: em `Module`, o `fullyQualifiedName` pode ser qualificado pelo nome do módulo.
+- Evidência direta: em objeto sob `Folder` dentro de `Module`, o módulo pode permanecer em `fullyQualifiedName`, mas a pasta continua restrita a `parent`.
+- Inferência forte: a decisão correta entre `Folder` e `Module` depende da leitura conjunta de `fullyQualifiedName`, `name`, `parent`, `parentGuid`, `parentType` e `moduleGuid`.
 
 ### Exemplo sanitizado 1 - `PRCExemploFolderA`
 
 - Perfil: `Procedure` em `Folder`, sem prefixo da pasta em `fullyQualifiedName`.
-- Uso operacional: exemplar minimo para impedir serializacao do tipo `Pasta.Procedure` quando o contêiner real e apenas `Folder`.
+- Uso operacional: exemplar mínimo para impedir serializacao do tipo `Pasta.Procedure` quando o contêiner real e apenas `Folder`.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1591,7 +1591,7 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 ### Exemplo sanitizado 2 - `WPExemploFolderA`
 
 - Perfil: `WebPanel` em `Folder`, sem prefixo da pasta em `fullyQualifiedName`.
-- Uso operacional: exemplar minimo para validar que pasta organiza o objeto por `parent`, nao por namespace automatico.
+- Uso operacional: exemplar mínimo para validar que pasta organiza o objeto por `parent`, não por namespace automático.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1610,8 +1610,8 @@ when &sdtRegistroParametros.ComDocumentoCobranca = SimOuNao.Nao;
 
 ### Exemplo sanitizado 3 - `PRCExemploModuloA`
 
-- Perfil: `Procedure` diretamente sob `Module`, com qualificacao de modulo em `fullyQualifiedName`.
-- Uso operacional: contraste minimo para provar que qualificacao por modulo nao pode ser extrapolada para `Folder`.
+- Perfil: `Procedure` diretamente sob `Module`, com qualificacao de módulo em `fullyQualifiedName`.
+- Uso operacional: contraste mínimo para provar que qualificacao por módulo não pode ser extrapolada para `Folder`.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1631,8 +1631,8 @@ Endcase]]></Source>
 
 ### Exemplo sanitizado 4 - `PRCExemploFolderDentroModuloA`
 
-- Perfil: `Procedure` em `Folder` dentro de `Module`; o modulo permanece em `fullyQualifiedName`, mas a pasta continua em `parent`.
-- Uso operacional: contraexemplo minimo para evitar o erro de promover nome de pasta para o nome qualificado.
+- Perfil: `Procedure` em `Folder` dentro de `Module`; o módulo permanece em `fullyQualifiedName`, mas a pasta continua em `parent`.
+- Uso operacional: contraexemplo mínimo para evitar o erro de promover nome de pasta para o nome qualificado.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1651,23 +1651,23 @@ Endcase]]></Source>
 
 ## Exemplos sanitizados minimos de compatibilidade de `Source`
 
-- `Objetivo`: registrar padroes minimos de `Source` que esta propria trilha ja sustenta metodologicamente sem depender de corpus grande da KB.
+- `Objetivo`: registrar padrões minimos de `Source` que esta própria trilha já sustenta metodologicamente sem depender de corpus grande da KB.
 - `Regra operacional`: estes exemplos servem como camada metodologica primaria para KB nova ou pouco povoada; o corpus local entra apenas como confirmacao ou desempate.
-- `Regra operacional`: ao introduzir operador, funcao, conversao ou padrao string/numerico novo em `Source`, preferir reescrita usando um destes padroes ou outro ja documentado nesta base.
-- `Regra operacional`: a ausencia de um operador, funcao ou conversao nesta secao nao prova proibicao absoluta, mas impede tratar o trecho como pronto sem outra base metodologica explicita da trilha.
+- `Regra operacional`: ao introduzir operador, função, conversao ou padrão string/numerico novo em `Source`, preferir reescrita usando um destes padrões ou outro já documentado nesta base.
+- `Regra operacional`: a ausencia de um operador, função ou conversao nesta seção não prova proibicao absoluta, mas impede tratar o trecho como pronto sem outra base metodologica explicita da trilha.
 
-### Padrao minimo 1 - `parm(...)` simples de entrada e saida
+### Padrão mínimo 1 - `parm(...)` simples de entrada e saida
 
-- `Uso operacional`: forma minima ja documentada na trilha para assinatura simples de `Procedure`.
+- `Uso operacional`: forma mínima já documentada na trilha para assinatura simples de `Procedure`.
 
 ```geneXus
 parm(out:&DomainExemploTipoOperacaoA);
 parm(in:ContextoAId, in:ContextoBId);
 ```
 
-### Padrao minimo 2 - conversao numerico para texto com ajuste explicito
+### Padrão mínimo 2 - conversao numerico para texto com ajuste explicito
 
-- `Uso operacional`: conversao numerico->texto e montagem de string ja documentadas nesta base por molde sanitizado de `DataProvider`.
+- `Uso operacional`: conversao numerico->texto e montagem de string já documentadas nesta base por molde sanitizado de `DataProvider`.
 
 ```geneXus
 Chave = RegistroId.ToString()
@@ -1676,18 +1676,18 @@ Valor = "CtxA:" + RegistroEmpresaId.ToString().Trim() +
 "| Seq:" + SequenciaExemplo.ToString()
 ```
 
-### Padrao minimo 3 - string e enumeracao em composicao textual
+### Padrão mínimo 3 - string e enumeracao em composicao textual
 
-- `Uso operacional`: composicao textual com `Trim()` e `EnumerationDescription()` ja aparece em molde sanitizado documentado nesta base.
+- `Uso operacional`: composicao textual com `Trim()` e `EnumerationDescription()` já aparece em molde sanitizado documentado nesta base.
 
 ```geneXus
 " | B:" + procRightExemplo(PessoaBId.ToString()," ",10) +
 "-" + PessoaBNome.Trim() + " (" + TipoRegistro.EnumerationDescription() + ")"
 ```
 
-### Padrao minimo 4 - condicao booleana com `IsNull()` e guarda com `when`
+### Padrão mínimo 4 - condição booleana com `IsNull()` e guarda com `when`
 
-- `Uso operacional`: padrao de filtro/condicao ja documentado nesta base para `Source` de condicao materializada.
+- `Uso operacional`: padrão de filtro/condicao já documentado nesta base para `Source` de condição materializada.
 
 ```geneXus
 RegistroMovimentoCancelado = false or RegistroMovimentoCancelado.IsNull() when not &SomenteCancelados
@@ -1696,8 +1696,8 @@ MovimentoEmpresaId = &sdtRegistroParametros.EmpresaId when not &sdtRegistroParam
 
 ### Limite metodologico atual
 
-- `Evidência direta`: esta secao ancora apenas um conjunto minimo de padroes ja documentados na propria trilha.
-- `Regra operacional`: operador, funcao ou conversao que nao apareca em regra explicita, exemplo sanitizado ou molde documentado desta base continua sem lastro suficiente para consolidacao final apenas por plausibilidade.
+- `Evidência direta`: esta seção ancora apenas um conjunto mínimo de padrões já documentados na própria trilha.
+- `Regra operacional`: operador, função ou conversao que não apareca em regra explicita, exemplo sanitizado ou molde documentado desta base continua sem lastro suficiente para consolidacao final apenas por plausibilidade.
 
 ## Moldes sanitizados completos de Stencil
 
@@ -1741,7 +1741,7 @@ MovimentoEmpresaId = &sdtRegistroParametros.EmpresaId when not &sdtRegistroParam
 
 ### Molde sanitizado de Stencil 2 - `StencilCabecalhoListaExemplo`
 
-- Perfil: `Stencil` de cabecalho com acoes, busca, imagem e variavel declarada.
+- Perfil: `Stencil` de cabecalho com ações, busca, imagem e variável declarada.
 - Uso operacional: boa referencia para stencils com controles interativos e `Variables` embutidas.
 
 ```xml
@@ -1841,7 +1841,7 @@ MovimentoEmpresaId = &sdtRegistroParametros.EmpresaId when not &sdtRegistroParam
 ### Molde sanitizado de File 2 - `ArquivoConfiguracaoExemplo_props`
 
 - Perfil: `File` textual pequeno em `.props`, ainda armazenado via `base64Binary`.
-- Uso operacional: boa referencia para arquivos de configuracao e apoio a build com extracao controlada.
+- Uso operacional: boa referencia para arquivos de configuração e apoio a build com extracao controlada.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>

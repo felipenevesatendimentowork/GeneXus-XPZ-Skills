@@ -94,14 +94,33 @@ Assert-Equal 0 $r3.Inequivocas.Count 'corrigido: zero inequivocas (so formas ace
 # Golden 4 — supressao de identificador/slug isolada
 # ---------------------------------------------------------------------------
 $goldenSlug = @'
-O modulo xpz-funcao-core e o path scripts/funcao/run nao sao prosa.
+O codigo xpz-funcao-core e o path scripts/funcao/run nao sao prosa.
 '@
-# "modulo"(1) e "nao"(1) sao prosa; "funcao" em xpz-funcao-core e scripts/funcao/run -> suprimido; "sao"(1)
+# "codigo"(1) e "nao"(1) sao prosa; "funcao" em xpz-funcao-core e scripts/funcao/run -> suprimido; "sao"(1)
 $r4 = Measure-AccentInText -Text $goldenSlug
 $slugFuncao = @($r4.Inequivocas | Where-Object { $_.Word.ToLowerInvariant() -eq 'funcao' })
 Write-Host 'Golden slug:'
 Assert-Equal 0 $slugFuncao.Count 'slug: funcao em identificador/path nao conta'
-Assert-Equal 3 $r4.Inequivocas.Count 'slug: modulo+nao+sao contam (prosa)'
+Assert-Equal 3 $r4.Inequivocas.Count 'slug: codigo+nao+sao contam (prosa)'
+
+# ---------------------------------------------------------------------------
+# Golden 5 — fronteira pt-BR em arquivo trilingue (PT/ES/EN)
+# ---------------------------------------------------------------------------
+$goldenMulti = @'
+A funcao nao foi documentada.
+## Español
+El repositorio tiene una version.
+## English
+The repository has a version.
+'@
+Write-Host 'Golden multilingue:'
+# pt-BR e so a L1 (ate o cabecalho '## Español' na L2): funcao,nao => 2.
+Assert-Equal 1 (Get-PtBrLineCount -Text $goldenMulti) 'multilingue: fronteira pt-BR para antes de ## Español'
+$r5 = Measure-AccentInText -Text (Get-PtBrText -Text $goldenMulti)
+Assert-Equal 2 $r5.Inequivocas.Count 'multilingue: medicao cobre so a secao pt-BR (ES/EN ignorados)'
+# Sem o corte, o espanhol 'repositorio' viraria falso positivo (motivo do corte).
+$r5full = Measure-AccentInText -Text $goldenMulti
+Assert-Equal 3 $r5full.Inequivocas.Count 'multilingue: sem corte, espanhol repositorio e falso positivo'
 
 # ---------------------------------------------------------------------------
 # Integridade da lista curada
@@ -118,6 +137,14 @@ Assert-Equal 0 $collisions.Count "lista sem colisao com ingles comum (colisoes: 
 # Toda entry tem forma correta nao-vazia e diferente da ascii
 $badCorrect = @($wordlist.entries | Where-Object { [string]::IsNullOrWhiteSpace($_.c) -or ($_.c -eq $_.a) })
 Assert-Equal 0 $badCorrect.Count 'toda entry tem forma correta acentuada distinta da ascii'
+
+# Formas que tambem sao flexao verbal comum NAO podem estar no piso firme (devem ser ambiguousTokens).
+# Guard contra regressao: 'analise o impacto' (imperativo) nao pode virar 'análise'.
+$verbAmbiguous = @('analise', 'calculo', 'especifico', 'especifica', 'pratico', 'pratica', 'modulo')
+$verbLeaked = @($asciiList | Where-Object { $verbAmbiguous -contains $_ })
+Assert-Equal 0 $verbLeaked.Count "formas verbais ambiguas fora do piso firme (vazou: $($verbLeaked -join ', '))"
+$verbMissing = @($verbAmbiguous | Where-Object { $wordlist.ambiguousTokens -notcontains $_ })
+Assert-Equal 0 $verbMissing.Count "formas verbais ambiguas registradas em ambiguousTokens (faltando: $($verbMissing -join ', '))"
 
 Write-Host ''
 Write-Host "SELF-TEST OK ($script:passed asserts)."

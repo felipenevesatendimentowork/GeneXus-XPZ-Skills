@@ -1,10 +1,10 @@
-# 01a - Catalogo e Padroes Empiricos
+# 01a - Catalogo e Padrões Empiricos
 
 ## Papel do documento
 empirico
 
 ## Objetivo
-Concentrar panorama do acervo, catalogo observado de tipos, padroes recorrentes e limites gerais de leitura estrutural.
+Concentrar panorama do acervo, catalogo observado de tipos, padrões recorrentes e limites gerais de leitura estrutural.
 
 ## Origem incorporada - 01-base-empirica-geral.md
 
@@ -40,7 +40,7 @@ Servir como base conceitual para os documentos empíricos e operacionais.
 - `Evidência direta`: os objetos extraídos seguem o formato geral `<Object ...>` com atributos como `guid`, `name`, `type`, `parent`, `parentGuid`, `moduleGuid` e `fullyQualifiedName`.
 - `Evidência direta`: a maioria dos tipos armazena conteúdo interno em blocos `<Part type="...">...</Part>` dentro de `<Object>`.
 - `Evidência direta`: uma classe de tipos armazena propriedades diretamente em `<Properties>` sob `<Object>`, sem qualquer wrapper `<Part>`. Tipos confirmados com essa estrutura no acervo FabricaBrasil: `ThemeClass` (501 objetos), `Module/Folder` (279 objetos, `000...0008`), `ThemeColor` (24 objetos), `Generator` (5 objetos), `DataStore` (2 objetos).
-- `Evidência direta`: em 2026-05-30, amostra em quatro pastas paralelas (`Gx_FabricaBrasil`, `Gx_wsEducacaoSpTeste` em Prod e Test, `Gx_OnlineShopSS` em Test) via `scripts/Invoke-ParallelKbEnvelopeScan.ps1` confirmou `only_properties_in_sample` para `Generator`, `DataStore`, `ThemeClass`, `ThemeColor` (quando presente) e `Folder` em todas as KBs que tinham o tipo; `PatternSettings` tem `<Part>` com `<Data>` em CDATA, mas o extrator do indice nao parseia esse bloco.
+- `Evidência direta`: em 2026-05-30, amostra em quatro pastas paralelas (`Gx_FabricaBrasil`, `Gx_wsEducacaoSpTeste` em Prod e Test, `Gx_OnlineShopSS` em Test) via `scripts/Invoke-ParallelKbEnvelopeScan.ps1` confirmou `only_properties_in_sample` para `Generator`, `DataStore`, `ThemeClass`, `ThemeColor` (quando presente) e `Folder` em todas as KBs que tinham o tipo; `PatternSettings` tem `<Part>` com `<Data>` em CDATA, mas o extrator do índice não parseia esse bloco.
 - `Regra editorial`: `queryableByKbIntelligence=false` no catálogo técnico (`scripts/gx-object-type-catalog.json`) marca tipos para os quais **o motor atual do índice não deve** ser usado em `who-uses`, `what-uses`, `impact-basic` nem `functional-trace-basic` — critério é cobertura do extrator, não “objeto irrelevante na KB”. Lista canônica: campo `queryableByKbIntelligence` em cada entrada do JSON (atualizada em 2026-05-30 com amostra multi-KB + grafo zero em `kb-intelligence.sqlite` de FabricaBrasil).
 - `Evidência direta`: segunda passagem 2026-05-30 — tipos com `<Part>` no export mas **zero arestas** de entrada e saída no índice de FabricaBrasil (ex.: `SubTypeGroup` 710 objetos, `Image` 251, `Theme`, `File`, `Module`, `PackagedModule`, `Stencil`, `UserControl`, `Panel`, …) passaram a `queryableByKbIntelligence=false`; `Query`, `DataView`, `WorkPanel` e similares **permanecem** `true` no catálogo enquanto não houver reclassificação explícita.
 - `Regra editorial`: tipos que **permanecem** `queryableByKbIntelligence=true` apesar de grafo assimétrico (`API`, `DataSelector`, `WorkWithForWeb`, `ExternalObject`) estão documentados em `scripts/README-kb-intelligence.md` — consultas semânticas ainda podem informar dependências **de saída** ou entrada esparsa; não confundir com “sem impacto”.
@@ -135,20 +135,20 @@ Estes não são tipos de objeto programáveis. São a infraestrutura de organiza
 - `Evidência direta`: `WebUserControlProperties` apareceu em `172/1197` `WebPanel`, sempre no `Source` do `Part` de layout.
 - `Evidência direta`: `ControlWhere` apareceu em `101/1197` casos; `100` deles vieram do `Part` de layout, serializados dentro de propriedades de controle, e `1` caso apareceu em `Part` de variáveis.
 - `Evidência direta`: `ControlBaseTable` apareceu em `23/1197`, `ControlOrder` em `86/1197` e `ControlUnique` em `13/1197`; nesses casos, a persistência observada ficou concentrada no `Source` do `Part` de layout, dentro de metadado serializado de controles.
-- `Evidência direta`: o `Part type="763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9"` apareceu em `1197/1197` `WebPanel`, mas só `141` casos tinham `Source` nao vazio nesse `Part`.
-- `Evidência direta`: `Conditions` como filtro materializado apareceu nesses `141` casos via `Source` do `Part` `763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9`, e nao como atributo do layout.
+- `Evidência direta`: o `Part type="763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9"` apareceu em `1197/1197` `WebPanel`, mas só `141` casos tinham `Source` não vazio nesse `Part`.
+- `Evidência direta`: `Conditions` como filtro materializado apareceu nesses `141` casos via `Source` do `Part` `763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9`, e não como atributo do layout.
 - `Evidência direta`: a busca textual por `Conditions` supercontou casos de template, porque `183` objetos usavam `ViewConditions.dkt` e `179` usavam `TabGridConditions.dkt` apenas em metadado de `Defaults`.
-- `Evidência direta`: em `Prompt`/`Selection List`, a materializacao de filtro no `Part` de `Conditions` foi forte: `92/100` `prompt*` tinham `Source` nao vazio nesse `Part`, e os `30` casos com `Selection List` pertenciam a essa familia.
+- `Evidência direta`: em `Prompt`/`Selection List`, a materialização de filtro no `Part` de `Conditions` foi forte: `92/100` `prompt*` tinham `Source` não vazio nesse `Part`, e os `30` casos com `Selection List` pertenciam a essa familia.
 - `Evidência direta`: em `FreeStyleGrid`, houve `10` casos; todos tinham `ControlWhere` no layout, `8/10` tinham `ControlOrder` e `9/10` tinham `WebUserControlProperties`.
 - `Evidência direta`: em grids tradicionais com tag `<grid`, houve `26` casos; `16` com `ControlWhere`, `9` com `ControlBaseTable`, `14` com `ControlOrder` e `5` com `ControlUnique`.
 - `Evidência direta`: em controles com `Dynamic Combo Box`, houve `58` casos; `56` deles coexistiam com `ControlWhere` no layout e `50` com `WebUserControlProperties`.
 - `Exemplo sanitizado`: `WPExemploSelectionPromptA` mostra `Selection List` com filtro materializado no `Part` de `Conditions`, enquanto `ControlOrder` e `WebUserControlProperties` permanecem no layout.
 - `Exemplo sanitizado`: `WPExemploGridEstruturalA` mostra grid tradicional com `ControlBaseTable`, `ControlOrder`, `ControlWhere` e `ControlUnique` serializados no layout.
-- `Exemplo sanitizado`: `WPExemploComboDinamicoA` mostra `Dynamic Combo Box` com `ControlWhere` persistido no layout e configuracao adicional em `WebUserControlProperties`.
+- `Exemplo sanitizado`: `WPExemploComboDinamicoA` mostra `Dynamic Combo Box` com `ControlWhere` persistido no layout e configuração adicional em `WebUserControlProperties`.
 - `Exemplo sanitizado`: `WPExemploGridLivreA` mostra `FreeStyleGrid` com filtro persistido no layout via `ControlWhere`, junto com metadado adicional de controle no mesmo `Part`.
-- `Exemplo sanitizado`: `WPExemploConditionsTemplateA` mostra caso em que o termo `Conditions` aparece so por `Defaults` de template, sem filtro materializado no `Source` do `Part` de condicoes.
-- `Inferência forte`: para `WebPanel`, "a propriedade existe no XML" e "a propriedade persiste no mesmo lugar em todas as familias" sao afirmacoes diferentes; o ponto de persistencia varia por familia e por tipo de controle.
-- `Inferência forte`: para trilha `xpz-*`, a leitura segura e distinguir pelo menos `Conditions` materializado em `Part` proprio, metadado de layout serializado e defaults de template antes de decidir clonagem, comparacao ou documentacao.
+- `Exemplo sanitizado`: `WPExemploConditionsTemplateA` mostra caso em que o termo `Conditions` aparece só por `Defaults` de template, sem filtro materializado no `Source` do `Part` de condições.
+- `Inferência forte`: para `WebPanel`, "a propriedade existe no XML" e "a propriedade persiste no mesmo lugar em todas as familias" são afirmacoes diferentes; o ponto de persistencia varia por familia e por tipo de controle.
+- `Inferência forte`: para trilha `xpz-*`, a leitura segura e distinguir pelo menos `Conditions` materializado em `Part` próprio, metadado de layout serializado e defaults de template antes de decidir clonagem, comparacao ou documentação.
 
 ### `Transaction`
 
@@ -196,20 +196,20 @@ Estes não são tipos de objeto programáveis. São a infraestrutura de organiza
 - `Inferência forte`: a documentação atual descreve bem a organização dos XMLs extraídos desta KB.
 - `Hipótese`: ainda não é seguro generalizar todos os padrões acima para qualquer KB GeneXus 18 sem nova amostragem.
 
-## Evidencia complementar - consulta ao acervo real apos a bateria de importacao
+## Evidencia complementar - consulta ao acervo real após a bateria de importação
 
 ## Papel do complemento
 empirico complementar
 
 ## Objetivo
-Registrar o que a leitura direta do acervo real em `C:\SANITIZED\ObjetosDaKbEmXml` acrescentou aos resultados da bateria controlada de importacao.
+Registrar o que a leitura direta do acervo real em `C:\SANITIZED\ObjetosDaKbEmXml` acrescentou aos resultados da bateria controlada de importação.
 Separar com mais precisao o que e falta de shape, o que e dependencia semantica da KB e o que e apenas diferenca de nomenclatura reconhecida pela IDE.
 
-- `Evidência direta`: a consulta real foi direcionada aos tipos que ficaram problemáticos ou ambíguos na bateria: `Folder`, `PatternSettings`, `Theme`, `API`, `Transaction` e depois tambem `Attribute`.
-- `Evidência direta`: numa primeira passada em `C:\SANITIZED\ObjetosDaKbEmXml`, `Attribute` nao apareceu como diretório proprio e os atributos observados surgiam principalmente embutidos em `Transaction`.
+- `Evidência direta`: a consulta real foi direcionada aos tipos que ficaram problemáticos ou ambíguos na bateria: `Folder`, `PatternSettings`, `Theme`, `API`, `Transaction` e depois também `Attribute`.
+- `Evidência direta`: numa primeira passada em `C:\SANITIZED\ObjetosDaKbEmXml`, `Attribute` não apareceu como diretório próprio e os atributos observados surgiam principalmente embutidos em `Transaction`.
 - `Evidência direta`: depois foi consultado um XML extraido de export full da KB em caminho privado sanitizado, onde apareceram objetos `Attribute` top-level com raiz `<Attribute ... name="...">`.
 - `Evidência direta`: esses `Attribute` top-level foram extraidos para `C:\SANITIZED\ObjetosDaKbEmXml\Attribute` e a pasta foi saneada para manter apenas os atributos reais, removendo referencias inline.
-- `Inferência forte`: `Attribute` deixou de estar sem evidencia top-level; o risco atual passa a ser distinguir definicao real de atributo contra ocorrencia contextual dentro de outros objetos.
+- `Inferência forte`: `Attribute` deixou de estar sem evidencia top-level; o risco atual passa a ser distinguir definicao real de atributo contra ocorrência contextual dentro de outros objetos.
 
 ### `Folder`
 
@@ -228,69 +228,69 @@ Separar com mais precisao o que e falta de shape, o que e dependencia semantica 
 
 ### `PatternSettings`
 
-- `Evidência direta`: os exemplos reais `WorkWith.xml` e `WorkWithDevices.xml` guardam configuracao dentro de `<Data Pattern="..."> <![CDATA[ ... ]]> </Data>`.
+- `Evidência direta`: os exemplos reais `WorkWith.xml` e `WorkWithDevices.xml` guardam configuração dentro de `<Data Pattern="..."> <![CDATA[ ... ]]> </Data>`.
 - `Evidência direta`: o XML interno referencia IDs de `Pattern`, `ContextVariable`, `LoadProcedure`, `Security` e outros artefatos associados ao pattern registrado.
-- `Inferência forte`: `PatternSettings` nao deve ser tratado como objeto declarativo autocontido; ele depende fortemente do pattern correspondente estar registrado no ambiente de destino.
+- `Inferência forte`: `PatternSettings` não deve ser tratado como objeto declarativo autocontido; ele depende fortemente do pattern correspondente estar registrado no ambiente de destino.
 - `Evidência direta`: num teste posterior isolado com o objeto real `WorkWith`, `Pattern Settings 'WorkWith'` importou com sucesso no ambiente de teste.
 - `Inferência forte`: `PatternSettings` deixa de ser uma pendencia estrutural aberta nesta trilha; o ponto operacional passa a ser usar caso real compativel com pattern efetivamente reconhecido no alvo.
 
 ### `Theme`
 
 - `Evidência direta`: o exemplo real `ThemeExemploMobileA.xml` contem `PredefinedTypes` e classes visuais concretas como `TableDetail`, `TableSection` e `TextBlockGroupCaption`.
-- `Evidência direta`: essas classes aparecem referenciadas por outras classes no proprio tema, por exemplo `Group` referencia `TextBlockGroupCaption` e `TableSection` referencia `HorizontalLine`.
-- `Inferência forte`: um tema simples mas valido precisa preservar nao apenas classes isoladas, e sim o grafo minimo de classes referenciadas internamente.
-- `Evidência direta`: num consolidado revisado posterior, o proprio `ThemeExemploMobileA` real foi importado no ambiente de teste e ainda assim falhou com `Theme class 'TableDetail' does not exist`, `Theme class 'TableSection' does not exist` e `Theme class 'TextBlockGroupCaption' does not exist`.
+- `Evidência direta`: essas classes aparecem referenciadas por outras classes no próprio tema, por exemplo `Group` referencia `TextBlockGroupCaption` e `TableSection` referencia `HorizontalLine`.
+- `Inferência forte`: um tema simples mas valido precisa preservar não apenas classes isoladas, e sim o grafo mínimo de classes referenciadas internamente.
+- `Evidência direta`: num consolidado revisado posterior, o próprio `ThemeExemploMobileA` real foi importado no ambiente de teste e ainda assim falhou com `Theme class 'TableDetail' does not exist`, `Theme class 'TableSection' does not exist` e `Theme class 'TextBlockGroupCaption' does not exist`.
 - `Evidência direta`: a pasta real `C:\SANITIZED\ObjetosDaKbEmXml\ThemeClass` contem objetos `ThemeClass` top-level separados para `TableDetail`, `TableSection` e `TextBlockGroupCaption`.
-- `Evidência direta`: num teste isolado posterior, esses tres `ThemeClass` reais foram importados com sucesso e, logo em seguida, o `Theme 'ThemeExemploMobileA'` tambem importou com sucesso.
-- `Inferência forte`: nesta trilha, `Theme` deixa de parecer um problema de serializacao pura; o requisito operacional observado e materializar tambem as `ThemeClass` auxiliares referenciadas pelo tema.
+- `Evidência direta`: num teste isolado posterior, esses tres `ThemeClass` reais foram importados com sucesso e, logo em seguida, o `Theme 'ThemeExemploMobileA'` também importou com sucesso.
+- `Inferência forte`: nesta trilha, `Theme` deixa de parecer um problema de serializacao pura; o requisito operacional observado e materializar também as `ThemeClass` auxiliares referenciadas pelo tema.
 
 ### `API`
 
 - `Evidência direta`: nesta trilha, a KB observada traz apenas `1` objeto `API` real.
-- `Evidência direta`: esse unico caso real corresponde a uma construcao manual/local da KB, e nao a uma familia ampla observada com multiplos exemplos comparaveis.
-- `Evidência direta`: nesta trilha documental, nao ha evidencia de ferramenta complementar de automacao de `API` atuando sobre esse caso.
+- `Evidência direta`: esse único caso real corresponde a uma construcao manual/local da KB, e não a uma familia ampla observada com múltiplos exemplos comparaveis.
+- `Evidência direta`: nesta trilha documental, não ha evidencia de ferramenta complementar de automacao de `API` atuando sobre esse caso.
 - `Evidência direta`: o exemplo real `APIExemploIntegracaoA.xml` usa varios `ATTCUSTOMTYPE` validos, incluindo `exo:GAMSession, GeneXusSecurity`, `exo:GAMError, GeneXusSecurity`, `exo:GAMUser, GeneXusSecurity`, `sdt:Messages, GeneXus.Common`, `sdt:SDTExemploProdutoBasicoA` e `sdt:SDTExemploTribSelecaoA`.
-- `Evidência direta`: o mesmo exemplo tambem depende de `Procedure` e eventos reais no codigo fonte.
-- `Inferência forte`: por haver apenas um caso real na KB, `API` deve ser lida aqui como estudo de caso operacional da KB analisada, e nao como familia GeneXus ja generalizavel nesta base.
+- `Evidência direta`: o mesmo exemplo também depende de `Procedure` e eventos reais no código fonte.
+- `Inferência forte`: por haver apenas um caso real na KB, `API` deve ser lida aqui como estudo de caso operacional da KB analisada, e não como familia GeneXus já generalizavel nesta base.
 - `Inferência forte`: em `API`, o envelope XML e relativamente bem definido, mas os tipos customizados e procedimentos referenciados precisam existir de fato na KB de destino.
-- `Inferência forte`: nao e seguro inventar `ATTCUSTOMTYPE`; ele deve copiar um valor comprovado ou apontar para tipo efetivamente existente no alvo.
+- `Inferência forte`: não é seguro inventar `ATTCUSTOMTYPE`; ele deve copiar um valor comprovado ou apontar para tipo efetivamente existente no alvo.
 - `Evidência direta`: num teste isolado posterior, os SDTs reais `SDTExemploProdutoBasicoA`, `SDTExemploProdutoBasicoB`, `SDTExemploProdutoBasicoC`, `SDTExemploProdutoBasicoD`, `SDTExemploTribA` e `SDTExemploTribSelecaoA` importaram com sucesso antes da tentativa da `API`.
 - `Evidência direta`: nesse mesmo teste, `API 'APIExemploIntegracaoA'` deixou de falhar por `ATTCUSTOMTYPE` e passou a falhar por `Object Reference PRCExemploListaA not found`, `Invalid attribute 'DomainExemploTipoA'` e `'TRNExemploProdutoA' invalid property`.
-- `Inferência forte`: o gargalo atual de `API` nesta trilha ja nao e mais tipagem `SDT`; ele ficou reduzido a `Procedure` e contexto de negocio realmente existentes na KB de destino.
+- `Inferência forte`: o gargalo atual de `API` nesta trilha já não é mais tipagem `SDT`; ele ficou reduzido a `Procedure` e contexto de negocio realmente existentes na KB de destino.
 - `Evidência direta`: numa rodada posterior, `Domain 'DomainExemploTipoA'` importou com sucesso e a `Procedure 'PRCExemploListaA'` foi localizada no acervo real.
-- `Evidência direta`: ao tentar incluir essa `Procedure`, ela falhou por depender de uma cadeia grande de transacoes e atributos da entidade principal e de satelites relacionados, alem de dominios auxiliares como `SimOuNao`, `DomainExemploGrupoA` e `DomainExemploLocalA`.
+- `Evidência direta`: ao tentar incluir essa `Procedure`, ela falhou por depender de uma cadeia grande de transacoes e atributos da entidade principal e de satelites relacionados, além de dominios auxiliares como `SimOuNao`, `DomainExemploGrupoA` e `DomainExemploLocalA`.
 - `Evidência direta`: na mesma tentativa, a `API` avancou mais um passo e passou a falhar por outra `Procedure` faltante: `PRCExemploTribSelecaoA`.
-- `Evidência direta`: essa segunda `Procedure` tambem existe no acervo real e, ao ser inspecionada, mostrou dependencia adicional de `Data Provider` (`DPExemploTribSelecaoA`), `Domain 'DomainExemploRomaneioA'` e atributos tributarios adicionais da cadeia funcional.
-- `Inferência forte`: `API` entra definitivamente na zona de dependencia de negocio pesada; para este caso, fechar a importacao deixou de ser tarefa de empacotar poucos objetos auxiliares e passou a exigir uma subarvore funcional relevante da KB.
+- `Evidência direta`: essa segunda `Procedure` também existe no acervo real e, ao ser inspecionada, mostrou dependencia adicional de `Data Provider` (`DPExemploTribSelecaoA`), `Domain 'DomainExemploRomaneioA'` e atributos tributarios adicionais da cadeia funcional.
+- `Inferência forte`: `API` entra definitivamente na zona de dependencia de negocio pesada; para este caso, fechar a importação deixou de ser tarefa de empacotar poucos objetos auxiliares e passou a exigir uma subarvore funcional relevante da KB.
 
 ### `Transaction`
 
 - `Evidência direta`: exemplos reais como `TRNExemploComplexaA.xml` trazem `<Level ...>` com muitos `<Attribute ... guid="...">NomeDoAtributo</Attribute>` e varios blocos `<AttributeProperties Attribute="...">`.
-- `Evidência direta`: no mesmo tipo aparecem variaveis nomeadas `Context`, `TrnContext` e `TrnContextAtt`, com `ATTCUSTOMTYPE` como `sdt:Context`, `sdt:TransactionContext` e `sdt:TransactionContext.Attribute`.
-- `Inferência forte`: em `Transaction`, o shape estrutural pode ser inferido por familia, mas o objeto final continua dependente da existencia real dos atributos e SDTs de contexto na KB.
-- `Inferência forte`: a falha observada na bateria foi coerente com o acervo real; nao faltava apenas envelope, faltavam atributos reais e tipos de contexto validos.
+- `Evidência direta`: no mesmo tipo aparecem variáveis nomeadas `Context`, `TrnContext` e `TrnContextAtt`, com `ATTCUSTOMTYPE` como `sdt:Context`, `sdt:TransactionContext` e `sdt:TransactionContext.Attribute`.
+- `Inferência forte`: em `Transaction`, o shape estrutural pode ser inferido por familia, mas o objeto final continua dependente da existência real dos atributos e SDTs de contexto na KB.
+- `Inferência forte`: a falha observada na bateria foi coerente com o acervo real; não faltava apenas envelope, faltavam atributos reais e tipos de contexto validos.
 - `Evidência direta`: num teste isolado posterior, os `Attribute` reais de `TRNExemploMinBancoA`, o `SDT 'Context'` e o `SDT 'TransactionContext'` importaram com sucesso antes da tentativa da `Transaction`.
-- `Evidência direta`: nesse mesmo teste, `Transaction 'TRNExemploMinBancoA'` importou com sucesso e ainda disparou geracao de pattern bem-sucedida para `WWExemploMinBancoA`.
-- `Evidência direta`: em outro teste pratico controlado, uma `Transaction` minima so foi importada com sucesso apos a inclusao explicita dos `Attribute` top-level correspondentes no mesmo pacote.
-- `Evidência direta`: nesse caso, os nos `<Attribute>` dentro de `<Level>` nao bastaram para definir os atributos; eles funcionaram apenas como referencia contextual do `Level`.
-- `Evidência direta`: numa bateria posterior de importacao real, uma `Transaction` minima tambem foi validada com `DescriptionAttribute` e `AttributeProperties`, desde que os `Attribute` top-level correspondentes estivessem presentes no pacote e o `Part` principal preservasse o shape esperado da familia.
+- `Evidência direta`: nesse mesmo teste, `Transaction 'TRNExemploMinBancoA'` importou com sucesso e ainda disparou geração de pattern bem-sucedida para `WWExemploMinBancoA`.
+- `Evidência direta`: em outro teste prático controlado, uma `Transaction` mínima só foi importada com sucesso após a inclusao explicita dos `Attribute` top-level correspondentes no mesmo pacote.
+- `Evidência direta`: nesse caso, os nos `<Attribute>` dentro de `<Level>` não bastaram para definir os atributos; eles funcionaram apenas como referencia contextual do `Level`.
+- `Evidência direta`: numa bateria posterior de importação real, uma `Transaction` mínima também foi validada com `DescriptionAttribute` e `AttributeProperties`, desde que os `Attribute` top-level correspondentes estivessem presentes no pacote e o `Part` principal preservasse o shape esperado da familia.
 - `Evidência direta`: nessa mesma bateria, `AttributeProperties` funcionou tanto isoladamente quanto combinado com `DescriptionAttribute`.
-- `Evidência direta`: `DescriptionAttribute` foi aceito no caso minimo expandido quando apontava para atributo existente no mesmo `Level`.
-- `Inferência forte`: a distincao entre `Attribute` top-level e `Attribute` inline em `Level` continua essencial nos casos validados de montagem de pacote minimo de `Transaction`.
+- `Evidência direta`: `DescriptionAttribute` foi aceito no caso mínimo expandido quando apontava para atributo existente no mesmo `Level`.
+- `Inferência forte`: a distincao entre `Attribute` top-level e `Attribute` inline em `Level` continua essencial nos casos validados de montagem de pacote mínimo de `Transaction`.
 - `Inferência forte`: `Transaction` fica destravada nesta trilha quando o pacote inclui os atributos top-level reais do `Level` e os SDTs de contexto exigidos pelo caso.
 
 ### `Attribute`
 
-- `Evidência direta`: o XML extraido de export full da KB, mantido em caminho privado sanitizado, contem objetos `Attribute` top-level com raiz `<Attribute ...>`, e nao `<Object ...>`.
-- `Evidência direta`: um atributo real completo, como `AtributoExemploComplexoA`, traz atributos XML como `guid`, `name`, `fullyQualifiedName`, `description`, `moduleGuid`, `parentGuid`, alem de `Part` e `Properties`.
-- `Evidência direta`: no mesmo export tambem aparecem nos curtos `<Attribute key="True|False" guid="...">NomeDoAtributo</Attribute>` dentro de `<Level>` de `Transaction`.
-- `Evidência direta`: os nos curtos compartilham o mesmo `guid` do atributo real top-level correspondente; eles funcionam como referencia contextual do atributo no nivel da `Transaction`, nao como definicao top-level.
+- `Evidência direta`: o XML extraido de export full da KB, mantido em caminho privado sanitizado, contem objetos `Attribute` top-level com raiz `<Attribute ...>`, e não `<Object ...>`.
+- `Evidência direta`: um atributo real completo, como `AtributoExemploComplexoA`, traz atributos XML como `guid`, `name`, `fullyQualifiedName`, `description`, `moduleGuid`, `parentGuid`, além de `Part` e `Properties`.
+- `Evidência direta`: no mesmo export também aparecem nos curtos `<Attribute key="True|False" guid="...">NomeDoAtributo</Attribute>` dentro de `<Level>` de `Transaction`.
+- `Evidência direta`: os nos curtos compartilham o mesmo `guid` do atributo real top-level correspondente; eles funcionam como referencia contextual do atributo no nível da `Transaction`, não como definicao top-level.
 - `Evidência direta`: na saneacao da pasta `C:\SANITIZED\ObjetosDaKbEmXml\Attribute`, permaneceram `7646` atributos reais top-level e foram removidas `8539` referencias inline `Attribute_*.xml`.
-- `Evidência direta`: na ampliacao da busca para um diretório privado sanitizado do modelo GeneXus, nomes sugestivos como `GAMExampleUserCustomAttributes.xml` nao se revelaram objeto `Attribute`; esse arquivo se apresentou como `Web Panel`.
-- `Evidência direta`: arquivos como `KBExemplo18selectAttributes.Filters` se mostraram apenas configuracoes auxiliares de filtro/interface, nao export de objeto `Attribute`.
-- `Inferência forte`: `Attribute` top-level ja esta empiricamente provado nesta trilha, mas exige cuidado extra porque o mesmo nome de elemento XML tambem aparece como referencia inline em `Transaction`.
-- `Inferência forte`: para montar ou extrair corpus de `Attribute`, o filtro correto nao e “todo no chamado Attribute”, e sim apenas o no raiz completo com `name` e estrutura de `Part` e `Properties`.
-- `Evidência direta`: no teste combinado posterior, `Attribute 'AtributoExemploTesteA'` ja nao falhou por shape; falhou em propriedade semantica, com `ControlItemDescription='AtributoExemploDescricaoRelacionada'` apontando para atributo desconhecido no destino.
+- `Evidência direta`: na ampliacao da busca para um diretório privado sanitizado do modelo GeneXus, nomes sugestivos como `GAMExampleUserCustomAttributes.xml` não se revelaram objeto `Attribute`; esse arquivo se apresentou como `Web Panel`.
+- `Evidência direta`: arquivos como `KBExemplo18selectAttributes.Filters` se mostraram apenas configuracoes auxiliares de filtro/interface, não export de objeto `Attribute`.
+- `Inferência forte`: `Attribute` top-level já está empiricamente provado nesta trilha, mas exige cuidado extra porque o mesmo nome de elemento XML também aparece como referencia inline em `Transaction`.
+- `Inferência forte`: para montar ou extrair corpus de `Attribute`, o filtro correto não é “todo no chamado Attribute”, e sim apenas o no raiz completo com `name` e estrutura de `Part` e `Properties`.
+- `Evidência direta`: no teste combinado posterior, `Attribute 'AtributoExemploTesteA'` já não falhou por shape; falhou em propriedade semantica, com `ControlItemDescription='AtributoExemploDescricaoRelacionada'` apontando para atributo desconhecido no destino.
 - `Inferência forte`: `Attribute` saiu da zona “shape insuficiente” e entrou na mesma classe metodologica de dependencia contextual de KB em propriedades como `ControlItemDescription`, `idBasedOn` e outras referencias nominais a atributos reais.
 - `Evidência direta`: num consolidado revisado posterior, o `Attribute 'AtributoExemploFechadoA'`, extraido do acervo real e sem `ControlItemDescription`, importou com sucesso.
 - `Inferência forte`: `Attribute` passa a ser considerado estruturalmente destravado nesta trilha, desde que o caso escolhido seja top-level real e semanticamente fechado no ambiente de destino.
@@ -312,24 +312,24 @@ Separar com mais precisao o que e falta de shape, o que e dependencia semantica 
 ## Complemento posterior - IDE exportando `Table`, `Index` e `WorkWithForWeb`
 
 - `Evidência direta`: o export isolado `XPZExemploTabelaA.xpz` contem `228` objetos top-level no tipo `857ca50e-7905-0000-0007-c5d9ff2975ec`.
-- `Evidência direta`: esses objetos top-level de `Table` usam nomes iguais aos das `Transaction` correspondentes, e nao uma convenção paralela exclusiva da camada fisica.
+- `Evidência direta`: esses objetos top-level de `Table` usam nomes iguais aos das `Transaction` correspondentes, e não uma convenção paralela exclusiva da camada física.
 - `Evidência direta`: dentro de cada `Table` exportada aparecem blocos `<Indexes>` com filhos `<Index ... type="9e750647-3679-0000-0100-2529de263960">`.
 - `Evidência direta`: o export isolado `XPZExemploIndiceVazioA.xpz` veio vazio, sem `Objects` nem `Attributes`.
-- `Inferência forte`: nesta trilha da IDE, `Table` existe como familia top-level propria, enquanto `Index` aparece subordinado a `Table`, e nao como conjunto top-level isolado.
+- `Inferência forte`: nesta trilha da IDE, `Table` existe como familia top-level própria, enquanto `Index` aparece subordinado a `Table`, e não como conjunto top-level isolado.
 - `Evidência direta`: o export `XPZExemploTabelaIndiceA.xpz` repetiu exatamente o mesmo comportamento de `Table`: `228` objetos top-level do tipo `857ca50e-7905-0000-0007-c5d9ff2975ec` e nenhum objeto top-level adicional para `Index`.
-- `Inferência forte`: pedir `Table + Index` explicitamente na IDE nao muda a forma de serializacao observada; `Index` continua consolidado dentro de `Table`.
+- `Inferência forte`: pedir `Table + Index` explicitamente na IDE não muda a forma de serializacao observada; `Index` continua consolidado dentro de `Table`.
 - `Evidência direta`: em `WorkWithForWeb` real, as referencias de atributo dentro do `CDATA` do pattern usam o prefixo estrutural fixo `adbb33c9-0906-4971-833c-998de27e0676-NomeDoAtributo`.
-- `Inferência forte`: para `WorkWithForWeb`, esse formato deve ser tratado como convenio estrutural do pattern, e nao como reflexo do GUID do `Attribute` top-level nem do GUID inline do `Level` da `Transaction`.
+- `Inferência forte`: para `WorkWithForWeb`, esse formato deve ser tratado como convenio estrutural do pattern, e não como reflexo do GUID do `Attribute` top-level nem do GUID inline do `Level` da `Transaction`.
 - `Evidência direta`: o export `XPZExemploTabelaTRNWWPatternA.xpz` veio com `596` objetos: `228` `Table`, `183` `Transaction`, `183` `WorkWithForWeb` e `2` `PatternSettings`, sem `Attributes`.
-- `Evidência direta`: o export `XPZExemploTabelaTRNDataSelectorA.xpz` veio com `413` objetos: `228` `Table`, `183` `Transaction` e `2` `DataSelector`, tambem sem `Attributes`.
+- `Evidência direta`: o export `XPZExemploTabelaTRNDataSelectorA.xpz` veio com `413` objetos: `228` `Table`, `183` `Transaction` e `2` `DataSelector`, também sem `Attributes`.
 - `Evidência direta`: no export combinado com `WorkWithForWeb`, a `Transaction` mantem a propriedade `Apply:78cecefe-be7d-4980-86ce-8d6e91fba04b=True`.
 - `Evidência direta`: no mesmo export, `PatternSettings 'WorkWith'` materializa `ContextVariable`, `LoadProcedure`, `Security Check` e `NotAuthorized` no XML interno.
-- `Inferência forte`: a ponte operacional real do pattern web observado fica distribuida entre `Transaction` (aplicacao do pattern), `WorkWithForWeb` (instancia por objeto), `PatternSettings` (configuracao global do pattern) e `Table` (camada fisica com indices internos).
-- `Evidência direta`: o par de exports `XPZExemploTRNWWComparacaoSemWW.xpz` e `XPZExemploTRNWWComparacaoComWW.xpz` forneceu um recorte minimo comparavel da mesma `Transaction 'TRNExemploMinPaisA'`.
+- `Inferência forte`: a ponte operacional real do pattern web observado fica distribuida entre `Transaction` (aplicação do pattern), `WorkWithForWeb` (instancia por objeto), `PatternSettings` (configuração global do pattern) e `Table` (camada física com índices internos).
+- `Evidência direta`: o par de exports `XPZExemploTRNWWComparacaoSemWW.xpz` e `XPZExemploTRNWWComparacaoComWW.xpz` forneceu um recorte mínimo comparavel da mesma `Transaction 'TRNExemploMinPaisA'`.
 - `Evidência direta`: `XPZExemploTRNWWComparacaoSemWW` veio com `7` objetos, `10` atributos top-level e `25` identidades; `XPZExemploTRNWWComparacaoComWW` veio com `8` objetos, os mesmos `10` atributos e `49` identidades.
-- `Evidência direta`: a unica diferenca de objeto entre os dois recortes foi a entrada de `WWExemploMinPaisA`.
+- `Evidência direta`: a única diferenca de objeto entre os dois recortes foi a entrada de `WWExemploMinPaisA`.
 - `Evidência direta`: apesar disso, a entrada de `WWExemploMinPaisA` quase dobrou o total de identidades de contexto em `ObjectsIdentityMapping`, incluindo referencias adicionais a `DomainExemploUfA`, `WPExemploRelacionamentoA`, `WPExemploAtualizacaoServidorA` e atributos relacionados.
-- `Inferência forte`: num caso minimo real, incluir `WorkWithForWeb` acrescenta pouco no bloco `<Objects>`, mas pode expandir bastante o grafo de contexto que o pacote precisa descrever em `ObjectsIdentityMapping`.
+- `Inferência forte`: num caso mínimo real, incluir `WorkWithForWeb` acrescenta pouco no bloco `<Objects>`, mas pode expandir bastante o grafo de contexto que o pacote precisa descrever em `ObjectsIdentityMapping`.
 
 ## Complemento posterior - export combinado de `API` e da pilha visual
 
@@ -338,79 +338,79 @@ Separar com mais precisao o que e falta de shape, o que e dependencia semantica 
 - `Evidência direta`: o export `XPZExemploCadeiaAPIA.xpz` veio com `3904` objetos e `0` atributos top-level.
 - `Evidência direta`: a distribuicao observada foi `2282` `Procedure`, `594` `SDT`, `593` `Domain`, `228` `Table`, `183` `Transaction`, `24` `DataProvider` e `1` `API`.
 - `Evidência direta`: o `API` exportado nesse pacote e `APIExemploIntegracaoA`.
-- `Evidência direta`: o mesmo pacote prova que a trilha real de export da IDE para `API` relevante de negocio ja puxa junto uma massa grande de `Procedure`, `SDT`, `Domain`, `Table`, `Transaction` e `DataProvider`.
+- `Evidência direta`: o mesmo pacote prova que a trilha real de export da IDE para `API` relevante de negocio já puxa junto uma massa grande de `Procedure`, `SDT`, `Domain`, `Table`, `Transaction` e `DataProvider`.
 - `Evidência direta`: no pacote, ha `Domain` enumerado como `DomainExemploTipoA`, com valores de negocio distintos no mesmo conjunto exportado.
 - `Evidência direta`: no mesmo recorte, `SDT` como `SDTExemploProdutoBasicoA` e `Procedure` como `PRCExemploListaA` aparecem no mesmo conjunto exportado.
 - `Inferência forte`: para `API`, o melhor recorte de engenharia reversa deixa de ser o objeto isolado e passa a ser essa combinacao funcional mais ampla.
-- `Inferência forte`: isso reforca a leitura anterior de que a pendencia remanescente de `API` nao e serializacao do envelope, e sim dependencia de subarvore funcional de negocio.
+- `Inferência forte`: isso reforca a leitura anterior de que a pendencia remanescente de `API` não é serializacao do envelope, e sim dependencia de subarvore funcional de negocio.
 
 ### `Table + Transaction + ColorPalette + DesignSystem + Theme + WebTheme + Category + ThemeClass + ThemeColor`
 
 - `Evidência direta`: o export `XPZExemploTemaA.xpz` veio com `947` objetos e `0` atributos top-level.
 - `Evidência direta`: a distribuicao observada foi `501` `ThemeClass`, `228` `Table`, `183` `Transaction`, `24` `ThemeColor`, `7` `Theme`, `2` `DesignSystem`, `1` `Folder` e `1` `ColorPalette`.
-- `Evidência direta`: o pacote contem uma pasta organizacional `GAM_Samples-web`, reforcando que a familia visual tambem pode carregar o agrupador estrutural junto.
-- `Evidência direta`: o mesmo pacote mostrou `ThemeClass` como `ActionAttribute`, `ActionButtons` e `ActionButtonsHovered`, alem de varios `ThemeColor` e `Theme` reais.
+- `Evidência direta`: o pacote contem uma pasta organizacional `GAM_Samples-web`, reforcando que a familia visual também pode carregar o agrupador estrutural junto.
+- `Evidência direta`: o mesmo pacote mostrou `ThemeClass` como `ActionAttribute`, `ActionButtons` e `ActionButtonsHovered`, além de varios `ThemeColor` e `Theme` reais.
 - `Evidência direta`: nesse export, `Theme`, `ThemeClass`, `DesignSystem`, `ColorPalette` e `ThemeColor` aparecem juntos no mesmo recorte exportado pela IDE.
-- `Inferência forte`: a pilha visual completa pode e deve ser estudada como familia combinada, e nao como tipos totalmente independentes.
+- `Inferência forte`: a pilha visual completa pode e deve ser estudada como familia combinada, e não como tipos totalmente independentes.
 - `Inferência forte`: esse recorte reduz o risco de interpretar `Theme`, `ThemeClass`, `DesignSystem`, `ColorPalette` e `ThemeColor` fora do contexto visual em que a IDE os serializa de fato.
 
 ### `Attribute + Domain + Transaction + SubtypeGroup`
 
 - `Evidência direta`: o export `XPZExemploFamiliaMistaA.xpz` veio com `1117` objetos, `7646` atributos top-level e `1576` identidades em `ObjectsIdentityMapping`.
 - `Evidência direta`: o contêiner desse pacote usou `KMW`, `Source`, `Objects`, `Attributes`, `Dependencies` e `ObjectsIdentityMapping`.
-- `Evidência direta`: a presenca simultanea de `Objects` e `Attributes` top-level no mesmo `.xpz` confirma que a trilha normal da IDE tambem pode exportar familia mista de objetos e atributos reais, e nao apenas pacotes com `Objects` sem bloco `Attributes`.
+- `Evidência direta`: a presenca simultanea de `Objects` e `Attributes` top-level no mesmo `.xpz` confirma que a trilha normal da IDE também pode exportar familia mista de objetos e atributos reais, e não apenas pacotes com `Objects` sem bloco `Attributes`.
 - `Inferência forte`: para engenharia reversa de `Attribute` top-level e de sua relacao com `Transaction`, `Domain` e `SubtypeGroup`, esse recorte e mais informativo do que os pacotes sem `Attributes`.
 
 ### `Attribute + Domain + Transaction + SubtypeGroup + Table + Index`
 
 - `Evidência direta`: o export `XPZExemploFamiliaMistaB.xpz` veio com `1712` objetos, os mesmos `7646` atributos top-level e `1611` identidades.
-- `Evidência direta`: esse pacote tambem usou o contêiner `KMW`, `Source`, `Objects`, `Attributes`, `Dependencies` e `ObjectsIdentityMapping`.
-- `Evidência direta`: a diferenca de `1117` para `1712` objetos entre os dois pacotes coincide com a entrada da camada fisica `Table`, enquanto o bloco de `Attributes` permaneceu estavel em `7646`.
-- `Inferência forte`: isso reforca que `Table/Index` entram como ampliacao da familia logica anterior, sem deslocar `Attribute` top-level para dentro de `Objects` nem eliminar o bloco `Attributes`.
+- `Evidência direta`: esse pacote também usou o contêiner `KMW`, `Source`, `Objects`, `Attributes`, `Dependencies` e `ObjectsIdentityMapping`.
+- `Evidência direta`: a diferenca de `1117` para `1712` objetos entre os dois pacotes coincide com a entrada da camada física `Table`, enquanto o bloco de `Attributes` permaneceu estavel em `7646`.
+- `Inferência forte`: isso reforca que `Table/Index` entram como ampliacao da familia lógica anterior, sem deslocar `Attribute` top-level para dentro de `Objects` nem eliminar o bloco `Attributes`.
 
 ### Sintese operacional provisoria de `Table/Index`
 
 - `Evidência direta`: na trilha observada, `Table` aparece como objeto top-level exportavel, enquanto `Index` aparece embutido dentro de `Table`.
-- `Evidência direta`: pedir `Table + Index` na IDE nao criou objetos top-level adicionais de `Index`; a serializacao observada permaneceu centrada em `Table`.
+- `Evidência direta`: pedir `Table + Index` na IDE não criou objetos top-level adicionais de `Index`; a serializacao observada permaneceu centrada em `Table`.
 - `Evidência direta`: os nomes top-level de `Table` acompanham os nomes das `Transaction` correspondentes.
-- `Evidência direta`: em comparacao privada posterior de pares reais simples e densos da KB de origem, essa correspondencia nominal `Transaction` -> `Table` tambem se repetiu fora dos pacotes ja resumidos na base.
-- `Evidência direta`: na mesma comparacao privada, os `Index` seguiram aparecendo apenas no bloco interno `<Indexes>` do objeto fisico, e nao como objeto top-level separado.
+- `Evidência direta`: em comparacao privada posterior de pares reais simples e densos da KB de origem, essa correspondencia nominal `Transaction` -> `Table` também se repetiu fora dos pacotes já resumidos na base.
+- `Evidência direta`: na mesma comparacao privada, os `Index` seguiram aparecendo apenas no bloco interno `<Indexes>` do objeto físico, e não como objeto top-level separado.
 - `Evidência direta`: nessa mesma amostra privada, a lista de atributos-chave do primeiro `Level` da `Transaction` coincidiu com a lista do bloco `<Key>` da `Table`, tanto em chave simples quanto em chave composta.
-- `Evidência direta`: na amostra privada comparada, cada `Table` observada trouxe exatamente `1` indice `Unique` automatico para a chave e um conjunto variavel de indices `Duplicate`, misturando casos `Automatic` e `User`.
-- `Evidência direta`: nos mesmos pares privados comparados, todos os membros de indices `Automatic` observados ja estavam presentes no primeiro `Level` da `Transaction` correspondente.
-- `Evidência direta`: na KB analisada, prefixo `I` identifica indice automaticamente criado pelo GeneXus a partir de PK ou FK definidas pelo modelador.
-- `Evidência direta`: na mesma KB, prefixo `U` identifica indice criado manualmente pelo operador humano.
-- `Evidência direta`: quando um indice automatico `I...` recebe nome mais descritivo nesta KB, a mudanca e apenas editorial; os campos e sua ordem permanecem exatamente os mesmos do indice criado pelo GeneXus.
-- `Evidência direta`: o naming default do GeneXus para esses indices automaticos e pouco descritivo, normalmente centrado no nome da `Table` com numeracao incremental nos casos seguintes.
-- `Evidência direta`: nos indices automaticos de FK, os campos seguem a mesma ordem definida pelo modelador na relacao da `Transaction` e refletida na `Table`.
-- `Evidência direta`: na mesma amostra privada, os indices `Automatic` `Duplicate` apareceram principalmente em dois formatos recorrentes: atributo unico `...Id` e pares `...EmpresaId + ...Id|...Codigo`.
-- `Evidência direta`: nessa mesma investigacao privada, muitos atributos `...Id` e `...Codigo` presentes no primeiro `Level` nao reapareceram em indices `Automatic`, inclusive em objetos mais densos.
-- `Evidência direta`: os nomes amigaveis observados para varios indices `Duplicate` refletem convencao editorial/local da KB analisada, e nao devem ser tratados como padrao default do GeneXus.
-- `Evidência direta`: os nomes mais amigaveis, abreviacoes e formas descritivas observadas em varios indices desta KB surgem da renomeacao humana para facilitar manutencao, leitura de erro e leitura de log; nao devem ser lidos como naming automatico do GeneXus nem como resposta normal a limite de 63 caracteres.
-- `Evidência direta`: numa ampliacao posterior da amostra privada para todo o conjunto local de `Table`, os formatos mais recorrentes de indice `Automatic` `Duplicate` foram `...EmpresaId + ...Id|...Codigo`, depois atributos unicos de auditoria de usuario (`...InclusaoUsuarioId`, `...UltimaAtualizacaoUsuarioId`), depois `...EmpresaId` isolado, e so depois outros `...Id` unicos menos frequentes.
-- `Evidência direta`: nessa mesma ampliacao, `101/228` `Table` locais combinavam ao mesmo tempo algum par `...EmpresaId + ...Id|...Codigo` e algum indice automatico de auditoria de usuario; `41/228` nao mostraram nenhum desses dois sinais na leitura aplicada.
-- `Evidência direta`: numa releitura posterior do conjunto local completo com parse direto do bloco `<Indexes>`, `143/228` `Table` apresentaram pelo menos um indice `User`, enquanto `85/228` nao apresentaram nenhum `User`.
-- `Evidência direta`: nesse mesmo recorte, entre as `Table` sem `User`, `69/85` ficaram com apenas `1` ou `2` indices `Automatic` `Duplicate`, e apenas `16/85` passaram de `2` indices `Automatic` `Duplicate`.
-- `Evidência direta`: no recorte complementar, entre as `Table` com `User`, `124/143` ficaram na faixa de `1` a `3` indices `User`, e apenas `19/143` passaram de `3` indices `User`.
-- `Evidência direta`: a releitura ampla encontrou apenas `3` `Table` sem qualquer indice `Automatic` `Duplicate`: `OperacaoFiscal`, `Pais` e `TipoDocumento`; nas tres, ainda assim havia pelo menos um indice `User`.
-- `Evidência direta`: nesses tres casos excepcionais, o indice `User` observado cobria ordenacao ou busca por atributo simples de negocio, como `Descricao`, `Nome` ou `Id Descendente`.
-- `Inferência forte`: esses tres casos devem ser lidos como excecao local da KB e possivel alvo de revisao de modelagem, nao como perfil representativo para materializacao conservadora de `Table`.
-- `Evidência direta`: no mesmo recorte amplo, o acervo totalizou `429` indices `User`; `239/429` continham pelo menos um `Member` em `Descending`, e `229/429` terminavam com o ultimo `Member` em `Descending`.
-- `Evidência direta`: no mesmo recorte, `190/429` indices `User` ficaram totalmente em `Ascending`, mostrando que nem todo indice manual desta KB existe para ordenacao descendente; parte deles cobre navegacao/consulta por combinacoes especificas de negocio.
-- `Inferência forte`: dentro dessa amostra, os indices `Automatic` aparecem como recombinacoes de atributos ja materializados na propria `Transaction`, e nao como introducao de atributos fisicos alheios ao primeiro `Level`.
-- `Inferência forte`: dentro dessa amostra, o padrao `...EmpresaId + ...Id|...Codigo` parece um dos sinais mais fortes de indice automatico adicional na camada fisica.
-- `Inferência forte`: ao mesmo tempo, esse padrao por nome nao e suficiente sozinho para prever indice automatico; ele funciona como pista estrutural, nao como regra deterministica.
-- `Inferência forte`: na KB analisada, a combinacao entre relacionamento principal (`...EmpresaId + ...Id|...Codigo`) e trilha de auditoria de usuario parece formar o nucleo mais recorrente dos indices `Automatic` adicionais.
-- `Inferência forte`: os indices automaticos de auditoria observados na amostra devem ser lidos como mais um caso de FK automatica renomeada de forma amigavel, e nao como familia especial criada por regra separada.
-- `Inferência forte`: a presenca de indice `User` (`U...`) deve ser lida como tuning manual e empirico por volume e ordenacao real, e nao como desdobramento estrutural obrigatorio da `Transaction`.
-- `Inferência forte`: na KB analisada, um indice `User` tende a surgir quando a ordenacao real de grid, relatorio ou procedure diverge dos indices automaticos disponiveis e a massa de registros ja justifica um indice dedicado.
-- `Inferência forte`: um caso recorrente de indice `User` e reaproveitar quase a mesma base de um indice automatico, mas ajustando direcao de ordenacao, especialmente com o ultimo campo em `Descending` para buscar o registro mais recente.
-- `Inferência forte`: a ausencia de indice `User` em varias `Table` deve ser lida como decisao valida e consciente do modelador, quando o volume esperado e pequeno e o custo de manutencao do indice nao compensa.
-- `Inferência forte`: fora do nucleo mais carregado de `User`, a familia residual mais comum nao e ausencia total de indices, e sim `Table` resolvida apenas com PK e poucos `Automatic` `Duplicate`, sem necessidade de tuning manual adicional.
-- `Inferência forte`: os raros casos sem `Automatic` `Duplicate` formam excecao de tabela muito simples, onde um unico `User` pode cumprir papel de busca ou ordenacao sem haver malha de FK automatica relevante.
-- `Inferência forte`: para geracao conservadora de `XPZ`, o erro mais provavel do agente passa a ser excesso de `User` inventado; a distribuicao observada recomenda preferir ausencia de `User` ou poucos `User` antes de extrapolar tuning pesado.
-- `Inferência forte`: para ler a camada fisica desta base, o eixo primario de correlacao deve ser `Transaction -> Table`, tratando os `Index` como estrutura interna da `Table`.
-- `Inferência forte`: para evolucao metodologica da base, o pacote mais informativo nao e `Index` isolado, e sim combinacoes como `Transaction + Table`, `Transaction + Table + WorkWithForWeb + PatternSettings` e `Attribute + Domain + Transaction + SubtypeGroup + Table`.
+- `Evidência direta`: na amostra privada comparada, cada `Table` observada trouxe exatamente `1` índice `Unique` automático para a chave e um conjunto variável de índices `Duplicate`, misturando casos `Automatic` e `User`.
+- `Evidência direta`: nos mesmos pares privados comparados, todos os membros de índices `Automatic` observados já estavam presentes no primeiro `Level` da `Transaction` correspondente.
+- `Evidência direta`: na KB analisada, prefixo `I` identifica índice automaticamente criado pelo GeneXus a partir de PK ou FK definidas pelo modelador.
+- `Evidência direta`: na mesma KB, prefixo `U` identifica índice criado manualmente pelo operador humano.
+- `Evidência direta`: quando um índice automático `I...` recebe nome mais descritivo nesta KB, a mudanca e apenas editorial; os campos e sua ordem permanecem exatamente os mesmos do índice criado pelo GeneXus.
+- `Evidência direta`: o naming default do GeneXus para esses índices automáticos e pouco descritivo, normalmente centrado no nome da `Table` com numeração incremental nos casos seguintes.
+- `Evidência direta`: nos índices automáticos de FK, os campos seguem a mesma ordem definida pelo modelador na relacao da `Transaction` e refletida na `Table`.
+- `Evidência direta`: na mesma amostra privada, os índices `Automatic` `Duplicate` apareceram principalmente em dois formatos recorrentes: atributo único `...Id` e pares `...EmpresaId + ...Id|...Codigo`.
+- `Evidência direta`: nessa mesma investigacao privada, muitos atributos `...Id` e `...Codigo` presentes no primeiro `Level` não reapareceram em índices `Automatic`, inclusive em objetos mais densos.
+- `Evidência direta`: os nomes amigaveis observados para varios índices `Duplicate` refletem convencao editorial/local da KB analisada, e não devem ser tratados como padrão default do GeneXus.
+- `Evidência direta`: os nomes mais amigaveis, abreviacoes e formas descritivas observadas em varios índices desta KB surgem da renomeacao humana para facilitar manutencao, leitura de erro e leitura de log; não devem ser lidos como naming automático do GeneXus nem como resposta normal a limite de 63 caracteres.
+- `Evidência direta`: numa ampliacao posterior da amostra privada para todo o conjunto local de `Table`, os formatos mais recorrentes de índice `Automatic` `Duplicate` foram `...EmpresaId + ...Id|...Codigo`, depois atributos únicos de auditoria de usuário (`...InclusaoUsuarioId`, `...UltimaAtualizacaoUsuarioId`), depois `...EmpresaId` isolado, e só depois outros `...Id` únicos menos frequentes.
+- `Evidência direta`: nessa mesma ampliacao, `101/228` `Table` locais combinavam ao mesmo tempo algum par `...EmpresaId + ...Id|...Codigo` e algum índice automático de auditoria de usuário; `41/228` não mostraram nenhum desses dois sinais na leitura aplicada.
+- `Evidência direta`: numa releitura posterior do conjunto local completo com parse direto do bloco `<Indexes>`, `143/228` `Table` apresentaram pelo menos um índice `User`, enquanto `85/228` não apresentaram nenhum `User`.
+- `Evidência direta`: nesse mesmo recorte, entre as `Table` sem `User`, `69/85` ficaram com apenas `1` ou `2` índices `Automatic` `Duplicate`, e apenas `16/85` passaram de `2` índices `Automatic` `Duplicate`.
+- `Evidência direta`: no recorte complementar, entre as `Table` com `User`, `124/143` ficaram na faixa de `1` a `3` índices `User`, e apenas `19/143` passaram de `3` índices `User`.
+- `Evidência direta`: a releitura ampla encontrou apenas `3` `Table` sem qualquer índice `Automatic` `Duplicate`: `OperacaoFiscal`, `Pais` e `TipoDocumento`; nas tres, ainda assim havia pelo menos um índice `User`.
+- `Evidência direta`: nesses tres casos excepcionais, o índice `User` observado cobria ordenacao ou busca por atributo simples de negocio, como `Descricao`, `Nome` ou `Id Descendente`.
+- `Inferência forte`: esses tres casos devem ser lidos como exceção local da KB e possível alvo de revisao de modelagem, não como perfil representativo para materialização conservadora de `Table`.
+- `Evidência direta`: no mesmo recorte amplo, o acervo totalizou `429` índices `User`; `239/429` continham pelo menos um `Member` em `Descending`, e `229/429` terminavam com o último `Member` em `Descending`.
+- `Evidência direta`: no mesmo recorte, `190/429` índices `User` ficaram totalmente em `Ascending`, mostrando que nem todo índice manual desta KB existe para ordenacao descendente; parte deles cobre navegacao/consulta por combinacoes específicas de negocio.
+- `Inferência forte`: dentro dessa amostra, os índices `Automatic` aparecem como recombinacoes de atributos já materializados na própria `Transaction`, e não como introducao de atributos fisicos alheios ao primeiro `Level`.
+- `Inferência forte`: dentro dessa amostra, o padrão `...EmpresaId + ...Id|...Codigo` parece um dos sinais mais fortes de índice automático adicional na camada física.
+- `Inferência forte`: ao mesmo tempo, esse padrão por nome não é suficiente sozinho para prever índice automático; ele funciona como pista estrutural, não como regra deterministica.
+- `Inferência forte`: na KB analisada, a combinacao entre relacionamento principal (`...EmpresaId + ...Id|...Codigo`) e trilha de auditoria de usuário parece formar o nucleo mais recorrente dos índices `Automatic` adicionais.
+- `Inferência forte`: os índices automáticos de auditoria observados na amostra devem ser lidos como mais um caso de FK automática renomeada de forma amigavel, e não como familia especial criada por regra separada.
+- `Inferência forte`: a presenca de índice `User` (`U...`) deve ser lida como tuning manual e empirico por volume e ordenacao real, e não como desdobramento estrutural obrigatório da `Transaction`.
+- `Inferência forte`: na KB analisada, um índice `User` tende a surgir quando a ordenacao real de grid, relatório ou procedure diverge dos índices automáticos disponíveis e a massa de registros já justifica um índice dedicado.
+- `Inferência forte`: um caso recorrente de índice `User` e reaproveitar quase a mesma base de um índice automático, mas ajustando direcao de ordenacao, especialmente com o último campo em `Descending` para buscar o registro mais recente.
+- `Inferência forte`: a ausencia de índice `User` em varias `Table` deve ser lida como decisão valida e consciente do modelador, quando o volume esperado e pequeno e o custo de manutencao do índice não compensa.
+- `Inferência forte`: fora do nucleo mais carregado de `User`, a familia residual mais comum não é ausencia total de índices, e sim `Table` resolvida apenas com PK e poucos `Automatic` `Duplicate`, sem necessidade de tuning manual adicional.
+- `Inferência forte`: os raros casos sem `Automatic` `Duplicate` formam exceção de tabela muito simples, onde um único `User` pode cumprir papel de busca ou ordenacao sem haver malha de FK automática relevante.
+- `Inferência forte`: para geração conservadora de `XPZ`, o erro mais provavel do agente passa a ser excesso de `User` inventado; a distribuicao observada recomenda preferir ausencia de `User` ou poucos `User` antes de extrapolar tuning pesado.
+- `Inferência forte`: para ler a camada física desta base, o eixo primario de correlacao deve ser `Transaction -> Table`, tratando os `Index` como estrutura interna da `Table`.
+- `Inferência forte`: para evolucao metodologica da base, o pacote mais informativo não é `Index` isolado, e sim combinacoes como `Transaction + Table`, `Transaction + Table + WorkWithForWeb + PatternSettings` e `Attribute + Domain + Transaction + SubtypeGroup + Table`.
 
 
 
