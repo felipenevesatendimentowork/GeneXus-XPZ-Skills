@@ -1153,23 +1153,24 @@ Distribuição por arquivo (palavras inequivocamente acentuadas detectadas por r
 
 ### Medição fresca 2026-06-11 (nova baseline; substitui a tabela de 2026-05-11)
 
-Re-medição empírica no commit `1df18e7`, com detector determinístico versionado (`scripts/Measure-PtBrAccentDegradation.ps1` + `scripts/ptbr-accent-wordlist.json` + self-test). **Não é comparável 1:1** com os 590+ de 2026-05-11: lista curada maior (166 palavras inequívocas), escopo ampliado (todos os `.md` versionados + `.example.ps1` + comentários de `.ps1`) e supressão de código/identificador. É **piso firme** (palavras cuja forma sem acento é sempre erro), não teto.
+Re-medição empírica no commit `f414926`, com detector determinístico versionado (`scripts/Measure-PtBrAccentDegradation.ps1` + `scripts/ptbr-accent-wordlist.json` + self-test). **Não é comparável 1:1** com os 590+ de 2026-05-11: lista curada maior (165 palavras inequívocas), escopo ampliado (todos os `.md` versionados + `.example.ps1` + comentários de `.ps1`) e supressão de código/identificador. É **piso firme** (palavras cuja forma sem acento é sempre erro), não teto. A medição já inclui os próprios arquivos do medidor (contribuição pequena, nos comentários `.ps1`). `numero` foi movido ao teto solto por ser também forma verbal (*eu numero*, de *numerar*), mantendo `numeros` no piso firme — alinhado às exclusões de `referencia`/`publico`/`pagina`.
 
-**Total no trabalho pendente: 7.775 ocorrências inequívocas** (+ 723 ambíguas "teto solto", não confirmadas).
+**Total no trabalho pendente: 7.812 ocorrências inequívocas** (+ 745 ambíguas "teto solto", não confirmadas).
 
 | Segmento | No total? | Arquivos | Com defeito | Inequívocas | Ambíguas (teto) |
 |---|---|---|---|---|---|
 | skill-md | sim | 11 | 4 | 1412 | 162 |
 | skill-satelite | sim | 9 | 1 | 1 | 5 |
-| raiz-md | sim | 37 | 32 | 5314 | 448 |
+| raiz-md | sim | 37 | 32 | 5304 | 459 |
 | outros-md | sim | 2 | 2 | 213 | 12 |
 | example-ps1 | sim | 25 | 22 | 101 | 6 |
-| ps1 (comentários) | sim | 172 | 116 | 734 | 90 |
+| ps1 (comentários) | sim | 174 | 118 | 781 | 101 |
 | historico/ | não (diagnóstico) | 53 | 48 | 1591 | 72 |
+| aportes-comunidade | não (diagnóstico) | 0 | 0 | 0 | 0 |
 
 Achados que mudam o enquadramento:
 
-- **O grosso não está nos SKILL.md.** Os `.md` numerados da raiz (base empírica `01*`–`12`) concentram 5.314 ocorrências; os comentários de `.ps1` somam 734. A medição de 2026-05-11 só olhava SKILL.md, por isso subdimensionava o trabalho real.
+- **O grosso não está nos SKILL.md.** Os `.md` numerados da raiz (base empírica `01*`–`12`) concentram 5.304 ocorrências; os comentários de `.ps1` somam 781. A medição de 2026-05-11 só olhava SKILL.md, por isso subdimensionava o trabalho real.
 - **A campanha interrompida corrigiu parte.** Dos 11 SKILL.md, só 4 ainda têm defeito (7 já limpos) — confirma o relato de que a frente foi iniciada e parada no meio.
 - **`historico/` (1.591)** fica fora do total: registro imutável, não se corrige (só diagnóstico da dívida histórica preservada).
 - **`AportesDaComunidadeParaAvaliacao/`** é git-ignored (não versionado) → fora do universo medido.

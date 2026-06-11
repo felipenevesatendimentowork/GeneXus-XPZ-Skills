@@ -8,10 +8,11 @@
     "esta (pronome demonstrativo valido)",
     "area (colide com ingles area)",
     "so (colide com ingles so; e ambiguo so/so)",
-    "pagina (verbo paginar: ele pagina)"
+    "pagina (verbo paginar: ele pagina)",
+    "numero (verbo numerar: eu numero) movido para ambiguousTokens; numeros plural permanece no piso firme"
   ],
-  "ambiguousTokens": ["esta", "tem", "vem", "so"],
-  "ambiguousNote": "Contagem destes e TETO SOLTO, nao confirmado: a forma sem acento e frequentemente valida (ele tem, esta coisa) e ha colisao com ingles (so). Serve so para nao subdimensionar o trabalho de revisao contextual. A conjuncao/verbo e/e NAO e contado: a frequencia da conjuncao legitima inviabiliza contagem util; tratado como nota qualitativa no relatorio.",
+  "ambiguousTokens": ["esta", "tem", "vem", "so", "numero"],
+  "ambiguousNote": "Contagem destes e TETO SOLTO, nao confirmado: a forma sem acento e frequentemente valida (ele tem, esta coisa, eu numero) e ha colisao com ingles (so). Serve so para nao subdimensionar o trabalho de revisao contextual. A conjuncao/verbo e/e NAO e contado: a frequencia da conjuncao legitima inviabiliza contagem util; tratado como nota qualitativa no relatorio.",
   "measurementNote": "PISO, NAO TETO. A lista e finita: nao captura palavras fora dela, nem troca de acento (esta/esta, voo/voo), nem crase faltante (a/a), nem erros nao-acentuais (mas/mais). Ver limites declarados no relatorio.",
   "entries": [
     {"a": "nao", "c": "não"},
@@ -132,7 +133,6 @@
     {"a": "multiplas", "c": "múltiplas"},
     {"a": "nivel", "c": "nível"},
     {"a": "niveis", "c": "níveis"},
-    {"a": "numero", "c": "número"},
     {"a": "numeros", "c": "números"},
     {"a": "disponivel", "c": "disponível"},
     {"a": "disponiveis", "c": "disponíveis"},
