@@ -1496,3 +1496,21 @@ Há ainda colisão terminológica: a `xpz-msbuild-import-export` já usa "cirúr
 **O que foi feito em vez disso (Opção 2a da avaliação):** acrescentou-se uma única linha de fronteira no bloco `Do NOT use esta skill para` do `xpz-msbuild-import-export`, demarcando que editar/ajustar o `Source`, `Rules` ou `CDATA` de um objeto pertence ao `xpz-builder` — sem documentar o "como" e sem usar a palavra "cirúrgico". A `xpz-builder` permanece a sede única do `Edit-GeneXusXmlSurgical`.
 
 **Não reavaliar salvo** evidência de um fluxo real em que a edição de source precise ocorrer dentro da própria orquestração de import/export — o que hoje não é o caso, já que o pacote chega ao import-export já montado pelo `xpz-builder`.
+
+## Preflight único — um script que roda todos os gates de empacotamento de uma vez
+
+**Origem:** avaliação do lote de 4 gaps do relato CPJAPP (2026-06-10), recomendação 3 ("criar um preflight único de pacote para frentes GeneXus com Source: SourceSanity + ObjectVariableDelta + BatchDependencyOrdering + PackageInventory + busca de padrões rejeitados pela KB"). Era a "Frente C" do lote.
+
+**O que era:** um único script orquestrador que rodasse, numa só chamada, o subconjunto de gates determinísticos relevantes para uma frente com `Source`, em vez de o agente invocar cada gate separadamente. Dor declarada: o agente pode esquecer de rodar algum gate.
+
+**Por que foi descartada:**
+
+1. **O WORKFLOW do `xpz-builder` já é o preflight.** Os gates da Fase 9 (`9-BC`, `9-WW`, `9-TWS`, `9-TXW`, `9-PNW`, `9-IDO`, `9-FD`) já estão sequenciados com gatilho condicional por delta ("run before any packaging **when** the batch contains X"), com invocação exata e tratamento pass/warn/fail. Um agente que segue a skill já roda exatamente o subconjunto certo. O risco "esquecer um gate" é, no essencial, questão de seguir o WORKFLOW — não falta de ferramenta.
+
+2. **Risco de drift por duplicação da lógica condicional.** Cada gate só se aplica a certos deltas (Transaction, Procedure, 2+ objetos, etc.). Um runner que "roda tudo" ou geraria ruído de `not-applicable`, ou teria que replicar a tabela de gatilhos do WORKFLOW — passando a existir a mesma regra em dois lugares (skill + script), que mais cedo ou mais tarde divergem. É o mesmo motivo da entrada "Índice geral em `scripts/` (README agregado)" descartada acima: `scripts/` é apoio operacional, não fonte normativa; a sede da regra é a skill consumidora.
+
+3. **Contratos heterogêneos dos gates.** Os gates pedem entradas não-uniformes (`-FrontFolder`+`-CorpusFolder`, `-InputPath` por arquivo, `-TransactionPath`, `-VariableName`, iteração por XML). Um orquestrador único precisaria de uma camada de tradução/marshaling complexa para pouco ganho sobre a chamada direta guiada pelo WORKFLOW.
+
+**Relação com o "Manifesto semântico de pacote" (999):** a ideia *sancionada* de "agregar os gates" é o manifesto — mas é o lado **output** (artefato de auditoria que consolida os resultados estruturados dos gates), não um runner que os executa, e está bloqueado até haver gate upstream em uso e decisões editoriais fechadas. Se um dia fizer sentido um braço de execução, ele nasce como mecanismo do manifesto, não como orquestrador separado.
+
+**Não reavaliar salvo** aparição de um fluxo real de **wrapper local de KB** em que o agente **não** carregue a skill `xpz-builder` (e portanto não tenha o WORKFLOW como roteiro), tornando um runner fino local útil para reduzir comandos compostos — caso em que ele seria um wrapper local recomendado pelo `xpz-kb-parallel-setup`, não um script compartilhado novo.

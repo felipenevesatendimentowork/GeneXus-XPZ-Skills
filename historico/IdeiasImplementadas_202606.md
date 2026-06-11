@@ -413,4 +413,4 @@ Desenho D1-D4 revisado por painel multi-modelo (deepseek-v4-pro, glm-5.1, minima
 
 ### Rastreabilidade
 
-- Commit: `este commit` (`Adiciona gate de coerencia para Transaction GenerateObject=False com bagagem WorkWithPlus`)
+- Commit: `29a37ee` (`Adiciona gate de coerencia para Transaction GenerateObject=False com bagagem WorkWithPlus`)
