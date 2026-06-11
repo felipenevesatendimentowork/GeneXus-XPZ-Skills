@@ -278,12 +278,13 @@ A verificacao mecanica foi incorporada ao ponto de montagem `scripts/Build-GeneX
 
 ## Gates determinísticos da Fase 9 do xpz-builder
 
-A skill `xpz-builder` extraiu seus gates da Fase 9 (`9-BC`, `9-WW`, `9-PSM`, `9-IDO`, `9-PNW`, `Writability`) para scripts em `scripts/Test-GeneXus*.ps1`. Contrato de invocação, códigos de finding e regras de uso ficam em `xpz-builder/SKILL.md` e satélites `xpz-builder/responsibilities-by-type/*.md`; esta seção só registra a existência dos scripts para descoberta a partir da raiz.
+A skill `xpz-builder` extraiu seus gates da Fase 9 (`9-BC`, `9-WW`, `9-PSM`, `9-IDO`, `9-PNW`, `9-TWS`, `Writability`, `9-FD`) para scripts em `scripts/Test-GeneXus*.ps1`. Contrato de invocação, códigos de finding e regras de uso ficam em `xpz-builder/SKILL.md` e satélites `xpz-builder/responsibilities-by-type/*.md`; esta seção só registra a existência dos scripts para descoberta a partir da raiz.
 
 - `scripts/Test-GeneXusBCDependency.ps1` — gate `9-BC` (Procedures que escrevem em Transaction como Business Component)
 - `scripts/Test-GeneXusBatchDependencyOrdering.ps1` — gate `9-IDO` (ordem entre Procedure e Transaction no batch)
 - `scripts/Test-GeneXusNewWritableTargets.ps1` — gate `9-PNW` (atributos graváveis em comandos `New` de Procedure; fachada PowerShell sobre `GeneXusTransactionWritabilityCore.py`)
 - `scripts/Test-GeneXusProcedureSubPattern.ps1` — gate `9-PSM` (padrão dominante de Sub em Procedures)
+- `scripts/Test-GeneXusTransactionCoherence.ps1` — gate `9-TWS` (coerência de Transaction pré-empacotamento: integridade de Level e, para Transaction `GenerateObject=False`, código de tela WorkWithPlus DVelop órfão em Events/Rules — finding `wwp-screen-code-on-non-generated-transaction`)
 - `scripts/Test-GeneXusTransactionWritability.ps1` — gate `Writability` (Transactions efetivamente graváveis; fachada PowerShell sobre `GeneXusTransactionWritabilityCore.py`)
 - `scripts/Test-GeneXusWorkWithWebApply.ps1` — gate `9-WW` (Apply em WorkWithForWeb, formas A e B)
 - `scripts/Test-GeneXusFrontAcervoDrift.ps1` — gate `9-FD` (drift frente-vs-acervo: compara `lastUpdate` de cada XML da frente contra o homônimo no acervo; findings `front-older-than-acervo` bloqueiam empacotamento)
