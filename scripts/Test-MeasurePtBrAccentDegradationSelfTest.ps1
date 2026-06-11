@@ -121,4 +121,5 @@ Assert-Equal 0 $badCorrect.Count 'toda entry tem forma correta acentuada distint
 
 Write-Host ''
 Write-Host "SELF-TEST OK ($script:passed asserts)."
+Write-Host 'PTBR_ACCENT_MEASURE_SELFTEST_OK'
 exit 0
