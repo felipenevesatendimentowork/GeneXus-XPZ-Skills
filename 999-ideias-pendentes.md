@@ -1149,6 +1149,33 @@ Distribuição por arquivo (palavras inequivocamente acentuadas detectadas por r
 | xpz-reader | 2 |
 | **total** | **590+** |
 
+> **Nota 2026-06-11 — a tabela acima (2026-05-11) está superada.** Veja a medição fresca abaixo.
+
+### Medição fresca 2026-06-11 (nova baseline; substitui a tabela de 2026-05-11)
+
+Re-medição empírica no commit `1df18e7`, com detector determinístico versionado (`scripts/Measure-PtBrAccentDegradation.ps1` + `scripts/ptbr-accent-wordlist.json` + self-test). **Não é comparável 1:1** com os 590+ de 2026-05-11: lista curada maior (166 palavras inequívocas), escopo ampliado (todos os `.md` versionados + `.example.ps1` + comentários de `.ps1`) e supressão de código/identificador. É **piso firme** (palavras cuja forma sem acento é sempre erro), não teto.
+
+**Total no trabalho pendente: 7.775 ocorrências inequívocas** (+ 723 ambíguas "teto solto", não confirmadas).
+
+| Segmento | No total? | Arquivos | Com defeito | Inequívocas | Ambíguas (teto) |
+|---|---|---|---|---|---|
+| skill-md | sim | 11 | 4 | 1412 | 162 |
+| skill-satelite | sim | 9 | 1 | 1 | 5 |
+| raiz-md | sim | 37 | 32 | 5314 | 448 |
+| outros-md | sim | 2 | 2 | 213 | 12 |
+| example-ps1 | sim | 25 | 22 | 101 | 6 |
+| ps1 (comentários) | sim | 172 | 116 | 734 | 90 |
+| historico/ | não (diagnóstico) | 53 | 48 | 1591 | 72 |
+
+Achados que mudam o enquadramento:
+
+- **O grosso não está nos SKILL.md.** Os `.md` numerados da raiz (base empírica `01*`–`12`) concentram 5.314 ocorrências; os comentários de `.ps1` somam 734. A medição de 2026-05-11 só olhava SKILL.md, por isso subdimensionava o trabalho real.
+- **A campanha interrompida corrigiu parte.** Dos 11 SKILL.md, só 4 ainda têm defeito (7 já limpos) — confirma o relato de que a frente foi iniciada e parada no meio.
+- **`historico/` (1.591)** fica fora do total: registro imutável, não se corrige (só diagnóstico da dívida histórica preservada).
+- **`AportesDaComunidadeParaAvaliacao/`** é git-ignored (não versionado) → fora do universo medido.
+
+O **mapa cirúrgico** (`arquivo:linha:palavra`) é gerado em `work/ptbr-accent-map.{md,json}` (git-ignored, transitório), regenerável a qualquer momento pelo detector; a sessão de correção parte dele.
+
 ### Direção técnica proposta
 
 **Correção manual contextual, não substituição cega por regex.** Algumas palavras têm forma válida com ou sem acento:
@@ -1170,6 +1197,8 @@ Três motivos para frente separada:
 - **Política de edição segura de MD longo**: regra do `AGENTS.md` global exige edições pequenas, locais, ancoradas por seção, com releitura imediata após cada gravação. Aplicar isso em centenas de pontos pede sessão dedicada.
 
 ### Plano de execução proposto
+
+> **Nota 2026-06-11:** a medição fresca acima re-prioriza o plano — o grosso está nos `.md` numerados da raiz (5.314) e em comentários de `.ps1` (734), não nos SKILL.md; e 7 dos 11 SKILL.md já estão limpos. Antes de corrigir cada arquivo, rodar o detector (`scripts/Measure-PtBrAccentDegradation.ps1`) para o estado atual e usar o mapa em `work/`.
 
 1. Sessão dedicada para a correção, com escopo declarado: "correção de acentuação pt-BR degradada nos SKILL.md".
 2. Atacar um SKILL.md por vez, começando pelos menores (xpz-reader, xpz-daemon, xpz-skills-setup, xpz-doc-builder, xpz-builder) para calibrar a estratégia.
