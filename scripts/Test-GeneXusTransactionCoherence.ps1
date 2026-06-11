@@ -15,6 +15,11 @@ $ErrorActionPreference = "Stop"
 $TransactionTypeGuid = "1db606f2-af09-4cf9-a3b5-b481519d28f6"
 $NonWritableClassifications = @("extended-parent-fk", "formula", "extended-subtype-descriptive")
 
+# DVelop WorkWithPlus (third-party) — objectTypeGuid do catalogo gx-object-type-catalog.json
+# (WorkWithPlusInstance). Tambem e o sufixo da propriedade Apply:<guid> na Transaction.
+# NAO confundir com o Work With nativo do GeneXus (78cecefe-...), quase universal no acervo.
+$WorkWithPlusInstanceTypeGuid = "07135890-56fc-489b-b408-063722fa9f7d"
+
 $GxKeywords = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($kw in @("if", "else", "elseif", "endif", "for", "each", "endfor", "do", "case", "endcase",
                    "when", "where", "not", "and", "or", "new", "true", "false", "null", "return",
@@ -59,6 +64,76 @@ function Get-AttributeClassification {
     if ($FormulaSet.ContainsKey($AttName)) { return "formula" }
     if ($ClassMap.ContainsKey($AttName)) { return $ClassMap[$AttName] }
     return "own-physical"
+}
+
+function Get-ObjectGeneratesProgram {
+    # Le GenerateObject do <Properties> de NIVEL OBJECT (filho direto de <Object>),
+    # nao os <Properties> aninhados das Parts. So e serializada quando False; ausente => True.
+    param([System.Xml.XmlElement]$ObjectNode)
+
+    $propsNode = $ObjectNode.SelectSingleNode("./Properties")
+    if ($null -eq $propsNode) { return $true }
+
+    foreach ($p in $propsNode.SelectNodes("./Property")) {
+        $nameNode = $p.SelectSingleNode("./Name")
+        if ($null -ne $nameNode -and $nameNode.InnerText -eq "GenerateObject") {
+            $valNode = $p.SelectSingleNode("./Value")
+            if ($null -ne $valNode -and $valNode.InnerText -eq "False") { return $false }
+        }
+    }
+    return $true
+}
+
+function Test-OrphanWwpScreenCode {
+    # Gate D (confirmado-import, GX18U13 + WorkWithPlus_Web 16.0.3.1): Transaction com
+    # GenerateObject=False nao gera tela; carregar codigo de tela WorkWithPlus DVelop nas
+    # partes Events/Rules — Call("LoadWWPContext") / Call("<Trn>WW") — referencia runtime
+    # inexistente e o import falha com src0246/src0294. Sinal causal = a chamada orfa;
+    # Apply:<wwp-guid>=True e o marcador "DVelop Work With Plus" sao corroborantes.
+    # NAO confundir com Work With nativo (Apply:78cecefe), legitimo e quase universal.
+    param(
+        [System.Xml.XmlElement]$ObjectNode,
+        [string]$ObjectName
+    )
+
+    $findings = [System.Collections.Generic.List[object]]::new()
+    if (Get-ObjectGeneratesProgram -ObjectNode $ObjectNode) { return $findings }
+
+    $appliesWwp = $false
+    $propsNode = $ObjectNode.SelectSingleNode("./Properties")
+    if ($null -ne $propsNode) {
+        foreach ($p in $propsNode.SelectNodes("./Property")) {
+            $nameNode = $p.SelectSingleNode("./Name")
+            if ($null -ne $nameNode -and $nameNode.InnerText -eq "Apply:$WorkWithPlusInstanceTypeGuid") {
+                $valNode = $p.SelectSingleNode("./Value")
+                if ($null -ne $valNode -and $valNode.InnerText -eq "True") { $appliesWwp = $true }
+            }
+        }
+    }
+
+    foreach ($partNode in $ObjectNode.SelectNodes("./Part[Source]")) {
+        $srcNode = $partNode.SelectSingleNode("./Source")
+        if ($null -eq $srcNode) { continue }
+        $srcText = $srcNode.InnerText
+        if ([string]::IsNullOrWhiteSpace($srcText)) { continue }
+
+        if ($srcText -match '(?im)^\s*Event\s+[A-Za-z_]') { $partLabel = "Events" } else { $partLabel = "Rules" }
+
+        $lines = $srcText -split "`r?`n"
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            $lineNc = [regex]::Replace($lines[$i], '//.*$', '')
+            $m = [regex]::Match($lineNc, '(?i)\bCall\s*\(\s*"(LoadWWPContext|[A-Za-z_][A-Za-z0-9_]*WW)"')
+            if (-not $m.Success) { continue }
+
+            $callee = $m.Groups[1].Value
+            if ($appliesWwp) { $corro = " Corroborado por Apply:WorkWithPlus=True." } else { $corro = "" }
+            $msg = "Transaction '$ObjectName': GenerateObject=False, mas a parte $partLabel chama '$callee' (codigo de tela WorkWithPlus DVelop). A tela desta Transaction nao e gerada; o import falha com src0246/src0294. Para pacote estrutural, remover Events/Rules e o Apply WorkWithPlus, e nao levar PatternInstance/derivados.$corro"
+            $findings.Add((New-Finding -Severity "fail" -Code "wwp-screen-code-on-non-generated-transaction" `
+                -Message $msg -LineNumber ($i + 1) -LinePreview (Get-LinePreview -Line $lines[$i]))) | Out-Null
+        }
+    }
+
+    return $findings
 }
 
 function Build-ClassificationData {
@@ -304,6 +379,10 @@ foreach ($trnObj in $trnNodes) {
     $clsData = Build-ClassificationData -ObjectNode $trnObj -XmlDoc $xmlDoc
 
     foreach ($f in (Check-LevelIntegrity -ObjectNode $trnObj -ObjectName $objName)) {
+        $allFindings.Add($f) | Out-Null
+    }
+
+    foreach ($f in (Test-OrphanWwpScreenCode -ObjectNode $trnObj -ObjectName $objName)) {
         $allFindings.Add($f) | Out-Null
     }
 

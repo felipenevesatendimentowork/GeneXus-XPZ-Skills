@@ -386,3 +386,31 @@ O design foi fechado com o usuario em quatro pontos (dinamico via expressao; nom
 ### Rastreabilidade
 
 - Commit: `c33f82f` (`Adiciona catalogo e rastreabilidade de classes CSS ao indice KbIntelligence`)
+
+## Gate de coerencia para Transaction `GenerateObject=False` carregando bagagem WorkWithPlus
+
+**Importancia original:** média
+**Status:** concluida (Fase 1) em 2026-06-10
+
+### Origem
+
+Relato de validação de outro agente (KB CPJAPP, frente NFS-e, 2026-06-10), registrado no `999-ideias-pendentes.md`. A entrada do `999` permanece com a Fase 2 (nível de pacote) como subfrente residual aberta.
+
+### Problema concreto
+
+Uma Transaction com `GenerateObject=False` (estrutura/tabela ou Business Component, sem geração da própria tela) empacotada ainda carregando código de tela gerado pelo WorkWithPlus DVelop nas partes `Events`/`Rules` — `Call("LoadWWPContext")`, `Call("<Trn>WW")` — referencia runtime inexistente. O import falha com `src0246`/`src0294` (confirmado-import, GeneXus 18 U13 + WorkWithPlus_Web 16.0.3.1). O gate de coerência de Transaction não detectava isso.
+
+### Implementacao
+
+- `scripts/Test-GeneXusTransactionCoherence.ps1`: nova função `Test-OrphanWwpScreenCode` + auxiliar `Get-ObjectGeneratesProgram` (lê `GenerateObject` do `<Properties>` de nível Object — leitura que o gate não fazia, via XPath `./Properties`). Gatilho `fail` (`wwp-screen-code-on-non-generated-transaction`): `GenerateObject=False` + chamada de tela WWP órfã (`Call("LoadWWPContext")`/`Call("<Trn>WW")`) nas partes Events/Rules. `Apply:<wwp-guid>` e o marcador "DVelop Work With Plus" são corroborantes, não disparadores. GUID WWP `07135890-...` (catálogo `gx-object-type-catalog.json`, `WorkWithPlusInstance`); Work With nativo (`78cecefe`) explicitamente fora de escopo. Early-return em `GenerateObject=True` → zero efeito no acervo atual.
+- `scripts/Test-GeneXusTransactionCoherenceSelfTest.ps1`: novo self-test (positivo + 2 negativos), sentinela `OK: Test-GeneXusTransactionCoherenceSelfTest.ps1`.
+- `xpz-builder/responsibilities-by-type/transaction.md`: linha no Catálogo 3 (`src0246`/`src0294`), item de checklist e nota no gate relacionado.
+- `xpz-builder/wwp-packaging.md`: seção distinguindo este gap do gap inverso (derivados faltando) + nota do pré-requisito de Theme (condição de ambiente, fora do gate).
+
+### Decisao final
+
+Desenho D1-D4 revisado por painel multi-modelo (deepseek-v4-pro, glm-5.1, minimax-m3 via opencode) + subagente Opus. A divergência foi decidida pelo usuário a favor da posição do Opus: o `fail` amarra-se ao **sinal causal** (código órfão em Events/Rules), não à mera presença de `Apply:WWP` — que pode ser legítimo num BC com WW de listagem. O achado empírico do Opus (o acervo FabricaBrasil usa Work With **nativo**, `Apply:78cecefe` em 182/183 Transactions, não DVelop) evitou um falso positivo em massa. Fase 2 (correlação de pacote `PatternInstance`/derivados ↔ Transaction) adiada como subfrente no `999`.
+
+### Rastreabilidade
+
+- Commit: `este commit` (`Adiciona gate de coerencia para Transaction GenerateObject=False com bagagem WorkWithPlus`)
