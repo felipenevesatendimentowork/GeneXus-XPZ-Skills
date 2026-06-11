@@ -295,7 +295,7 @@ Reference files and when to load them:
 9-TWS. Transaction Coherence preflight gate — run before any packaging when the batch contains a `Transaction`:
    - Run `& ..\scripts\Test-GeneXusTransactionCoherence.ps1 -InputPath <arquivo> -AsJson` for each Transaction XML in the batch
    - `not-applicable` (object is not a Transaction or no Transaction found) → proceed normally
-   - `fail` → **ABORT**: correct the structural issue (missing key in Level, DescriptionAttribute not found in Level) before packaging
+   - `fail` → **ABORT**: correct the structural issue (missing key in Level, DescriptionAttribute not found in Level, or WorkWithPlus DVelop screen code — `Call("LoadWWPContext")`/`Call("<Trn>WW")` — carried by a `GenerateObject=False` Transaction, finding `wwp-screen-code-on-non-generated-transaction`; see `responsibilities-by-type/transaction.md`) before packaging
    - `warn` → keep packaging blocked; each flagged finding must be reviewed and either corrected or explicitly justified before proceeding; accepted justifications must be recorded in the closing declaration
    - `pass` → proceed to next gate
 9-TXW. Transaction Writability gate — run before any packaging when the batch contains a `Transaction` whose delta involves `Rules` or `Events` with attribute assignments:
