@@ -1169,6 +1169,8 @@ Forçar isso para dentro das skills XPZ exigiria ponto de extensão por KB (list
 
 **Não reavaliar** salvo evidência de que existe um mecanismo de detecção genérico (independente de vocabulário específico de KB) para distinguir acento perdido por defeito de acento ausente por intenção — sem o que o falso positivo torna o gate inutilizável.
 
+**Nota 2026-06-11 — não confundir com o medidor interno do repositório.** Nesta data foi criado `scripts/Measure-PtBrAccentDegradation.ps1` (inventariado no `09`; baseline em `999-ideias-pendentes.md`), que mede acentuação degradada nos `.md`/`.ps1` **do próprio repositório de skills**. Não reabre este descarte: o corpus dele é único e conhecido (o repo), com lista curada fixa de palavras inequívocas mais supressão de código/identificador — não é o gate por-KB sobre payload de objeto que esta entrada rejeitou, nem o mecanismo genérico independente de vocabulário de KB que o parágrafo acima exigiria. São escopos distintos que coexistem.
+
 ## Encadeamento obrigatório SpecifyGenerate → BuildAll como fluxo padrão
 
 **Origem:** avaliação de prompt externo em 2026-05-11.

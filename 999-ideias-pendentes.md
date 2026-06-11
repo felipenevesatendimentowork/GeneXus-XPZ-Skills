@@ -1176,6 +1176,8 @@ Achados que mudam o enquadramento:
 
 O **mapa cirúrgico** (`arquivo:linha:palavra`) é gerado em `work/ptbr-accent-map.{md,json}` (git-ignored, transitório), regenerável a qualquer momento pelo detector; a sessão de correção parte dele.
 
+> **Distinção do `998`:** o `998-ideias-descartadas-e-porque.md` descartou um *gate por-KB sobre payload de objeto* (e-mail/HTML), que dependeria de vocabulário calibrado por KB. Este medidor é outra coisa — *auto-QA das próprias docs do repositório de skills*, corpus único e conhecido, lista curada fixa mais supressão de código —, por isso não reabre aquele descarte.
+
 ### Direção técnica proposta
 
 **Correção manual contextual, não substituição cega por regex.** Algumas palavras têm forma válida com ou sem acento:
