@@ -656,6 +656,15 @@ $script:PathEnrichment  = [ordered]@{
 }
 $script:WatcherContext  = New-GeneXusMsBuildWatcherContext -StartWatcherRequested $StartWatcher.IsPresent
 $script:DeploymentEnvironmentContext = $null
+# Bucket de sinais carregados adiante para os caminhos de excecao (fallback de
+# serializacao e recovery externo). Preenchido durante o caminho normal conforme
+# cada sinal e calculado. Default null (nao "0"/"false") para nao fingir
+# "zero erros" / "sem reorg" quando a falha estourou antes do calculo: null =
+# "nao chegou a ser computado". Lido pelos objetos enxutos sem recomputar.
+$script:BuildSignals = [ordered]@{
+    ReorgDetected = $null
+    ErrorCount    = $null
+}
 $confirmReorgMode       = $null
 $confirmWideRebuildMode = $null
 $confirmCostlyBuildOptionsMode = $null
@@ -1706,6 +1715,7 @@ try {
     # Detecta reorg pelo conteúdo do stdout/stderr (padrão GeneXus: "reorganization", "reorganizacao")
     $combinedOutput = $stdOutText + $stdErrText
     $reorgDetected  = [bool]($combinedOutput -match '(?i)reorgan')
+    $script:BuildSignals.ReorgDetected = $reorgDetected
 
     # Detecta falha de SetActiveVersion (versão informada não existe na KB)
     $setVersionFailed = [bool]($stdOutText -match 'Set Active Version falhou')
@@ -1874,6 +1884,11 @@ try {
             Add-WarningMessage -Message ('Falha ao classificar sinais build-all para Categoria B: {0}' -f $_.Exception.Message)
         }
     }
+
+    # Carrega a contagem canonica de erros adiante para os caminhos de excecao. Se a
+    # analise abortou antes daqui, ErrorCount permanece null (parcial honesto). Se
+    # chegou aqui, este 0/N e o mesmo valor que o caminho feliz reportaria.
+    $script:BuildSignals.ErrorCount = @($buildErrors).Count
 
     $msBuildCategoryBBlocked = $false
     $operationalSubStateBuild = $null
@@ -2135,6 +2150,7 @@ try {
             postProcessingFailed = $true
             postProcessingError  = $postProcessingError
             stage                = 'build-all'
+            buildSignals         = $script:BuildSignals
             artifacts            = [ordered]@{
                 MsBuildStdoutLogPath = $stdOutPath
                 MsBuildStderrLogPath = $stdErrPath
@@ -2142,7 +2158,7 @@ try {
             }
             watcherContext       = $script:WatcherContext
             timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
-            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria.'
+            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria. buildSignals carrega sinais parciais (reorg/erros) capturados antes da degradacao; campo null = nao computado.'
         }
         try {
             $json = $fallback | ConvertTo-Json -Depth 3
@@ -2194,6 +2210,7 @@ catch {
                 BuildAllDone = $recoveryBuildAllDone
                 MsBuildExitCode = $msBuildExitCode
             }
+            buildSignals         = $script:BuildSignals
             resolvedPaths        = [ordered]@{
                 GeneXusDir       = (Get-FullPathSafe -PathValue $resolvedGeneXusDir)
                 MsBuildPath      = (Get-FullPathSafe -PathValue $resolvedMsBuildPath)
@@ -2207,7 +2224,7 @@ catch {
             }
             watcherContext       = $script:WatcherContext
             timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
-            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria.'
+            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria. buildSignals carrega sinais parciais (reorg/erros) capturados antes da degradacao; campo null = nao computado.'
         }
         try {
             $recoveryJson = ConvertTo-JsonText -InputObject $recovery
