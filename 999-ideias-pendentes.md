@@ -1258,6 +1258,19 @@ Mesma sessão. Aplicador **tokenizer-based** (tokens `Comment` do PowerShell, of
 
 Resíduo medido após esta etapa (tudo correto-a-permanecer): `ps1` 66 inequívocas + 52 ambíguas = self-test intacto (~36) + 18 conteúdo de **string** (mensagens/fixtures/doc gerada, falso-positivo do detector pelo `#`) + citações preservadas de Measure/Repair + singular/demonstrativo. **Dívida remanescente:** a cópula geral `e/é` em toda a base, e os textos pt-BR dentro de **strings** de `.ps1` (ex.: mensagens `-Message "...nao..."`, doc gerada por `generate-kb-*`) — fora do escopo "comentários" desta frente.
 
+### Frente derivada — detector de `e/é` por molduras de alta precisão (proposta 2026-06-11)
+
+**Origem:** pergunta do usuário ao fim da frente de acentuação — vale uma ferramenta que um agente rode a qualquer tempo para conferir erros que **mudam o sentido**, em especial `e`↔`é`? O detector `Measure-PtBrAccentDegradation.ps1` já sinaliza `esta/tem/vem/so/numero` + formas verbais (teto solto), mas **não** mede `e/é`: a conjunção «e» é válida e ubíqua, então uma lista simples geraria falso-positivo em massa (motivo documentado na `ptbr-accent-wordlist.json`).
+
+**Ideia:** detector consultivo dedicado que cobre só o **subconjunto determinístico** onde «e» é quase certamente «é» — as **molduras de alta precisão** já validadas a mão na frente da raiz: `não e`→`não é`, `qual e`→`qual é`, `(esta|este|esse|essa|isso|isto) e`→`… é`, `e:` em fim de oração, e análogas a calibrar. Pega o mais perigoso com ruído baixo; **não** cobre a cópula geral `<sujeito> e <predicado>` (essa permanece dívida que exige julgamento humano/LLM). Cobertura **parcial e honesta** por construção.
+
+**Decisões de design em aberto:**
+- Ferramenta avulsa (`Measure-`/`Test-` irmão, com self-test e mapa em `work/`) **vs.** gate consultivo integrado ao `Invoke-PrePushMechanicalChecks.ps1`. Se virar gate, exige paridade em `13` (lista de gates do orquestrador), `09` e possivelmente `08`.
+- Aplicador opcional (corrigir as molduras) ou só detector (sinalizar para revisão).
+- Calibração das molduras contra o corpus real (medir falso-positivo antes de promover a gate — falso-positivo em gate destrói a confiança).
+
+**Por que ficou para frente dedicada (e não no push da acentuação):** a frente de acentuação não usou `e/é` (dívida assumida); construir antes do push invalidaria o painel reforçado já convergido e misturaria escopos. Ferramenta ortogonal → frente própria, idealmente em sessão de contexto limpo. Ver a dívida no parágrafo acima.
+
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 
 **Importância:** média
