@@ -9,22 +9,22 @@
     e scripts-maintenance/), parse Python sem bytecode a scripts/Test-PyScriptsParse.ps1
     e classifica arquivos do diff para insumo da fase semantica do agente.
 
-    Nao substitui busca de coerencia cruzada, regra em camadas de skills longas
-    nem relatorio final ao usuario — ver 13-revisao-pre-push.md (AGENTS.md aponta para esse arquivo).
-    Emite avisos informativos se a branch nao for main ou se a working tree
-    tiver alteracoes nao commitadas fora do intervalo BaseRef..HEAD. Com
+    Não substitui busca de coerência cruzada, regra em camadas de skills longas
+    nem relatório final ao usuário — ver 13-revisao-pre-push.md (AGENTS.md aponta para esse arquivo).
+    Emite avisos informativos se a branch não for main ou se a working tree
+    tiver alteracoes não commitadas fora do intervalo BaseRef..HEAD. Com
     commitsBehind > 0, define pushReadiness=blocked e marca o diff do intervalo
     como apenas diagnostico (sem falhar parse/whitespace).
 
 .PARAMETER RootPath
-    Raiz do repositorio. Default: pai de scripts/.
+    Raiz do repositório. Default: pai de scripts/.
 
 .PARAMETER BaseRef
-    Referencia unica do intervalo analisado: commits pendentes, contagem,
+    Referencia única do intervalo analisado: commits pendentes, contagem,
     arquivos alterados e diff --check usam sempre BaseRef..HEAD. Default:
-    origin/main (copia local do ultimo fetch; desde o ultimo push usual em main).
-    Se a ref nao existir, o script falha com mensagem clara (sem fallback
-    automatico para main). Com a ref existente mas desatualizada em relacao ao
+    origin/main (copia local do último fetch; desde o último push usual em main).
+    Se a ref não existir, o script falha com mensagem clara (sem fallback
+    automático para main). Com a ref existente mas desatualizada em relacao ao
     remoto, o intervalo pode superestimar commits pendentes; o agente deve
     executar git fetch origin antes da rotina quando precisar comparar contra
     o remoto atual (ver AGENTS.md). O upstream da branch so aparece no JSON
@@ -702,9 +702,9 @@ foreach ($gateEnumFinding in @($gateEnumParityGate.findings)) {
     )
 }
 
-# Segregacao das candidatas NAO-PROSA do gate de propagacao: sao as que nao
+# Segregacao das candidatas NAO-PROSA do gate de propagacao: são as que não
 # admitem justificativa coletiva (13: disciplina de confronto por classe) e
-# exigem veredito item a item. Bloco proeminente para o revisor nao as diluir
+# exigem veredito item a item. Bloco proeminente para o revisor não as diluir
 # entre os demais avisos.
 $nonProseVerdictRequired = [System.Collections.Generic.List[object]]::new()
 foreach ($ntFinding in @($newTokenPropagationGate.findings)) {

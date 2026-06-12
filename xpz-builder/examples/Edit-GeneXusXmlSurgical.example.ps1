@@ -38,7 +38,7 @@ $anchorRule = 'Default(CampoExemplo,procExemplo());'
     -DryRun `
     -AsJson
 
-# 2) Apply real (bump automatico de lastUpdate; baseline = acervo oficial)
+# 2) Apply real (bump automático de lastUpdate; baseline = acervo oficial)
 & $enginePath `
     -InputPath $workingXml `
     -Anchor $anchorRule `
@@ -47,7 +47,7 @@ $anchorRule = 'Default(CampoExemplo,procExemplo());'
     -LastUpdateBaselinePath $acervoXml `
     -AsJson
 
-# 3) Inserir apos ancora sem remover o trecho ancora (InsertAfter)
+# 3) Inserir após ancora sem remover o trecho ancora (InsertAfter)
 & $enginePath `
     -InputPath $workingXml `
     -Anchor $anchorRule `

@@ -13,18 +13,18 @@
       - ClaudeCode -> ~/.claude/CLAUDE.md (segue linhas '@<caminho>')
       - OpenCode   -> ~/.config/opencode/AGENTS.md + instructions[] de opencode.json(c)
       - Cursor     -> agentsPath de ~/.cursor/xpz-global-instructions-mcp/config.json
-    Referencias '@<caminho>.md' sao seguidas recursivamente (com protecao a loop).
+    Referencias '@<caminho>.md' são seguidas recursivamente (com protecao a loop).
 
     Camada 2 (sinal conservador): aplica as ancoras do contrato
     scripts/xpz-global-instructions-topics.psd1. Por topico: QUALQUER ancora que
     case -> "presente"; nenhuma -> "nao_detectado" (NUNCA "ausente"). nao_detectado
-    significa "o agente revisa", nao "falta, pode duplicar".
+    significa "o agente revisa", não "falta, pode duplicar".
 
-    NAO escreve nada. A oferta e a gravacao de correcoes seguem manuais, sob
-    confirmacao explicita do usuario (passo 9 do SKILL.md).
+    NÃO escreve nada. A oferta e a gravacao de correcoes seguem manuais, sob
+    confirmacao explicita do usuário (passo 9 do SKILL.md).
 
 .OUTPUTS
-    Texto legivel por padrao; objeto JSON com -AsJson. "overall" e os "status" sao
+    Texto legivel por padrão; objeto JSON com -AsJson. "overall" e os "status" são
     destinados a interpretacao por agente.
 #>
 

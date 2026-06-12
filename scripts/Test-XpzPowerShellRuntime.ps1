@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Verifica se o runtime PowerShell minimo da base XPZ esta disponivel.
+    Verifica se o runtime PowerShell mínimo da base XPZ esta disponível.
 
 .DESCRIPTION
     Gate consultivo para pastas paralelas de KB. Ele deve ser chamado antes
     dos demais wrappers locais para garantir que `pwsh` existe e atende ao
-    contrato minimo da base: PowerShell 7.4 LTS ou superior.
+    contrato mínimo da base: PowerShell 7.4 LTS ou superior.
 #>
 
 [CmdletBinding()]

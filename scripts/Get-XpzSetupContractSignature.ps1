@@ -6,7 +6,7 @@
 .DESCRIPTION
     A assinatura cobre apenas a superficie metodologica de xpz-kb-parallel-setup
     declarada em xpz-kb-parallel-setup/setup-contract.manifest.json.
-    Conteudo textual e normalizado para LF antes do hash para evitar diferenca
+    Conteúdo textual e normalizado para LF antes do hash para evitar diferenca
     artificial entre checkouts Windows e Unix.
 #>
 

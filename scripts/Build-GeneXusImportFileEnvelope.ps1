@@ -5,11 +5,11 @@
     Monta um import_file.xml a partir de XMLs de objeto e um pacote template.
 
 .DESCRIPTION
-    Monta o envelope de importacao a partir de XMLs declarados e de um template
-    comparavel. Executa o gate canonico de envelope por padrao; para Panel, usa
+    Monta o envelope de importação a partir de XMLs declarados e de um template
+    comparavel. Executa o gate canonico de envelope por padrão; para Panel, usa
     TemplatePackagePath como referencia comparavel e propaga no resultado
     information para panel-level-layout-confirmed, ou warnings quando o par
-    level/layout nao puder ser confirmado.
+    level/layout não puder ser confirmado.
 
 .PARAMETER TemplatePackagePath
     Pacote XML ou XPZ comparavel usado como template do envelope e, para Panel,
@@ -405,14 +405,14 @@ function Read-TemplatePackage {
     throw "TemplatePackage XPZ nao contem XML com raiz 'ExportFile': $Path"
 }
 
-# 1 - validacao de entradas
+# 1 - validação de entradas
 if (-not $ObjectXmlPaths -or $ObjectXmlPaths.Count -eq 0) {
     throw "ObjectXmlPaths vazio: nenhum XML de objeto informado."
 }
 
 # 1a - gate de colisao de pacote (antes de qualquer escrita)
 # Garante reserva determinista do _nn: se houver colisao, o script aborta sem
-# materializar nada. Bypass intencional via -Force, alinhado a semantica ja
+# materializar nada. Bypass intencional via -Force, alinhado a semantica já
 # existente de sobrescrita explicita.
 if (-not $Force) {
     $collisionScript = Join-Path $PSScriptRoot "Test-XpzPackageCollision.ps1"
@@ -474,7 +474,7 @@ foreach ($required in @("KMW", "Source")) {
     }
 }
 
-# 2 - validacao previa dos XMLs de objeto (cada um deve carregar isoladamente)
+# 2 - validação previa dos XMLs de objeto (cada um deve carregar isoladamente)
 $objectDocs = @()
 foreach ($path in $ObjectXmlPaths) {
     Assert-NotReferenceLikePackageInput -Path $path -Role "ObjectXml"
@@ -539,7 +539,7 @@ if ($attributeDocs.Count -gt 0) {
     $topLevelAttrSource = "template"
 }
 
-# 3d - Dependencies clonado (ou vazio se template nao tiver)
+# 3d - Dependencies clonado (ou vazio se template não tiver)
 if ($templateBlocks.ContainsKey("Dependencies")) {
     $imported = $outDoc.ImportNode($templateBlocks["Dependencies"], $true)
     [void]$newRoot.AppendChild($imported)
@@ -548,7 +548,7 @@ if ($templateBlocks.ContainsKey("Dependencies")) {
     [void]$newRoot.AppendChild($depElement)
 }
 
-# 3e - ObjectsIdentityMapping clonado (warn-only quando template nao tem)
+# 3e - ObjectsIdentityMapping clonado (warn-only quando template não tem)
 if ($templateBlocks.ContainsKey("ObjectsIdentityMapping")) {
     $imported = $outDoc.ImportNode($templateBlocks["ObjectsIdentityMapping"], $true)
     [void]$newRoot.AppendChild($imported)

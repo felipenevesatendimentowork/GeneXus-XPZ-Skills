@@ -8,8 +8,8 @@ Delega ao motor compartilhado Test-XpzSetupFreshness.ps1 com os caminhos fixos d
 Retorna GATE_ONLY quando a assinatura de contrato auditada em kb-source-metadata.md coincide
 com a assinatura atual de xpz-kb-parallel-setup; retorna AUDIT_REQUIRED com motivo nos demais casos.
 
-Usado como primeira acao obrigatoria da PRE-CONDICAO em xpz-kb-parallel-setup ao ser invocado
-pelo gatilho global (quando o usuario nao pede explicitamente setup, atualizacao ou auditoria).
+Usado como primeira ação obrigatória da PRE-CONDICAO em xpz-kb-parallel-setup ao ser invocado
+pelo gatilho global (quando o usuário não pede explicitamente setup, atualizacao ou auditoria).
 
 .EXAMPLE
 .\Test-KbSetupFreshness.ps1

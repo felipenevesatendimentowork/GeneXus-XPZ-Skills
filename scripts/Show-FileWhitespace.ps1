@@ -6,7 +6,7 @@
 .DESCRIPTION
     Helper de leitura pura para inspecao cirurgica de arquivos em que tabs,
     espacos e finais de linha precisam ficar visiveis antes de uma edicao
-    literal. Nao depende de GeneXus instalado nem de KB aberta.
+    literal. Não depende de GeneXus instalado nem de KB aberta.
 
 .PARAMETER Path
     Caminho do arquivo a inspecionar.

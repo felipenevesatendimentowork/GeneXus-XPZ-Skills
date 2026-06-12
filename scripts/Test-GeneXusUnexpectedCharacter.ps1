@@ -6,17 +6,17 @@
 
 .DESCRIPTION
     Varre linhas adicionadas (ou modificadas) no intervalo BaseRef..HEAD em
-    arquivos .md e .ps1 (excluindo historico/), procurando caracteres que nao
+    arquivos .md e .ps1 (excluindo historico/), procurando caracteres que não
     pertencem aos alfabetos de pt-BR, es e en (CJK, Cirilico, Arabic, etc.).
-    Para .md, linhas dentro de code blocks cercados (``` ... ```) sao ignoradas
+    Para .md, linhas dentro de code blocks cercados (``` ... ```) são ignoradas
     com base no arquivo atual completo, preservando o numero real da linha no
     arquivo novo.
 
     O gate e consultivo: emite findings com severity='warn' e sempre exita 0.
-    O agente revisa os findings e decide se sao falsos positivos.
+    O agente revisa os findings e decide se são falsos positivos.
 
 .PARAMETER RootPath
-    Raiz do repositorio. Default: pai de scripts/.
+    Raiz do repositório. Default: pai de scripts/.
 
 .PARAMETER BaseRef
     Referencia base do intervalo (default: origin/main).

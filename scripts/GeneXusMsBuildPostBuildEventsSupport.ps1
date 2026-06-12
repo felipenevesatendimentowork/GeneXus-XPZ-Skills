@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Prefere a janela delimitada pelo marcador "Executando eventos pos-construcao"
-    e pelo proximo separador "==========". Mantem a regex historica como fallback
+    e pelo próximo separador "==========". Mantem a regex histórica como fallback
     para logs antigos ou variantes sem marcador de fase.
 #>
 
@@ -112,7 +112,7 @@ function Get-GeneXusMsBuildPostBuildEventLines {
 function Test-GeneXusPostBuildEventInert {
     param([AllowNull()][string]$Line)
 
-    # Linha comentada (REM) ja vem prefixada por Convert-GeneXusPostBuildEventLine; nao executa.
+    # Linha comentada (REM) já vem prefixada por Convert-GeneXusPostBuildEventLine; não executa.
     if ([string]::IsNullOrWhiteSpace($Line)) {
         return $true
     }
@@ -123,7 +123,7 @@ function Get-GeneXusPostBuildEventNormalizedHash {
     param([Parameter(Mandatory = $true)][string]$Line)
 
     # Normalizacao tolerante a variacao inocua: trim, colapso de espacos internos, lowercase
-    # (paths e comandos no Windows sao case-insensitive). SHA-256 hex, a prova de delimitador
+    # (paths e comandos no Windows são case-insensitive). SHA-256 hex, a prova de delimitador
     # para caber no encoding plano `env=h1,h2; env=h3` do kb-source-metadata.md.
     $normalized = (($Line.Trim()) -replace '\s+', ' ').ToLowerInvariant()
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
@@ -134,9 +134,9 @@ function Get-GeneXusPostBuildEventNormalizedHash {
 function Test-GeneXusPostBuildEventBenignBySound {
     param([AllowNull()][string]$Line)
 
-    # Rede de seguranca (fallback) quando o environment ainda nao tem eventos registrados:
-    # reconhece tocadores de som como benignos. Exige token especifico de som — nao um
-    # `start` generico — para nao confiar em comando arbitrario disfarcado.
+    # Rede de seguranca (fallback) quando o environment ainda não tem eventos registrados:
+    # reconhece tocadores de som como benignos. Exige token especifico de som — não um
+    # `start` genérico — para não confiar em comando arbitrario disfarcado.
     if ([string]::IsNullOrWhiteSpace($Line)) {
         return $false
     }

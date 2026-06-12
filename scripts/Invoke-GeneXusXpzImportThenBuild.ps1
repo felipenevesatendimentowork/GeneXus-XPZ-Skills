@@ -2,16 +2,16 @@
 
 <#
 .SYNOPSIS
-Executa importacao real de XPZ e, somente se apta, BuildAll pos-import.
+Executa importação real de XPZ e, somente se apta, BuildAll pos-import.
 
 .DESCRIPTION
 Wrapper integrador simples para reduzir a rodada operacional import -> build.
 O script chama Invoke-GeneXusXpzImport.ps1 em processo PowerShell separado,
-le o JSON de importacao e so chama Invoke-GeneXusKbBuildAll.ps1 quando o
+le o JSON de importação e so chama Invoke-GeneXusKbBuildAll.ps1 quando o
 import esta apto para build.
 
-Se a importacao falhar, bloquear, produzir Categoria B ou nao gerar JSON
-interpretavel, o build nao e executado. A saida final e um JSON unico com
+Se a importação falhar, bloquear, produzir Categoria B ou não gerar JSON
+interpretavel, o build não e executado. A saida final e um JSON único com
 importJson, buildJson, roundtripStatus e buildSkippedReason.
 #>
 

@@ -37,18 +37,18 @@ Nome opcional da versão a posicionar antes da verificação.
 
 .PARAMETER EnvironmentName
 Nome opcional do Environment a posicionar antes da verificação. Em KB com kb_environment_count
-maior que 1 em kb-source-metadata.md, e obrigatorio (direto ou via deployment_environment_name
+maior que 1 em kb-source-metadata.md, e obrigatório (direto ou via deployment_environment_name
 gravado pelo xpz-kb-parallel-setup).
 
 .PARAMETER ParallelKbRoot
 Raiz da pasta paralela da KB para resolver kb-source-metadata.md sem inventario em runtime
-(quando o gate de deploy bin estiver ativo, tambem le kb_environment_web_dirs).
+(quando o gate de deploy bin estiver ativo, também le kb_environment_web_dirs).
 
 .PARAMETER KbMetadataPath
 Caminho explicito para kb-source-metadata.md; prevalece sobre -ParallelKbRoot.
 
 .PARAMETER PostImportDeployValidation
-Quando presente, ativa gate de validacao deploy pos-import: checagem do web\bin resolvido por
+Quando presente, ativa gate de validação deploy pos-import: checagem do web\bin resolvido por
 kb_environment_web_dirs em kb-source-metadata.md (exit 49 se desatualizado). Metadata sem esse
 mapeamento bloqueia a resolucao (status unknown); reconciliar via xpz-kb-parallel-setup.
 
@@ -92,7 +92,7 @@ não dispensa a confirmação, apenas muda o canal.
 .PARAMETER AllowCostlyBuildOptions
 Switch. Único caminho autorizado para habilitar -DetailedNavigation true sem execução
 acidental. Em modo interativo exige frase exata:
-    entendo que estas opcoes podem ampliar muito o custo do build e aceito executar
+    entendo que estas opções podem ampliar muito o custo do build e aceito executar
 Em modo não-interativo requer -ConfirmCostlyBuildOptions.
 
 .PARAMETER ConfirmCostlyBuildOptions
@@ -508,7 +508,7 @@ function Resolve-BuildStatus {
         }
     }
 
-    # Eventos pos-build: a classificacao (registrado x inesperado x fallback de som) e o
+    # Eventos pos-build: a classificação (registrado x inesperado x fallback de som) e o
     # detalhamento por linha ficam no chamador; aqui chega apenas o veredito agregado em
     # $PostBuildShouldDowngrade, que entra como impedimento somente quando ha evento
     # inesperado/nao reconhecido.
@@ -1348,8 +1348,8 @@ try {
     $postBuildEventLines = @(Get-GeneXusMsBuildPostBuildEventLines -StdOutLines $stdOutNonNoiseLines)
 
     # Classifica os eventos contra o conjunto registrado do environment ativo em
-    # kb-source-metadata.md. Registrado = esperado (informativo); nao registrado = inesperado
-    # (rebaixa). Sem registro, rede de seguranca por padrao de som. So o veredito agregado
+    # kb-source-metadata.md. Registrado = esperado (informativo); não registrado = inesperado
+    # (rebaixa). Sem registro, rede de seguranca por padrão de som. So o veredito agregado
     # entra como impedimento em Resolve-BuildStatus.
     if ($postBuildEventLines.Count -gt 0) {
         $metadataPathForPostBuild = $null
@@ -1387,12 +1387,12 @@ try {
     $buildWarningLines   = @([regex]::Matches($stdOutFiltered, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
                              ForEach-Object { $_.Value.Trim() })
 
-    # Promover warnings pmm00xx (versao de modulo GeneXus) a alertas top-level.
-    # pmm00xx aparecem em buildWarnings mas o usuario nao costuma inspecionar essa
+    # Promover warnings pmm00xx (versão de modulo GeneXus) a alertas top-level.
+    # pmm00xx aparecem em buildWarnings mas o usuário não costuma inspecionar essa
     # lista interna. Surfacing-los em warnings garante visibilidade no resumo do
-    # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versao)
-    # merece texto mais explicito porque sinaliza estado nao trivial (modulo
-    # satelite exige versao MAIS NOVA do modulo principal do que a instalada).
+    # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versão)
+    # merece texto mais explicito porque sinaliza estado não trivial (modulo
+    # satelite exige versão MAIS NOVA do modulo principal do que a instalada).
     foreach ($wLine in $buildWarningLines) {
         if ($wLine -match 'warning\s*:\s*(pmm\d{4}):\s*([^\r\n]+)') {
             $pmmCode = $matches[1]
@@ -1513,9 +1513,9 @@ try {
             $metadataPathDeploy = $script:DeploymentEnvironmentContext['kbSourceMetadataPath']
         }
 
-        # Decide o gate de deploy bin pelo fato (exit 0 + specify e generate concluidos), nao pela
+        # Decide o gate de deploy bin pelo fato (exit 0 + specify e generate concluidos), não pela
         # string de status. Rebaixamentos benignos (sino pos-build, ruido de stderr) mantem
-        # ExitCode 0 e nao devem suprimir a validacao pedida; Category B/reorg/timeout ja derrubam ExitCode.
+        # ExitCode 0 e não devem suprimir a validação pedida; Category B/reorg/timeout já derrubam ExitCode.
         $buildOperationallySucceeded = ($buildStatus.ExitCode -eq 0 -and $specifyDone -and $generateDone)
 
         $script:DeployBinClassification = Invoke-GeneXusKbDeployBinPostBuildClassification `
@@ -1766,7 +1766,7 @@ catch {
             exit 0
         }
         catch {
-            # cair no failure padrao abaixo
+            # cair no failure padrão abaixo
         }
     }
 

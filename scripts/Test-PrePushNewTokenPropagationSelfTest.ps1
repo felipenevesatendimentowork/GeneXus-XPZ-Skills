@@ -4,16 +4,16 @@
     Self-test de Test-PrePushNewTokenPropagation.ps1.
 
 .DESCRIPTION
-    Monta um repositorio git temporario que reproduz a estrutura do gap real
+    Monta um repositório git temporario que reproduz a estrutura do gap real
     (frente de padronizacao JSON XPZ): um motor ganha o alias -ObjectList
     co-localizado com -ObjectNames/-ObjectGuids (transicao no diff), enquanto um
     exemplo continua mencionando o conjunto antigo sem o alias novo. Confirma:
       - caso positivo: a mencao defasada vira candidata (status=warn);
-      - controle negativo: mencao ja propagada nao vira candidata;
-      - declaracao do proprio parametro (.PARAMETER) nao vira candidata;
-      - classificacao de forma (mentionClass): prosa corrida -> 'prose',
-        item de lista de parametros -> 'param-list-item', linha em bloco de
-        codigo cercado -> 'command-example';
+      - controle negativo: mencao já propagada não vira candidata;
+      - declaracao do próprio parâmetro (.PARAMETER) não vira candidata;
+      - classificação de forma (mentionClass): prosa corrida -> 'prose',
+        item de lista de parâmetros -> 'param-list-item', linha em bloco de
+        código cercado -> 'command-example';
       - truncamento ciente de classe: com teto baixo e prosa abundante, a
         prosa e limitada (truncatedProseCount > 0) mas a candidata nao-prosa
         sobrevive ao truncamento.
@@ -72,10 +72,10 @@ if ($null -ne $ObjectGuids -and $ObjectGuids.Count -gt 0) { $usaGuids = $true }
     # Mencao equivalente que ficara defasada (sem ObjectList).
     Write-TempFile -RelativePath 'exemplo.md' -Content "Quando ObjectNames ou ObjectGuids e informado, faz seed do objeto.`n"
 
-    # Controle negativo: mencao ja propagada.
+    # Controle negativo: mencao já propagada.
     Write-TempFile -RelativePath 'ok-doc.md' -Content "Use ObjectList, ObjectNames ou ObjectGuids para selecionar objetos.`n"
 
-    # Mencao defasada em item de lista de parametros (classe param-list-item).
+    # Mencao defasada em item de lista de parâmetros (classe param-list-item).
     $paramListDoc = @'
 Parametros:
 
@@ -83,7 +83,7 @@ Parametros:
 '@
     Write-TempFile -RelativePath 'param-list.md' -Content ($paramListDoc + "`n")
 
-    # Mencao defasada dentro de bloco de codigo cercado (classe command-example).
+    # Mencao defasada dentro de bloco de código cercado (classe command-example).
     $cmdDoc = @'
 Exemplo de comando:
 
@@ -151,7 +151,7 @@ if ($null -ne $ObjectGuids -and $ObjectGuids.Count -gt 0) { $usaGuids = $true }
         throw "motor.ps1 nao deveria gerar candidata (descricao ja propagada; .PARAMETER e declaracao filtrados); candidatas: $($candidatePaths -join ', ')"
     }
 
-    # --- Classificacao de forma (mentionClass) ---
+    # --- Classificação de forma (mentionClass) ---
     $exemploFinding = @($result.findings | Where-Object { $_.path -like 'exemplo.md:*' })[0]
     if ($exemploFinding.mentionClass -ne 'prose') {
         throw "exemplo.md deveria ter mentionClass='prose'; obtido '$($exemploFinding.mentionClass)'"

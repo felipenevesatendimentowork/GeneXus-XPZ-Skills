@@ -178,7 +178,7 @@ function Identify-DominantPattern {
     }
 }
 
-# Validar parametros
+# Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
     throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
 }

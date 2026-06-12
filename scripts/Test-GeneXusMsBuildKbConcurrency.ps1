@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-Verifica se ja existe MSBuild.exe em execucao para a mesma KB GeneXus.
+Verifica se já existe MSBuild.exe em execução para a mesma KB GeneXus.
 
 .DESCRIPTION
 Executa um bloqueio preventivo simples para wrappers MSBuild headless. O script
@@ -11,7 +11,7 @@ lista processos MSBuild.exe, tenta reconciliar cada processo com o arquivo
 solicitada.
 
 Bloqueia apenas quando a mesma KB e confirmada. Processos MSBuild sem projeto
-ou sem KBPath reconciliavel sao reportados como aviso, mas nao bloqueiam.
+ou sem KBPath reconciliavel são reportados como aviso, mas não bloqueiam.
 
 .PARAMETER KbPath
 Caminho da KB GeneXus que o chamador pretende abrir via MSBuild.

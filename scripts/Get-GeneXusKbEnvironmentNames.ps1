@@ -4,15 +4,15 @@
     Inventaria environments GeneXus registrados na KB via MSBuild (somente leitura).
 
 .DESCRIPTION
-    Inventario automatico por scan de pastas da KB nativa foi removido. Informe -CandidateNames
-    com a lista explicita declarada pelo usuario; o script valida cada nome via SetActiveEnvironment
-    headless (nao descobre candidatos por pasta).
+    Inventario automático por scan de pastas da KB nativa foi removido. Informe -CandidateNames
+    com a lista explicita declarada pelo usuário; o script valida cada nome via SetActiveEnvironment
+    headless (não descobre candidatos por pasta).
 
 .PARAMETER KbNativePath
     Caminho da KB nativa GeneXus (ex.: C:\GxModels\FabricaBrasil18).
 
 .PARAMETER WorkingDirectory
-    Diretorio de trabalho para artefatos temporarios e probe MSBuild.
+    Diretório de trabalho para artefatos temporarios e probe MSBuild.
 
 .PARAMETER LogPath
     Caminho do log JSON do probe inicial (opcional).
@@ -24,11 +24,11 @@
     Caminho do MSBuild.exe (opcional — resolvido pelo probe).
 
 .PARAMETER CandidateNames
-    Lista explicita de environments declarados pelo usuario. Obrigatorio. Cada nome e validado
-    via SetActiveEnvironment headless; nao ha scan de pastas da KB nativa.
+    Lista explicita de environments declarados pelo usuário. Obrigatório. Cada nome e validado
+    via SetActiveEnvironment headless; não ha scan de pastas da KB nativa.
 
 .PARAMETER DatabaseUser
-    Usuario de banco para abertura headless (opcional).
+    Usuário de banco para abertura headless (opcional).
 
 .PARAMETER DatabasePassword
     Senha de banco para abertura headless (opcional).

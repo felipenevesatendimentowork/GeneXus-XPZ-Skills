@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Regressao minima do resolvedor de .cs gerado via kb-source-metadata.md.
+    Regressao mínima do resolvedor de .cs gerado via kb-source-metadata.md.
 #>
 
 [CmdletBinding()]

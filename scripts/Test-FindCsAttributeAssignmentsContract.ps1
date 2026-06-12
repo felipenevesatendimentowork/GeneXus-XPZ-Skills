@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Regressao minima do contrato Find-CsAttributeAssignments.ps1.
+    Regressao mínima do contrato Find-CsAttributeAssignments.ps1.
 #>
 
 [CmdletBinding()]

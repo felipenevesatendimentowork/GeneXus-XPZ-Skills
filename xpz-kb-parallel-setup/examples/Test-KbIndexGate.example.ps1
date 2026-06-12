@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Gate de compatibilidade do indice KbIntelligence (estrutura, frescor, inventario e assinatura do extrator).
+Gate de compatibilidade do índice KbIntelligence (estrutura, frescor, inventario e assinatura do extrator).
 
 .DESCRIPTION
 Verifica sequencialmente: estrutura da pasta paralela via Test-*KbStructure.ps1,
@@ -10,15 +10,15 @@ index-metadata (last_index_build_run_at, inventory_validation_status literal OK)
 kb-source-metadata.md com last_xpz_materialization_run_at, comparacao de timestamps
 (last_index_build_run_at >= last_xpz_materialization_run_at) e assinatura do extrator
 (extractor_signature_version/extractor_signature_hash na metadata do SQLite contra
-scripts/Build-KbIntelligenceIndex.py do repositorio ativo via
+scripts/Build-KbIntelligenceIndex.py do repositório ativo via
 scripts/GeneXusKbIntelligenceExtractorContract.ps1 em SharedSkillsRoot).
-Retorna GATE_OK em stdout quando o indice esta apto, ou lanca excecao com BLOCK: <motivo>.
+Retorna GATE_OK em stdout quando o índice esta apto, ou lanca exceção com BLOCK: <motivo>.
 
-Deve ser o unico ponto de execucao do gate da pasta paralela da KB.
+Deve ser o único ponto de execução do gate da pasta paralela da KB.
 Dependencias: Query-KbIntelligence.ps1 e Test-KbStructure.ps1 na mesma pasta.
 
 .PARAMETER QueryWrapperPath
-Caminho opcional para o wrapper local de consulta do indice.
+Caminho opcional para o wrapper local de consulta do índice.
 Quando omitido, usa Query-KbIntelligence.ps1 na mesma pasta deste script.
 
 .PARAMETER StructureWrapperPath

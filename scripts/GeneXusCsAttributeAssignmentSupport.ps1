@@ -43,7 +43,7 @@ function Read-GeneXusCsFileLines {
         return @()
     }
 
-    # Linhas vazias no array quebram o bind de [string[]] em funcoes dot-sourced no mesmo escopo.
+    # Linhas vazias no array quebram o bind de [string[]] em funções dot-sourced no mesmo escopo.
     $normalized = New-Object string[] $rawLines.Length
     for ($i = 0; $i -lt $rawLines.Length; $i++) {
         $lineText = $rawLines[$i]

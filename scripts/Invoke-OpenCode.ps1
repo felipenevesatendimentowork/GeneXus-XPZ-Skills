@@ -7,14 +7,14 @@
     shim npm), alimenta um stdin vazio (sem isso o 'run' trava esperando EOF) e captura
     a saida. Bloqueia ate a resposta (ou ate -TimeoutSec).
 
-    Esta e a invocacao sincrona canonica. Para tarefas longas que voce quer disparar sem
+    Esta e a invocacao sincrona canonica. Para tarefas longas que você quer disparar sem
     bloquear, use Start-OpenCodeJob.ps1.
 
-    CONFIDENCIALIDADE: este script NAO decide para onde o dado pode ir. Antes de enviar
-    payload sensivel (conteudo de pasta paralela de KB) a um modelo, o chamador deve passar
+    CONFIDENCIALIDADE: este script NÃO decide para onde o dado pode ir. Antes de enviar
+    payload sensivel (conteúdo de pasta paralela de KB) a um modelo, o chamador deve passar
     pelo gate Resolve-LlmDelegateAuthorization.ps1, conforme a skill xpz-llm-delegate.
 .PARAMETER Message
-    Prompt a enviar ao agente (posicional, obrigatorio).
+    Prompt a enviar ao agente (posicional, obrigatório).
 .PARAMETER Model
     Modelo no formato provider/modelo (ex: openai/gpt-5.4). Opcional: omitido usa o default
     da config do opencode (~/.config/opencode/opencode.json).
@@ -25,7 +25,7 @@
 .PARAMETER AllText
     Devolve toda a narracao (preambulos de passo + resposta final) concatenada, em vez de so a resposta final.
 .PARAMETER TimeoutSec
-    Tempo maximo de espera pela resposta (default 180s).
+    Tempo máximo de espera pela resposta (default 180s).
 .EXAMPLE
     .\Invoke-OpenCode.ps1 "oi"
 .EXAMPLE
@@ -49,7 +49,7 @@ $ErrorActionPreference = 'Stop'
 # Garante saida UTF-8 (acentos) ao devolver o texto pelo stdout
 try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
 
-# Funcoes compartilhadas de parsing do stream do opencode (dot-source)
+# Funções compartilhadas de parsing do stream do opencode (dot-source)
 . (Join-Path $PSScriptRoot 'OpenCodeStreamSupport.ps1')
 
 # 1) Resolve o .exe real por tras do shim .ps1/.cmd do npm
@@ -88,7 +88,7 @@ try {
     $parts = @(Get-OpenCodeTextParts -Events $events)
     if ($parts.Count -eq 0) { throw "BLOCK: nenhum evento de texto na resposta. Use -Raw para inspecionar." }
 
-    # -AllText: toda a narracao; default: resposta final (ultima mensagem concatenada)
+    # -AllText: toda a narracao; default: resposta final (última mensagem concatenada)
     if ($AllText) { return (Get-OpenCodeAllText -TextParts $parts) }
     return (Get-OpenCodeFinalText -TextParts $parts)
 }

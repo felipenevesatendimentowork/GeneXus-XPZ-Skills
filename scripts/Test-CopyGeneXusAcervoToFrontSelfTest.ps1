@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Self-test minimo para Copy-GeneXusAcervoToFront.ps1.
+    Self-test mínimo para Copy-GeneXusAcervoToFront.ps1.
 #>
 
 Set-StrictMode -Version Latest

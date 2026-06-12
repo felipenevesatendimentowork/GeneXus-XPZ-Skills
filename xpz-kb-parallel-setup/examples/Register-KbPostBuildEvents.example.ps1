@@ -4,12 +4,12 @@
 Wrapper local para registrar os eventos pos-build conhecidos de um environment em kb-source-metadata.md.
 
 .DESCRIPTION
-Delega a scripts/Register-GeneXusKbPostBuildEvents.ps1 no repositorio GeneXus-XPZ-Skills.
+Delega a scripts/Register-GeneXusKbPostBuildEvents.ps1 no repositório GeneXus-XPZ-Skills.
 Le os eventos pos-build observados no JSON de um build (stdoutSignals.postBuildEvents), filtra
 inertes (REM), gera fingerprints SHA-256 e grava kb_environment_post_build_event_hashes + a
-secao-espelho legivel. Acao sensivel (desarma o rebaixamento por evento pos-build daquele
+secao-espelho legivel. Ação sensivel (desarma o rebaixamento por evento pos-build daquele
 environment): exige confirmacao. Sem -ConfirmRegistration, o motor pede frase exata via Read-Host;
-o agente so passa -ConfirmRegistration apos o usuario aprovar explicitamente os eventos listados.
+o agente so passa -ConfirmRegistration após o usuário aprovar explicitamente os eventos listados.
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.

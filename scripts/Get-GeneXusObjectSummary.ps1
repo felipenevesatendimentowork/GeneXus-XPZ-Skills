@@ -14,14 +14,14 @@ Flex/Responsive e depth por tabela), controls com gxControlType resolvido pelo
 catalogo gx-ucw-gxcontroltype-catalog.json, buttons nas duas formas (<action> e
 <ucw> Button desserializado de PATTERN_ELEMENT_CUSTOM_PROPERTIES), eventNames e
 um bloco coverage que declara o que foi lido e os limites conhecidos (controles
-fora do GxMultiForm nao sao cobertos; gxControlType ausente do catalogo e
+fora do GxMultiForm não são cobertos; gxControlType ausente do catalogo e
 reportado em unknownUcwControlTypes, nunca omitido).
 
 .PARAMETER InputPath
 Caminho do XML ou XPZ.
 
 .PARAMETER ObjectName
-Nome do objeto quando InputPath contem pacote com multiplos objetos.
+Nome do objeto quando InputPath contem pacote com múltiplos objetos.
 
 .PARAMETER ObjectType
 Tipo canonico ou GUID de Object/@type.
@@ -346,7 +346,7 @@ function Get-UcwControlTypeCatalog {
 function ConvertFrom-PatternElementProperties {
     param([string]$PatternValue)
 
-    # PatternValue chega ja decodificado pelo parser XML do GxMultiForm (entidades resolvidas).
+    # PatternValue chega já decodificado pelo parser XML do GxMultiForm (entidades resolvidas).
     $props = [ordered]@{}
     $failed = $false
     if ((-not [string]::IsNullOrWhiteSpace($PatternValue)) -and ($PatternValue -match '<Properties\b')) {

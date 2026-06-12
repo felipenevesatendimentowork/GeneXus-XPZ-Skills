@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Bateria minima para Get-GeneXusImportPackageObjectInventory.ps1 (XML e .xpz sintetico).
+    Bateria mínima para Get-GeneXusImportPackageObjectInventory.ps1 (XML e .xpz sintetico).
 #>
 
 Set-StrictMode -Version Latest
@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) 
 
 $scriptDir = $PSScriptRoot
 $inventoryScript = Join-Path $scriptDir 'Get-GeneXusImportPackageObjectInventory.ps1'
-# Export real GeneXus 18: modulos SDK/plataforma entram como PackagedModule, nao Module.
+# Export real GeneXus 18: módulos SDK/plataforma entram como PackagedModule, não Module.
 $packagedModuleGuid = 'c88fffcd-b6f8-0000-8fec-00b5497e2117'
 $procedureGuid = '84a12160-f59b-4ad7-a683-ea4481ac23e9'
 $externalObjectGuid = 'c163e562-42c6-4158-ad83-5b21a14cf30e'

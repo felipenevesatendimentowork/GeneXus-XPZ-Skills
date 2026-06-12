@@ -2,28 +2,28 @@
 <#
 .SYNOPSIS
     Gate consultivo: campo de rastreabilidade (Commit:/PR:) com placeholder
-    generico em arquivo de historico/ tocado pela frente.
+    genérico em arquivo de historico/ tocado pela frente.
 
 .DESCRIPTION
     Apoio mecanico ao checklist de gaps do 13-revisao-pre-push.md. A convencao
-    do repositorio em `historico/IdeiasImplementadas_*.md` e registrar o campo
+    do repositório em `historico/IdeiasImplementadas_*.md` e registrar o campo
     `Commit:` com o hash real (ex.: `- Commit: ``9acc032`` (``mensagem``)`).
-    Um placeholder generico (`este commit`, `este PR`, `TODO`, `TBD`, vazio ou
-    `<...>`) indica rastreabilidade nao preenchida — gap que a busca semantica
-    pode nao flagar espontaneamente.
+    Um placeholder genérico (`este commit`, `este PR`, `TODO`, `TBD`, vazio ou
+    `<...>`) indica rastreabilidade não preenchida — gap que a busca semantica
+    pode não flagar espontaneamente.
 
     Escopo diff: avalia apenas arquivos `historico/**.md` presentes no intervalo
     BaseRef..HEAD (o modo de falha e a frente adicionar a entrada com
     placeholder). Para cada um, le o estado atual e procura linhas de campo
     `Commit:`/`PR:` cujo valor seja placeholder.
 
-    Consultivo: severity 'warn'; findings entram em agentWarnings. A excecao
-    legitima — o commit ainda nao existe e o hash sera preenchido num commit
-    seguinte — e tratada pela propria natureza consultiva: o agente confronta a
-    candidata e confirma "a preencher" ou corrige; o gate nao reprova sozinho.
+    Consultivo: severity 'warn'; findings entram em agentWarnings. A exceção
+    legitima — o commit ainda não existe e o hash sera preenchido num commit
+    seguinte — e tratada pela própria natureza consultiva: o agente confronta a
+    candidata e confirma "a preencher" ou corrige; o gate não reprova sozinho.
 
 .PARAMETER RootPath
-    Raiz do repositorio. Default: pai de scripts/.
+    Raiz do repositório. Default: pai de scripts/.
 
 .PARAMETER BaseRef
     Referencia base do intervalo BaseRef..HEAD. Default: origin/main.
@@ -86,7 +86,7 @@ function Normalize-RepoPath {
 
 # Linha de campo de rastreabilidade: '- Commit: <valor>' ou 'PR: <valor>'.
 $fieldRegex = [regex]::new('(?i)^\s*-?\s*(?<field>Commit|PR)\s*:\s*(?<value>.*)$')
-# Valor placeholder: vazio, palavra generica, ou marcador entre angulos.
+# Valor placeholder: vazio, palavra genérica, ou marcador entre angulos.
 $placeholderWordRegex = [regex]::new('(?i)\b(este\s+commit|este\s+pr|este\s+pull\s+request|todo|tbd|tba|a\s+preencher|preencher\s+depois)\b')
 
 $resolvedRoot = (Resolve-Path -LiteralPath $RootPath).Path

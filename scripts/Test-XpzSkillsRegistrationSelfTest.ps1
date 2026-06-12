@@ -5,8 +5,8 @@
     Self-test deterministico de Test-XpzSkillsRegistration.ps1.
 
 .DESCRIPTION
-    Monta uma raiz de skills e um perfil de usuario falsos em pasta temporaria e
-    confere a classificacao por ferramenta sem rede. Usa junctions (nao exigem
+    Monta uma raiz de skills e um perfil de usuário falsos em pasta temporaria e
+    confere a classificação por ferramenta sem rede. Usa junctions (não exigem
     privilegio de administrador) para simular vinculos. O perfil falso e injetado
     via $env:USERPROFILE durante a invocacao e restaurado ao final.
 
@@ -93,7 +93,7 @@ try {
     New-Junction -LinkDir $claudeSkills -Name 'skill-a' -Target (Join-Path $fakeRepo 'skill-a')
     # quebrada em Claude (target removido depois)
     New-Junction -LinkDir $claudeSkills -Name 'skill-c' -Target $brokenTarget
-    # orfa em Claude (aponta para o repo, mas nao esta no inventario)
+    # orfa em Claude (aponta para o repo, mas não esta no inventario)
     New-Junction -LinkDir $claudeSkills -Name 'skill-removida' -Target (Join-Path $fakeRepo 'skill-removida')
     # OK em Codex
     New-Junction -LinkDir $codexSkills -Name 'skill-b' -Target (Join-Path $fakeRepo 'skill-b')
@@ -138,7 +138,7 @@ try {
         Write-Output ("FAIL: overall esperado REGISTRATION_GAPS, obtido {0}" -f $report.overall)
     }
 
-    # Skills externas gerenciadas: a nexa deve aparecer na secao separada, e o veredito
+    # Skills externas gerenciadas: a nexa deve aparecer na seção separada, e o veredito
     # externo deve ser independente do overall (aqui GAPS, pois a nexa esta ausente).
     $script:cases++
     $nexaEntry = @($report.externalSkills | Where-Object { $_.name -eq 'nexa' })

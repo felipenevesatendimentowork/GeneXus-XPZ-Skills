@@ -9,13 +9,13 @@
     prolongado e encerra quando o processo termina, gravando <GUID>.result.json com a resposta
     final e o custo total.
 
-    Espelha o padrao de Watch-GeneXusMsBuildLog.ps1 do repo GeneXus-XPZ-Skills.
+    Espelha o padrão de Watch-GeneXusMsBuildLog.ps1 do repo GeneXus-XPZ-Skills.
 .PARAMETER JobId
     GUID do job (nome-base dos arquivos em -TempDir).
 .PARAMETER ProcessId
     PID do processo opencode cuja vida delimita o monitoramento.
 .PARAMETER TempDir
-    Pasta dos arquivos de job. Default: <temp do usuario>\opencode-jobs.
+    Pasta dos arquivos de job. Default: <temp do usuário>\opencode-jobs.
 .PARAMETER IntervalSeconds
     Intervalo de polling. Default 2. Faixa 1-30.
 .PARAMETER SilenceThresholdSeconds
@@ -35,7 +35,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Funcoes compartilhadas de parsing do stream do opencode (dot-source)
+# Funções compartilhadas de parsing do stream do opencode (dot-source)
 . (Join-Path $PSScriptRoot 'OpenCodeStreamSupport.ps1')
 
 $base       = Join-Path $TempDir $JobId
@@ -197,7 +197,7 @@ try {
         Start-Sleep -Seconds $IntervalSeconds
     }
 } finally {
-    # Resposta final = concatenacao das partes da ultima mensagem (via OpenCodeStreamSupport)
+    # Resposta final = concatenacao das partes da última mensagem (via OpenCodeStreamSupport)
     $final = Get-OpenCodeFinalText -TextParts $script:textParts
 
     $errText = ''

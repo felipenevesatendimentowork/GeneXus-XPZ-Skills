@@ -4,8 +4,8 @@
     Inventario de environments GeneXus via MSBuild (SetActiveEnvironment) sobre lista explicita.
 
 .DESCRIPTION
-    Valida nomes declarados pelo usuario com SetActiveEnvironment headless.
-    Scan automatico de pastas da KB nativa foi removido (superestimava environments _bad, hotfix, etc.).
+    Valida nomes declarados pelo usuário com SetActiveEnvironment headless.
+    Scan automático de pastas da KB nativa foi removido (superestimava environments _bad, hotfix, etc.).
     Get-GeneXusKbNativeFolderEnvironmentProbeExcludeReason permanece para gates de metadata legado.
 #>
 

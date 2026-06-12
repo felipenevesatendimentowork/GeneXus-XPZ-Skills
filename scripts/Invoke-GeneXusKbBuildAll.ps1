@@ -45,19 +45,19 @@ Nome opcional da versão a posicionar antes do build.
 
 .PARAMETER EnvironmentName
 Nome opcional do Environment a posicionar antes do build. Em KB com kb_environment_count maior que 1
-em kb-source-metadata.md, e obrigatorio (direto ou via deployment_environment_name gravado pelo
+em kb-source-metadata.md, e obrigatório (direto ou via deployment_environment_name gravado pelo
 xpz-kb-parallel-setup). Omitir so e valido quando kb_environment_count for 1 no metadata.
 
 .PARAMETER ParallelKbRoot
 Raiz da pasta paralela da KB para resolver kb-source-metadata.md (campos deployment_environment_name,
 kb_environment_count, kb_environment_names e, quando o gate de deploy bin estiver ativo,
-kb_environment_web_dirs). Nao dispara inventario de environments na KB nativa.
+kb_environment_web_dirs). Não dispara inventario de environments na KB nativa.
 
 .PARAMETER KbMetadataPath
 Caminho explicito para kb-source-metadata.md; prevalece sobre -ParallelKbRoot.
 
 .PARAMETER PostImportDeployValidation
-Quando presente, ativa gate de validacao deploy pos-import: checagem do web\bin resolvido por
+Quando presente, ativa gate de validação deploy pos-import: checagem do web\bin resolvido por
 kb_environment_web_dirs em kb-source-metadata.md (exit 49 se desatualizado). Metadata sem esse
 mapeamento bloqueia a resolucao (status unknown); reconciliar via xpz-kb-parallel-setup.
 
@@ -129,7 +129,7 @@ não dispensa a confirmação, apenas muda o canal.
 .PARAMETER AllowCostlyBuildOptions
 Switch. Único caminho autorizado para habilitar -CompileMains true ou
 -DetailedNavigation true sem execução acidental. Em modo interativo exige frase exata:
-    entendo que estas opcoes podem ampliar muito o custo do build e aceito executar
+    entendo que estas opções podem ampliar muito o custo do build e aceito executar
 Em modo não-interativo requer -ConfirmCostlyBuildOptions.
 
 .PARAMETER ConfirmCostlyBuildOptions
@@ -1283,8 +1283,8 @@ try {
     # Enriquecer $env:PATH com subdirs do GeneXus que hospedam tools chamadas internamente
     # por Process.Start sem caminho absoluto (gxexec, UpdConfigWeb, BuildService, Reor.exe).
     # Sem isso, builds headless cuja KB atinja as fases "DeveloperMenu Compilacao" ou
-    # "Atualizacao de configuracao da web" falham com "Nao foi possivel encontrar uma parte
-    # do caminho". A IDE GeneXus ja faz esse enriquecimento implicito; MSBuild via wrapper
+    # "Atualizacao de configuração da web" falham com "Não foi possível encontrar uma parte
+    # do caminho". A IDE GeneXus já faz esse enriquecimento implicito; MSBuild via wrapper
     # externo herda apenas o PATH do shell do agente. Evidencia empirica:
     # Temp\xpz-build-verify-path-20260520-r1d (sem enriquecimento, falha) vs
     # Temp\xpz-build-verify-path-20260520-r2 (com enriquecimento, compilou limpo).
@@ -1758,9 +1758,9 @@ try {
     try {
     # GeneXus 18 grava exatamente 3 linhas "context [anonymous] N:N attribute component
     # isn't defined" no stderr durante SpecifyAll (executado internamente pelo BuildAll).
-    # O GeneXus nao conta isso como erro: stdout reporta "0 avisos, 0 erros".
+    # O GeneXus não conta isso como erro: stdout reporta "0 avisos, 0 erros".
     # Evidencia empirica: FabricaBrasil18 e wsEducacaoSpTeste em 2026-05-10, sempre 3x,
-    # mesma posicao, independente do conteudo da KB. Filtrar antes de classificar.
+    # mesma posicao, independente do conteúdo da KB. Filtrar antes de classificar.
     $stdErrFilteredNoise = @([regex]::Matches($stdErrText, '(?m)context \[anonymous\] \d+:\d+ attribute component isn''t defined') | ForEach-Object { $_.Value }) -join "`n"
     $stdErrFiltered      = ($stdErrText -replace '(?m)^context \[anonymous\] \d+:\d+ attribute component isn''t defined\r?\n?', '').Trim()
 
@@ -1804,9 +1804,9 @@ try {
     if ($postBuildEventLines.Count -gt 0) {
         # Classifica os eventos contra o conjunto registrado do environment ativo em
         # kb-source-metadata.md (kb_environment_post_build_event_hashes). Evento registrado =
-        # esperado (informativo); nao registrado = inesperado (rebaixa). Sem registro para o
-        # environment, cai na rede de seguranca por padrao de som. So rebaixa se houver evento
-        # inesperado/nao reconhecido — sino e deploy registrados nao rebaixam mais.
+        # esperado (informativo); não registrado = inesperado (rebaixa). Sem registro para o
+        # environment, cai na rede de seguranca por padrão de som. So rebaixa se houver evento
+        # inesperado/nao reconhecido — sino e deploy registrados não rebaixam mais.
         $metadataPathForPostBuild = $null
         if ($null -ne $script:DeploymentEnvironmentContext) {
             $metadataPathForPostBuild = $script:DeploymentEnvironmentContext['kbSourceMetadataPath']
@@ -1838,12 +1838,12 @@ try {
         }
     }
 
-    # Promover warnings pmm00xx (versao de modulo GeneXus) a alertas top-level.
-    # pmm00xx aparecem em buildWarnings mas o usuario nao costuma inspecionar essa
+    # Promover warnings pmm00xx (versão de modulo GeneXus) a alertas top-level.
+    # pmm00xx aparecem em buildWarnings mas o usuário não costuma inspecionar essa
     # lista interna. Surfacing-los em warnings garante visibilidade no resumo do
-    # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versao)
-    # merece texto mais explicito porque sinaliza estado nao trivial (modulo
-    # satelite exige versao MAIS NOVA do modulo principal do que a instalada).
+    # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versão)
+    # merece texto mais explicito porque sinaliza estado não trivial (modulo
+    # satelite exige versão MAIS NOVA do modulo principal do que a instalada).
     foreach ($wLine in $buildWarningLines) {
         if ($wLine -match 'warning\s*:\s*(pmm\d{4}):\s*([^\r\n]+)') {
             $pmmCode = $matches[1]
@@ -1964,9 +1964,9 @@ try {
             $metadataPathDeploy = $script:DeploymentEnvironmentContext['kbSourceMetadataPath']
         }
 
-        # Decide o gate de deploy bin pelo fato (exit 0 + BuildAll concluido), nao pela string
+        # Decide o gate de deploy bin pelo fato (exit 0 + BuildAll concluido), não pela string
         # de status. Rebaixamentos benignos (sino pos-build, ruido de stderr) mantem ExitCode 0
-        # e nao devem suprimir a validacao pedida; Category B/reorg/timeout ja derrubam ExitCode.
+        # e não devem suprimir a validação pedida; Category B/reorg/timeout já derrubam ExitCode.
         $buildOperationallySucceeded = ($buildStatus.ExitCode -eq 0 -and $buildAllDone)
 
         $script:DeployBinClassification = Invoke-GeneXusKbDeployBinPostBuildClassification `
@@ -2223,7 +2223,7 @@ catch {
             exit 0
         }
         catch {
-            # cair no failure padrao abaixo
+            # cair no failure padrão abaixo
         }
     }
 

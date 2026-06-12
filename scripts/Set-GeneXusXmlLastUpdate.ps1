@@ -1,20 +1,20 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Re-carimba (bump) o lastUpdate de um XML GeneXus ja editado, no proprio arquivo,
+    Re-carimba (bump) o lastUpdate de um XML GeneXus já editado, no próprio arquivo,
     sem copiar do acervo nem aplicar delta.
 
 .DESCRIPTION
     Recalcula o lastUpdate da raiz do Object para max(UtcNow + margem,
-    baseline + margem) e grava no proprio arquivo (ou em OutputPath). Reusa o
-    motor de calculo (Get-GeneXusXpzLastUpdate.ps1) e as funcoes de leitura,
-    gravacao e validacao de GeneXusXmlSurgicalEditSupport.ps1; nao altera nem
+    baseline + margem) e grava no próprio arquivo (ou em OutputPath). Reusa o
+    motor de calculo (Get-GeneXusXpzLastUpdate.ps1) e as funções de leitura,
+    gravacao e validação de GeneXusXmlSurgicalEditSupport.ps1; não altera nem
     depende do comportamento de edicao do Edit-GeneXusXmlSurgical.ps1.
 
-    Caso de uso principal: re-bumpar um arquivo da frente ja editado (rodada 2+)
-    sem sobrescrever a edicao. Sem -BaselineXmlPath, o baseline e o proprio
+    Caso de uso principal: re-bumpar um arquivo da frente já editado (rodada 2+)
+    sem sobrescrever a edicao. Sem -BaselineXmlPath, o baseline e o próprio
     arquivo; como o GeneXus preserva o lastUpdate importado como Modified Date,
-    bumpar acima do proprio valor anterior garante lastUpdate maior que o objeto
+    bumpar acima do próprio valor anterior garante lastUpdate maior que o objeto
     vivo na KB em rodadas subsequentes. Para garantir acima do acervo, passar
     -BaselineXmlPath apontando para o XML oficial do mesmo objeto em
     ObjetosDaKbEmXml.
@@ -26,7 +26,7 @@
     Destino opcional. Quando omitido, grava in-place em InputPath.
 
 .PARAMETER BaselineXmlPath
-    XML usado como baseline do calculo. Quando omitido, usa o proprio InputPath.
+    XML usado como baseline do calculo. Quando omitido, usa o próprio InputPath.
 
 .PARAMETER FreshnessMarginSeconds
     Margem aplicada sobre UtcNow e sobre o baseline. Default: 60.
@@ -35,7 +35,7 @@
     Simula sem gravar nem criar backup.
 
 .PARAMETER AssertWellFormedAfter
-    Valida XML apos gravar (default true). Em falha, restaura .bak.
+    Valida XML após gravar (default true). Em falha, restaura .bak.
 
 .PARAMETER AsJson
     Saida estruturada JSON.

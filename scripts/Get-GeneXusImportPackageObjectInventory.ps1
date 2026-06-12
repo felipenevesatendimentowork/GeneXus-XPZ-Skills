@@ -6,7 +6,7 @@ Inventaria objetos efetivamente presentes em import_file.xml ou pacote .xpz Gene
 .DESCRIPTION
 Le um envelope GeneXus com raiz <ExportFile> (XML direto ou XML interno em .xpz),
 lista os objetos sob <Objects> e atributos top-level sob <Attributes>, mapeia GUIDs
-de tipo pelo catalogo compartilhado quando possivel e, opcionalmente, confronta o
+de tipo pelo catalogo compartilhado quando possível e, opcionalmente, confronta o
 inventario de objetos com um delta declarado em texto Tipo:Nome.
 
 .PARAMETER InputPath
@@ -29,7 +29,7 @@ Caminho opcional para gx-object-type-catalog.override.json na pasta paralela.
 Raiz da pasta paralela; resolve override em scripts/ quando CatalogOverridePath omitido.
 
 .PARAMETER FailOnUnknownTypes
-Retorna exit code 3 quando houver tipo nao mapeado no catalogo efetivo (pre-varredura de sync).
+Retorna exit code 3 quando houver tipo não mapeado no catalogo efetivo (pre-varredura de sync).
 
 .PARAMETER PlatformObjectsCatalogPath
 Caminho opcional para gx-platform-objects.json (catalogo unificado de plataforma/SDK).

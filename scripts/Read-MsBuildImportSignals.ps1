@@ -4,11 +4,11 @@
 Extrai sinais compactos de logs MSBuild de preview/importacao GeneXus.
 
 .DESCRIPTION
-Le msbuild.stdout.log e msbuild.stderr.log, ou um diretorio que contenha esses
+Le msbuild.stdout.log e msbuild.stderr.log, ou um diretório que contenha esses
 arquivos, e retorna JSON compacto para evitar colagem de logs longos na conversa.
 
 .PARAMETER Path
-Caminho de um diretorio de artefatos MSBuild ou de um arquivo stdout.log.
+Caminho de um diretório de artefatos MSBuild ou de um arquivo stdout.log.
 
 .PARAMETER StdOutPath
 Caminho explicito para msbuild.stdout.log.

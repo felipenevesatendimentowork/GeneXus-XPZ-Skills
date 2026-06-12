@@ -10,16 +10,16 @@
     Caminho do XPZ/XML quando DiscoveryReportPath omitido e UnknownTypeGuid informado.
 
 .PARAMETER UnknownTypeGuid
-    GUID isolado para prompt minimo quando nao houver relatorio.
+    GUID isolado para prompt mínimo quando não houver relatório.
 
 .PARAMETER KbName
     Nome da KB (opcional).
 
 .PARAMETER GeneXusVersion
-    Versao GeneXus (opcional).
+    Versão GeneXus (opcional).
 
 .PARAMETER WikiLinks
-    Links oficiais consultados com consentimento do usuario.
+    Links oficiais consultados com consentimento do usuário.
 
 .PARAMETER NexaFindings
     Texto livre com achados nexa.

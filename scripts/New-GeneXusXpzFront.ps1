@@ -6,7 +6,7 @@
 .DESCRIPTION
     Cria ou reutiliza uma subpasta de frente em
     ObjetosGeradosParaImportacaoNaKbNoGenexus no formato
-    NomeCurto_GUID_YYYYMMDD. Tambem devolve GUIDs adicionais e timestamp UTC
+    NomeCurto_GUID_YYYYMMDD. Também devolve GUIDs adicionais e timestamp UTC
     formatado como GeneXus lastUpdate para evitar comandos PowerShell compostos
     nos chamadores.
 
@@ -20,8 +20,8 @@
     Quantidade de GUIDs adicionais a devolver para objetos novos do lote.
 
 .PARAMETER ReuseIfExists
-    Se ja existir exatamente uma frente com o mesmo NomeCurto, reutiliza a
-    pasta existente. Sem este switch, a existencia de frente previa bloqueia.
+    Se já existir exatamente uma frente com o mesmo NomeCurto, reutiliza a
+    pasta existente. Sem este switch, a existência de frente previa bloqueia.
 
 .PARAMETER AsJson
     Retorna saida JSON estruturada.

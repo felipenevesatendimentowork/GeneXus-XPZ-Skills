@@ -3,8 +3,8 @@
 .SYNOPSIS
     Self-test de OpenCodeStreamSupport.ps1 (skill xpz-llm-delegate).
 .DESCRIPTION
-    Exercita as funcoes de parsing do stream do opencode com fixtures JSONL sinteticas
-    (sem opencode nem rede). Cobre: mensagem unica, multi-mensagem (preambulos + final),
+    Exercita as funções de parsing do stream do opencode com fixtures JSONL sinteticas
+    (sem opencode nem rede). Cobre: mensagem única, multi-mensagem (preambulos + final),
     mensagem final fragmentada em varias partes, evento de erro, ausencia de texto e
     linhas invalidas. Determinístico.
     Sentinela de sucesso: OK: Test-OpenCodeStreamSupportSelfTest.ps1
@@ -28,7 +28,7 @@ function Assert-Eq {
     }
 }
 
-# 1) Mensagem unica
+# 1) Mensagem única
 $linesSingle = @(
     '{"type":"step_start","part":{}}',
     '{"type":"text","part":{"messageID":"m1","text":"Resposta unica."}}',
@@ -40,7 +40,7 @@ Assert-Eq 'single: count partes'  (@($parts).Count) 1
 Assert-Eq 'single: finalText'     (Get-OpenCodeFinalText -TextParts $parts) 'Resposta unica.'
 Assert-Eq 'single: erro nulo'     ($null -eq (Get-OpenCodeStreamErrorMessage -Events $ev)) $true
 
-# 2) Multi-mensagem: preambulos + resposta final na ultima mensagem
+# 2) Multi-mensagem: preambulos + resposta final na última mensagem
 $linesMulti = @(
     '{"type":"text","part":{"messageID":"m1","text":"preambulo 1"}}',
     '{"type":"tool_use","part":{"tool":"bash"}}',
@@ -78,7 +78,7 @@ $parts = @(Get-OpenCodeTextParts -Events $ev)
 Assert-Eq 'sem-texto: count 0'    (@($parts).Count) 0
 Assert-Eq 'sem-texto: finalText vazio' (Get-OpenCodeFinalText -TextParts $parts) ''
 
-# 6) Linhas vazias/invalidas sao ignoradas
+# 6) Linhas vazias/invalidas são ignoradas
 $linesJunk = @('', '   ', 'isto nao e json', '{"type":"text","part":{"messageID":"m1","text":"ok"}}')
 $ev = ConvertFrom-OpenCodeStreamLines -Lines $linesJunk
 $parts = @(Get-OpenCodeTextParts -Events $ev)

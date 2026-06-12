@@ -11,9 +11,9 @@
         - baseURL externa explicita           -> external
         - provider sem baseURL na config       -> external (custom sem endpoint local)
         - provider ausente da config           -> external (gateway embutido/remoto por definicao)
-        - modelo nao parseavel ou config ausente -> unknown
+        - modelo não parseavel ou config ausente -> unknown
 
-    A unica forma de um modelo ser LOCAL e seu provider apontar para uma baseURL loopback.
+    A única forma de um modelo ser LOCAL e seu provider apontar para uma baseURL loopback.
     Na ausencia disso o trafego sai da maquina. O gate de confidencialidade
     (Resolve-LlmDelegateAuthorization.ps1) trata 'external' e 'unknown' como exigindo
     autorizacao para payload sensivel.

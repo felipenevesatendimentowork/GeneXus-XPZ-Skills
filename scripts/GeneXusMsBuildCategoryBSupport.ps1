@@ -4,8 +4,8 @@
     Barragem estrutural (Categoria B) para wrappers MSBuild GeneXus.
 
 .DESCRIPTION
-    Categoria A (extras de inventario, modulos de plataforma, etc.) permanece com exitCode=0
-    e decisao do agente (Decisao pos-gates). Categoria B (linhas error: no log MSBuild,
+    Categoria A (extras de inventario, módulos de plataforma, etc.) permanece com exitCode=0
+    e decisão do agente (Decisão pos-gates). Categoria B (linhas error: no log MSBuild,
     invalidTypesRejected) rebaixa o exitCode classificado pelo wrapper para 48 quando a task
     MSBuild concluiu com sucesso aparente mas o log registra rejeicao objetiva.
 #>

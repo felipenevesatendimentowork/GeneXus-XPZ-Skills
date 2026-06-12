@@ -5,14 +5,14 @@
     Self-test deterministico de Initialize-NexaRepoGit.ps1.
 
 .DESCRIPTION
-    Valida a classificacao de estado do bootstrap do repositorio da skill `nexa`
-    SEM acesso a rede e SEM tocar no repositorio real. Cada caso monta um cenario
+    Valida a classificação de estado do bootstrap do repositório da skill `nexa`
+    SEM acesso a rede e SEM tocar no repositório real. Cada caso monta um cenário
     local e confere o "label" produzido. Os caminhos que exigiriam clone/fetch do
-    remoto oficial sao exercitados via -WhatIf, que para antes de qualquer operacao
+    remoto oficial são exercitados via -WhatIf, que para antes de qualquer operacao
     de rede ou escrita. A raiz e sempre passada por -NexaRepoRoot explicito, de modo
-    que a deteccao por vinculo global e os defaults nao interferem.
+    que a deteccao por vinculo global e os defaults não interferem.
 
-    Requer o executavel Git disponivel (o proprio recurso depende dele).
+    Requer o executavel Git disponível (o próprio recurso depende dele).
 #>
 
 [CmdletBinding()]
@@ -67,7 +67,7 @@ function Assert-Label {
     }
 }
 
-# Caso A: repositorio ja ligado ao oficial -> NEXA_ALREADY_LINKED (sem rede)
+# Caso A: repositório já ligado ao oficial -> NEXA_ALREADY_LINKED (sem rede)
 $tmp = New-TempDir
 try {
     & git -C $tmp init -b main *> $null
@@ -98,7 +98,7 @@ try {
 }
 finally { Remove-TempDir -Path $tmp }
 
-# Caso C: repositorio sem origin + WhatIf -> NEXA_ORIGIN_ADD_SKIPPED (sem rede/escrita)
+# Caso C: repositório sem origin + WhatIf -> NEXA_ORIGIN_ADD_SKIPPED (sem rede/escrita)
 $tmp = New-TempDir
 try {
     & git -C $tmp init -b main *> $null
@@ -107,7 +107,7 @@ try {
 }
 finally { Remove-TempDir -Path $tmp }
 
-# Caso D: pasta com conteudo, sem .git -> NEXA_DIR_NOT_REPO (bloqueia, sem rede/escrita)
+# Caso D: pasta com conteúdo, sem .git -> NEXA_DIR_NOT_REPO (bloqueia, sem rede/escrita)
 $tmp = New-TempDir
 try {
     Set-Content -LiteralPath (Join-Path $tmp 'algum.txt') -Value 'conteudo' -Encoding utf8

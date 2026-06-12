@@ -5,20 +5,20 @@
     enviado a um modelo (allow / ask / deny), combinando sensibilidade declarada,
     localidade do modelo e politica por-KB.
 .DESCRIPTION
-    Nucleo backend-agnostico da skill. Para o backend opencode (unico na v1), a localidade
+    Nucleo backend-agnostico da skill. Para o backend opencode (único na v1), a localidade
     e resolvida por Resolve-OpenCodeModelLocality.ps1 (mesma pasta).
 
-    Logica deterministica:
+    Lógica deterministica:
 
         payload = public                  -> allow  (qualquer modelo; dado publico)
         payload = kb-sensitive:
-            localidade local              -> allow  (dado nao sai da maquina)
+            localidade local              -> allow  (dado não sai da maquina)
             localidade external/unknown   -> consulta a politica por-KB:
                 allow-external (p/ modelo) -> allow  (anunciar destino mesmo assim)
                 deny-external              -> deny
-                ask / nao definido         -> ask    (exige autorizacao explicita do usuario)
+                ask / não definido         -> ask    (exige autorizacao explicita do usuário)
 
-    'ask' significa: o agente deve obter autorizacao explicita do usuario antes de enviar,
+    'ask' significa: o agente deve obter autorizacao explicita do usuário antes de enviar,
     e pode oferecer persistir a escolha no arquivo de politica (liberacao duravel).
 
     Arquivo de politica (opcional, por pasta paralela de KB), JSON:
@@ -31,13 +31,13 @@
           }
         }
     Resolucao do modelo na politica: chave exata -> curinga 'provider/*' -> curinga '*'
-    -> defaultExternal -> 'ask' (quando nao ha arquivo).
+    -> defaultExternal -> 'ask' (quando não ha arquivo).
 
     Saida: objeto JSON de maquina no stdout.
 .PARAMETER Model
     Modelo no formato provider/modelo.
 .PARAMETER PayloadSensitivity
-    Classe do payload declarada pelo chamador: 'kb-sensitive' (conteudo de pasta paralela
+    Classe do payload declarada pelo chamador: 'kb-sensitive' (conteúdo de pasta paralela
     de KB) ou 'public' (diff do repo publico, molde sanitizado, README).
 .PARAMETER PolicyPath
     Caminho do opencode-delegation-policy.json da pasta paralela. Opcional; ausente => 'ask'.
@@ -104,7 +104,7 @@ if ($PayloadSensitivity -eq 'public') {
     return
 }
 
-# 3) Payload sensivel + modelo local: o dado nao sai da maquina
+# 3) Payload sensivel + modelo local: o dado não sai da maquina
 if ($locality -eq 'local') {
     New-AuthResult -Locality $locality -BaseUrl $baseUrl -Verdict 'allow' `
         -PolicyDecision 'n/a' -PolicySource 'n/a' `
@@ -148,7 +148,7 @@ if ($PolicyPath -and (Test-Path -LiteralPath $PolicyPath -PathType Leaf)) {
     $policySource = 'sem-arquivo-de-politica'
 }
 
-# 5) Verdito a partir da decisao da politica
+# 5) Verdito a partir da decisão da politica
 switch ($policyDecision) {
     'allow-external' {
         New-AuthResult -Locality $locality -BaseUrl $baseUrl -Verdict 'allow' `

@@ -10,21 +10,21 @@
     garantir que o novo arquivo fique estritamente mais novo que o acervo.
 
     Resolve o anti-padrao "editar acervo esperando que o pacote pegue": em vez de editar
-    o acervo, o agente copia a versao mais recente do acervo para a frente e depois edita
+    o acervo, o agente copia a versão mais recente do acervo para a frente e depois edita
     a copia. O gate 9-FD (Test-GeneXusFrontAcervoDrift.ps1) detecta o drift; este script
     resolve o drift copiando e bumpando.
 
     Comportamento por finding do gate 9-FD:
-      - front-older-than-acervo: copia do acervo e bumpa lastUpdate (acao primaria)
+      - front-older-than-acervo: copia do acervo e bumpa lastUpdate (ação primaria)
       - front-equals-acervo: copia do acervo e bumpa lastUpdate (conservative; o agente
         pode querer preservar, mas copiar e bumpar e o caminho seguro para edicoes futuras)
       - front-only-new-object: ignorado (objeto novo, sem homonimo no acervo)
-      - front-newer-than-acervo: ignorado (frente ja e mais recente)
+      - front-newer-than-acervo: ignorado (frente já e mais recente)
       - lastupdate-unparseable: ignorado (requer resolucao manual)
 
     Quando -ObjectList, -ObjectNames ou -ObjectGuids e fornecido, so os objetos listados
-    sao considerados para copia. Quando omitido, todos os objetos com drift sao copiados.
-    Se um objeto listado explicitamente ainda nao existir na frente, o script faz seed
+    são considerados para copia. Quando omitido, todos os objetos com drift são copiados.
+    Se um objeto listado explicitamente ainda não existir na frente, o script faz seed
     inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo explicito.
 
 .PARAMETER FrontFolder
@@ -37,31 +37,31 @@
     Nome canonico do contrato de selecao de objeto por nome. Aceita nomes simples
     ou entradas `Tipo:Nome`; o script usa apenas o nome para localizar o XML no
     acervo. Quando omitido (junto com -ObjectNames/-ObjectGuids), copia todos com
-    drift. Para seed inicial, deve identificar um unico XML no acervo.
+    drift. Para seed inicial, deve identificar um único XML no acervo.
 
 .PARAMETER ObjectNames
     Sinonimo aceito de -ObjectList (mesma semantica de selecao por nome); mantido
-    por retrocompatibilidade. Itens informados por -ObjectNames e -ObjectList sao
+    por retrocompatibilidade. Itens informados por -ObjectNames e -ObjectList são
     combinados.
 
 .PARAMETER ObjectGuids
     GUIDs de objetos a copiar (opcional). Quando omitido, copia todos com drift.
-    Para seed inicial, deve identificar um unico XML no acervo.
+    Para seed inicial, deve identificar um único XML no acervo.
 
 .PARAMETER FreshnessMarginSeconds
     Margem em segundos aplicada sobre o lastUpdate do acervo ao bumpar. Default: 60.
 
 .PARAMETER DryRun
-    Mostra o que seria copiado sem gravar. Util para preview.
+    Mostra o que seria copiado sem gravar. Útil para preview.
 
 .EXAMPLE
     # Refresh por drift: copia do acervo todos os objetos da frente que estiverem mais antigos.
     .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml
 
 .EXAMPLE
-    # Seed inicial: copia objetos especificos do acervo para uma frente em que eles ainda
-    # nao existem. Seed so ocorre com alvo explicito (-ObjectList/-ObjectNames/-ObjectGuids);
-    # sem alvo, nada e semeado e o status pode vir 'not-applicable'/objectsScanned:0 — esperado, nao erro.
+    # Seed inicial: copia objetos específicos do acervo para uma frente em que eles ainda
+    # não existem. Seed so ocorre com alvo explicito (-ObjectList/-ObjectNames/-ObjectGuids);
+    # sem alvo, nada e semeado e o status pode vir 'not-applicable'/objectsScanned:0 — esperado, não erro.
     .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml -ObjectList 'Procedure:PReabastecerEstoque','SDT_Item'
 #>
 
@@ -367,7 +367,7 @@ function Find-AcervoObjectXml {
     return $null
 }
 
-# Validar parametros
+# Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
     throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
 }
@@ -423,7 +423,7 @@ if ($frontMetas.Count -eq 0 -and $frontXmls.Count -eq 0) {
         }
 
         if ($null -eq $fMeta.LastUpdate -or $null -eq $aMeta.LastUpdate) {
-            # lastUpdate nao parseavel em um dos lados
+            # lastUpdate não parseavel em um dos lados
             $findings += New-Finding -Severity 'warn' -Code 'lastupdate-unparseable-skip' `
                 -Message "Objeto '$($fMeta.Name)' com lastUpdate nao parseavel; copia manual necessaria." `
                 -ObjectName $fMeta.Name -ObjectGuid $fMeta.Guid `
@@ -436,7 +436,7 @@ if ($frontMetas.Count -eq 0 -and $frontXmls.Count -eq 0) {
         }
 
         if ($fMeta.LastUpdate -gt $aMeta.LastUpdate) {
-            # Frente ja e mais recente
+            # Frente já e mais recente
             continue
         }
 
@@ -455,7 +455,7 @@ if ($frontMetas.Count -eq 0 -and $frontXmls.Count -eq 0) {
     }
 }
 
-# 3. Seed inicial para alvos explicitos que ainda nao existem na frente
+# 3. Seed inicial para alvos explicitos que ainda não existem na frente
 if ($explicitTargetsProvided) {
     $existingFrontNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $existingFrontGuids = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)

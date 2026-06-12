@@ -1,18 +1,18 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Diagnostica se o runtime GeneXus reflete a versao mais recente de um objeto importado.
+    Diagnostica se o runtime GeneXus reflete a versão mais recente de um objeto importado.
 
 .DESCRIPTION
     Verifica dois indicadores em modo somente leitura, sem abrir a IDE e sem invocar MSBuild:
 
-    1. nav_objs.xml na raiz da KB: status de geracao do objeto
-       - genreq  = GeneXus marcou o objeto como pendente de geracao (runtime defasado)
-       - nogenreq = GeneXus considera o objeto ja gerado (checar artefatos para confirmar)
+    1. nav_objs.xml na raiz da KB: status de geração do objeto
+       - genreq  = GeneXus marcou o objeto como pendente de geração (runtime defasado)
+       - nogenreq = GeneXus considera o objeto já gerado (checar artefatos para confirmar)
 
     2. Artefatos gerados (CSharpModel\web): timestamp dos arquivos gerados vs ImportedAt
 
-    O diagnostico e somente leitura: nao grava, nao abre KB, nao invoca MSBuild.
+    O diagnostico e somente leitura: não grava, não abre KB, não invoca MSBuild.
 
 .PARAMETER KbPath
     Caminho da KB GeneXus nativa (ex: C:\GxModels\MinhaKB).
@@ -95,7 +95,7 @@ $result = [ordered]@{
 
 # ── 1. nav_objs.xml ────────────────────────────────────────────────────────────
 # Localizado na raiz da KB nativa; lista objetos com ObjStatus genreq/nogenreq.
-# O arquivo nao tem elemento raiz — encapsulado antes do parse.
+# O arquivo não tem elemento raiz — encapsulado antes do parse.
 
 $navObjsPath = Join-Path $KbPath 'nav_objs.xml'
 
@@ -125,7 +125,7 @@ if (Test-Path -LiteralPath $navObjsPath -PathType Leaf) {
             $result.checks.navObjsXml.requiresGeneration = $requiresGen
         }
     } catch {
-        # Parse falhou — manter found=false; nao abortar o diagnostico
+        # Parse falhou — manter found=false; não abortar o diagnostico
     }
 }
 

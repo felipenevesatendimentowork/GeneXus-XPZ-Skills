@@ -2,35 +2,35 @@
 
 <#
 .SYNOPSIS
-    Garante que exista um clone local do repositorio que hospeda a skill `nexa`,
+    Garante que exista um clone local do repositório que hospeda a skill `nexa`,
     ligado ao remoto oficial no GitHub (genexuslabs/genexus-skills).
 
 .DESCRIPTION
-    A skill `nexa` NAO e um repositorio proprio: vive como subpasta do repositorio
+    A skill `nexa` NÃO e um repositório próprio: vive como subpasta do repositório
     multi-skill `genexus-skills` (GenexusLabs), que pode conter outras skills
     (ex.: `gx-sap`) deixadas dormentes. Esta skill (xpz-skills-setup) gerencia
-    apenas `nexa` por nome; as demais skills do repo nao sao registradas nem
+    apenas `nexa` por nome; as demais skills do repo não são registradas nem
     removidas.
 
     Diferenca em relacao a Initialize-XpzSkillsRepoGit.ps1: aquele bootstrap liga
-    uma pasta JA existente (vinda de ZIP) e PROIBE clonar; aqui o repositorio nexa
+    uma pasta JÁ existente (vinda de ZIP) e PROIBE clonar; aqui o repositório nexa
     pode nem existir na maquina, entao CLONAR e comportamento legitimo.
 
     Fluxo deterministico:
       1. Garante o executavel Git (instala via winget quando ausente e permitido).
       2. Resolve a raiz do repo nexa:
-         a. parametro -NexaRepoRoot explicito; senao
-         b. deteccao: le o alvo de qualquer vinculo global ja existente de `nexa`
+         a. parâmetro -NexaRepoRoot explicito; senao
+         b. deteccao: le o alvo de qualquer vinculo global já existente de `nexa`
             (o vinculo aponta para <repo>\nexa; a raiz e a pasta-pai); senao
          c. default: pasta-irma da raiz XPZ (<pai-da-raiz-XPZ>\genexus-skills).
-      3. Se a raiz ja for repositorio Git: confere se origin aponta para o oficial
+      3. Se a raiz já for repositório Git: confere se origin aponta para o oficial
          (tolera remotos extras, ex.: um `fork` pessoal). origin ausente -> adiciona.
-      4. Se a pasta nao existir ou estiver vazia: CLONA o oficial para a raiz.
-      5. Se a pasta existir com conteudo mas SEM .git: bloqueia (nao sobrescreve).
+      4. Se a pasta não existir ou estiver vazia: CLONA o oficial para a raiz.
+      5. Se a pasta existir com conteúdo mas SEM .git: bloqueia (não sobrescreve).
       6. Confere se a subpasta da skill `nexa` existe no repo resolvido.
 
 .OUTPUTS
-    Texto legivel por padrao; objeto JSON com -AsJson. O campo "label" e
+    Texto legivel por padrão; objeto JSON com -AsJson. O campo "label" e
     deterministico e destinado a interpretacao por agente.
 #>
 
@@ -189,7 +189,7 @@ function Resolve-NexaRepoRoot {
     param([string]$Requested, [string]$SkillName)
 
     if (-not [string]::IsNullOrWhiteSpace($Requested)) {
-        # Pode ainda nao existir (alvo de clone); normaliza sem exigir existencia.
+        # Pode ainda não existir (alvo de clone); normaliza sem exigir existência.
         return [System.IO.Path]::GetFullPath($Requested)
     }
     $detected = Find-ExistingNexaRepoRoot -SkillName $SkillName
@@ -264,7 +264,7 @@ $script:GitExe = $gitPath
 $officialNorm = ConvertTo-NormalizedUrl -Url $NexaOfficialRemoteUrl
 $repoRoot = Resolve-NexaRepoRoot -Requested $NexaRepoRoot -SkillName $NexaSkillName
 
-# --- 3. Pasta ja existe e e repositorio Git -----------------------------------
+# --- 3. Pasta já existe e e repositório Git -----------------------------------
 $insideCheck = $null
 if (Test-Path -LiteralPath $repoRoot -PathType Container) {
     $insideCheck = Invoke-Git -GitArgs @('-C', $repoRoot, 'rev-parse', '--is-inside-work-tree') -AllowFailure
@@ -278,7 +278,7 @@ if ($isRepo) {
 
     $originCheck = Invoke-Git -GitArgs @('-C', $repoRoot, 'remote', 'get-url', 'origin') -AllowFailure
     if ($originCheck.ExitCode -ne 0) {
-        # Repositorio sem origin: ligar ao oficial (nada destrutivo).
+        # Repositório sem origin: ligar ao oficial (nada destrutivo).
         if ($PSCmdlet.ShouldProcess($repoRoot, "Adicionar remote origin -> $NexaOfficialRemoteUrl")) {
             Invoke-Git -GitArgs @('-C', $repoRoot, 'remote', 'add', 'origin', $NexaOfficialRemoteUrl) | Out-Null
             return (Write-Result -Status 'OK' -Label 'NEXA_ORIGIN_ADDED' `
@@ -311,7 +311,7 @@ if ($isRepo) {
             'Nao alterado automaticamente. Ajuste o remoto manualmente se desejar religar ao oficial.'))
 }
 
-# --- 4. Pasta existe, tem conteudo, mas nao e repositorio Git -----------------
+# --- 4. Pasta existe, tem conteúdo, mas não e repositório Git -----------------
 if ((Test-Path -LiteralPath $repoRoot -PathType Container) -and -not (Test-DirectoryEmpty -Path $repoRoot)) {
     return (Write-Result -Status 'BLOCK' -Label 'NEXA_DIR_NOT_REPO' -RepoRoot $repoRoot -Messages @(
             'A pasta-alvo existe com conteudo, mas nao e um repositorio Git.',

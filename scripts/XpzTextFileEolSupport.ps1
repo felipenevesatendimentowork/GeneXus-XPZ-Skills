@@ -6,7 +6,7 @@
 .DESCRIPTION
     Evita o anti-padrao ReadAllLines + WriteAllLines / join com Environment.NewLine,
     que reescreve arquivos versionados com CRLF no Windows mesmo quando a politica
-    local ou do repositorio exige LF.
+    local ou do repositório exige LF.
 #>
 
 Set-StrictMode -Version Latest

@@ -1,12 +1,12 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Executa casos minimos de validacao do inventario de wrappers XPZ.
+    Executa casos minimos de validação do inventario de wrappers XPZ.
 
 .DESCRIPTION
     Cria uma pasta paralela temporaria e uma pasta temporaria de exemplos para validar
     que divergencia de #requires -Version classifica wrapper como CUSTOMIZADO, sem
-    tratar Test-*KbPowerShellRuntime.ps1 como falso positivo. Tambem valida os sinais
+    tratar Test-*KbPowerShellRuntime.ps1 como falso positivo. Também valida os sinais
     consultivos de wrappers recomendados ausentes e os sinais bloqueantes de scripts
     legados orfaos.
 #>

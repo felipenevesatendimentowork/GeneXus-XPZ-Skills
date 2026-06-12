@@ -2,15 +2,15 @@
 <#
 .SYNOPSIS
     Gate consultivo: detecta termo de contrato introduzido no diff e mencoes
-    equivalentes do repositorio que podem ter ficado com o conjunto antigo.
+    equivalentes do repositório que podem ter ficado com o conjunto antigo.
 
 .DESCRIPTION
     Suporte mecanico da regra simetrica do passo 2 de 13-revisao-pre-push.md:
     quando a frente ADICIONA parametro/alias/flag a um contrato, o termo novo
     deve aparecer em todas as mencoes equivalentes da mesma operacao.
 
-    Heuristica determinista por TRANSICAO no diff (nao por novidade global do
-    token no repo — um alias pode ja existir noutro fluxo e ainda assim ser novo
+    Heuristica determinista por TRANSICAO no diff (não por novidade global do
+    token no repo — um alias pode já existir noutro fluxo e ainda assim ser novo
     para este contrato):
 
       1. Quebra o diff BaseRef..HEAD em hunks.
@@ -22,20 +22,20 @@
          e a assinatura de "alias acrescentado a uma enumeracao existente"
          (ex.: '- ...-ObjectNames ou -ObjectGuids' -> '+ ...-ObjectList,
          -ObjectNames ou -ObjectGuids').
-      4. Varre o estado atual do repositorio (.md, .ps1, .py fora de historico/)
-         por linhas que mencionam P sem T (ignorando a propria declaracao de P:
+      4. Varre o estado atual do repositório (.md, .ps1, .py fora de historico/)
+         por linhas que mencionam P sem T (ignorando a própria declaracao de P:
          .PARAMETER P e bloco param): cada uma e uma CANDIDATA a mencao defasada.
 
-    Consultivo: nao prova propagacao completa nem reprova sozinho. Findings sao
+    Consultivo: não prova propagacao completa nem reprova sozinho. Findings são
     severity 'warn'; o orquestrador os despeja em agentWarnings e a fase
     semantica confronta e justifica ou corrige cada candidata. Falso positivo e
     barato (justificar/descartar); o custo alto e o falso negativo (termo novo
     que ficou so com o conjunto antigo, invisivel no diff). Limitacao conhecida:
     so dispara quando ha transicao co-localizada no diff; alias adicionado sem
-    enumeracao pre-existente no mesmo hunk nao gera par.
+    enumeracao pre-existente no mesmo hunk não gera par.
 
 .PARAMETER RootPath
-    Raiz do repositorio. Default: pai de scripts/.
+    Raiz do repositório. Default: pai de scripts/.
 
 .PARAMETER BaseRef
     Referencia base do intervalo BaseRef..HEAD. Default: origin/main.
@@ -46,8 +46,8 @@
 
 .PARAMETER MaxFindings
     Teto de candidatas de classe `prose` reportadas. Default: 30. Candidatas
-    nao-prosa (`param-list-item`, `param-table-cell`, `command-example`) NAO sao
-    truncadas — sao as mais acionaveis e poderiam estar em arquivos varridos
+    nao-prosa (`param-list-item`, `param-table-cell`, `command-example`) NÃO são
+    truncadas — são as mais acionaveis e poderiam estar em arquivos varridos
     depois que o teto de prosa encheu. `truncatedProseCount` informa quantas
     candidatas de prosa foram descartadas pelo teto.
 
@@ -96,7 +96,7 @@ function Invoke-RepoGit {
     }
 }
 
-# Tokens de contrato: parametro PowerShell (-Xxx, inicial maiuscula para nao
+# Tokens de contrato: parâmetro PowerShell (-Xxx, inicial maiuscula para não
 # casar operadores -eq/-not/-join), flag CLI/Python (--xxx) e bloco .PARAMETER Xxx.
 $psParamRegex  = [regex]::new('(?<![A-Za-z0-9_])-(?<name>[A-Z][A-Za-z0-9]+)')
 $cliFlagRegex  = [regex]::new('(?<![A-Za-z0-9_])--(?<name>[a-z][a-z0-9-]+)')
@@ -140,7 +140,7 @@ function Test-TokensRelated {
 
 $wordRegexCache = @{}
 function Get-WordRegex {
-    # Casa o token como palavra em qualquer forma (inclui $Token de codigo).
+    # Casa o token como palavra em qualquer forma (inclui $Token de código).
     param([Parameter(Mandatory = $true)][string]$Token)
 
     if (-not $wordRegexCache.ContainsKey($Token)) {
@@ -152,8 +152,8 @@ function Get-WordRegex {
 
 $mentionRegexCache = @{}
 function Get-MentionRegex {
-    # Casa o token apenas como mencao de contrato (prosa, doc, -Param), NAO como
-    # variavel $Token de codigo interno (a lookbehind exclui '$').
+    # Casa o token apenas como mencao de contrato (prosa, doc, -Param), NÃO como
+    # variável $Token de código interno (a lookbehind exclui '$').
     param([Parameter(Mandatory = $true)][string]$Token)
 
     if (-not $mentionRegexCache.ContainsKey($Token)) {
@@ -165,7 +165,7 @@ function Get-MentionRegex {
 
 $declRegexCache = @{}
 function Test-IsOwnDeclarationLine {
-    # Linha que apenas declara/documenta o proprio token P (nao e enumeracao da
+    # Linha que apenas declara/documenta o próprio token P (não e enumeracao da
     # operacao): .PARAMETER P, [tipo]$P, $P = ...
     param(
         [Parameter(Mandatory = $true)][string]$Token,
@@ -174,7 +174,7 @@ function Test-IsOwnDeclarationLine {
 
     if (-not $declRegexCache.ContainsKey($Token)) {
         $escaped = [regex]::Escape($Token)
-        # .PARAMETER P  |  declaracao de parametro terminando em $P[,)]  |  atribuicao $P =
+        # .PARAMETER P  |  declaracao de parâmetro terminando em $P[,)]  |  atribuicao $P =
         $pattern = '(^\s*\.PARAMETER\s+' + $escaped + '\b)|(\$' + $escaped + '\s*[,)]?\s*$)|(\$' + $escaped + '\s*=)'
         $declRegexCache[$Token] = [regex]::new($pattern)
     }
@@ -183,7 +183,7 @@ function Test-IsOwnDeclarationLine {
 
 function Get-MentionClass {
     # Classifica a FORMA da linha onde a candidata foi encontrada. A fase
-    # semantica do 13 usa isso para nao descartar candidatas em lote: 'prose'
+    # semantica do 13 usa isso para não descartar candidatas em lote: 'prose'
     # admite justificativa coletiva (so cita o nome canonico); 'param-list-item',
     # 'param-table-cell' e 'command-example' exigem veredito item a item,
     # confrontados contra a lista/tabela/exemplo gemeo em outro documento.
@@ -200,7 +200,7 @@ function Get-MentionClass {
 
 $resolvedRoot = (Resolve-Path -LiteralPath $RootPath).Path
 
-# Confirma que a ref base existe (sem fallback automatico).
+# Confirma que a ref base existe (sem fallback automático).
 $refCheck = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-parse', '--verify', $BaseRef)
 if ($refCheck.ExitCode -ne 0) {
     throw ("Ref base '{0}' nao encontrada; rode git fetch origin ou passe -BaseRef valido." -f $BaseRef)
@@ -324,25 +324,25 @@ if ($pairs.Count -gt 0) {
         for ($i = 0; $i -lt $fileLines.Count; $i++) {
             $text = $fileLines[$i]
 
-            # Rastreia blocos de codigo cercados (```), para classificar linhas
-            # internas como command-example. O delimitador em si nao e candidato.
+            # Rastreia blocos de código cercados (```), para classificar linhas
+            # internas como command-example. O delimitador em si não e candidato.
             if ($text -match '^\s*```') {
                 $inFence = -not $inFence
                 continue
             }
 
             foreach ($pair in $pairs) {
-                # Mencao de contrato do token antigo (prosa/doc/-Param), nao $variavel.
+                # Mencao de contrato do token antigo (prosa/doc/-Param), não $variável.
                 $oldMentionRx = Get-MentionRegex -Token $pair.oldToken
                 if (-not $oldMentionRx.IsMatch($text)) {
                     continue
                 }
-                # Token novo presente em qualquer forma -> mencao ja propagada.
+                # Token novo presente em qualquer forma -> mencao já propagada.
                 $newRx = Get-WordRegex -Token $pair.newToken
                 if ($newRx.IsMatch($text)) {
                     continue
                 }
-                # Declaracao do proprio parametro antigo (.PARAMETER P / bloco param).
+                # Declaracao do próprio parâmetro antigo (.PARAMETER P / bloco param).
                 if (Test-IsOwnDeclarationLine -Token $pair.oldToken -Line $text) {
                     continue
                 }
@@ -356,8 +356,8 @@ if ($pairs.Count -gt 0) {
                 $mentionClass = Get-MentionClass -Line $text -InFence $inFence
 
                 # Truncamento ciente de classe: candidatas nao-prosa
-                # (param-list-item/param-table-cell/command-example) NUNCA sao
-                # truncadas — sao as mais acionaveis e podem estar em arquivos
+                # (param-list-item/param-table-cell/command-example) NUNCA são
+                # truncadas — são as mais acionaveis e podem estar em arquivos
                 # varridos depois que o teto de prosa encheu. So a prosa e
                 # limitada por -MaxFindings.
                 if ($mentionClass -eq 'prose') {

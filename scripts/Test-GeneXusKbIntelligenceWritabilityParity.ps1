@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Exige paridade entre Test-GeneXusTransactionWritability.ps1 e consultas do indice materializado.
+    Exige paridade entre Test-GeneXusTransactionWritability.ps1 e consultas do índice materializado.
 #>
 
 [CmdletBinding()]

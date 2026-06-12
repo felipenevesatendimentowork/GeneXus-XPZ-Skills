@@ -3,7 +3,7 @@
 .SYNOPSIS
     Self-test de contrato de Resolve-OpenCodeModelLocality.ps1 (skill xpz-llm-delegate).
 .DESCRIPTION
-    Cria uma config de opencode sintetica e valida a classificacao local/external/unknown
+    Cria uma config de opencode sintetica e valida a classificação local/external/unknown
     para varios modelos, sem depender de opencode instalado nem de rede. Determinístico.
     Sentinela de sucesso: OK: Test-OpenCodeModelLocalitySelfTest.ps1
 #>

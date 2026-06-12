@@ -1021,8 +1021,8 @@ try {
     $script:TimingLog['msbuildStart'] = Get-GeneXusMsBuildNowIso
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
     $script:TimingLog['msbuildEnd'] = Get-GeneXusMsBuildNowIso
-    # Pos-processamento resiliente: a partir daqui o MSBuild ja rodou.
-    # Falha local nao pode descartar evidencia real do MSBuild.
+    # Pos-processamento resiliente: a partir daqui o MSBuild já rodou.
+    # Falha local não pode descartar evidencia real do MSBuild.
     $postProcessingFailed = $false
     $postProcessingError  = $null
     $diagnosticDegraded   = $false

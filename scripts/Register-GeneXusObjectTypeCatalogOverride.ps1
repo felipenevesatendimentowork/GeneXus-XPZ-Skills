@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Grava ou atualiza o override local na pasta paralela. Exige consentimento explicito
-    registrado em -UserApproved. Nao altera o catalogo compartilhado GeneXus-XPZ-Skills.
+    registrado em -UserApproved. Não altera o catalogo compartilhado GeneXus-XPZ-Skills.
 
 .PARAMETER ParallelKbRoot
     Raiz da pasta paralela da KB.
@@ -17,10 +17,10 @@
     GUID de Object/@type no XPZ/XML.
 
 .PARAMETER FolderName
-    Nome da subpasta em ObjetosDaKbEmXml (padrao: TypeName).
+    Nome da subpasta em ObjetosDaKbEmXml (padrão: TypeName).
 
 .PARAMETER UserApproved
-    Obrigatorio. Confirma consentimento explicito do usuario para registro local.
+    Obrigatório. Confirma consentimento explicito do usuário para registro local.
 
 .PARAMETER EvidenceSummary
     Resumo curto da evidencia (XML, nexa, wiki).

@@ -7,9 +7,9 @@
     Monta uma KB sintetica cobrindo a matriz: ThemeClass legacy (com caso :hover e heranca),
     DesignSystem autoral (com redeclaracao em @media e comentarios /* */ e //), PackagedModule
     (DesignSystem aninhado, classe importada), e um WebPanel exercitando as 7 formas de uso
-    (layout estatico, multiplas classes, literal aspas simples/duplas, prefixos StyleClass:/ThemeClass:,
-    variavel dinamica, Format() dinamico, linha comentada) mais uma classe usada e nao catalogada.
-    Builda o indice, valida casos de relacao e confere as consultas css-classes e css-class-usage.
+    (layout estatico, múltiplas classes, literal aspas simples/duplas, prefixos StyleClass:/ThemeClass:,
+    variável dinamica, Format() dinamico, linha comentada) mais uma classe usada e não catalogada.
+    Builda o índice, valida casos de relacao e confere as consultas css-classes e css-class-usage.
 #>
 
 Set-StrictMode -Version Latest
@@ -64,7 +64,7 @@ $legacyChildXml = @'
 '@
 [System.IO.File]::WriteAllText((Join-Path $themeClassDir 'LegacyChild.xml'), $legacyChildXml, $enc)
 
-# --- DesignSystem autoral: Styles part (GUID c6b14574); @media redeclara .Responsive; comentarios nao contam. ---
+# --- DesignSystem autoral: Styles part (GUID c6b14574); @media redeclara .Responsive; comentarios não contam. ---
 $designSystemXml = @'
 <Object type="78b3fa0e-174c-4b2b-8716-718167a428b5" name="dsTest" guid="22222222-0000-0000-0000-000000000001">
   <Part type="75e52d99-6edd-4bad-a1d7-dcc9b7f000ef">
@@ -106,7 +106,7 @@ $packagedModuleXml = @'
 '@
 [System.IO.File]::WriteAllText((Join-Path $packagedModuleDir 'PkgMod.xml'), $packagedModuleXml, $enc)
 
-# --- WebPanel: 7 formas de uso + classe nao catalogada (UncatalProof). ---
+# --- WebPanel: 7 formas de uso + classe não catalogada (UncatalProof). ---
 $webPanelXml = @'
 <Object type="c9584656-94b6-4ccd-890f-332d11fc2c25" name="wpTest" guid="44444444-0000-0000-0000-000000000001">
   <Part type="763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9">
@@ -128,7 +128,7 @@ $webPanelXml = @'
 '@
 [System.IO.File]::WriteAllText((Join-Path $webPanelDir 'wpTest.xml'), $webPanelXml, $enc)
 
-# --- Casos de validacao (relacoes) ---
+# --- Casos de validação (relacoes) ---
 $validationCasesPath = Join-Path $kbIntelDir 'css-validation.json'
 $validationCasesJson = @'
 {
@@ -183,7 +183,7 @@ function Assert-True {
     if (-not $Condition) { throw "ASSERT FALHOU: $Message" }
 }
 
-# --- css-classes: visao padrao (so kb-authored) ---
+# --- css-classes: visao padrão (so kb-authored) ---
 $catalog = Invoke-CssQuery -QueryArgs @('--query', 'css-classes')
 $byName = @{}
 foreach ($row in $catalog.results) { $byName[$row.class_name] = $row }
@@ -219,7 +219,7 @@ Assert-True ([bool]$usage.found_in_catalog) 'PanelTitle deveria ser found_in_cat
 Assert-True ($usage.resolvable_uses_total -ge 2) "PanelTitle deveria ter >=2 usos resolviveis, teve $($usage.resolvable_uses_total)"
 Assert-True ($usage.dynamic_uses_total -ge 2) "Deveria haver >=2 atribuicoes dinamicas (&someVar e Format), teve $($usage.dynamic_uses_total)"
 
-# --- css-class-usage: overview com classe usada mas nao catalogada ---
+# --- css-class-usage: overview com classe usada mas não catalogada ---
 $overview = Invoke-CssQuery -QueryArgs @('--query', 'css-class-usage')
 Assert-True ($overview.used_but_uncatalogued -contains 'UncatalProof') 'UncatalProof deveria aparecer em used_but_uncatalogued'
 

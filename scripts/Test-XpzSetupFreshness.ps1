@@ -6,18 +6,18 @@
 .DESCRIPTION
     Le last_setup_audit_run_at e setup_contract_signature_* de kb-source-metadata.md,
     calcula a assinatura atual da superficie de contrato de xpz-kb-parallel-setup e
-    compara com a assinatura gravada apos a ultima auditoria bem-sucedida.
+    compara com a assinatura gravada após a última auditoria bem-sucedida.
     Retorna GATE_ONLY quando a assinatura auditada coincide com a atual; retorna
     AUDIT_REQUIRED com motivo nos demais casos.
 
-    Projetado para ser chamado pelo wrapper local Test-*KbSetupFreshness.ps1 como primeira acao
-    da PRE-CONDICAO obrigatoria em xpz-kb-parallel-setup.
+    Projetado para ser chamado pelo wrapper local Test-*KbSetupFreshness.ps1 como primeira ação
+    da PRE-CONDICAO obrigatória em xpz-kb-parallel-setup.
 
 .PARAMETER KbParallelRoot
     Raiz da pasta paralela da KB (deve conter kb-source-metadata.md).
 
 .PARAMETER SkillsRoot
-    Raiz do repositorio de skills XPZ (GeneXus-XPZ-Skills).
+    Raiz do repositório de skills XPZ (GeneXus-XPZ-Skills).
 
 .OUTPUTS
     String: "GATE_ONLY" ou "AUDIT_REQUIRED: <motivo>"

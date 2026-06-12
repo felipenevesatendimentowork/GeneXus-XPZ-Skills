@@ -4,8 +4,8 @@
     Valida que Update-XpzKbSourceMetadataFromSync preserva last_setup_audit_run_at, setup_contract_signature_* e EOL LF.
 
 .DESCRIPTION
-    Fixture LF com carimbo/assinatura de setup e tabelas minimas; simula refresh de materializacao
-    e verifica campos de setup intactos, CR=0 e campos de materializacao atualizados.
+    Fixture LF com carimbo/assinatura de setup e tabelas minimas; simula refresh de materialização
+    e verifica campos de setup intactos, CR=0 e campos de materialização atualizados.
 #>
 
 [CmdletBinding()]

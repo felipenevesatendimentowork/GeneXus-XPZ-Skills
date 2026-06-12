@@ -20,7 +20,7 @@
 .PARAMETER BuildResultJsonPath
     Caminho do JSON de um build (Invoke-GeneXusKbBuildAll.ps1 / Invoke-GeneXusKbSpecifyGenerate.ps1).
     Quando informado e -BuildStartedAt for omitido, a linha de corte vem de timing.msbuildStart
-    do proprio build — elimina a extracao manual do timestamp.
+    do próprio build — elimina a extracao manual do timestamp.
 
 .PARAMETER ParallelKbRoot
     Raiz da pasta paralela para resolver kb-source-metadata.md.

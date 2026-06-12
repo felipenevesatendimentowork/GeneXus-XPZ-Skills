@@ -4,13 +4,13 @@
     Mutacao cirurgica de kb-source-metadata.md sob autoridade do xpz-sync.
 
 .DESCRIPTION
-    Atualiza somente campos de materializacao no frontmatter e valores das tabelas
+    Atualiza somente campos de materialização no frontmatter e valores das tabelas
     KMW, Source e Source/Version, preservando demais linhas (incluindo
-    last_setup_audit_run_at e qualquer outro frontmatter, secao ou texto fora do
+    last_setup_audit_run_at e qualquer outro frontmatter, seção ou texto fora do
     escopo do sync).
 
     Autoridade do sync (frontmatter): updated, last_xpz_materialization_run_at,
-    source_xpz, source_refresh_status. Demais chaves de frontmatter, secoes extras
+    source_xpz, source_refresh_status. Demais chaves de frontmatter, seções extras
     (ex.: ## Uso) e formatacao/EOL do arquivo existente permanecem intactos na
     atualizacao cirurgica; criacao do arquivo ausente ainda usa template completo.
 #>

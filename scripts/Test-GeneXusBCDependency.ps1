@@ -23,7 +23,7 @@ $Catalog = Get-Content -LiteralPath $CatalogPath -Raw | ConvertFrom-Json
 $ProcedureTypeGuid   = $Catalog.types.Procedure.objectTypeGuid
 $TransactionTypeGuid = $Catalog.types.Transaction.objectTypeGuid
 
-# Regex compativel com Build-KbIntelligenceIndex.py (paridade com o indice)
+# Regex compativel com Build-KbIntelligenceIndex.py (paridade com o índice)
 $VariableRegex      = [regex]::new('<Variable\b(?<attrs>[^>]*)>(?<body>.*?)</Variable>',
                                    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
                                    [System.Text.RegularExpressions.RegexOptions]::Singleline)
@@ -128,7 +128,7 @@ function Get-BCDependencies {
     return $deps
 }
 
-# Validar parametros
+# Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
     throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
 }
@@ -172,7 +172,7 @@ if ($batchProcedures.Count -eq 0) {
             }
         }
     }
-    # 4. Varrer corpus uma unica vez por TX pendentes (restringe a subpasta canonica Transaction/)
+    # 4. Varrer corpus uma única vez por TX pendentes (restringe a subpasta canonica Transaction/)
     $corpusTransactions = @{}  # name (lower) -> ObjectMetadata
     if ($pendingCorpusLookup.Count -gt 0) {
         $corpusTransactionFolder = Join-Path $CorpusFolder 'Transaction'

@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Registra eventos a partir de um JSON de build sintetico, confirma que o campo de hashes
-    e o espelho legivel sao gravados, que a classificacao subsequente nao rebaixa, e que
+    e o espelho legivel são gravados, que a classificação subsequente não rebaixa, e que
     registrar um segundo environment preserva o primeiro (campo e espelho).
 #>
 
@@ -91,7 +91,7 @@ try {
     if ($text2 -notmatch 'AtualizaDeployFB18PgNetCore\.Bat') { throw 'ASSERT_FAILED: linha crua do deploy1 perdida apos registrar env2' }
     if ($text2 -notmatch 'AtualizaDeployFB18\.Bat') { throw 'ASSERT_FAILED: linha crua do deploy2 ausente' }
 
-    # Re-registro do mesmo environment substitui (nao duplica) a subsecao.
+    # Re-registro do mesmo environment substitui (não duplica) a subsecao.
     & $registerScript -BuildResultJsonPath $json1 -EnvironmentName 'NETPostgreSQL' -MetadataPath $metadataPath -ConfirmRegistration -AsJson | Out-Null
     $text3 = [System.IO.File]::ReadAllText($metadataPath)
     $occurrences = ([regex]::Matches($text3, '### env: NETPostgreSQL')).Count

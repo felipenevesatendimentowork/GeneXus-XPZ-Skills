@@ -28,7 +28,7 @@ conteúdo do pacote. Use este modo para exports completos da KB.
 Caminho opcional para salvar um relatório JSON com o resultado.
 
 .PARAMETER KeepReport
-Mantem o relatorio JSON mesmo quando a execucao termina sem erro.
+Mantem o relatório JSON mesmo quando a execução termina sem erro.
 
 .PARAMETER ExpectedItems
 Lista opcional de itens esperados para comparacao com o retorno oficial do XPZ,
@@ -38,16 +38,16 @@ no formato `Tipo:Nome`.
 Caminho opcional para kb-source-metadata.md da pasta paralela.
 
 .PARAMETER CatalogPath
-Caminho opcional para gx-object-type-catalog.json (padrao: scripts/ da base compartilhada).
+Caminho opcional para gx-object-type-catalog.json (padrão: scripts/ da base compartilhada).
 
 .PARAMETER CatalogOverridePath
-Caminho opcional para gx-object-type-catalog.override.json (paliativo local; nao silencioso).
+Caminho opcional para gx-object-type-catalog.override.json (paliativo local; não silencioso).
 
 .PARAMETER ParallelKbRoot
 Raiz da pasta paralela; quando informada, resolve override em scripts/gx-object-type-catalog.override.json.
 
 .PARAMETER DiscoveryReportPath
-Quando o pacote contiver GUID de tipo desconhecido, grava relatorio JSON de triagem antes de falhar.
+Quando o pacote contiver GUID de tipo desconhecido, grava relatório JSON de triagem antes de falhar.
 
 .EXAMPLE
 .\Sync-GeneXusXpzToXml.ps1 -InputPath C:\Exports\MeuPacote.xpz -DestinationRoot C:\Acervo\ObjetosDaKbEmXml

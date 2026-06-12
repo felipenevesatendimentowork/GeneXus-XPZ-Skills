@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Funcoes compartilhadas para inventario de pacote import_file.xml / .xpz.
+    Funções compartilhadas para inventario de pacote import_file.xml / .xpz.
 
 .DESCRIPTION
     Produz packageInventory resumido e sidecar JSON a partir de
@@ -12,7 +12,7 @@
     para o sidecar quando o motor gravou sidecar em confronto seletivo. Consumido por
     Build-GeneXusImportFileEnvelope.ps1, New-XpzImportPackage.ps1 e pelo export
     MSBuild via GeneXusXpzExportInventoryGovernance.ps1 (governanca de sub-estado
-    permanece no modulo de export, nao neste arquivo).
+    permanece no modulo de export, não neste arquivo).
 #>
 
 Set-StrictMode -Version Latest

@@ -195,10 +195,10 @@ if ($FullExport) {
 }
 
 # Normalizacao do contrato de selecao: -ObjectList (canonico, alias -ObjectNames)
-# aceita string unica ou string[]. O corpo do script consome a forma string com
-# virgulas que a task Export espera; itens vazios sao descartados. Sob StrictMode
-# nao se pode reatribuir o proprio $ObjectList (a restricao [string[]] persiste),
-# por isso usa-se uma variavel string dedicada.
+# aceita string única ou string[]. O corpo do script consome a forma string com
+# virgulas que a task Export espera; itens vazios são descartados. Sob StrictMode
+# não se pode reatribuir o próprio $ObjectList (a restrição [string[]] persiste),
+# por isso usa-se uma variável string dedicada.
 [string]$objectListSpec = ''
 if ($null -ne $ObjectList -and @($ObjectList).Count -gt 0) {
     $objectListSpec = (@($ObjectList) |
@@ -1065,8 +1065,8 @@ try {
     $script:TimingLog['msbuildStart'] = Get-GeneXusMsBuildNowIso
     $msBuildExitCode = Invoke-MsBuildFile -ResolvedMsBuildPath $resolvedMsBuildPath -MsBuildFilePath $msBuildFilePath -StdOutPath $stdOutPath -StdErrPath $stdErrPath
     $script:TimingLog['msbuildEnd'] = Get-GeneXusMsBuildNowIso
-    # Pos-processamento resiliente: a partir daqui o MSBuild ja rodou.
-    # Falha local nao pode descartar evidencia real do MSBuild (incluindo __EXPORTED_FILE__).
+    # Pos-processamento resiliente: a partir daqui o MSBuild já rodou.
+    # Falha local não pode descartar evidencia real do MSBuild (incluindo __EXPORTED_FILE__).
     $postProcessingFailed    = $false
     $postProcessingError     = $null
     $stdOutText              = ''

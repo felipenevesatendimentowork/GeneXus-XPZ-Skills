@@ -1,27 +1,27 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Compara os wrappers locais da pasta paralela com os exemplos canonicos do repositorio de skills.
+    Compara os wrappers locais da pasta paralela com os exemplos canonicos do repositório de skills.
 
 .DESCRIPTION
     Infere o prefixo KB a partir dos scripts presentes em scripts/, enumera os exemplos
     em SkillsExamplesPath (*.example.ps1) e verifica se cada wrapper esperado existe
     localmente. Quando a inferencia falha por scripts usarem naming curto (sem prefixo KB),
     tenta obter o nome da KB em kb-source-metadata.md e detecta se os scripts existem no
-    padrao curto em vez do padrao canonico. Retorna:
-      INVENTORY_OK                        - todos os wrappers canonicos presentes com naming padrao
-      INVENTORY_GAPS: <nomes ausentes>    - wrappers ausentes (nem padrao nem curto encontrado)
-      INVENTORY_SHORT_NAMING: <lista>     - wrappers existem no padrao curto; renomear para padrao
+    padrão curto em vez do padrão canonico. Retorna:
+      INVENTORY_OK                        - todos os wrappers canonicos presentes com naming padrão
+      INVENTORY_GAPS: <nomes ausentes>    - wrappers ausentes (nem padrão nem curto encontrado)
+      INVENTORY_SHORT_NAMING: <lista>     - wrappers existem no padrão curto; renomear para padrão
       INVENTORY_CUSTOMIZED: <lista>        - wrappers presentes com divergencia metodologica objetiva
       INVENTORY_RECOMMENDED_MISSING: <lista> - wrappers recomendados ausentes por sinais objetivos
       INVENTORY_LEGACY_ORPHANS: <lista>    - scripts legados lado a lado com canonicos atuais
-      INVENTORY_UNKNOWN: <motivo>         - nao foi possivel determinar o estado
+      INVENTORY_UNKNOWN: <motivo>         - não foi possível determinar o estado
 
 .PARAMETER KbParallelRoot
     Raiz da pasta paralela da KB.
 
 .PARAMETER SkillsExamplesPath
-    Caminho para a pasta examples/ do repositorio de skills XPZ
+    Caminho para a pasta examples/ do repositório de skills XPZ
     (xpz-kb-parallel-setup/examples).
 
 .OUTPUTS

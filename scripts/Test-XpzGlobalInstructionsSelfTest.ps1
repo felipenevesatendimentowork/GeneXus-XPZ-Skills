@@ -5,14 +5,14 @@
     Self-test deterministico de Test-XpzGlobalInstructions.ps1.
 
 .DESCRIPTION
-    Sem rede. Monta perfis de usuario falsos via $env:USERPROFILE e confere:
+    Sem rede. Monta perfis de usuário falsos via $env:USERPROFILE e confere:
       - deteccao positiva e por variacao verbal das ancoras (status "presente");
       - ausencia de cobertura (status "nao_detectado" e overall REVIEW);
       - seguimento de referencia '@<caminho>' (Claude -> AGENTS.md referenciado);
       - paridade contrato <-> SKILL.md: cada SkillHeading do contrato existe no
         bloco "## AGENTS.MD RECOMENDADO" do SKILL.md (anti-drift).
 
-    As ferramentas sao consideradas instaladas pelo PATH real; as FONTES vem do
+    As ferramentas são consideradas instaladas pelo PATH real; as FONTES vem do
     perfil falso, isolando a deteccao.
 #>
 

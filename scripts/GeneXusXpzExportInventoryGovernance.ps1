@@ -4,7 +4,7 @@
     Governanca de inventario e operationalSubState para export MSBuild (Invoke-GeneXusXpzExport.ps1).
 
 .DESCRIPTION
-    Nao e helper generico de inventario (ver GeneXusPackageInventorySupport.ps1).
+    Não e helper genérico de inventario (ver GeneXusPackageInventorySupport.ps1).
     Carregado exclusivamente pelo wrapper de export para classificar operationalSubState
     e montar o bloco de inventario pos-export.
 #>

@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Cobre a migracao conservadora sem assinatura gravada, o caminho GATE_ONLY
-    apos gravar assinatura, mudanca fora da superficie assinada e mudanca dentro
+    após gravar assinatura, mudanca fora da superficie assinada e mudanca dentro
     da superficie assinada.
 #>
 

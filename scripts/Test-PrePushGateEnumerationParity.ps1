@@ -1,38 +1,38 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Gate consultivo: enumeracao de gates na documentacao da rotina que ficou
-    como subconjunto proprio do conjunto de gates que o orquestrador executa.
+    Gate consultivo: enumeracao de gates na documentação da rotina que ficou
+    como subconjunto próprio do conjunto de gates que o orquestrador executa.
 
 .DESCRIPTION
     Conserto da causa-raiz de um gap real: ao adicionar gates novos ao
     orquestrador, a tabela "Scripts do orquestrador" foi atualizada, mas uma
-    OUTRA enumeracao em prosa (afirmacao fechada "os gates consultivos sao X e
+    OUTRA enumeracao em prosa (afirmacao fechada "os gates consultivos são X e
     Y") ficou com o conjunto antigo. A verificacao "o termo novo esta presente?"
-    e cega a esse caso, porque a frase defasada nao cita o termo novo — cita os
+    e cega a esse caso, porque a frase defasada não cita o termo novo — cita os
     antigos. Tres revisoes perderam isso.
 
-    Este gate deriva a VERDADE do codigo: extrai do orquestrador
+    Este gate deriva a VERDADE do código: extrai do orquestrador
     (scripts/Invoke-PrePushMechanicalChecks.ps1) o conjunto de scripts de gate
     que ele realmente invoca (Join-Path $PSScriptRoot 'Test-*.ps1'). Depois
     varre os .md da raiz e sinaliza qualquer LINHA que enumere >= 2 desses gates
-    como um subconjunto proprio do conjunto real — candidata a enumeracao
+    como um subconjunto próprio do conjunto real — candidata a enumeracao
     defasada. A tabela canonica (um gate por linha) e mencoes contextuais de um
-    unico gate nao casam o criterio ">= 2 na mesma linha".
+    único gate não casam o critério ">= 2 na mesma linha".
 
     Consultivo (severity warn): o agente confronta cada candidata — completar a
     enumeracao, ou justificar que o subconjunto e intencional (ex.: lista so os
-    gates de um tema). Invariante: a doc nao deve afirmar um conjunto de gates
+    gates de um tema). Invariante: a doc não deve afirmar um conjunto de gates
     que contradiz o que o orquestrador executa.
 
 .PARAMETER RootPath
-    Raiz do repositorio. Default: pai de scripts/.
+    Raiz do repositório. Default: pai de scripts/.
 
 .PARAMETER BaseRef
-    Aceito para o contrato comum dos gates; este gate e invariante (nao usa diff).
+    Aceito para o contrato comum dos gates; este gate e invariante (não usa diff).
 
 .PARAMETER ChangedFiles
-    Aceito para o contrato comum dos gates; nao usado (verificacao e repo-wide).
+    Aceito para o contrato comum dos gates; não usado (verificacao e repo-wide).
 
 .PARAMETER MaxFindings
     Teto de candidatas reportadas. Default: 30.
@@ -72,9 +72,9 @@ if (Test-Path -LiteralPath $orchestratorPath -PathType Leaf) {
     $orchestratorText = [System.IO.File]::ReadAllText($orchestratorPath)
 
     # Conjunto de verdade: scripts de gate que o orquestrador invoca, EXCETO os
-    # gates de parse (Test-*ScriptsParse.ps1). Estes sao gates mecanicos de saude
+    # gates de parse (Test-*ScriptsParse.ps1). Estes são gates mecanicos de saude
     # do repo, sempre referenciados como par fixo e completo (parse PS + parse
-    # Python) e nao integram a enumeracao consultiva que a doc descreve em listas;
+    # Python) e não integram a enumeracao consultiva que a doc descreve em listas;
     # incluí-los gera falso positivo nessas co-citacoes legitimas.
     $invokeRegex = [regex]::new("Join-Path\s+\`$PSScriptRoot\s+'(?<name>Test-[A-Za-z0-9.\-]+\.ps1)'")
     $gateSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -86,7 +86,7 @@ if (Test-Path -LiteralPath $orchestratorPath -PathType Leaf) {
     $orchestratorGates = @($gateSet | Sort-Object)
 
     if ($orchestratorGates.Count -ge 2) {
-        # Token de nome de gate-script em texto (dentro de crases, apos scripts/, etc.).
+        # Token de nome de gate-script em texto (dentro de crases, após scripts/, etc.).
         $nameTokenRegex = [regex]::new('Test-[A-Za-z0-9.\-]+\.ps1')
 
         $docFiles = @(Get-ChildItem -LiteralPath $resolvedRoot -File -Filter '*.md' -ErrorAction SilentlyContinue)
@@ -112,7 +112,7 @@ if (Test-Path -LiteralPath $orchestratorPath -PathType Leaf) {
                     }
                 }
 
-                # Enumeracao: >= 2 gates do conjunto, mas subconjunto proprio.
+                # Enumeracao: >= 2 gates do conjunto, mas subconjunto próprio.
                 if ($onLine.Count -lt 2) { continue }
                 if ($onLine.Count -ge $orchestratorGates.Count) { continue }
 

@@ -1,12 +1,12 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Audita o naming dos diretorios imediatos de ObjetosDaKbEmXml.
+Audita o naming dos diretórios imediatos de ObjetosDaKbEmXml.
 
 .DESCRIPTION
-Para cada diretorio imediato em ObjetosDaKbEmXml, le o primeiro XML classificavel,
+Para cada diretório imediato em ObjetosDaKbEmXml, le o primeiro XML classificavel,
 extrai o tipo canonico pelo elemento raiz Attribute ou por Object/@type, compara
-com o nome do diretorio e emite resultado estruturado. Usa o catalogo efetivo
+com o nome do diretório e emite resultado estruturado. Usa o catalogo efetivo
 (base compartilhada + override local em scripts/ da pasta paralela quando existir).
 O script e somente leitura.
 

@@ -1,12 +1,12 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Wrapper local sanitizado para rebuild completo do indice derivado da KB.
+Wrapper local sanitizado para rebuild completo do índice derivado da KB.
 
 .DESCRIPTION
 Destroi e recria o SQLite do zero a partir de ObjetosDaKbEmXml, delegando a
-construcao e validacao ao motor compartilhado desta base metodologica.
-Nao existe modo incremental — a cada execucao e um rebuild completo.
+construcao e validação ao motor compartilhado desta base metodologica.
+Não existe modo incremental — a cada execução e um rebuild completo.
 
 .PARAMETER SourceRoot
 Raiz opcional do snapshot XML oficial da KB.
@@ -15,16 +15,16 @@ Raiz opcional do snapshot XML oficial da KB.
 Caminho opcional do SQLite derivado.
 
 .PARAMETER ValidationReportPath
-Caminho opcional para salvar o relatorio JSON de validacao.
+Caminho opcional para salvar o relatório JSON de validação.
 
 .PARAMETER ValidationCasesPath
-Caminho opcional para os casos de validacao.
+Caminho opcional para os casos de validação.
 
 .PARAMETER FailOnValidationFailure
-Retorna erro quando qualquer caso de validacao falhar.
+Retorna erro quando qualquer caso de validação falhar.
 
 .PARAMETER SharedSkillsRoot
-Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parametro quando
+Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parâmetro quando
 o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
 .EXAMPLE

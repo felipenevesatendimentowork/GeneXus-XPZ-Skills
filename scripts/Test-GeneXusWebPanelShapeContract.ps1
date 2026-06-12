@@ -1,15 +1,15 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Regressao minima do ramo WebPanel de Get-GeneXusObjectSummary.ps1.
+    Regressao mínima do ramo WebPanel de Get-GeneXusObjectSummary.ps1.
 
 .DESCRIPTION
     Monta uma fixture sanitizada de WebPanel classico (type c9584656...) com:
-    - MainTable Responsive (depth 0) contendo TableInner Flex (depth 1, responsiveSizes nao vazio);
+    - MainTable Responsive (depth 0) contendo TableInner Flex (depth 1, responsiveSizes não vazio);
     - botao na forma <action> (BtnSave) e na forma <ucw gxControlType="-2133704903"> (BtnMenu);
     - um ucw com gxControlType desconhecido (deve cair em unknownUcwControlTypes);
-    - um botao-ucw cujo Event ('Ghost') nao tem handler no Source de eventos;
-    - caption acentuado (Opcao) para validar round-trip de encoding.
+    - um botao-ucw cujo Event ('Ghost') não tem handler no Source de eventos;
+    - caption acentuado (Opção) para validar round-trip de encoding.
     Roda o motor e valida o shape e a honestidade de cobertura.
 #>
 

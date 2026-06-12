@@ -1,14 +1,14 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Funcoes compartilhadas de parsing do stream JSON do opencode (skill xpz-llm-delegate).
+    Funções compartilhadas de parsing do stream JSON do opencode (skill xpz-llm-delegate).
 .DESCRIPTION
     Modulo dot-source consumido por Invoke-OpenCode.ps1 e Watch-OpenCodeJob.ps1 para evitar
-    duplicar a logica de extracao. Sem efeitos colaterais; nao invoca opencode.
+    duplicar a lógica de extracao. Sem efeitos colaterais; não invoca opencode.
 
     Eventos do `opencode run --format json`: um objeto JSON por linha, com `type`
     (`step_start`, `text`, `tool_use`, `step_finish`, `error`) e `part`. Cada evento `text`
-    pertence a uma mensagem (`part.messageID`); a resposta final e a ultima mensagem.
+    pertence a uma mensagem (`part.messageID`); a resposta final e a última mensagem.
 
     Contrato validado por Test-OpenCodeStreamSupportSelfTest.ps1.
 #>
@@ -35,7 +35,7 @@ function ConvertFrom-OpenCodeStreamLines {
 }
 
 function Get-OpenCodeStreamErrorMessage {
-    # Mensagem do ultimo evento type=error, ou $null se nao houver erro.
+    # Mensagem do último evento type=error, ou $null se não houver erro.
     param([object[]]$Events)
     $errs = @(@($Events) | Where-Object { (Get-OcProp $_ 'type') -eq 'error' })
     if ($errs.Count -eq 0) { return $null }
@@ -60,8 +60,8 @@ function Get-OpenCodeTextParts {
 }
 
 function Get-OpenCodeFinalText {
-    # Resposta final = concatenacao das partes de texto da ULTIMA mensagem (messageID).
-    # Robusto a mensagem final fragmentada em varias partes; sem messageID, usa a ultima parte.
+    # Resposta final = concatenacao das partes de texto da ÚLTIMA mensagem (messageID).
+    # Robusto a mensagem final fragmentada em varias partes; sem messageID, usa a última parte.
     param([object[]]$TextParts)
     $tp = @(@($TextParts) | Where-Object { $null -ne $_ })
     if ($tp.Count -eq 0) { return '' }

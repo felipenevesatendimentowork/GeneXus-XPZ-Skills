@@ -5,7 +5,7 @@ Wrapper local sanitizado para auditar o naming de ObjetosDaKbEmXml.
 
 .DESCRIPTION
 Delega ao motor compartilhado `Test-XpzObjetosDaKbNaming.ps1`.
-Este wrapper e somente leitura: ele nao renomeia diretorios nem altera XMLs.
+Este wrapper e somente leitura: ele não renomeia diretórios nem altera XMLs.
 
 .PARAMETER KbRoot
 Caminho opcional para a raiz da pasta paralela da KB.

@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Funcoes compartilhadas para edicao cirurgica de XML GeneXus em modo raw.
+    Funções compartilhadas para edicao cirurgica de XML GeneXus em modo raw.
 #>
 
 Set-StrictMode -Version Latest
@@ -193,9 +193,9 @@ function Invoke-GeneXusXmlSurgicalEditCore {
         [string]$Replacement,
 
         # Subconjunto intencional: este core (consumido pelo wrapper geral
-        # Edit-GeneXusXmlSurgical.ps1) so expoe Replace/InsertAfter, pois nao ha
+        # Edit-GeneXusXmlSurgical.ps1) so expoe Replace/InsertAfter, pois não ha
         # caso de uso para InsertBefore por aqui. O primitivo
-        # Invoke-GeneXusXmlLiteralPatch aceita tambem InsertBefore, consumido
+        # Invoke-GeneXusXmlLiteralPatch aceita também InsertBefore, consumido
         # diretamente pelo Add-GeneXusButton.ps1 (ancora -BeforeControlName).
         [Parameter(Mandatory = $true)]
         [ValidateSet('Replace', 'InsertAfter')]

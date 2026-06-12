@@ -28,17 +28,17 @@ Mantém o relatório JSON mesmo quando a execução termina sem erro.
 Caminho opcional para salvar metadados da KB em Markdown.
 Quando omitido, o wrapper usa `kb-source-metadata.md` na raiz da pasta
 paralela da KB. Com `-KbMetadataPath` ativo, o motor compartilhado faz
-atualizacao **cirurgica** dos campos de materializacao, preservando
+atualizacao **cirurgica** dos campos de materialização, preservando
 `last_setup_audit_run_at`, `setup_contract_signature_*` e o frontmatter fora do escopo.
 
 .PARAMETER IndexUpdateScriptPath
-Caminho opcional do wrapper local que regenera o indice derivado apos
-materializacao bem-sucedida. Quando omitido, usa
+Caminho opcional do wrapper local que regenera o índice derivado após
+materialização bem-sucedida. Quando omitido, usa
 `Rebuild-KbIntelligenceIndex.ps1` na mesma pasta deste wrapper.
 
 .PARAMETER IndexValidationCasesPath
-Caminho opcional para casos de validacao usados no refresh compulsorio do
-indice.
+Caminho opcional para casos de validação usados no refresh compulsorio do
+índice.
 
 .PARAMETER NoGitSummary
 Suprime resumo local de alterações Git em `ObjetosDaKbEmXml`.
@@ -55,13 +55,13 @@ o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
 .NOTES
 Contrato de conclusao (rigor KbIntelligence; ver xpz-sync e README da base):
-- Sucesso: materializacao XPZ/XML em ObjetosDaKbEmXml e refresh do indice concluidos (exit 0).
+- Sucesso: materialização XPZ/XML em ObjetosDaKbEmXml e refresh do índice concluidos (exit 0).
 - Falha com mensagem PREREQUISITO AUSENTE: Python 3 utilizavel ausente no rebuild
-  (motor Build-KbIntelligenceIndex.ps1 retorna exit 8). A materializacao pode ter
-  concluido; o fluxo oficial ainda falhou porque o indice nao foi regenerado.
-  Nao tratar como falha do pacote exportado. Instalar Python 3.x e rerodar
+  (motor Build-KbIntelligenceIndex.ps1 retorna exit 8). A materialização pode ter
+  concluido; o fluxo oficial ainda falhou porque o índice não foi regenerado.
+  Não tratar como falha do pacote exportado. Instalar Python 3.x e rerodar
   Rebuild-KbIntelligenceIndex.ps1 antes de triagem ampla ou declaracao de sync OK.
-- Outras falhas: erro de materializacao ou do motor do indice (nao confundir com Python ausente).
+- Outras falhas: erro de materialização ou do motor do índice (não confundir com Python ausente).
 
 .EXAMPLE
 .\Update-KbFromXpz.ps1 -InputPath C:\Exports\MeuPacote.xpz -ExpectedItems 'Transaction:Cliente'

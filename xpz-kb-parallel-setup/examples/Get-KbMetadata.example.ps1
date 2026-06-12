@@ -5,7 +5,7 @@ Wrapper local sanitizado para ler campos chave de kb-source-metadata.md.
 
 .DESCRIPTION
 Le kb-source-metadata.md na raiz da pasta paralela da KB e retorna campos chave
-como texto estruturado. Elimina o padrao recorrente de Select-String + regex
+como texto estruturado. Elimina o padrão recorrente de Select-String + regex
 inline nos chamadores.
 
 O parse de tabelas Markdown usa ReadAllLines + split por pipe + Trim, tolerando
@@ -14,9 +14,9 @@ tiver terminadores CR antes do LF.
 
 Campos retornados e sua origem em kb-source-metadata.md:
   last_xpz_materialization_run_at : campo de topo ou frontmatter do arquivo
-  kb_name                         : campo "name" na tabela da secao ## Source/Version
-  source_guid                     : campo "kb (GUID)" na tabela da secao ## Source
-                                    (GUID da KB -- nao o GUID da versao em ## Source/Version;
+  kb_name                         : campo "name" na tabela da seção ## Source/Version
+  source_guid                     : campo "kb (GUID)" na tabela da seção ## Source
+                                    (GUID da KB -- não o GUID da versão em ## Source/Version;
                                     implementacoes que lerem source_guid de ## Source/Version
                                     serao semanticamente incorretas mesmo com parse valido)
   deployment_environment_name     : frontmatter — identificador MSBuild do environment de
@@ -27,7 +27,7 @@ Campos retornados e sua origem em kb-source-metadata.md:
   kb_environment_output_dirs      : frontmatter — pares Environment=DiretorioOutput separados por ;
   kb_environment_web_dirs         : frontmatter — pares Environment=CaminhoWeb separados por ;
 
-Campos ausentes sao indicados com "(ausente)" em vez de falha silenciosa.
+Campos ausentes são indicados com "(ausente)" em vez de falha silenciosa.
 
 .PARAMETER MetadataPath
 Caminho opcional para kb-source-metadata.md.

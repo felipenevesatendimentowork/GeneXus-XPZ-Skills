@@ -1,25 +1,25 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-Wrapper local sanitizado para consultar o indice derivado da KB.
+Wrapper local sanitizado para consultar o índice derivado da KB.
 
 .DESCRIPTION
-Usa o indice local padrao da pasta paralela da KB e delega a consulta ao motor
+Usa o índice local padrão da pasta paralela da KB e delega a consulta ao motor
 compartilhado desta base metodologica.
 
 .PARAMETER Query
-Consulta a executar no indice.
+Consulta a executar no índice.
 
 .PARAMETER IndexPath
-Caminho opcional para um SQLite alternativo. O padrao local aponta para
+Caminho opcional para um SQLite alternativo. O padrão local aponta para
 `KbIntelligence\kb-intelligence.sqlite`.
 
 .PARAMETER SharedSkillsRoot
-Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parametro quando
+Raiz local da base compartilhada `GeneXus-XPZ-Skills`. Use este parâmetro quando
 o wrapper sanitizado for adaptado para um ambiente com outro caminho local.
 
 .PARAMETER ParallelKbRoot
-Raiz da pasta paralela da KB. Por padrao, a pasta pai de `scripts/` deste wrapper.
+Raiz da pasta paralela da KB. Por padrão, a pasta pai de `scripts/` deste wrapper.
 Usada para resolver `scripts/gx-object-type-catalog.override.json` no gate
 `queryableByKbIntelligence` das consultas semanticas.
 

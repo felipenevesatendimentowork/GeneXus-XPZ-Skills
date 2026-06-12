@@ -17,15 +17,15 @@ incompleto.
 Retorna saida JSON estruturada.
 
 .PARAMETER SqlCredential
-Credencial SQL Server. Necessaria apenas quando a conexao resolvida exigir
+Credencial SQL Server. Necessária apenas quando a conexão resolvida exigir
 autenticacao SQL.
 
 .PARAMETER UpdateMetadata
 Atualiza os campos de identidade estavel em `kb-source-metadata.md` a partir da
-KB nativa local. Por padrao, preenche campos ausentes e bloqueia divergencias.
+KB nativa local. Por padrão, preenche campos ausentes e bloqueia divergencias.
 
 .PARAMETER AllowIdentityOverwrite
-Permite sobrescrever campos de identidade nao vazios quando divergirem da KB
+Permite sobrescrever campos de identidade não vazios quando divergirem da KB
 nativa local resolvida. Use apenas em frente aprovada de reconciliacao.
 
 .PARAMETER SharedSkillsRoot

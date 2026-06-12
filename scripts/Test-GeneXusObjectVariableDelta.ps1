@@ -1,11 +1,11 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Diagnostica variaveis GeneXus em XML de objeto, com foco em variaveis tocadas pelo delta.
+    Diagnostica variáveis GeneXus em XML de objeto, com foco em variáveis tocadas pelo delta.
 
 .DESCRIPTION
-    Valida a coerencia minima de blocos <Variable> sem reserializar o XML.
-    Quando -VariableName e informado, trata essas variaveis como o delta da rodada
+    Valida a coerência mínima de blocos <Variable> sem reserializar o XML.
+    Quando -VariableName e informado, trata essas variáveis como o delta da rodada
     e aplica checks mais fortes. Sem -VariableName, faz varredura consultiva do
     objeto inteiro para orientar revisao sem reprovar formas legadas raras.
 
@@ -13,12 +13,12 @@
     XML de objeto GeneXus.
 
 .PARAMETER VariableName
-    Uma ou mais variaveis declaradas como novas ou tocadas no delta.
+    Uma ou mais variáveis declaradas como novas ou tocadas no delta.
 
 .PARAMETER AllowShapeOnlyType
-    Para variaveis do delta, aceita forma sem idBasedOn/ATTCUSTOMTYPE quando
+    Para variáveis do delta, aceita forma sem idBasedOn/ATTCUSTOMTYPE quando
     houver propriedades estruturais de tipo base (Length, AttMaxLen, Decimals,
-    ATT_PICTURE ou Signed). Por padrao, essa forma gera fail no delta.
+    ATT_PICTURE ou Signed). Por padrão, essa forma gera fail no delta.
 
 .PARAMETER AsJson
     Saida estruturada JSON.

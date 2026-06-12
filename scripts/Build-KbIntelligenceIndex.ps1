@@ -26,7 +26,7 @@
     Raiz da pasta paralela da KB; resolve scripts/gx-object-type-catalog.override.json quando existir.
 
 .PARAMETER CatalogOverridePath
-    Caminho explicito do override local; prevalece sobre a deteccao automatica pela pasta paralela.
+    Caminho explicito do override local; prevalece sobre a deteccao automática pela pasta paralela.
 #>
 
 param(

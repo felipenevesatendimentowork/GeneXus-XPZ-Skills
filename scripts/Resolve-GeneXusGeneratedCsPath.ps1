@@ -8,11 +8,11 @@
     kb_environment_web_dirs para montar <webDir>\<objectName-lowercase>.cs sem varredura
     recursiva da KB nativa.
 
-    Se o metadata nao tiver mapeamento de output/web por environment, bloqueia e orienta
+    Se o metadata não tiver mapeamento de output/web por environment, bloqueia e orienta
     reconciliar a pasta paralela via xpz-kb-parallel-setup.
 
 .PARAMETER KbPath
-    Caminho da KB nativa GeneXus. Usado para contexto e validacao leve; o webDir vem do metadata.
+    Caminho da KB nativa GeneXus. Usado para contexto e validação leve; o webDir vem do metadata.
 
 .PARAMETER ObjectName
     Nome do objeto GeneXus.
@@ -22,7 +22,7 @@
 
 .PARAMETER EnvironmentName
     Environment GeneXus a resolver. Se omitido, usa deployment_environment_name; em KB
-    single-environment, usa o unico nome em kb_environment_names.
+    single-environment, usa o único nome em kb_environment_names.
 
 .PARAMETER ParallelKbRoot
     Raiz da pasta paralela da KB para resolver kb-source-metadata.md.

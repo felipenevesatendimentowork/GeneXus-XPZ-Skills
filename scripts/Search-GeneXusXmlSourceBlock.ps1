@@ -10,24 +10,24 @@
     code-behind de events.
 
 .PARAMETER Path
-    Arquivo XML ou diretorio contendo XMLs. Diretorios sao lidos no primeiro
-    nivel por padrao; use -Recurse para descer subpastas.
+    Arquivo XML ou diretório contendo XMLs. Diretórios são lidos no primeiro
+    nível por padrão; use -Recurse para descer subpastas.
 
 .PARAMETER Pattern
     Expressao regular a procurar dentro do texto efetivo do Source.
 
 .PARAMETER Block
     all: todos os blocos Source.
-    code: blocos Source que nao sao layout nem XML serializado.
+    code: blocos Source que não são layout nem XML serializado.
     events: blocos code que contem linhas Event ou Sub.
-    layout: blocos Source cujo conteudo comeca com <GxMultiForm.
-    serialized: blocos Source cujo conteudo comeca com XML, mas nao GxMultiForm.
+    layout: blocos Source cujo conteúdo comeca com <GxMultiForm.
+    serialized: blocos Source cujo conteúdo comeca com XML, mas não GxMultiForm.
 
 .PARAMETER CaseSensitive
     Usa comparacao sensivel a maiusculas/minusculas.
 
 .PARAMETER Recurse
-    Quando Path for diretorio, busca XMLs recursivamente.
+    Quando Path for diretório, busca XMLs recursivamente.
 
 .PARAMETER AsJson
     Emite JSON estruturado.

@@ -46,7 +46,7 @@ $CallExplicitRegex  = [regex]::new('\bCall\s*\(\s*(?<name>[A-Za-z_][A-Za-z0-9_]*
 $CallDirectRegex    = [regex]::new('(?<![A-Za-z0-9_\.])(?<name>[A-Za-z_][A-Za-z0-9_]+)\s*\(',
     [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
-# Palavras-chave GeneXus que NAO sao procedures (filtro de falso-positivo do CallDirectRegex)
+# Palavras-chave GeneXus que NÃO são procedures (filtro de falso-positivo do CallDirectRegex)
 $GxKeywords = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($kw in @('if','else','elseif','endif','for','each','endfor','do','case','endcase',
                   'when','where','not','and','or','new','true','false','null','return',
@@ -153,7 +153,7 @@ function Get-ProcedureCalls {
     return ,@($callees)
 }
 
-# Validar parametros
+# Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
     throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
 }
@@ -190,7 +190,7 @@ if ($batchObjects.Count -lt 2) {
         elseif ($obj.TypeGuid -eq $TransactionTypeGuid) { [void]$batchTransactionNames.Add($obj.Name) }
         elseif ($obj.TypeGuid -eq $WorkWithForWebTypeGuid) { $batchWorkWithForWeb += $obj }
     }
-    # Procedures que existem no corpus (necessario para distinguir "Procedure nova") — restringe a subpasta canonica Procedure/
+    # Procedures que existem no corpus (necessário para distinguir "Procedure nova") — restringe a subpasta canonica Procedure/
     $corpusProcedureFolder = Join-Path $CorpusFolder 'Procedure'
     if (-not (Test-Path -LiteralPath $corpusProcedureFolder -PathType Container)) {
         throw "Layout do CorpusFolder inesperado: subpasta 'Procedure' nao encontrada em $CorpusFolder; gate exige layout canonico <Type>/<Name>.xml gerado por Sync-GeneXusXpzToXml.ps1"
@@ -220,7 +220,7 @@ if ($batchObjects.Count -lt 2) {
             $calls = Get-ProcedureCalls -XmlPath $obj.Path -BatchProcedureNames $batchProcedureNames
             foreach ($callee in $calls) {
                 if ([string]::Equals($callee, $obj.Name, [System.StringComparison]::OrdinalIgnoreCase)) { continue }
-                # So gera edge se callee e nova no batch (nao existe no corpus)
+                # So gera edge se callee e nova no batch (não existe no corpus)
                 if ($corpusProcedureNames.Contains($callee)) { continue }
                 $edges += [pscustomobject]@{ From = $callee; To = $obj.Name; Kind = 'procedure-call' }
             }
@@ -315,7 +315,7 @@ if ($batchObjects.Count -lt 2) {
             foreach ($k in @($remainingNodes)) {
                 if ($remainingInDeg[$k] -eq 0) { $thisLayerKeys += $k }
             }
-            if ($thisLayerKeys.Count -eq 0) { break }  # nao deveria acontecer se sem ciclo
+            if ($thisLayerKeys.Count -eq 0) { break }  # não deveria acontecer se sem ciclo
             $thisLayerNames = @($thisLayerKeys | ForEach-Object { if ($batchByName.ContainsKey($_)) { $batchByName[$_].Name } else { $_ } })
             $layersWork += ,$thisLayerNames
             foreach ($k in $thisLayerKeys) {

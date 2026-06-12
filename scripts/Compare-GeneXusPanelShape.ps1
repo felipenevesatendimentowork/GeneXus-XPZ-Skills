@@ -5,8 +5,8 @@ Compara dois Panels GeneXus por shape compacto.
 
 .DESCRIPTION
 Usa Get-GeneXusObjectSummary.ps1 para comparar Object attrs, Pattern/Data
-version, level/layout, controles, eventos serializados (nomeados, padrao,
-de variavel e Tap), cobertura action/event e flags estruturais sem imprimir
+version, level/layout, controles, eventos serializados (nomeados, padrão,
+de variável e Tap), cobertura action/event e flags estruturais sem imprimir
 CDATA.
 
 .PARAMETER LeftPath
@@ -16,10 +16,10 @@ XML/XPZ do primeiro Panel.
 XML/XPZ do segundo Panel.
 
 .PARAMETER LeftObjectName
-Nome do objeto no primeiro insumo, quando necessario.
+Nome do objeto no primeiro insumo, quando necessário.
 
 .PARAMETER RightObjectName
-Nome do objeto no segundo insumo, quando necessario.
+Nome do objeto no segundo insumo, quando necessário.
 
 .PARAMETER AsJson
 Retorna JSON estruturado.

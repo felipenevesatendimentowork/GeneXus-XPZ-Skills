@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Trava deterministica do contrato de nomenclatura de parametros das skills XPZ.
+    Trava deterministica do contrato de nomenclatura de parâmetros das skills XPZ.
 
 .DESCRIPTION
     Verifica, via metadados de Get-Command (sem executar os scripts nem exigir KB),
@@ -13,14 +13,14 @@
       - Entrada primaria: nome canonico -InputPath, com alias -Path.
       - Familia de import (entrada e um .xpz): -InputPath com aliases -XpzPath e -Path.
       - Regra de direcao: no export, o .xpz e SAIDA e mantem o nome por papel
-        -XpzPath; NAO deve ganhar alias -InputPath (negativo explicito).
+        -XpzPath; NÃO deve ganhar alias -InputPath (negativo explicito).
       - Contrato de saida do motor de sanidade: Test-GeneXusSourceSanity.ps1 emite
-        JSON por padrao e NAO expoe -AsJson (negativo explicito); trava contra
+        JSON por padrão e NÃO expoe -AsJson (negativo explicito); trava contra
         wrappers locais que carreguem essa flag de outro motor (ex: Get-*KbLastUpdate).
 
     Conceitos distintos (-ModifiedObjectNames/-ModifiedObjectGuids = handoff,
     -ExpectedItems = assercao, -IncludeItems/-ExcludeItems = contrato da task
-    MSBuild do GeneXus) sao intencionalmente fora do escopo de selecao e NAO sao
+    MSBuild do GeneXus) são intencionalmente fora do escopo de selecao e NÃO são
     aliasados aqui.
 #>
 
@@ -99,7 +99,7 @@ function Assert-ParameterAbsent {
 Assert-CanonicalParameter -ScriptFileName 'Invoke-GeneXusXpzExport.ps1' `
     -ParameterName 'ObjectList' -ExpectedType 'String[]' -RequiredAliases @('ObjectNames')
 
-# Copy aceita tanto -ObjectList (canonico, [string[]]) quanto -ObjectNames (param proprio).
+# Copy aceita tanto -ObjectList (canonico, [string[]]) quanto -ObjectNames (param próprio).
 Assert-CanonicalParameter -ScriptFileName 'Copy-GeneXusAcervoToFront.ps1' `
     -ParameterName 'ObjectList' -ExpectedType 'String[]'
 $null = Get-ScriptParameter -ScriptFileName 'Copy-GeneXusAcervoToFront.ps1' -ParameterName 'ObjectNames'
@@ -133,12 +133,12 @@ foreach ($scriptFile in $importFamily) {
     Assert-ParameterAbsent -ScriptFileName $scriptFile -ParameterName 'XpzPath'
 }
 
-# 4. Regra de direcao: no export o .xpz e SAIDA; mantem -XpzPath e NAO ganha alias -InputPath.
+# 4. Regra de direcao: no export o .xpz e SAIDA; mantem -XpzPath e NÃO ganha alias -InputPath.
 Assert-CanonicalParameter -ScriptFileName 'Invoke-GeneXusXpzExport.ps1' `
     -ParameterName 'XpzPath' -ForbiddenAliases @('InputPath')
 Assert-ParameterAbsent -ScriptFileName 'Invoke-GeneXusXpzExport.ps1' -ParameterName 'InputPath'
 
-# 5. Contrato de saida do motor de sanidade: emite JSON por padrao e NAO expoe -AsJson.
+# 5. Contrato de saida do motor de sanidade: emite JSON por padrão e NÃO expoe -AsJson.
 #    Trava negativa contra wrappers locais que carreguem essa flag de outro motor;
 #    o erro de binding so apareceria em runtime, invisivel ao parse.
 Assert-ParameterAbsent -ScriptFileName 'Test-GeneXusSourceSanity.ps1' -ParameterName 'AsJson'

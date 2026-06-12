@@ -5,9 +5,9 @@
 
 .DESCRIPTION
     Linhas de error MSB3491 ou NuGet.targets com acesso negado sob Library\GAM\Platforms
-    da instalacao GeneXus sao ruido estrutural quando o build nao roda elevado.
+    da instalacao GeneXus são ruido estrutural quando o build não roda elevado.
     Quando pelo menos uma linha e filtrada, New-GamPlatformsEnvironmentRemediationHints
-    monta comandos icacls para o usuario executar uma unica vez (a skill nunca executa).
+    monta comandos icacls para o usuário executar uma única vez (a skill nunca executa).
 #>
 
 Set-StrictMode -Version Latest

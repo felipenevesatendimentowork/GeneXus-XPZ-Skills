@@ -8,15 +8,15 @@
     kb_environment_count, kb_environment_names e o mapeamento de output/web por environment
     no frontmatter, preservando o restante do arquivo.
 
-    A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames declarado pelo usuario
-    (ou agente apos confirmacao explicita). Scan de pastas da KB nativa e inventario automatico
+    A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames declarado pelo usuário
+    (ou agente após confirmacao explicita). Scan de pastas da KB nativa e inventario automático
     foram removidos.
 
     O mapeamento kb_environment_output_dirs vem SOMENTE de -KbEnvironmentOutputDirs declarado
-    pelo usuario. kb_environment_web_dirs pode ser informado explicitamente ou derivado de
+    pelo usuário. kb_environment_web_dirs pode ser informado explicitamente ou derivado de
     -KbNativePath + output dir + web, sem varrer a KB nativa.
 
-    Por padrao valida cada nome informado via SetActiveEnvironment headless (MSBuild).
+    Por padrão valida cada nome informado via SetActiveEnvironment headless (MSBuild).
     Use -SkipEnvironmentNamesMsBuildValidation apenas quando a sondagem MSBuild estiver
     indisponivel por infraestrutura (GeneXus/MSBuild/KB headless inacessivel nesta sessao).
 
@@ -37,29 +37,29 @@
 
 .PARAMETER KbEnvironmentOutputDirs
     Mapeamento explicito Environment=DiretorioOutput para cada environment declarado
-    (ex.: NETPostgreSQL=NETPostgreSQL). Nao usar scan de pastas da KB nativa.
+    (ex.: NETPostgreSQL=NETPostgreSQL). Não usar scan de pastas da KB nativa.
 
 .PARAMETER KbEnvironmentWebDirs
     Mapeamento opcional Environment=CaminhoWeb para cada environment declarado. Quando omitido,
     e derivado de -KbNativePath + DiretorioOutput + web.
 
 .PARAMETER KbNativePath
-    Caminho da KB nativa GeneXus. Obrigatorio para validacao MSBuild, salvo
-    -SkipEnvironmentNamesMsBuildValidation, e tambem obrigatorio para derivar
+    Caminho da KB nativa GeneXus. Obrigatório para validação MSBuild, salvo
+    -SkipEnvironmentNamesMsBuildValidation, e também obrigatório para derivar
     kb_environment_web_dirs quando -KbEnvironmentWebDirs for omitido.
 
 .PARAMETER InventoryWorkingDirectory
-    Diretorio de trabalho para validacao MSBuild. Obrigatorio salvo -SkipEnvironmentNamesMsBuildValidation.
+    Diretório de trabalho para validação MSBuild. Obrigatório salvo -SkipEnvironmentNamesMsBuildValidation.
 
 .PARAMETER InventoryLogPath
-    Log JSON opcional da sondagem MSBuild de validacao.
+    Log JSON opcional da sondagem MSBuild de validação.
 
 .PARAMETER SkipEnvironmentNamesMsBuildValidation
-    Pula validacao SetActiveEnvironment quando a sondagem MSBuild estiver indisponivel.
-    Deve ser excecao documentada no handoff; nao usar para contornar nome rejeitado pelo GeneXus.
+    Pula validação SetActiveEnvironment quando a sondagem MSBuild estiver indisponivel.
+    Deve ser exceção documentada no handoff; não usar para contornar nome rejeitado pelo GeneXus.
 
 .PARAMETER InventoryFromGeneXusMsBuild
-    REMOVIDO — emite BLOCK (inventario automatico por pastas da KB nativa).
+    REMOVIDO — emite BLOCK (inventario automático por pastas da KB nativa).
 
 .PARAMETER InventoryFromKbNativePath
     REMOVIDO — emite BLOCK (heuristica web\ incluia CSharpModel, Data* e pastas legadas).
@@ -71,10 +71,10 @@
     Caminho do MSBuild.exe (opcional — resolvido pela sondagem).
 
 .PARAMETER DatabaseUser
-    Usuario de banco para abertura headless da validacao (opcional).
+    Usuário de banco para abertura headless da validação (opcional).
 
 .PARAMETER DatabasePassword
-    Senha de banco para abertura headless da validacao (opcional).
+    Senha de banco para abertura headless da validação (opcional).
 
 .PARAMETER AsJson
     Emite JSON em vez de texto simples.

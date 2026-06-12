@@ -7,8 +7,8 @@
     Wrapper fino para scripts\New-XpzImportPackage.py. Mantem um ponto de entrada
     PowerShell curto para allowlist local, deixando a montagem XML no motor Python.
     Para Panel, o resultado JSON inclui information quando o par level/layout e
-    confirmado pelo template comparavel e warnings quando o par nao e confirmado
-    ou nao ha template comparavel.
+    confirmado pelo template comparavel e warnings quando o par não e confirmado
+    ou não ha template comparavel.
 
     O gate de drift frente-vs-acervo (Test-GeneXusFrontAcervoDrift.ps1) e SEMPRE
     executado ANTES de chamar o motor Python (fail-closed). -AcervoPath explicito
@@ -30,8 +30,8 @@
 .PARAMETER TemplatePackagePath
     Pacote import_file.xml ou XPZ real comparavel para clonar KMW, Source,
     Dependencies e ObjectsIdentityMapping. Quando o template trouxer Attributes
-    de topo e a frente nao trouxer atributos explicitos, o motor preserva esses
-    Attributes. Quando omitido, o motor usa envelope minimo derivado de
+    de topo e a frente não trouxer atributos explicitos, o motor preserva esses
+    Attributes. Quando omitido, o motor usa envelope mínimo derivado de
     kb-source-metadata.md. Para Panel, especialmente Panel SD, preferir template
     real exportado pela IDE da mesma KB; par confirmado e reportado em information.
 
@@ -43,7 +43,7 @@
     bloqueado (fail-closed). Se o gate detectar que um XML da frente esta mais
     antigo que o homonimo no acervo (front-older-than-acervo), o empacotamento e
     abortado. Findings warn (front-equals-acervo ou lastupdate-unparseable)
-    tambem bloqueiam esta chamada automatica ate confirmacao/resolucao fora do
+    também bloqueiam esta chamada automática ate confirmacao/resolucao fora do
     wrapper.
 
 #>

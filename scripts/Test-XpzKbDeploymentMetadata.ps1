@@ -6,8 +6,8 @@
 .DESCRIPTION
     Gate de setup (xpz-kb-parallel-setup): rejeita metadata legado com nomes tipicos de scan
     por pastas web\ (CSharpModel, Data*), inconsistencias de contagem e mapeamento
-    de output/web ausente ou divergente. A lista correta vem do usuario via
-    -KbEnvironmentNames e -KbEnvironmentOutputDirs; este gate nao valida existencia no GeneXus (MSBuild).
+    de output/web ausente ou divergente. A lista correta vem do usuário via
+    -KbEnvironmentNames e -KbEnvironmentOutputDirs; este gate não valida existência no GeneXus (MSBuild).
 
 .PARAMETER MetadataPath
     Caminho para kb-source-metadata.md.

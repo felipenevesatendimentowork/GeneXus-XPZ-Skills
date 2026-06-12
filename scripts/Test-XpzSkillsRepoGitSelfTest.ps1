@@ -5,13 +5,13 @@
     Self-test deterministico de Initialize-XpzSkillsRepoGit.ps1.
 
 .DESCRIPTION
-    Valida a classificacao de estado do script de bootstrap Git SEM acesso a rede
-    e SEM tocar no repositorio real. Cada caso monta um repositorio Git temporario
+    Valida a classificação de estado do script de bootstrap Git SEM acesso a rede
+    e SEM tocar no repositório real. Cada caso monta um repositório Git temporario
     local e confere o "label" produzido. Os caminhos que exigiriam fetch do remoto
-    oficial (GIT_LINKED_CLEAN / GIT_LINKED_WITH_DRIFT) sao exercitados via -WhatIf,
+    oficial (GIT_LINKED_CLEAN / GIT_LINKED_WITH_DRIFT) são exercitados via -WhatIf,
     que para antes de qualquer operacao de rede ou escrita.
 
-    Requer o executavel Git disponivel (o proprio recurso depende dele).
+    Requer o executavel Git disponível (o próprio recurso depende dele).
 #>
 
 [CmdletBinding()]
@@ -66,7 +66,7 @@ function Assert-Label {
     }
 }
 
-# Caso A: repositorio ja ligado ao oficial -> GIT_ALREADY_LINKED (sem rede)
+# Caso A: repositório já ligado ao oficial -> GIT_ALREADY_LINKED (sem rede)
 $tmp = New-TempDir
 try {
     & git -C $tmp init -b main *> $null
@@ -76,7 +76,7 @@ try {
 }
 finally { Remove-TempDir -Path $tmp }
 
-# Caso B: repositorio com origin divergente -> REMOTE_MISMATCH (sem rede)
+# Caso B: repositório com origin divergente -> REMOTE_MISMATCH (sem rede)
 $tmp = New-TempDir
 try {
     & git -C $tmp init -b main *> $null
@@ -86,7 +86,7 @@ try {
 }
 finally { Remove-TempDir -Path $tmp }
 
-# Caso C: repositorio sem origin + WhatIf -> ORIGIN_ADD_SKIPPED (sem rede/escrita)
+# Caso C: repositório sem origin + WhatIf -> ORIGIN_ADD_SKIPPED (sem rede/escrita)
 $tmp = New-TempDir
 try {
     & git -C $tmp init -b main *> $null
@@ -95,7 +95,7 @@ try {
 }
 finally { Remove-TempDir -Path $tmp }
 
-# Caso D: pasta com conteudo, sem .git + WhatIf -> BOOTSTRAP_SKIPPED (sem rede/escrita)
+# Caso D: pasta com conteúdo, sem .git + WhatIf -> BOOTSTRAP_SKIPPED (sem rede/escrita)
 $tmp = New-TempDir
 try {
     Set-Content -LiteralPath (Join-Path $tmp 'README.md') -Value '# zip extraido' -Encoding utf8

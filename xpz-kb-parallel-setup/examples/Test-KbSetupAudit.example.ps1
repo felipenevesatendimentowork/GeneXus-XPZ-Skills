@@ -10,10 +10,10 @@ pasta paralela: `powershell/runtime`, `sync/materializacao`,
 `naming/objetos-da-kb`, `indice/gate`, `indice/semantica`, `metadata wrapper`,
 `empacotamento local`, `declarativo/timestamps`, `wrappers/inventario` e
 `estado_operacional_sugerido`. A dimensao `naming/objetos-da-kb` delega ao
-wrapper local `Test-KbObjetosDaKbNaming.ps1` quando disponivel.
+wrapper local `Test-KbObjetosDaKbNaming.ps1` quando disponível.
 
-Este wrapper nao substitui os gates especificos. Ele apenas centraliza a
-execucao deles para handoff e diagnostico curto em `modo_atualizacao`.
+Este wrapper não substitui os gates específicos. Ele apenas centraliza a
+execução deles para handoff e diagnostico curto em `modo_atualizacao`.
 
 .PARAMETER KbRoot
 Caminho opcional para a raiz da pasta paralela da KB.

@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Inventario de environments da KB nativa ocorre somente via xpz-kb-parallel-setup
-    (Set-XpzKbSourceMetadataDeployment.ps1 com -KbEnvironmentNames e -KbEnvironmentOutputDirs declarados pelo usuario). Build/import/diagnostico de .cs apenas leem o metadata gravado.
+    (Set-XpzKbSourceMetadataDeployment.ps1 com -KbEnvironmentNames e -KbEnvironmentOutputDirs declarados pelo usuário). Build/import/diagnostico de .cs apenas leem o metadata gravado.
 #>
 
 Set-StrictMode -Version Latest

@@ -4,11 +4,11 @@
 Wrapper local para gravar campos de environment/deploy em kb-source-metadata.md.
 
 .DESCRIPTION
-Delega a scripts/Set-XpzKbSourceMetadataDeployment.ps1 no repositorio GeneXus-XPZ-Skills.
-A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames confirmada pelo usuario.
+Delega a scripts/Set-XpzKbSourceMetadataDeployment.ps1 no repositório GeneXus-XPZ-Skills.
+A lista kb_environment_names vem SOMENTE de -KbEnvironmentNames confirmada pelo usuário.
 O mapeamento de output por environment vem SOMENTE de -KbEnvironmentOutputDirs confirmado
-pelo usuario; nao fazer scan de pastas da KB nativa.
-Por padrao valida cada nome via SetActiveEnvironment headless (MSBuild).
+pelo usuário; não fazer scan de pastas da KB nativa.
+Por padrão valida cada nome via SetActiveEnvironment headless (MSBuild).
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.

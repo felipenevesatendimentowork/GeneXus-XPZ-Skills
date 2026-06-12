@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Regressao minima do contrato Edit-GeneXusXmlSurgical.ps1.
+    Regressao mínima do contrato Edit-GeneXusXmlSurgical.ps1.
 #>
 
 [CmdletBinding()]
@@ -144,7 +144,7 @@ try {
         throw 'Caso 2: ancora + insercao nao encontradas em sequencia'
     }
 
-    # 3) DryRun nao grava
+    # 3) DryRun não grava
     $fixtureDry = Join-Path $tempRoot 'ContractDry.xml'
     $dryContent = New-ContractFixtureXml
     [System.IO.File]::WriteAllText($fixtureDry, $dryContent, (Get-Utf8NoBomEncoding))
@@ -200,7 +200,7 @@ try {
     }
     if ($r6.ExitCode -ne 11) { throw "Caso 6: exit 11 esperado; obtido $($r6.ExitCode)" }
 
-    # 7) XML malformado apos replace + restore
+    # 7) XML malformado após replace + restore
     $fixtureBad = Join-Path $tempRoot 'ContractBad.xml'
     $badOriginal = New-ContractFixtureXml
     [System.IO.File]::WriteAllText($fixtureBad, $badOriginal, (Get-Utf8NoBomEncoding))

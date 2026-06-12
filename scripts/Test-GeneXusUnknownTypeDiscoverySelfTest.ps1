@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Bateria minima para descoberta de tipos desconhecidos e override de catalogo.
+    Bateria mínima para descoberta de tipos desconhecidos e override de catalogo.
 #>
 
 Set-StrictMode -Version Latest

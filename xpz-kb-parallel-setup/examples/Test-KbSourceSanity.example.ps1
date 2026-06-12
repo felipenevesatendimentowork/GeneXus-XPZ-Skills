@@ -9,7 +9,7 @@ especifico ou sobre todos os XMLs da subpasta ativa de uma frente em
 `ObjetosGeradosParaImportacaoNaKbNoGenexus`.
 
 Use este wrapper antes de gerar `import_file.xml` a partir de XML local
-ajustado pelo agente. Ele nao prova importacao nem build; apenas separa
+ajustado pelo agente. Ele não prova importação nem build; apenas separa
 `xmlWellFormed`, `sourceSanityStatus` e `probablyImportable`.
 
 .PARAMETER InputPath

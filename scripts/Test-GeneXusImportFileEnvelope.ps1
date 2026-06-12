@@ -171,7 +171,7 @@ if ($root.LocalName -ne "ExportFile") {
     $result.checks.rootIsExportFile = $true
 }
 
-# Camada 3 - blocos obrigatorios
+# Camada 3 - blocos obrigatórios
 $missingBlocks = [System.Collections.Generic.List[string]]::new()
 foreach ($block in @("KMW", "Source", "Objects", "Dependencies")) {
     if ($null -eq $root.SelectSingleNode("./$block")) {
@@ -227,7 +227,7 @@ if ($null -ne $sourceNode) {
     }
 }
 
-# Camada 5 - conteudo de Objects
+# Camada 5 - conteúdo de Objects
 $objectsNode = $root.SelectSingleNode("./Objects")
 if ($null -ne $objectsNode) {
 
@@ -237,7 +237,7 @@ if ($null -ne $objectsNode) {
     })
     $piNodes       = @($objectsNode.ChildNodes | Where-Object { $_ -is [System.Xml.XmlProcessingInstruction] })
 
-    # 5a - Objects nao vazio
+    # 5a - Objects não vazio
     if ($childElements.Count -eq 0 -and $textNodes.Count -eq 0) {
         $allFindings.Add((New-Finding -Severity "fail" -Code "objects-empty" `
             -Message "'<Objects>' nao contem nenhum objeto; verificar se o XML do objeto foi embutido corretamente.")) | Out-Null

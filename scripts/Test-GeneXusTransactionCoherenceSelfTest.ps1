@@ -6,11 +6,11 @@
 
 .DESCRIPTION
     Cobre:
-    (1) positivo  — Transaction GenerateObject=False com codigo de tela WorkWithPlus
+    (1) positivo  — Transaction GenerateObject=False com código de tela WorkWithPlus
         DVelop orfao em Events (Call("LoadWWPContext") / Call("<Trn>WW")) dispara fail;
-    (2) negativo  — mesma Transaction com Events limpos NAO dispara;
+    (2) negativo  — mesma Transaction com Events limpos NÃO dispara;
     (3) negativo  — GenerateObject default (propriedade ausente) com chamada *WW em
-        Events NAO dispara (early-return: tela e gerada, o codigo nao e orfao).
+        Events NÃO dispara (early-return: tela e gerada, o código não e orfao).
 #>
 
 Set-StrictMode -Version Latest
@@ -87,7 +87,7 @@ Event Start
 EndEvent
 '@
 
-# Caso 1: positivo — GenerateObject=False + codigo WWP orfao em Events
+# Caso 1: positivo — GenerateObject=False + código WWP orfao em Events
 $r1 = Invoke-Gate (New-TrnXml -EventsSource $eventsDirty -GenerateObjectFalse $true -ApplyWwp $true)
 if (-not (Test-HasWwpFinding $r1)) { throw "Caso 1: deveria disparar '$wwpFindingCode'." }
 if ($r1.sourceSanityStatus -ne 'fail') { throw "Caso 1: sourceSanityStatus deveria ser 'fail'; obtido '$($r1.sourceSanityStatus)'." }

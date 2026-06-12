@@ -4,12 +4,12 @@
     Self-test de Test-PrePushHistoryCommitPlaceholder.ps1.
 
 .DESCRIPTION
-    Monta um repositorio git temporario e confirma:
+    Monta um repositório git temporario e confirma:
       - campo Commit: com placeholder ('este commit', 'TODO', vazio) em
         arquivo historico/ tocado pela frente -> candidata;
-      - campo Commit: com hash real -> nao vira candidata;
-      - arquivo historico/ NAO tocado (fora do diff) -> nao vira candidata;
-      - arquivo fora de historico/ com placeholder -> nao vira candidata.
+      - campo Commit: com hash real -> não vira candidata;
+      - arquivo historico/ NÃO tocado (fora do diff) -> não vira candidata;
+      - arquivo fora de historico/ com placeholder -> não vira candidata.
 #>
 
 Set-StrictMode -Version Latest
@@ -46,7 +46,7 @@ try {
     [void](Invoke-TempGit @('config', 'user.name', 'Self Test'))
     [void](Invoke-TempGit @('config', 'commit.gpgsign', 'false'))
 
-    # historico/ NAO tocado nesta frente, com placeholder -> nao deve ser candidata.
+    # historico/ NÃO tocado nesta frente, com placeholder -> não deve ser candidata.
     Write-TempFile -RelativePath 'historico/Antigo.md' -Content "### Rastreabilidade`n- Commit: este commit`n"
     Write-TempFile -RelativePath 'base.md' -Content "base`n"
     [void](Invoke-TempGit @('add', '-A'))
@@ -80,7 +80,7 @@ try {
 - Commit:
 '@
     Write-TempFile -RelativePath 'historico/IdeiasImplementadas_teste.md' -Content $novo
-    # arquivo fora de historico/ com placeholder -> nao deve ser candidata.
+    # arquivo fora de historico/ com placeholder -> não deve ser candidata.
     Write-TempFile -RelativePath 'CHANGELOG.md' -Content "- Commit: este commit`n"
 
     [void](Invoke-TempGit @('add', '-A'))
@@ -111,15 +111,15 @@ try {
     if (@($result.findings | Where-Object { $_.message -match '\(vazio\)' }).Count -eq 0) {
         throw "placeholder vazio deveria virar candidata; candidatas: $($paths -join ', ')"
     }
-    # hash real (linha 11) NAO deve ser candidata.
+    # hash real (linha 11) NÃO deve ser candidata.
     if (@($paths | Where-Object { $_ -eq 'historico/IdeiasImplementadas_teste.md:11' }).Count -ne 0) {
         throw "hash real NAO deveria virar candidata (linha 11); candidatas: $($paths -join ', ')"
     }
-    # historico/ nao tocado NAO deve aparecer.
+    # historico/ não tocado NÃO deve aparecer.
     if (@($paths | Where-Object { $_ -like 'historico/Antigo.md:*' }).Count -ne 0) {
         throw "historico/Antigo.md (fora do diff) NAO deveria virar candidata; candidatas: $($paths -join ', ')"
     }
-    # fora de historico/ NAO deve aparecer.
+    # fora de historico/ NÃO deve aparecer.
     if (@($paths | Where-Object { $_ -like 'CHANGELOG.md:*' }).Count -ne 0) {
         throw "CHANGELOG.md (fora de historico/) NAO deveria virar candidata; candidatas: $($paths -join ', ')"
     }

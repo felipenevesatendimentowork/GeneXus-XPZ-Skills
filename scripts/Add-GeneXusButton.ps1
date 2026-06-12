@@ -4,24 +4,24 @@
     Adiciona um botao a um WebPanel GeneXus de forma cirurgica e fail-closed.
 
 .DESCRIPTION
-    Insere uma nova <cell> com um botao (forma <action> ou <ucw> Button) logo apos
+    Insere uma nova <cell> com um botao (forma <action> ou <ucw> Button) logo após
     a celula de um controle nomeado (-AfterControlName) ou logo antes dela
-    (-BeforeControlName), e opcionalmente um stub de Event de usuario no Part de
+    (-BeforeControlName), e opcionalmente um stub de Event de usuário no Part de
     eventos. Reusa GeneXusXmlSurgicalEditSupport.ps1 para o patch literal, o bump de
-    lastUpdate e a validacao de bem-formado; NAO re-serializa o CDATA do layout.
+    lastUpdate e a validação de bem-formado; NÃO re-serializa o CDATA do layout.
 
     Escopo seguro (MVP): a ancora (-AfterControlName ou -BeforeControlName) deve
     apontar para um controle folha em uma celula simples de tabela Flex (ou
     Responsive com responsiveSizes vazio). Tabela Responsive com responsiveSizes
     preenchido aborta fail-closed (RESPONSIVE_UNSAFE), pois inserir celula exigiria
-    reescrever o array de breakpoints. As duas ancoras sao mutuamente exclusivas
+    reescrever o array de breakpoints. As duas ancoras são mutuamente exclusivas
     (parameter sets); informe exatamente uma.
 
 .PARAMETER InputPath
     Caminho do XML do WebPanel (Object XML).
 
 .PARAMETER AfterControlName
-    Nome do controle folha existente apos cuja celula o novo botao sera inserido
+    Nome do controle folha existente após cuja celula o novo botao sera inserido
     (parameter set 'After'). Mutuamente exclusivo com -BeforeControlName.
 
 .PARAMETER BeforeControlName
@@ -32,7 +32,7 @@
     ControlName do botao novo.
 
 .PARAMETER EventName
-    Nome do evento de usuario disparado pelo botao (sem aspas; as aspas simples sao
+    Nome do evento de usuário disparado pelo botao (sem aspas; as aspas simples são
     adicionadas na serializacao).
 
 .PARAMETER Caption
@@ -184,7 +184,7 @@ try {
 
 # resolve a ancora pelo parameter set: 'Before' usa -BeforeControlName e insere a
 # nova celula ANTES da celula da ancora; 'After' (default) insere DEPOIS. Toda a
-# validacao de seguranca (folha, Responsive, unicidade) e identica nos dois casos.
+# validação de seguranca (folha, Responsive, unicidade) e identica nos dois casos.
 $position = $PSCmdlet.ParameterSetName
 if ($position -eq 'Before') {
     $anchorControlName = $BeforeControlName
@@ -208,9 +208,9 @@ if ($null -eq $anchorNode) {
     exit $r.ExitCode
 }
 
-# ancestor-or-self::cell[1]: o [1] e obrigatorio. SelectSingleNode sem predicado
+# ancestor-or-self::cell[1]: o [1] e obrigatório. SelectSingleNode sem predicado
 # escolhe por document order e devolveria a celula mais EXTERNA (o container
-# aninhado), nao a folha; em eixo reverso, [1] = o ancestral mais proximo.
+# aninhado), não a folha; em eixo reverso, [1] = o ancestral mais próximo.
 $cellNode = $anchorNode.SelectSingleNode('ancestor-or-self::cell[1]')
 if ($null -eq $cellNode) {
     $r = New-ButtonError -Code 'ANCHOR_NOT_IN_CELL' -Message "ANCHOR_NOT_IN_CELL: controle '$anchorControlName' nao esta dentro de uma <cell>." -ExitCode 21
@@ -340,7 +340,7 @@ if ($willBump) {
     $patchedText = Set-FirstObjectLastUpdateInText -Text $patchedText -NewLastUpdateValue $lastUpdateAfter
 }
 
-# --- Destino, validacao e escrita -----------------------------------------------
+# --- Destino, validação e escrita -----------------------------------------------
 $resolvedOutput = $resolvedInput
 if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
     $outputParent = [System.IO.Path]::GetDirectoryName($OutputPath)

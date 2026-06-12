@@ -4,14 +4,14 @@
 Wrapper local sanitizado para verificar a estrutura da pasta paralela da KB.
 
 .DESCRIPTION
-Verifica presenca de pastas obrigatorias, scripts esperados,
-KbIntelligence\kb-intelligence.sqlite e kb-source-metadata.md. Retorna relatorio
+Verifica presenca de pastas obrigatórias, scripts esperados,
+KbIntelligence\kb-intelligence.sqlite e kb-source-metadata.md. Retorna relatório
 de presenca/ausencia de cada componente. Usado no setup inicial e em diagnostico
 antes de qualquer operacao.
 
 Os nomes de script verificados usam a forma curta sanitizada; na KB real, substituir
 pelos nomes definitivos com o identificador da KB (ex: Test-FabricaBrasilKbIndexGate.ps1).
-A auditoria detalhada de naming dos diretorios de ObjetosDaKbEmXml fica no wrapper
+A auditoria detalhada de naming dos diretórios de ObjetosDaKbEmXml fica no wrapper
 dedicado `Test-KbObjetosDaKbNaming.ps1`.
 
 .PARAMETER KbRoot

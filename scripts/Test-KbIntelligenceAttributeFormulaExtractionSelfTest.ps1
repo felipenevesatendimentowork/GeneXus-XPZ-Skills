@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Self-test minimo para extracao de chamadas em Property Formula de Attribute no KbIntelligence.
+    Self-test mínimo para extracao de chamadas em Property Formula de Attribute no KbIntelligence.
 #>
 
 Set-StrictMode -Version Latest

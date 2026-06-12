@@ -57,7 +57,7 @@ function Test-IsPlatformModuleInventoryItem {
     }
 
     # Export real GeneXus 18 traz SDK/plataforma como PackagedModule (GUID c88fffcd-...).
-    # Module (GUID 00000000-...-000006) e container de KB do usuario.
+    # Module (GUID 00000000-...-000006) e container de KB do usuário.
     return $Item.typeName -eq 'Module' -or $Item.typeName -eq 'PackagedModule'
 }
 

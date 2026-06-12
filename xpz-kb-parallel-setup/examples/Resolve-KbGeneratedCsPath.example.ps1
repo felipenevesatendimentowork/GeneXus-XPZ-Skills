@@ -8,7 +8,7 @@ Delega ao motor compartilhado Resolve-GeneXusGeneratedCsPath.ps1, que le
 kb-source-metadata.md e usa kb_environment_web_dirs para montar o caminho direto
 do .cs sem varredura recursiva da KB nativa.
 
-Se o metadata nao tiver o mapeamento de output/web por environment, o motor
+Se o metadata não tiver o mapeamento de output/web por environment, o motor
 bloqueia e encaminha para xpz-kb-parallel-setup.
 
 .PARAMETER KbPath
@@ -21,7 +21,7 @@ Nome do objeto GeneXus.
 Tipo do objeto GeneXus. Informativo.
 
 .PARAMETER EnvironmentName
-Environment GeneXus. Quando omitido, usa deployment_environment_name ou o unico
+Environment GeneXus. Quando omitido, usa deployment_environment_name ou o único
 environment em metadata single-environment.
 
 .PARAMETER AsJson

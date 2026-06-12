@@ -6,10 +6,10 @@
 .DESCRIPTION
     Atualiza ou insere somente os campos last_setup_audit_run_at,
     setup_contract_signature_version e setup_contract_signature_hash, preservando
-    o restante do arquivo (conteudo, EOL dominante e newline final).
+    o restante do arquivo (conteúdo, EOL dominante e newline final).
     Autoridade desta operacao: xpz-kb-parallel-setup (auditoria de setup bem-sucedida).
 
-    Projetado para ser chamado pelo wrapper local Set-*KbSetupAuditTimestamp.ps1 apos auditoria
+    Projetado para ser chamado pelo wrapper local Set-*KbSetupAuditTimestamp.ps1 após auditoria
     completa com estado canonico bem-sucedido ou no subestado setup_apto_com_metadata_pendente.
 
 .PARAMETER KbParallelRoot
@@ -19,7 +19,7 @@
     Timestamp ISO 8601 com fuso horario. Quando omitido, usa o instante atual do sistema.
 
 .PARAMETER SkillsRoot
-    Raiz do repositorio de skills XPZ. Quando omitido, usa a raiz pai da pasta scripts.
+    Raiz do repositório de skills XPZ. Quando omitido, usa a raiz pai da pasta scripts.
 
 .PARAMETER AsJson
     Emite objeto JSON em vez de texto simples.

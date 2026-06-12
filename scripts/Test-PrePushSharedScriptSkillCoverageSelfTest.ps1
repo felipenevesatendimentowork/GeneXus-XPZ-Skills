@@ -4,12 +4,12 @@
     Self-test de Test-PrePushSharedScriptSkillCoverage.ps1.
 
 .DESCRIPTION
-    Monta um repositorio git temporario com um script compartilhado alterado e
+    Monta um repositório git temporario com um script compartilhado alterado e
     quatro documentos de skill. Confirma:
-      - skill que cita o script e NAO esta no diff -> candidata (transversal);
-      - quality-checklist.md que cita o script e NAO esta no diff -> candidata;
-      - skill que cita o script mas ESTA no diff (dona tocada) -> nao vira candidata;
-      - skill que NAO cita o script -> nao vira candidata.
+      - skill que cita o script e NÃO esta no diff -> candidata (transversal);
+      - quality-checklist.md que cita o script e NÃO esta no diff -> candidata;
+      - skill que cita o script mas ESTA no diff (dona tocada) -> não vira candidata;
+      - skill que NÃO cita o script -> não vira candidata.
 #>
 
 Set-StrictMode -Version Latest
@@ -51,11 +51,11 @@ try {
 
     # Skill dona (sera tocada nesta frente).
     Write-TempFile -RelativePath 'skill-dona/SKILL.md' -Content "# Dona`nContrato de ``$scriptName`` documentado aqui.`n"
-    # Skill transversal que consome o script (NAO sera tocada) -> candidata.
+    # Skill transversal que consome o script (NÃO sera tocada) -> candidata.
     Write-TempFile -RelativePath 'skill-transversal/SKILL.md' -Content "# Transversal`nEsta skill chama ``$scriptName`` no fluxo de import.`n"
-    # quality-checklist transversal que cita o script (NAO sera tocado) -> candidata.
+    # quality-checklist transversal que cita o script (NÃO sera tocado) -> candidata.
     Write-TempFile -RelativePath 'skill-transversal/quality-checklist.md' -Content "# Checklist`n- [ ] verificar saida de ``$scriptName```n"
-    # Skill que NAO cita o script -> nunca candidata.
+    # Skill que NÃO cita o script -> nunca candidata.
     Write-TempFile -RelativePath 'skill-outra/SKILL.md' -Content "# Outra`nNada a ver com o engine.`n"
 
     [void](Invoke-TempGit @('add', '-A'))

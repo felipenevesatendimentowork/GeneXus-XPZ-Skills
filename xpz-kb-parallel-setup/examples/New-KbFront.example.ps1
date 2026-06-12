@@ -7,7 +7,7 @@ Wrapper local sanitizado para abrir frente XPZ na pasta paralela da KB.
 Delega ao motor compartilhado `New-GeneXusXpzFront.ps1`, criando ou reutilizando
 uma subpasta em `ObjetosGeradosParaImportacaoNaKbNoGenexus` no formato
 `NomeCurto_GUID_YYYYMMDD`. Use este wrapper quando o agente precisar abrir uma
-frente com comando curto e atomico, sem montar PowerShell composto no chamador.
+frente com comando curto e atômico, sem montar PowerShell composto no chamador.
 
 .PARAMETER NomeCurto
 Identificador curto da frente. Deve casar com [A-Za-z][A-Za-z0-9]{2,40}.

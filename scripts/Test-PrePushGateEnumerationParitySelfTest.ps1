@@ -6,12 +6,12 @@
 .DESCRIPTION
     Monta uma raiz temporaria com um orquestrador sintetico que invoca tres
     gates semanticos (Alpha/Beta/Gamma) e dois gates de parse (excluidos por
-    padrao), e um .md de raiz com quatro linhas. Confirma:
-      - linha que enumera 2 dos 3 gates semanticos -> candidata (subconjunto proprio);
-      - linha que co-cita o par de parse -> NAO vira candidata (par excluido);
-      - linha que enumera os 3 gates semanticos -> NAO vira candidata (conjunto completo);
-      - linha com 1 unico gate -> NAO vira candidata.
-    Nao precisa de git: o gate e invariante (le orquestrador + .md, sem diff).
+    padrão), e um .md de raiz com quatro linhas. Confirma:
+      - linha que enumera 2 dos 3 gates semanticos -> candidata (subconjunto próprio);
+      - linha que co-cita o par de parse -> NÃO vira candidata (par excluido);
+      - linha que enumera os 3 gates semanticos -> NÃO vira candidata (conjunto completo);
+      - linha com 1 único gate -> NÃO vira candidata.
+    Não precisa de git: o gate e invariante (le orquestrador + .md, sem diff).
 #>
 
 Set-StrictMode -Version Latest

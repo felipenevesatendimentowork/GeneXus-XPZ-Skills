@@ -2,27 +2,27 @@
 
 <#
 .SYNOPSIS
-    Garante que a raiz do repositorio de skills XPZ seja um repositorio Git
+    Garante que a raiz do repositório de skills XPZ seja um repositório Git
     ligado ao remoto oficial no GitHub.
 
 .DESCRIPTION
-    Cobre o Cenario A descrito em xpz-skills-setup/SKILL.md: o usuario baixou o
-    repositorio como ZIP do GitHub, descompactou no PC e abriu uma sessao pedindo
-    o setup. A pasta tem todo o conteudo, mas nao e um repositorio Git.
+    Cobre o Cenário A descrito em xpz-skills-setup/SKILL.md: o usuário baixou o
+    repositório como ZIP do GitHub, descompactou no PC e abriu uma sessao pedindo
+    o setup. A pasta tem todo o conteúdo, mas não e um repositório Git.
 
     Fluxo deterministico:
       1. Garante o executavel Git (instala via winget quando ausente e permitido).
-      2. Se a pasta ja for repositorio: confere se origin aponta para o oficial.
-      3. Se nao for: git init + remote oficial + fetch + reset --mixed origin/<branch>,
+      2. Se a pasta já for repositório: confere se origin aponta para o oficial.
+      3. Se não for: git init + remote oficial + fetch + reset --mixed origin/<branch>,
          ligando a historia oficial SEM sobrescrever os arquivos vindos do ZIP.
       4. Gate anti-destrutivo: se o working tree divergir do oficial, reporta e para;
          o alinhamento destrutivo (reset --hard) so ocorre com -AlignToOfficial.
 
-    NAO clona pasta vazia: nesse caso esta skill nem existe na pasta. O clone e
-    pre-requisito documentado (Cenario B no SKILL.md).
+    NÃO clona pasta vazia: nesse caso esta skill nem existe na pasta. O clone e
+    pre-requisito documentado (Cenário B no SKILL.md).
 
 .OUTPUTS
-    Texto legivel por padrao; objeto JSON com -AsJson. O campo "label" e
+    Texto legivel por padrão; objeto JSON com -AsJson. O campo "label" e
     deterministico e destinado a interpretacao por agente.
 #>
 
@@ -184,7 +184,7 @@ if (-not $gitPath) {
 }
 $script:GitExe = $gitPath
 
-# --- 2/3. Resolver estado do repositorio --------------------------------------
+# --- 2/3. Resolver estado do repositório --------------------------------------
 $root = Resolve-RepoRoot -Requested $RepoRoot
 $officialNorm = ConvertTo-NormalizedUrl -Url $OfficialRemoteUrl
 
@@ -194,7 +194,7 @@ $isRepo = ($insideCheck.ExitCode -eq 0 -and $insideCheck.Text.Trim() -eq 'true')
 if ($isRepo) {
     $originCheck = Invoke-Git -GitArgs @('-C', $root, 'remote', 'get-url', 'origin') -AllowFailure
     if ($originCheck.ExitCode -ne 0) {
-        # Repositorio sem origin: ligar ao oficial e nada destrutivo.
+        # Repositório sem origin: ligar ao oficial e nada destrutivo.
         if ($PSCmdlet.ShouldProcess($root, "Adicionar remote origin -> $OfficialRemoteUrl")) {
             Invoke-Git -GitArgs @('-C', $root, 'remote', 'add', 'origin', $OfficialRemoteUrl) | Out-Null
             return (Write-Result -Status 'OK' -Label 'ORIGIN_ADDED' -Remote $OfficialRemoteUrl -Messages @(
@@ -220,7 +220,7 @@ if ($isRepo) {
             'Nao alterado automaticamente. Ajuste o remoto manualmente se desejar religar ao oficial.'))
 }
 
-# --- Bootstrap: pasta com conteudo, sem .git ----------------------------------
+# --- Bootstrap: pasta com conteúdo, sem .git ----------------------------------
 if (-not $PSCmdlet.ShouldProcess($root, "Inicializar repositorio Git e ligar a $OfficialRemoteUrl")) {
     return (Write-Result -Status 'ACTION_REQUIRED' -Label 'BOOTSTRAP_SKIPPED' -Messages @(
             'Bootstrap nao confirmado (WhatIf). Nenhuma acao executada.'))

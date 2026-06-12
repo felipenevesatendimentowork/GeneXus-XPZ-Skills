@@ -1,25 +1,25 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Monitor incremental de execucao headless de MSBuild/GeneXus.
+    Monitor incremental de execução headless de MSBuild/GeneXus.
 
 .DESCRIPTION
-    Acompanha o processo informado durante uma execucao MSBuild/GeneXus:
+    Acompanha o processo informado durante uma execução MSBuild/GeneXus:
     le o log incrementalmente,
     destaca fases relevantes do GeneXus, detecta silencio prolongado e
     encerra automaticamente quando o processo termina.
 
-    Nao depende do chat para polling — roda como processo independente no
+    Não depende do chat para polling — roda como processo independente no
     terminal do Windows. Recomenda-se iniciar com -NoExit para que a janela
-    permita ao usuario ler o output apos a execucao e fecha-la manualmente.
+    permita ao usuário ler o output após a execução e fecha-la manualmente.
 
     Fases destacadas: Open, Specify, Generate, Compile, BuildAll, Reorgan/Reorg,
     Validating subtype group, Close.
 
     Durante periodos sem nova linha no log, exibe um contador de silencio
-    in-place (sobrescrevendo a ultima linha da tela com \r) — sem gerar nova
+    in-place (sobrescrevendo a última linha da tela com \r) — sem gerar nova
     linha a cada poll. Apenas fases, alertas e mensagens de estado geram linhas
-    novas. O arquivo -MonitorLog nao recebe o contador de silencio.
+    novas. O arquivo -MonitorLog não recebe o contador de silencio.
 
     Quando usado por um wrapper MSBuild compativel, passar o mesmo caminho como
     -MonitorLog aqui e -MonitorLogPath no wrapper permite que o JSON de resultado
@@ -30,29 +30,29 @@
 
 .PARAMETER ProcessId
     PID do processo cuja vida delimita o monitoramento. Quando iniciado por um
-    wrapper compativel, e o PID do proprio wrapper que conduz a execucao MSBuild.
+    wrapper compativel, e o PID do próprio wrapper que conduz a execução MSBuild.
     Alias: -Pid.
 
 .PARAMETER LogPath
     Caminho do arquivo de log a ler incrementalmente (ex: msbuild.stdout.log).
-    O script aguarda ate 30 segundos pelo arquivo, caso ainda nao exista.
+    O script aguarda ate 30 segundos pelo arquivo, caso ainda não exista.
 
 .PARAMETER MonitorLog
-    Caminho opcional para gravar o log proprio do monitor.
-    A pasta pai e criada automaticamente se nao existir.
+    Caminho opcional para gravar o log próprio do monitor.
+    A pasta pai e criada automaticamente se não existir.
 
 .PARAMETER IntervalSeconds
-    Intervalo de polling em segundos. Padrao: 5. Intervalo valido: 1-60.
+    Intervalo de polling em segundos. Padrão: 5. Intervalo valido: 1-60.
 
 .PARAMETER SilenceThresholdSeconds
     Segundos sem nova linha no log antes de emitir alerta de silencio.
-    Padrao: 120. Intervalo valido: 30-3600.
+    Padrão: 120. Intervalo valido: 30-3600.
 
 .EXAMPLE
     .\Watch-GeneXusMsBuildLog.ps1 -Pid 12345 -LogPath "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-exemplo\msbuild.stdout.log"
 
 .EXAMPLE
-    # Iniciado pelo agente com -NoExit para janela ficar aberta apos a execucao:
+    # Iniciado pelo agente com -NoExit para janela ficar aberta após a execução:
     Start-Process pwsh -ArgumentList @(
         '-NoExit', '-NoProfile', '-File', '.\Watch-GeneXusMsBuildLog.ps1',
         '-Pid', '12345',
@@ -63,10 +63,10 @@
     )
 
 .NOTES
-    Nao usar C:\Temp\ como destino de LogPath ou MonitorLog quando o script e
+    Não usar C:\Temp\ como destino de LogPath ou MonitorLog quando o script e
     iniciado como processo filho desanexado (Start-Process) — processos filhos
-    nao tem acesso de escrita a C:\Temp\ neste ambiente. Usar pasta sob o
-    repositorio da skill (ex.: GeneXus-XPZ-Skills\Temp\).
+    não tem acesso de escrita a C:\Temp\ neste ambiente. Usar pasta sob o
+    repositório da skill (ex.: GeneXus-XPZ-Skills\Temp\).
 #>
 
 [CmdletBinding()]
@@ -90,8 +90,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# ── Padroes de fase GeneXus ───────────────────────────────────────────────────
-# Ordem importa: mais especificos primeiro para evitar sobreposicao.
+# ── Padrões de fase GeneXus ───────────────────────────────────────────────────
+# Ordem importa: mais específicos primeiro para evitar sobreposicao.
 
 $script:phasePatterns = @(
     [pscustomobject]@{ Regex = 'Validating subtype group'; Color = 'Cyan' }
@@ -112,7 +112,7 @@ $script:statusLineActive = $false   # true enquanto a linha de silencio esta na 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 function Confirm-StatusLine {
-    # Se ha uma linha de status ao vivo (sem \n), fecha-a antes de imprimir conteudo real.
+    # Se ha uma linha de status ao vivo (sem \n), fecha-a antes de imprimir conteúdo real.
     if ($script:statusLineActive) {
         Write-Host ''
         $script:statusLineActive = $false
@@ -120,7 +120,7 @@ function Confirm-StatusLine {
 }
 
 function Write-Status {
-    # Imprime/atualiza a linha de silencio in-place no console. Nao vai para o arquivo.
+    # Imprime/atualiza a linha de silencio in-place no console. Não vai para o arquivo.
     param([string]$Message, [string]$Color = 'DarkGray')
     $line    = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
     $padded  = $line.PadRight([Math]::Max(0, [Console]::WindowWidth - 1))

@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
     Gate consultivo: script compartilhado alterado no diff cujo contrato e
-    documentado em SKILL.md / quality-checklist.md que NAO foi tocado.
+    documentado em SKILL.md / quality-checklist.md que NÃO foi tocado.
 
 .DESCRIPTION
     Apoio mecanico a "Comparacao documental" do 13-revisao-pre-push.md para o
@@ -14,17 +14,17 @@
 
     Para cada script compartilhado (scripts/*.ps1 ou *.py) no intervalo
     BaseRef..HEAD, procura o nome base do script (como palavra) em todos os
-    SKILL.md e quality-checklist.md do repositorio (fora de historico/). Cada
-    documento que cita o script e NAO esta no diff vira CANDIDATA a comparacao
+    SKILL.md e quality-checklist.md do repositório (fora de historico/). Cada
+    documento que cita o script e NÃO esta no diff vira CANDIDATA a comparacao
     documental.
 
     Consultivo: severity 'warn'; findings entram em agentWarnings e a fase
     semantica confronta cada candidata (atualizar contrato/checklist ou
-    justificar que a mudanca nao afeta aquela skill). Nao prova alinhamento nem
+    justificar que a mudanca não afeta aquela skill). Não prova alinhamento nem
     reprova sozinho.
 
 .PARAMETER RootPath
-    Raiz do repositorio. Default: pai de scripts/.
+    Raiz do repositório. Default: pai de scripts/.
 
 .PARAMETER BaseRef
     Referencia base do intervalo BaseRef..HEAD. Default: origin/main.
@@ -88,7 +88,7 @@ function Normalize-RepoPath {
 
 $resolvedRoot = (Resolve-Path -LiteralPath $RootPath).Path
 
-# Confirma que a ref base existe (sem fallback automatico).
+# Confirma que a ref base existe (sem fallback automático).
 $refCheck = Invoke-RepoGit -RepositoryRoot $resolvedRoot -Arguments @('rev-parse', '--verify', $BaseRef)
 if ($refCheck.ExitCode -ne 0) {
     throw ("Ref base '{0}' nao encontrada; rode git fetch origin ou passe -BaseRef valido." -f $BaseRef)
@@ -148,7 +148,7 @@ if ($changedScripts.Count -gt 0) {
 
         $baseName = Split-Path -Leaf $scriptPath
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($baseName)
-        # Nome do script como palavra: '-' nao e caractere de palavra, entao o
+        # Nome do script como palavra: '-' não e caractere de palavra, entao o
         # sufixo de extensao (.ps1/.py) ou borda de texto delimitam corretamente.
         $stemRegex = [regex]::new('(?<![A-Za-z0-9_])' + [regex]::Escape($stem) + '(?![A-Za-z0-9_])')
 

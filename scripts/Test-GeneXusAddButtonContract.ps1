@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Regressao minima do contrato Add-GeneXusButton.ps1.
+    Regressao mínima do contrato Add-GeneXusButton.ps1.
 
 .DESCRIPTION
     Fixture sanitizada de WebPanel com:
@@ -11,7 +11,7 @@
     Valida: insercao action e ucw em Flex (escrita real, bem-formado, Event stub,
     bump de lastUpdate); insercao -BeforeControlName (nova celula antes da ancora);
     exclusividade mutua das ancoras; gate RESPONSIVE_UNSAFE; ancora inexistente; e
-    que -DryRun nao altera o arquivo.
+    que -DryRun não altera o arquivo.
 #>
 
 [CmdletBinding()]
@@ -120,7 +120,7 @@ try {
     if (Test-Path -LiteralPath $f4 -PathType Leaf) { Remove-Item -LiteralPath $f4 -Force }
 }
 
-# --- 5) DryRun nao altera o arquivo ---------------------------------------------
+# --- 5) DryRun não altera o arquivo ---------------------------------------------
 $f5 = New-FixtureFile
 try {
     $r = Invoke-AddButton -ArgList @('-InputPath', $f5, '-AfterControlName', 'TBAnchor', '-ButtonControlName', 'BtnD', '-EventName', 'EvD', '-Caption', 'D', '-DryRun', '-AsJson')

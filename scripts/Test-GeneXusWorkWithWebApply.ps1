@@ -161,7 +161,7 @@ function Get-TransactionApplyGuidValue {
     return $m.Groups['v'].Value.Trim()
 }
 
-# Validar parametros
+# Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
     throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
 }
@@ -200,7 +200,7 @@ if ($batchWWs.Count -eq 0) {
             }
         }
     }
-    # 3. Varrer corpus uma unica vez para resolver TXs pendentes (restringe a subpasta canonica Transaction/)
+    # 3. Varrer corpus uma única vez para resolver TXs pendentes (restringe a subpasta canonica Transaction/)
     $corpusTransactions = @{}
     if ($pendingCorpusTxLookup.Count -gt 0) {
         $corpusTransactionFolder = Join-Path $CorpusFolder 'Transaction'

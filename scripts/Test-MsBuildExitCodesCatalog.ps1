@@ -4,7 +4,7 @@
     Valida scripts/msbuild-exit-codes.catalog.json e paridade com exits nos wrappers MSBuild.
 
 .DESCRIPTION
-    Gate mecanico: parse JSON, schema minimo, anexo de causes para exit 46, presenca de 48,
+    Gate mecanico: parse JSON, schema mínimo, anexo de causes para exit 46, presenca de 48,
     e exits literais nos wrappers prioritarios documentados no catalogo.
 #>
 

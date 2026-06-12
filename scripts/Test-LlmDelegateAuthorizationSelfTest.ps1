@@ -3,7 +3,7 @@
 .SYNOPSIS
     Self-test de contrato de Resolve-LlmDelegateAuthorization.ps1 (skill xpz-llm-delegate).
 .DESCRIPTION
-    Valida a tabela de decisao allow/ask/deny combinando sensibilidade do payload,
+    Valida a tabela de decisão allow/ask/deny combinando sensibilidade do payload,
     localidade do modelo e politica por-KB, com config e politica sinteticas (sem opencode
     instalado nem rede). Determinístico.
     Sentinela de sucesso: OK: Test-LlmDelegateAuthorizationSelfTest.ps1

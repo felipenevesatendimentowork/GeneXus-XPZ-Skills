@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Self-test minimo para extracao de chamadas de metodo em ExternalObject no KbIntelligence.
+    Self-test mínimo para extracao de chamadas de método em ExternalObject no KbIntelligence.
 #>
 
 Set-StrictMode -Version Latest

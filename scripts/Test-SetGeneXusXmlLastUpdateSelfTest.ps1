@@ -96,7 +96,7 @@ if ($r2.status -ne 'OK') { throw "Caso 2: status deveria ser OK; obtido '$($r2.s
 $after2 = Get-LastUpdateFromText (Get-Content -LiteralPath $f2 -Raw -Encoding UTF8)
 if ((Get-StampUtc $after2) -le (Get-StampUtc $futureStamp)) { throw 'Caso 2: lastUpdate deveria respeitar o baseline futuro (regra max).' }
 
-# Caso 3: DryRun nao grava
+# Caso 3: DryRun não grava
 $f3 = Join-Path $tempRoot 'obj3.xml'
 [System.IO.File]::WriteAllText($f3, (New-FixtureObjectXml -Name $objName -Guid $objGuid -LastUpdate $oldStamp), $utf8)
 $r3 = & $scriptPath -InputPath $f3 -DryRun -AsJson | ConvertFrom-Json

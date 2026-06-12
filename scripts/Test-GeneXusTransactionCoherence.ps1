@@ -16,8 +16,8 @@ $TransactionTypeGuid = "1db606f2-af09-4cf9-a3b5-b481519d28f6"
 $NonWritableClassifications = @("extended-parent-fk", "formula", "extended-subtype-descriptive")
 
 # DVelop WorkWithPlus (third-party) — objectTypeGuid do catalogo gx-object-type-catalog.json
-# (WorkWithPlusInstance). Tambem e o sufixo da propriedade Apply:<guid> na Transaction.
-# NAO confundir com o Work With nativo do GeneXus (78cecefe-...), quase universal no acervo.
+# (WorkWithPlusInstance). Também e o sufixo da propriedade Apply:<guid> na Transaction.
+# NÃO confundir com o Work With nativo do GeneXus (78cecefe-...), quase universal no acervo.
 $WorkWithPlusInstanceTypeGuid = "07135890-56fc-489b-b408-063722fa9f7d"
 
 $GxKeywords = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -67,8 +67,8 @@ function Get-AttributeClassification {
 }
 
 function Get-ObjectGeneratesProgram {
-    # Le GenerateObject do <Properties> de NIVEL OBJECT (filho direto de <Object>),
-    # nao os <Properties> aninhados das Parts. So e serializada quando False; ausente => True.
+    # Le GenerateObject do <Properties> de NÍVEL OBJECT (filho direto de <Object>),
+    # não os <Properties> aninhados das Parts. So e serializada quando False; ausente => True.
     param([System.Xml.XmlElement]$ObjectNode)
 
     $propsNode = $ObjectNode.SelectSingleNode("./Properties")
@@ -86,11 +86,11 @@ function Get-ObjectGeneratesProgram {
 
 function Test-OrphanWwpScreenCode {
     # Gate D (confirmado-import, GX18U13 + WorkWithPlus_Web 16.0.3.1): Transaction com
-    # GenerateObject=False nao gera tela; carregar codigo de tela WorkWithPlus DVelop nas
+    # GenerateObject=False não gera tela; carregar código de tela WorkWithPlus DVelop nas
     # partes Events/Rules — Call("LoadWWPContext") / Call("<Trn>WW") — referencia runtime
     # inexistente e o import falha com src0246/src0294. Sinal causal = a chamada orfa;
-    # Apply:<wwp-guid>=True e o marcador "DVelop Work With Plus" sao corroborantes.
-    # NAO confundir com Work With nativo (Apply:78cecefe), legitimo e quase universal.
+    # Apply:<wwp-guid>=True e o marcador "DVelop Work With Plus" são corroborantes.
+    # NÃO confundir com Work With nativo (Apply:78cecefe), legitimo e quase universal.
     param(
         [System.Xml.XmlElement]$ObjectNode,
         [string]$ObjectName

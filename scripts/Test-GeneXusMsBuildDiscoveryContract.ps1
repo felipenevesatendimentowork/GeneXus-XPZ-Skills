@@ -2,12 +2,12 @@
 
 <#
 .SYNOPSIS
-Bateria minima do catalogo de descoberta de MSBuild (vswhere + caminhos estaticos).
+Bateria mínima do catalogo de descoberta de MSBuild (vswhere + caminhos estaticos).
 
 .DESCRIPTION
 Valida que o catalogo estatico cobre Visual Studio 18, VS 2022 em Program Files e
 Program Files (x86), variantes BuildTools/Community e binarios amd64, sem depender
-de instalacao local. Nao substitui probe real com Test-GeneXusMsBuildSetup.ps1.
+de instalacao local. Não substitui probe real com Test-GeneXusMsBuildSetup.ps1.
 #>
 
 [CmdletBinding()]

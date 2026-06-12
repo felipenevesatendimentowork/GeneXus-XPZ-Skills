@@ -6,14 +6,14 @@
     agente instaladas, mais o freshness do MCP global do Cursor.
 
 .DESCRIPTION
-    Mecaniza os passos de inventario, deteccao de instalacao e classificacao do
-    WORKFLOW de xpz-skills-setup. NAO cria nem remove vinculos: apenas audita e
-    classifica. As acoes de resolucao continuam a cargo do agente, apos confirmacao
-    explicita do usuario.
+    Mecaniza os passos de inventario, deteccao de instalacao e classificação do
+    WORKFLOW de xpz-skills-setup. NÃO cria nem remove vinculos: apenas audita e
+    classifica. As ações de resolucao continuam a cargo do agente, após confirmacao
+    explicita do usuário.
 
-    Classificacao por skill x ferramenta instalada:
-      OK                          vinculo valido em diretorio nativo da ferramenta
-      coberta_por_compatibilidade vinculo valido apenas em diretorio lido por compat
+    Classificação por skill x ferramenta instalada:
+      OK                          vinculo valido em diretório nativo da ferramenta
+      coberta_por_compatibilidade vinculo valido apenas em diretório lido por compat
       ausente                     nenhum vinculo valido encontrado
       quebrada                    vinculo presente, mas alvo inexistente
 
@@ -21,25 +21,25 @@
       - Codex indexa DOIS ambitos USER (.codex/skills e .agents/skills); presenca
         em qualquer um conta como OK.
       - OpenCode exige vinculo nativo (.config/opencode/skills ou .agents/skills);
-        nao conta compatibilidade com .claude/skills.
+        não conta compatibilidade com .claude/skills.
       - Cursor le por compatibilidade de .claude/skills e .codex/skills.
 
-    Orfas: vinculos sob um diretorio de skills cujo alvo aponta para DENTRO do
-    repositorio de skills XPZ, mas cujo nome nao esta mais no inventario da raiz.
-    Vinculos para outros repositorios nao contam como orfas do repo XPZ.
+    Orfas: vinculos sob um diretório de skills cujo alvo aponta para DENTRO do
+    repositório de skills XPZ, mas cujo nome não esta mais no inventario da raiz.
+    Vinculos para outros repositórios não contam como orfas do repo XPZ.
 
-    Skills externas gerenciadas (ex.: nexa): vivem em outro repositorio (nexa esta
-    em genexuslabs/genexus-skills) mas sao auditadas por nome em uma secao separada
-    (externalSkills / externalOverall), com a mesma classificacao OK / coberta /
+    Skills externas gerenciadas (ex.: nexa): vivem em outro repositório (nexa esta
+    em genexuslabs/genexus-skills) mas são auditadas por nome em uma seção separada
+    (externalSkills / externalOverall), com a mesma classificação OK / coberta /
     ausente / quebrada. So `nexa` e gerenciada por nome; demais skills do repo
-    externo (ex.: gx-sap) ficam dormentes e nao sao auditadas nem reportadas.
+    externo (ex.: gx-sap) ficam dormentes e não são auditadas nem reportadas.
 
     Freshness do MCP do Cursor (Candidato B): compara o server.py instalado com o
-    canonico do repositorio e valida config.json/registro em mcp.json.
+    canonico do repositório e valida config.json/registro em mcp.json.
 
 .OUTPUTS
-    Texto legivel por padrao; objeto JSON com -AsJson. Campos "overall" e os
-    "label" sao destinados a interpretacao por agente.
+    Texto legivel por padrão; objeto JSON com -AsJson. Campos "overall" e os
+    "label" são destinados a interpretacao por agente.
 #>
 
 [CmdletBinding()]
@@ -154,7 +154,7 @@ function Get-EntryInfo {
         $info.targetValid = (-not [string]::IsNullOrWhiteSpace($info.target)) -and (Test-Path -LiteralPath $info.target)
     }
     else {
-        # Pasta/arquivo real (nao e link). Conta como presente e valido.
+        # Pasta/arquivo real (não e link). Conta como presente e valido.
         $info.linkType = 'Directory'
         $info.target = $full
         $info.targetValid = $true
@@ -165,7 +165,7 @@ function Get-EntryInfo {
 function Get-SkillToolStatus {
     # Classifica UMA skill em UMA ferramenta, aplicando as mesmas regras nativo/compat
     # do loop interno. Usado para as skills externas gerenciadas (ex.: nexa), que vivem
-    # fora do repo XPZ mas sao auditadas por nome.
+    # fora do repo XPZ mas são auditadas por nome.
     param(
         [Parameter(Mandatory = $true)][string]$Skill,
         [Parameter(Mandatory = $true)]$ToolDef,
@@ -211,7 +211,7 @@ $inventory = @(
 $inventorySet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($s in $inventory) { [void]$inventorySet.Add($s) }
 
-# Mapa de diretorios por ferramenta (nativo + compatibilidade)
+# Mapa de diretórios por ferramenta (nativo + compatibilidade)
 $toolDefs = @(
     [ordered]@{ Name = 'ClaudeCode'; Native = @('.claude\skills'); Compat = @() },
     [ordered]@{ Name = 'Codex'; Native = @('.codex\skills', '.agents\skills'); Compat = @() },
@@ -269,7 +269,7 @@ foreach ($def in $toolDefs) {
     }
 }
 
-# Orfas: varrer cada diretorio de skills conhecido uma unica vez
+# Orfas: varrer cada diretório de skills conhecido uma única vez
 $rootNorm = (ConvertTo-LongPath -Path $root).TrimEnd('\').ToLowerInvariant()
 $allDirs = [System.Collections.Generic.List[string]]::new()
 foreach ($rel in @('.claude\skills', '.codex\skills', '.agents\skills', '.cursor\skills', '.config\opencode\skills')) {
@@ -360,8 +360,8 @@ function Get-CursorMcpReport {
 $cursorMcp = Get-CursorMcpReport -ProfileRoot $profileRoot -RepoRoot $root
 
 # --- Skills externas gerenciadas (apenas nexa) --------------------------------
-# nexa vive em genexuslabs/genexus-skills; auditada por nome em secao separada.
-# Demais skills do repo externo (ex.: gx-sap) ficam dormentes e nao sao auditadas.
+# nexa vive em genexuslabs/genexus-skills; auditada por nome em seção separada.
+# Demais skills do repo externo (ex.: gx-sap) ficam dormentes e não são auditadas.
 $externalSkillDefs = @(
     [ordered]@{ name = 'nexa'; repo = 'genexus-skills'; officialUrl = 'https://github.com/genexuslabs/genexus-skills.git' }
 )

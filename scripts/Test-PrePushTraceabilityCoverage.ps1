@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Checagem consultiva para apontar zonas de risco que a fase semantica deve
-    justificar. Nao tenta provar cobertura documental completa.
+    justificar. Não tenta provar cobertura documental completa.
 #>
 
 [CmdletBinding()]

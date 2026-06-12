@@ -1,10 +1,10 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Edicao cirurgica de XML GeneXus preservando conteudo fora do delta aprovado.
+    Edicao cirurgica de XML GeneXus preservando conteúdo fora do delta aprovado.
 
 .DESCRIPTION
-    Le o arquivo em modo raw (ReadAllText), valida ocorrencias literais da ancora,
+    Le o arquivo em modo raw (ReadAllText), valida ocorrências literais da ancora,
     aplica Replace ou InsertAfter, atualiza lastUpdate por defeito (exceto com
     -PreserveLastUpdate), grava UTF-8 sem BOM e valida well-formedness opcional.
 
@@ -18,16 +18,16 @@
     Substring literal a localizar (multi-linha permitida; escapes do chamador).
 
 .PARAMETER Replacement
-    Texto substituto (Replace) ou texto inserido apos a ancora (InsertAfter).
+    Texto substituto (Replace) ou texto inserido após a ancora (InsertAfter).
 
 .PARAMETER EditMode
     Replace ou InsertAfter.
 
 .PARAMETER ExpectedAnchorCount
-    Numero esperado de ocorrencias da ancora. Default: 1.
+    Numero esperado de ocorrências da ancora. Default: 1.
 
 .PARAMETER PreserveLastUpdate
-    Nao atualiza lastUpdate na raiz do Object.
+    Não atualiza lastUpdate na raiz do Object.
 
 .PARAMETER LastUpdateBaselinePath
     XML usado como baseline para o bump. Quando omitido, usa InputPath.
@@ -36,7 +36,7 @@
     Simula o apply sem gravar nem criar backup.
 
 .PARAMETER AssertWellFormedAfter
-    Valida XML apos gravar (default true). Em falha, restaura .bak.
+    Valida XML após gravar (default true). Em falha, restaura .bak.
 
 .PARAMETER AsJson
     Saida estruturada JSON.

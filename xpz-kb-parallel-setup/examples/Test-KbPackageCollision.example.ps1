@@ -8,9 +8,9 @@ Executa o script compartilhado `Test-XpzPackageCollision.ps1` antes de qualquer
 gravacao de `NomeCurto_GUID_YYYYMMDD_nn.import_file.xml` em
 `PacotesGeradosParaImportacaoNaKbNoGenexus`.
 
-Este wrapper deve ser o unico ponto local para decidir se a rodada `nn` pode
+Este wrapper deve ser o único ponto local para decidir se a rodada `nn` pode
 ser gravada ou se a frente deve bloquear por colisao.
-Emite JSON no stdout por padrao, propagando `status`, `exitCode`, `reason`,
+Emite JSON no stdout por padrão, propagando `status`, `exitCode`, `reason`,
 `blockingReasons` e, em colisao, `nextFreeNN`/`nextFreeRound`.
 
 .PARAMETER FrontPrefix

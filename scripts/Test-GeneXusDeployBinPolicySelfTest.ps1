@@ -1,11 +1,11 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Regressao da politica de execucao do gate de deploy bin (Resolve-GeneXusKbDeployBinCheckPolicy).
+    Regressao da politica de execução do gate de deploy bin (Resolve-GeneXusKbDeployBinCheckPolicy).
 
 .DESCRIPTION
-    Cobre a decisao "rodar o gate?" apos a Frente 1: ela depende do sucesso operacional
-    factual (-BuildOperationallySucceeded), nao da string de status. Garante que um build
+    Cobre a decisão "rodar o gate?" após a Frente 1: ela depende do sucesso operacional
+    factual (-BuildOperationallySucceeded), não da string de status. Garante que um build
     rebaixado por evento pos-build benigno (sino) mas factualmente OK ainda roda o gate.
 #>
 
@@ -58,7 +58,7 @@ try {
         throw "ASSERT_FAILED: caso A deveria ter gateEnabled=true, atual=$($policyA.gateEnabled)"
     }
 
-    # Caso B: build nao concluiu com sucesso operacional => pula com a nova razao.
+    # Caso B: build não concluiu com sucesso operacional => pula com a nova razão.
     $policyB = Resolve-GeneXusKbDeployBinCheckPolicy `
         -PostImportDeployValidation `
         -MetadataPath $metadataPath `
