@@ -418,6 +418,20 @@
       ]
     },
     {
+      "exit": 70,
+      "category": "espera-desacoplada",
+      "summary": "Wait-GeneXusKbBuildDetached.ps1: falha anomala da espera — a Tarefa Agendada parou de executar (ou sumiu) sem escrever a sentinela apos a margem de corrida (kill abrupto / OOM / estouro de -ExecutionTimeLimit antes do bloco finally). Helper de espera/monitoramento somente leitura; NAO invoca MSBuild (registrado aqui por descobribilidade da familia).",
+      "wrappers": ["Wait-GeneXusKbBuildDetached.ps1"],
+      "jsonHints": ["outcome", "taskState", "taskExists", "error", "stderrPath"]
+    },
+    {
+      "exit": 71,
+      "category": "espera-desacoplada",
+      "summary": "Wait-GeneXusKbBuildDetached.ps1: timeout da espera — a Tarefa Agendada seguia em execucao alem de -TimeoutSeconds sem sentinela. O build pode continuar; reexecutar a espera ou inspecionar manualmente. Helper de espera/monitoramento somente leitura; NAO invoca MSBuild.",
+      "wrappers": ["Wait-GeneXusKbBuildDetached.ps1"],
+      "jsonHints": ["outcome", "taskState", "waitedSeconds"]
+    },
+    {
       "exit": 90,
       "category": "ferramenta",
       "summary": "Falha interna do wrapper antes de diagnostico completo (excecao nao classificada).",
