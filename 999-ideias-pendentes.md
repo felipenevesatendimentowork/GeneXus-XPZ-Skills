@@ -11,6 +11,246 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (candidata a skill `xpz-pre-push-routine`)
+
+**Importância:** média (o sub-caso **destrutivo** tende a `alta` — falso negativo de regressão por dependente não enumerado; hoje mitigado só pelo build)
+**Maturidade:** ideia (decisões de runbook em aberto por `decisao-001`; alguns sub-achados abaixo já são "pesquisa feita")
+
+**Origem:** sessão 2026-06-12, a pedido do usuário. Estudo do experimento incubado em `C:\Dev\Prod\Gx_FabricaBrasil\pre-push-routine` (8 experimentos + `decisao-001`) e coleta de dados **read-only (consulta de fora)** contra o push real pendente da KB FabricaBrasil (10 commits, frente "OperacaoItem — Título Intermediário"). O experimento ainda **não** é referenciado em nenhuma skill nem no `09`.
+
+### O experimento existente (resumo)
+
+Rotina pré-push específica para pasta paralela de KB, em 3 fases: **Fase 1 mecânica** (orquestrador `Invoke-FabricaBrasilPrePushPhase1.ps1`, 11 gates G1–G5/K1–K4/K8/K9/K11, exit codes, `-AsJson`, princípio de delegação — K8/K9 consomem gates canônicos), **Fase 2a estrutural** (parcial scriptada: higiene de frente/pacote + checklist de agente) e **Fase 2b regressão** (deliberadamente **não** scriptada — `decisao-001`). Conclusão empírica dos experimentos 005/006: o cheque **autoritativo** de regressão é o **Specify+Build** (`xpz-msbuild-build`), não a análise estática de XML; o estático é triagem barata antes do build.
+
+### O buraco empírico: perfil estrutural-aditivo
+
+Os 8 experimentos só exercitaram mudança em rules `[web]` (003) e em corpo de Procedure (004-piloto). O perfil **Transaction ganhando atributos via FK de subtype** nunca foi coberto. Caso real estudado: `OperacaoItem` ganha 5 atributos via `SubTypeGroup OperacaoItemTituloIntermediario` (FK a `Pessoa`), todos nullable, **zero removidos**.
+
+### Achados coletados (dados)
+
+1. **Eixo 2 incompleto** [pesquisa feita]: `who-uses(Transaction:OperacaoItem)` = **6** (só BC Load/Save + binding WorkWith); `who-uses(Table:OperacaoItem)` = **14** (navegadores `For each`, relação `navigates_explicit_table`). Os experimentos só consultaram a Transaction. Receita correta para mudança estrutural: **`who-uses(Transaction)` ∪ `who-uses(Table)`** — senão os navegadores `For each` somem do relatório. Prova: `procAtualizaLancamentoItens...` navega `for each OperacaoItem` (linha 197) e **consome os atributos novos** (linhas 264–267), mas é invisível no who-uses da Transaction.
+2. **who-uses de atributo recém-criado** retorna só auto-declarações estruturais (Table index member + Transaction level attribute), não consumidores — semântica diferente da dependência-de-consumo que os experimentos assumiram.
+3. **Sutileza cabeça-detalhe no F1**: `Operacao.xml` é SAME (descartada pelo filtro) mas é a **cabeça** cujo detalhe mudou; carrega 20 dependentes. "Descartar SAME cedo" está certo para o arquivo, mas o analista não pode concluir que a cabeça está fora do escopo.
+4. **Roteamento por perfil de risco**: zero atributos removidos ⇒ o eixo `quebrado`-por-referência-órfã é **no-op por construção**; o esforço migra para o eixo de **omissão**. Sinal mecânico: F1 + "algum `<Attribute>` removido no diff?".
+5. **Status novo `suspeito-por-omissão`** [pesquisa feita como heurística]: 11 navegadores da Table, **2 tocados, 9 intocados**. Ranqueados por afinidade de nome ao conceito novo, os 2 de topo (`procAtualizaTituloDaTroca`, `procCompensacaoDeTitulos`) validaram-se como candidatos de domínio **real** (ambos manipulam `Titulo`/`TituloFavorecido`/parte do título). Heurística = **sinal, não ruído** (2/2 checados). **Não** confirmados como bugs — confirmar exige intenção de negócio + dev + build. A shortlist sai de graça do cruzamento `who-uses(Table)` × diff git.
+6. **Assinatura mecânica da FK-de-subtype aditiva**: `SubTypeGroup` NEW (mapeando subtipos a supertipos de `Pessoa`) + `Table` ganha índice **`Automatic` Duplicate** sobre as colunas FK + Transaction ganha level attributes nullable. Reconhecível por padrão ⇒ um motor futuro baixa o nível de alarme de quebra automaticamente e redireciona atenção à omissão.
+
+### Direção proposta para a "Fase 2b madura"
+
+Para o caso estrutural, a 2b não é um runbook que dá selo de "sem regressão" — é um **classificador de perfil de risco**:
+
+- Consulta de Eixo 2 = `who-uses(Transaction)` ∪ `who-uses(Table)`.
+- F1 + "algum atributo removido?" roteia: **removido** → eixo de quebra (build é autoritativo); **nenhum removido** → eixo de omissão.
+- Novo status `suspeito-por-omissão` com shortlist de navegadores intocados ranqueada por afinidade.
+- Reconhecimento mecânico da FK-de-subtype aditiva para calibrar o alarme.
+
+### Sub-caso destrutivo (caracterizado em 2026-06-12)
+
+O sub-caso **destrutivo** (atributo removido/renomeado, domínio trocado, chave alterada) — onde o eixo de quebra realmente morde — foi caracterizado por sondagem em atributo estabelecido (`OperacaoItemContaId`, sem mudança real; experimento mental sobre estado atual):
+
+- **Índice cego**: `who-uses(Attribute:OperacaoItemContaId)` = **2**, ambos auto-declarações estruturais (Table index member + Transaction level attribute). O extrator **não modela** "objeto X referencia atributo A no `Source`/conditions".
+- **Verdade textual**: **119 ocorrências em 25 arquivos** (~21 objetos consumidores reais: DataSelectors, ~15 Procedures de relatório/lançamento, WebPanels, SDTs).
+- Para uma remoção, o `who-uses` reportaria **2 (ambos estruturais = "ninguém")** contra **~21 que quebrariam**. Ponto cego catastrófico.
+- **Nem `who-uses(Table)` basta**: os consumidores grep incluem `procRelatorioTitulos*`, `dsRelatoriosDeTitulosViaLancamentos`, `sdtTituloParametros` — **nenhum** deles estava nos 14 navegadores da Table.
+
+**Receita de Eixo-2 para o caso destrutivo** (diferente do aditivo): o enumerador confiável é **grep textual do nome do atributo** (estilo D1, com filtro de comentário `//`), **não** `who-uses`; o veredito de quebra é o **build**. Isso fundamenta, por caminho direto, a conclusão dos experimentos 005/006 de que o build é autoritativo: para remoção/rename de atributo, a análise estática via índice **não enumera** sequer o raio de impacto.
+
+**Assimetria aditivo↔destrutivo** (fato de design central): aditivo → eixo de quebra é no-op, `who-uses(Table)` dá superfície útil + shortlist de omissão (sinal); destrutivo → eixo de quebra morde, `who-uses` cego, só grep+build enumeram/julgam. O roteamento "algum `<Attribute>` removido no diff?" (achado 4) é o que separa os dois regimes.
+
+### Experimento real de rename (2026-06-12, KB `wsEducacaoSpTeste`)
+
+Atributo `DistribuidoraNome` → `DistribuidoraNomeTeste` produzido sob medida pelo dev (rename na IDE + sync). Achado: o rename do GeneXus **propaga perfeitamente** para todo código/estrutura antes do export — **zero órfãos** nos ~7 consumidores. As 27 ocorrências do nome antigo que sobraram no acervo são todas legítimas: variável homônima `&DistribuidoraNome` (variável não renomeia com o atributo), nome do objeto `procDistribuidoraNome`, e o arquivo-resíduo de sync. A única referência ao atributo nu (`procDistribuidoraNome:9`, RHS) foi atualizada para o novo nome.
+
+**Conclusões:** (1) rename **não** é destrutivo — sai do regime; o destrutivo real é **remoção** (delete), sem alvo de propagação — é o que a próxima probe deve testar. (2) **Prova empírica de que grep sozinho dá falso alarme**: o grep ingênuo deu 27 ocorrências/8 arquivos (leitura ingênua = "KB quebrada"), mas a classificação precisa deu **zero órfãos** — só parser/build distinguem atributo nu de variável homônima. Valida o build como autoridade e o `references_attribute` do Plano A (que faria essa distinção que o grep não faz).
+
+**Cross-validação pelo full sync do dev (mesmo episódio):** GUID idêntico nos dois arquivos confirma rename (não delete+add); full export limpo (485 objetos, exitCode=0, sem Categoria B). Dois aprendizados: (a) **detectar** o regime destrutivo é barato — o `-FullSnapshot` acusou o nome antigo como `Extra=1` (reconciliação de full export sinaliza rename/remoção de graça; no incremental, `git diff` mostra o arquivo deletado/criado). O difícil não é detectar, é **enumerar consumidores + veredito** (grep ambíguo, build autoritativo). (b) Gap de tooling: a limpeza automática de resíduo do wrapper de sync trata `<Object>` por GUID e **ignora `<Attribute>`** — o arquivo do nome antigo sobrevive como resíduo no acervo até remoção manual.
+
+### Experimento real de remoção (2026-06-12, KB `wsEducacaoSpTeste`) — a IDE bloqueia
+
+Tentar deletar o atributo (`DistribuidoraNomeTeste`) na IDE GeneXus 18 retornou: **"Object(s) could not be deleted: Attribute 'DistribuidoraNomeTeste' is referenced at least by Attribute 'EscolaDistribuidoraNome'. (Artech.Layers.BL)"**. A IDE **bloqueia** a deleção de atributo referenciado (fail-fast no primeiro referenciador — aqui, o subtipo). A probe se resolveu sem sync.
+
+**Implicação (fecha o regime destrutivo):** combinado com a probe de rename (a IDE propaga), o GeneXus **previne estruturalmente os dois caminhos** pelos quais uma mudança de atributo orfanaria consumidores: rename → propaga; delete → bloqueado enquanto referenciado. Para deletar, o dev precisa **remover todas as referências antes** — e nesse ponto os consumidores já foram atualizados, então o diff mostra mudança **coordenada**, não órfão silencioso. O regime destrutivo de "referência órfã de atributo chegando ao acervo" é **essencialmente inalcançável** pelo desenvolvimento normal mediado pela IDE — coerente com os 223 commits sem nenhum caso destrutivo (não só raro: estruturalmente impedido).
+
+**Recalibração honesta do Plano A:** isso **enfraquece a motivação destrutiva** do `references_attribute` (o caso que ele enumeraria é o que a IDE previne). O Plano A mantém valor para **troca de domínio** (dois saltos, não bloqueada) e impacto geral / `who-uses(Attribute)` significativo, mas sua **urgência cai** — reavaliar prioridade à luz disto.
+
+**Nuance aberta (última ponta):** o bloqueio aqui foi por referência **estrutural** (subtipo). Se a guarda da IDE também cobre referência **só em código** (`<Source>`, sem subtipo/transação) é o que falta confirmar; mas a direção está clara e a conclusão central se sustenta.
+
+### Sub-caso troca de domínio (caracterizado em 2026-06-12) — consulta de dois saltos
+
+Sonda em `Domain:Aliquota`: `who-uses(Domain:Aliquota)` = **64**, relação **`based_on_domain`** (Property `idBasedOn`). O índice **cobre** o salto 1 (Domain → atributos baseados nele). Mas o salto 2 (cada atributo afetado → quem o consome e quebraria) **cai no mesmo buraco** do caso destrutivo (consumo de atributo no corpo é cego). Receita = `who-uses(Domain)` para o conjunto de atributos (índice) → por atributo, **grep + build** para consumidores.
+
+### Experimento real de troca de tipo (2026-06-12, KB `wsEducacaoSpTeste`) — build OK, reorg não-backward-compatible
+
+Atributo `ContratoNumero` (que é a **PK** da Contrato) trocado de `Numeric(10)` → `Character(15)` na IDE.
+- **IDE:** aceitou salvar **sem bloquear nem avisar** (assimetria com o delete, que bloqueia).
+- **Build:** **SUCCESS, zero erro de cast/compilação** — o GeneXus propagou o novo tipo a todos os consumidores e **auto-gerou conversão de dados** (`ContratoNumero.tostring(10,0)`).
+- **Database Impact Analysis:** `nfo0003: reorganization not backward compatible` — `ALTER COLUMN ContratoNumero TYPE CHAR(15)`, **DROP/ADD da PK**, e **cascata para a tabela `GuiaPed`** (FK via subtipo `GuiaPedContrato`).
+
+**Conclusão:** troca de tipo (mesmo em PK) **não é risco de regressão de código** — o GeneXus resolve o código e gera a migração. É **risco de schema/dados**: reorg não-backward-compatible em produção. A autoridade é a **Database Impact Analysis / detecção de reorg**, que o `xpz-msbuild-build` **já porta** via `FailIfReorg` (uma troca de tipo dispara `ReorgDetected=true`). Análise estática de XML e o índice **não enxergam** isto.
+
+**Reavaliação cumulativa (4 probes em `wsEducacaoSpTeste`):** aditivo → triagem estática; rename → IDE propaga (não-evento); delete → IDE bloqueia (prevenido); troca de tipo/chave → build + reorg detection (gate já existe). O **build** (Specify + Impact Analysis + `FailIfReorg`) é a autoridade dos regimes estrutural/tipo/chave. A motivação de **detecção de regressão** do Plano A (`references_attribute`) encolhe a cada probe — resta valor de impacto geral / `who-uses(Attribute)` significativo, não de regressão. **Reavaliar a prioridade do Plano A à luz disto.**
+
+### Caracterização precisa do índice SQLite (refinada em 2026-06-12)
+
+O índice **não é cego em bloco** — a cegueira é **estreita e específica**. Cobre bem: objeto→objeto (`calls_procedure`, `navigates_explicit_table`, `loads/saves_business_component`, `formula_*`, `workwith_*`), casas estruturais do atributo (`has_level_attribute`, `has_index_member_attribute`) e **`Attribute → Domain` (`based_on_domain`)**. O **único** buraco material é **"objeto X lê/escreve atributo A no `Source`/conditions"** — relação faltante, não carência ampla.
+
+**Decisão de design A↔B** (em aberto): (A) **melhorar o índice** adicionando relação `references_attribute` (consumo de atributo no corpo) — fecha de uma vez os saltos-2 do destrutivo **e** do domínio; esforço comparável ao fix `fdb4b3f` (Formula-em-Attribute), que é precedente exato do mesmo tipo de extrator; vs (B) **não mexer no índice** e a rotina rotear por ferramenta (`who-uses` objeto / grep atributo / build veredito). Como o buraco é uma única relação estreita e precedente-corrigível, (A) é mais tratável do que parecia. **Preferência do usuário (2026-06-12): (A)** — baixo custo de manutenção do índice e capacidade de atender mais consultas.
+
+**Quantificação do ruído do grep (caminho B) — sonda em `OperacaoItemContaId`, 2026-06-12:** grep ingênuo = 119 ocorrências / 25 arquivos; com word-boundary cai para 102/24 (~17 falsos positivos por substring, ~14%); ~20 ocorrências são linhas de comentário `//`; ~16 são casas estruturais (Transaction 14, Table 1, SubTypeGroup 1), não consumo. Net ≈ 66 referências de consumo real em ~21 objetos. O caminho B exige **dois filtros** (boundary + comentário) e ainda assim devolve "o nome aparece aqui", não "o atributo é consumido aqui" (não distingue leitura de escrita, código de literal). Uma relação `references_attribute` no índice seria **exata** (como `navigates_explicit_table`/`based_on_domain` já são, com linha + evidência). Conclusão: **(A) é a escolha de engenharia melhor, não só aceitável** — endossada pelo usuário.
+
+**Nota de escopo para o extrator (A) — mapa de formas (sondado em 2026-06-12 sobre `OperacaoItemContaId`):**
+
+| Contexto | Forma da referência | Mecânica de extração |
+|---|---|---|
+| Procedure / DataSelector / WebPanel | `<Source><![CDATA[ código ]]>` | tokenizar código (já existe para `navigates_explicit_table`) |
+| SDT member | `<Item><Property>idBasedOn → Attribute:X</Property>` | XPath estruturado — **reusa máquina do `based_on_domain`** |
+| WorkWith coluna | `<attribute attribute="GUID-Nome"/>` | XPath (resolver GUID→nome) |
+| WorkWith filtro | `<filterAttribute name="X"/>` | XPath estruturado |
+| WorkWith condition | `<condition value="X = &amp;... ">` | XPath + parsear código embutido (XML-escapado) |
+
+Dois aprendizados: (a) parte do extrator **reusa máquina existente** (`idBasedOn` para SDT; tokenizer de Source para código) — custo menor que parecia; cobre **mais que `<Source>`**, mesma lição incremental de `122a171`/`fdb4b3f`. (b) Precisão exige distinguir **atributo nu** de **membro de SDT** (`&sdt.X`) de **variável** (`&X`) de mesmo nome — o que grep não faz e parser faz (reforça (A)).
+
+### Caveat de generalização (para promoção a skill)
+
+Tudo hoje é `FabricaBrasil`-hardcoded (gates K8/K9 delegam a wrappers locais; catálogo de padrões aceitos é específico da KB). O padrão de skill (como `xpz-sync`) é **motor compartilhado em `scripts/` + wrappers locais finos** cujos nomes o README local define; o catálogo de padrões aceitos vira arquivo **por-KB**. Esse é o "passo da promoção" que a `decisao-001`/D1 adiou.
+
+### Sub-casos chave e volume (sondados em 2026-06-12) — confirmam, não abrem regime novo
+
+- **Mudança de chave**: `who-uses(Attribute:OperacaoItemId)` (atributo-chave) = 3, todas estruturais (`has_key_attribute`, `has_index_member_attribute`, `has_level_attribute`). Mesma cegueira de consumo do caso destrutivo + 1 relação estrutural; stakes maiores (rippla a tabelas-filhas via FK e a contratos BC). Regime = **destrutivo amplificado**; build essencial.
+- **Procedure com muitos callers**: `who-uses(procParametroDinamicoConteudo)` = **204**, todas `calls_procedure` (relação única). Em volume assim, tabela linear é inviável e não há agregação por `relation_kind` (todas iguais) — revisão manual não escala, **o build é o cheque**. Formato de tabela só importa no regime de **baixo volume** (≤~15-20, onde `Transaction ∪ Table` cabe em sub-tabelas).
+
+### Relação com `decisao-001` (reorientação proposta)
+
+A `decisao-001` adiou o runbook 2b até 2 experimentos (003 Transaction + 004 Procedure >10 callers); 003 existe e o dado de >10 callers agora existe (204 em `procParametroDinamicoConteudo`). Ele **dissolve parcialmente a premissa Q1**: "melhor formato de tabela para 10+ dependentes" importa menos que reconhecer **alto volume = território de build**, baixo volume = território de tabela. O eixo de design central que emergiu desta coleta é **(a)** classificar o regime (aditivo / destrutivo / domínio / chave) + **(b)** melhorar o índice (caminho A, `references_attribute`) — **não** o formato de tabela. Proposta: reorientar o critério de desbloqueio do runbook 2b em torno de (a)+(b).
+
+## Plano A — Implementar relação `references_attribute` no índice KbIntelligence
+
+**Importância:** baixa (rebaixada em 2026-06-12 — ver «Reavaliação» abaixo; a motivação de detecção de regressão ficou largamente coberta por IDE+build)
+**Maturidade:** tecnicamente pronta para implementar, mas **gatilho reaberto** — decidir se ainda vale, dado que IDE+build cobrem o caso de regressão (ver «Reavaliação»)
+
+**Origem:** diagnóstico da entrada "Maturar a Fase 2b da rotina pré-push..." (2026-06-12). **Ler aquela entrada primeiro** — contém a evidência (índice cego para consumo de atributo no corpo: `who-uses(Attribute:OperacaoItemContaId)` = 2 estruturais vs ~21 consumidores reais; grep como fallback é ~30% ruidoso e impreciso).
+
+**Para o agente da sessão futura:** frente no repositório de skills (`C:\Dev\Knowledge\GeneXus-XPZ-Skills`), motor compartilhado. **Não** precisa setar a pasta paralela; usar a KB FabricaBrasil só como corpus de validação (consulta de fora, read-only).
+
+### Reavaliação após as probes de 2026-06-12 (wsEducacaoSpTeste)
+
+As 4 probes mostraram que a motivação **original** (detecção de regressão) está largamente coberta **a montante**: **delete** de atributo referenciado é **bloqueado pela IDE**; **rename** é **propagado pela IDE**; **troca de tipo/domínio** (mesmo em PK) é pega pela **Database Impact Analysis / `FailIfReorg`** do build. Logo, usar `who-uses(Attribute:X)` para "impacto de remoção/rename/troca-de-domínio" é, na prática, **redundante com IDE+build**. **Valor remanescente** do `references_attribute`: consultas de **impacto geral** (tornar `who-uses(Attribute)` significativo para exploração/triagem) — um nice-to-have, **não** segurança contra regressão. Decidir se vale implementar à luz disto antes de tratar como "pronta".
+
+### Objetivo
+
+Adicionar ao extrator a relação **`references_attribute`** ("objeto X referencia atributo A no corpo/estrutura"). Hoje o índice modela só as casas estruturais do atributo (`has_level_attribute`, `has_key_attribute`, `has_index_member_attribute`) e `based_on_domain` — não o consumo. Isso torna `who-uses(Attribute:X)` cego ao consumo no corpo — útil para **impacto geral**; para **regressão** de remoção/rename/troca-de-domínio, ver «Reavaliação» (IDE+build cobrem).
+
+### Arquivo e âncoras (estado em 2026-06-12)
+
+`scripts/Build-KbIntelligenceIndex.py`:
+- `EXTRACTOR_SIGNATURE_VERSION = "6"` (linha ~42) → **bump para "7"** ao concluir (força rebuild compulsório via `Test-...KbIndexGate.ps1`).
+- Cada `def extract_*` devolve `list[Evidence]` com `relation_kind` e é registrado; espelhar:
+  - **Código em `<Source>`**: `extract_source_for_each_explicit_table_evidence` (~728, `navigates_explicit_table`) — reusar o tokenizador de Source/CDATA.
+  - **idBasedOn**: `extract_attribute_idbasedon_domain_evidence` (~1577, `based_on_domain`) + regex `idBasedOn` (~96). O value pode ser `Domain:X` **ou** `Attribute:X` (membro de SDT é `Attribute:OperacaoItemContaId`). Hoje filtra Domain; **estender** para emitir `references_attribute` quando o value for `Attribute:` — quase uma extensão, não código do zero.
+  - **WorkWith**: `extract_workwith_condition_evidence` (~1263), `extract_workwith_condition_attribute_evidence` (~1302) — estender/criar para `<attribute attribute="GUID-Nome"/>` (coluna), `<filterAttribute name="X"/>` (filtro), `<condition value="X = &amp;...">` (código XML-escapado).
+
+### Escopo de contextos
+
+Ver a tabela "mapa de formas" na entrada "Maturar a Fase 2b..." (seção "Nota de escopo para o extrator (A)"): Source code (Procedure/DataSelector/WebPanel), SDT idBasedOn, WorkWith coluna/filtro/condition. Cobre **mais que `<Source>`**.
+
+### Precisão exigida
+
+Distinguir **atributo nu** (`OperacaoItemContaId`) de **membro de SDT** (`&sdt.OperacaoItemContaId`) de **variável** (`&OperacaoItemContaId`) de mesmo nome. Só atributo nu (e membro de SDT via idBasedOn) é `references_attribute`. Em `<Source>`, identificador precedido de `&` é variável/SDT-member, não atributo nu — os extratores de Source já fazem essa distinção para navigates/calls; reusar.
+
+### Precedentes (mesma natureza)
+
+`122a171` (Transaction/API/DataSelector em INDEXED_SOURCE_TYPES), `ad69de79` (`WebComponent.Create`), **`fdb4b3f`** (Formula em Attribute — precedente mais próximo: novo extrator + bump de assinatura).
+
+### Validação (caso canônico reproduzível)
+
+Após implementar + rebuild:
+- `who-uses(Attribute:OperacaoItemContaId)` deve saltar de **2** para **~21 consumidores** — incluindo `dsRelatoriosDeTitulosViaLancamentos`, `procRelatorioTitulosPor*`, `sdtTituloParametros`, `WorkWithWebOperacaoItem`, `procAtualizaLancamentoItens...` (os mesmos que o grep textual achou e o índice não).
+- Conferir que **variável** homônima **não** gera falso positivo.
+- `Test-FabricaBrasilKbIndexGate.ps1` deve forçar rebuild ao ver assinatura "7".
+
+### Decisões fechadas / não fazer
+
+- **Não** usar grep como solução (caminho B descartado).
+- `references_attribute` é **aditiva** — não quebrar relações existentes.
+- Rodar a rotina pré-push do repo de skills (`13`/`14`) antes de push; paridade doc: `02`, `08`, `09`, `scripts/README-kb-intelligence.md`, `kb-intelligence-guia-metodologico-agente.md` e skills que citam o extrator; entrada no `historico/IdeiasImplementadas_YYYYMM.md` ao mover esta entrada do `999`.
+
+## Plano B — Promover a `pre-push-routine` a skill `xpz-pre-push-routine`
+
+**Importância:** média
+**Maturidade:** pronta para implementar (design fechado; falta executar)
+
+**Origem:** mesma sessão 2026-06-12. **Ler antes:** entrada "Maturar a Fase 2b..." (diagnóstico) e o experimento incubado em `C:\Dev\Prod\Gx_FabricaBrasil\pre-push-routine` (README + 8 experimentos + `decisao-001`), como corpus (consulta de fora, read-only).
+
+**Para o agente da sessão futura:** a skill vive no repo de skills; a lógica-fonte está hoje hardcoded em FabricaBrasil na pasta paralela. **Generalizar, não copiar.**
+
+### Objetivo
+
+Levar a `pre-push-routine` (hoje só FabricaBrasil) a uma skill `xpz-pre-push-routine` no padrão das demais (SKILL.md + satélites), generalizada para qualquer pasta paralela de KB.
+
+### Estrutura proposta (padrão da casa)
+
+- `xpz-pre-push-routine/SKILL.md` — frontmatter `name`/`description`, TRIGGERS, GUIDELINE, PATH RESOLUTION; espelhar `xpz-sync/SKILL.md`.
+- Motor compartilhado migrado para `scripts/` da raiz; **wrappers locais finos por-KB** (nomes definidos no README local), como `xpz-sync`.
+- Satélite de Fase 2b como **classificador de regime** (não runbook que dá selo).
+- 2 exemplos `*.example` (achado #11 do experimento): primeira-passada (estilo experimento-001) e re-validação (estilo experimento-002).
+
+### Fase 1 (mecânica) — migrar quase como está
+
+`Invoke-...PrePushPhase1.ps1` (11 gates) já é skill-ready. Generalizar nomes FabricaBrasil → **descoberta** dos wrappers locais (K8/K9 delegam a wrappers cujos nomes o README local define). `Compare-XpzChecksums` (F1) e o detector K11 (`not not X.IsXxx()`) viram motores compartilhados.
+
+### Fase 2a — parcial scriptada + checklist
+
+`Test-...KbFrenteHygiene.ps1` generalizado (padrão `NomeCurto_GUID_YYYYMMDD`, pacote órfão) + checklist de agente.
+
+### Fase 2b — mais leve do que o diagnóstico inicial sugeria (reavaliada em 2026-06-12)
+
+As 4 probes em `wsEducacaoSpTeste` mostraram que o **peso está na IDE e no build**, não na análise estática. A Fase 2b vira **triagem estática do aditivo + roteamento ao build para o resto**:
+
+- F1 (checksum) descarta SAME.
+- Roteamento por regime:
+  - **aditivo** (nenhum atributo removido) → **único lugar onde a estática agrega**: `who-uses(Table)` ∪ `who-uses(Transaction)`; shortlist de omissão = navegadores intocados ranqueados por afinidade — **só para aditivo data-bearing** (FK/stored); aditivo **computado** (com `<Formula>`) não tem risco de omissão, pular. Status `suspeito-por-omissão`.
+  - **delete** → **prevenido pela IDE** (não chega ao acervo referenciado); backstop, não foco.
+  - **rename** → **propagado pela IDE** — não-evento.
+  - **troca de tipo/domínio/chave** → **autoridade é o build com `FailIfReorg`** (reorg não-backward-compatible = flag), **não** enumeração estática.
+  - **alto volume** (>~20 dependentes) → rotear a build.
+  - **lógica de negócio** (cálculo que compila e roda errado) → fora do alcance; só teste funcional.
+- Catálogo de **padrões aceitos** (`procVoltaDo*QueFoi`, `SelectTab(2);SelectTab(1)`, blocos `csharp`) vira arquivo **por-KB**.
+
+### Dependência com Plano A (enfraquecida em 2026-06-12)
+
+As probes mostraram que destrutivo/tipo/domínio são cobertos por **IDE+build**, então a 2b **não depende** de `references_attribute` para regressão. Plano A virou nice-to-have de **impacto geral** (ver «Reavaliação» no Plano A), **não** pré-requisito de B. **Pode promover B sem A.**
+
+### Decisões fechadas / não fazer
+
+- **Não** cristalizar runbook 2b determinístico (`decisao-001`) — é classificador, com build como autoridade.
+- **Não** promover scripts mantendo nomes FabricaBrasil — generalizar (motor + wrapper local). A migração dos scripts auto-contidos → motor compartilhado é o "passo da promoção" que a D1 adiou; agora autorizado.
+- Paridade doc (README trilíngue, `02`, `08`, `09`, `13`) + registro global via `xpz-skills-setup`.
+- A skill **não** deve depender de FabricaBrasil; usar só como referência.
+
+## Sync GUID-aware: rename de atributo/objeto tratado como rename, não delete+create
+
+**Importância:** média (a cada rename: resíduo no acervo + histórico git poluído; hoje exige decisão manual e deixa dois XMLs separados)
+**Maturidade:** pronta para implementar (mecanismo verificado na fonte; correção e requisitos fechados)
+
+**Origem:** 2026-06-12, durante a probe de rename (`DistribuidoraNome` → `DistribuidoraNomeTeste`, KB `wsEducacaoSpTeste`). O full sync deixou o arquivo do nome antigo como resíduo e abortou com `Extra=1`. O dev apontou que, do ponto de vista do acervo de XMLs, **o sync deveria ter reconhecido o rename sozinho** — sem deixar os dois XMLs separados e de modo que o git trate como rename, não delete+create.
+
+### Mecanismo verificado (`scripts/Sync-GeneXusXpzToXml.ps1`)
+
+- `Get-FullSnapshotComparison` (~553-584) monta a chave de reconciliação como **`FolderType|name`** — só pelo nome lógico; `Get-LogicalNameFromExtractedFile` (~491-500) lê apenas `rootNode.GetAttribute("name")`. **O GUID está no mesmo nó (`GetAttribute("guid")`) e não é usado.**
+- Por isso o rename vira drift: o export tem o nome novo; o acervo tem novo + resíduo antigo; comparado **por nome**, o antigo cai como `Extra` → `throw` (~740), sem ver que é o **mesmo GUID** do recém-materializado.
+- Segundo gap: a limpeza de resíduo na materialização cobre `<Object>` por GUID mas **ignora `<Attribute>`**.
+
+### Correção (requisitos do dev)
+
+1. `Get-LogicalNameFromExtractedFile` extrai também o `guid`; reconciliar por **GUID**, não por nome.
+2. GUID casa entre acervo e export mas o nome difere → é **rename**. Resolver **renomeando o arquivo existente no disco** (`Move-Item` antigo → novo) e atualizando o conteúdo — **não** create-new + orphan-old.
+3. **Resultado: um arquivo só** (nome novo) — sem deixar os dois XMLs separados.
+4. **Git como rename, não delete+create:** git não grava rename, detecta por similaridade no diff (`-M`, default 50%). Rename de atributo muda quase nada → similaridade altíssima; com delete-antigo + add-novo **no mesmo commit** (garantido pelo `Move-Item` antes do commit), `git diff -M` / `git log --follow` mostram rename e preservam histórico.
+
+### Escopo e doutrina
+
+Vale para **atributo e objeto** (o gap de `<Attribute>` é o mais agudo; a reconciliação GUID-aware unifica os dois). A remoção do resíduo aqui é parte de um rename **reconhecido por GUID** (não drift cego) — auto-resolvível com segurança; no mínimo, **classificar** como "resíduo de rename (GUID=X)" em vez de `Extra` genérico, respeitando a cautela de deleção no acervo. Domínio: motor compartilhado `Sync-GeneXusXpzToXml.ps1` + skill **xpz-sync**; frente separada da pré-push.
+
 ## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
 
 **Importância:** média
