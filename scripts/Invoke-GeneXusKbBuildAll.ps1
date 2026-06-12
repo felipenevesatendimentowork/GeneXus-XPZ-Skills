@@ -661,7 +661,12 @@ $script:DeploymentEnvironmentContext = $null
 # cada sinal e calculado. Default null (nao "0"/"false") para nao fingir
 # "zero erros" / "sem reorg" quando a falha estourou antes do calculo: null =
 # "nao chegou a ser computado". Lido pelos objetos enxutos sem recomputar.
+# Complete e marcado true so depois do ultimo sinal ser calculado: true = bucket
+# integral, o consumidor pode confiar sem reabrir o log; false = parcial, reabrir
+# o log para qualquer campo null. Decide a confianca sem o agente ter de inferir
+# o significado do null campo a campo.
 $script:BuildSignals = [ordered]@{
+    Complete      = $false
     ReorgDetected = $null
     ErrorCount    = $null
 }
@@ -1889,6 +1894,10 @@ try {
     # analise abortou antes daqui, ErrorCount permanece null (parcial honesto). Se
     # chegou aqui, este 0/N e o mesmo valor que o caminho feliz reportaria.
     $script:BuildSignals.ErrorCount = @($buildErrors).Count
+    # ErrorCount e o ultimo sinal da sequencia; alcancar esta linha significa que
+    # reorg e erros foram ambos calculados. Marca o bucket como integral. Ao
+    # adicionar novos sinais (ex.: deploy), mover esta marcacao para depois deles.
+    $script:BuildSignals.Complete = $true
 
     $msBuildCategoryBBlocked = $false
     $operationalSubStateBuild = $null
@@ -2158,7 +2167,7 @@ try {
             }
             watcherContext       = $script:WatcherContext
             timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
-            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria. buildSignals carrega sinais parciais (reorg/erros) capturados antes da degradacao; campo null = nao computado.'
+            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria. buildSignals.Complete=true: reorg/erros sao integrais e confiaveis (nao reabrir o log para eles). Complete=false: bucket parcial — campo null nao e zero, reabrir o log para os campos null.'
         }
         try {
             $json = $fallback | ConvertTo-Json -Depth 3
@@ -2224,7 +2233,7 @@ catch {
             }
             watcherContext       = $script:WatcherContext
             timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
-            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria. buildSignals carrega sinais parciais (reorg/erros) capturados antes da degradacao; campo null = nao computado.'
+            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria. buildSignals.Complete=true: reorg/erros sao integrais e confiaveis (nao reabrir o log para eles). Complete=false: bucket parcial — campo null nao e zero, reabrir o log para os campos null.'
         }
         try {
             $recoveryJson = ConvertTo-JsonText -InputObject $recovery
