@@ -19,9 +19,10 @@ Scheduler, fora da console e do job da sessão do agente: fechar qualquer janela
 ou encerrar o app não toca o build.
 
 Ao final do build (sucesso OU falha), o caminho de payload escreve uma sentinela atômica
-com o exitCode classificado pelo wrapper e o caminho do JSON de resultado (-LogPath). O
-agente faz polling barato da existência da sentinela; quando done=true, lê o JSON pesado
-do -LogPath.
+com o exitCode classificado pelo wrapper e o caminho do JSON de resultado (-LogPath). Para
+aguardar, o consumidor NÃO deve pollar só a existência da sentinela — deve combiná-la com o
+heartbeat da Tarefa Agendada (ver «Contrato de espera» abaixo, ou usar o helper
+Wait-GeneXusKbBuildDetached.ps1); com a sentinela `done=true`, lê o JSON pesado do -LogPath.
 
 Este é o fluxo OPT-IN para build longo. NÃO é o default da skill: o fluxo padrão continua
 sendo a janela visível via -StartWatcher no próprio Invoke-GeneXusKbBuildAll.ps1. O modo
