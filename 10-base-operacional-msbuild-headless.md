@@ -758,9 +758,12 @@ Não se aplica a wrappers sem `-StartWatcher`, como `Open-GeneXusKbHeadless.ps1`
 Para `Invoke-GeneXusKbBuildAll.ps1` em build **longo / em segundo plano**, há ainda o
 orquestrador opt-in `scripts/Start-GeneXusKbBuildDetached.ps1` (skill `xpz-msbuild-build`),
 que **não usa watcher**: roda o build sob uma Tarefa Agendada one-shot fora da sessão do
-agente (sobrevive a fechar janela/app) e substitui o monitoramento por janela pelo par
-`msbuild.stdout.log` + arquivo-sentinela. A janela visível permanece o fluxo padrão; o modo
-desacoplado é decisão consciente do usuário sob conselho do agente.
+agente (sobrevive a fechar janela/app, **não** a logoff/reboot) e substitui o monitoramento
+por janela pelo `msbuild.stdout.log` (progresso) + a conclusão por **dois sinais combinados**
+(sentinela `done=true` **e** heartbeat da Tarefa Agendada) — pollar só a sentinela arriscaria
+travar a espera num kill duro; o helper `scripts/Wait-GeneXusKbBuildDetached.ps1` encapsula
+essa espera. A janela visível permanece o fluxo padrão; o modo desacoplado é decisão
+consciente do usuário sob conselho do agente. Detalhe do contrato em `xpz-msbuild-build/SKILL.md`.
 O contrato é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher,
 timing ou `watcherContext`, manter o helper comum como sede da regra e evitar lógica
 divergente dentro dos wrappers.
