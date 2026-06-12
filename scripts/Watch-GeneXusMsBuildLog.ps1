@@ -201,7 +201,23 @@ if (-not [string]::IsNullOrWhiteSpace($MonitorLog)) {
 
 # ── Header de inicio ──────────────────────────────────────────────────────────
 
+# Paliativo anti-acidente do fluxo de janela visivel: sinaliza que fechar esta janela
+# derruba o build em andamento. NAO impede o fechamento — o Windows encerra os processos
+# anexados a console ~5s apos o CTRL_CLOSE. Para robustez real contra fechamento de janela
+# ou do app, usar o modo desacoplado (Start-GeneXusKbBuildDetached.ps1).
+try {
+    if ($null -ne $Host -and $null -ne $Host.UI -and $null -ne $Host.UI.RawUI) {
+        $Host.UI.RawUI.WindowTitle = 'BUILD GeneXus EM ANDAMENTO — NÃO FECHAR esta janela'
+    }
+} catch {
+    # Host sem RawUI (execucao redirecionada): titulo nao se aplica, segue sem ele.
+}
+
 Write-Mon '─── Watch-GeneXusMsBuildLog ─────────────────────────────────────' 'White'
+Write-Mon 'AVISO: NÃO FECHAR esta janela enquanto o build estiver em andamento.'        'Red'
+Write-Mon '       Fechar derruba o build (wrapper + MSBuild + GeneXus) sem erro no log.' 'Red'
+Write-Mon '       Para build longo robusto a fechamento, prefira o modo desacoplado'    'Red'
+Write-Mon '       (Start-GeneXusKbBuildDetached.ps1).'                                  'Red'
 Write-Mon "  ProcessId            : $ProcessId"                               'White'
 Write-Mon "  LogPath              : $LogPath"                                 'White'
 Write-Mon "  IntervalSeconds      : $IntervalSeconds"                         'White'

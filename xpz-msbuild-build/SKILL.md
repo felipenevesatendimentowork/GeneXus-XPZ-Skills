@@ -40,13 +40,26 @@ grande; só pode ser habilitado via `-AllowWideRebuild` com confirmação explí
 usuário por frase exata. Nunca execute reorg sem autorização explícita do usuário.
 Quando houver evidência de alteração estrutural de atributo no import recente, exigir
 confirmação explícita do usuário antes de chamar `Invoke-GeneXusKbSpecifyGenerate.ps1`.
-`BuildAll` ou `SpecifyGenerate` sem watcher visível não é fluxo válido. Use `-StartWatcher`
-ao chamar `Invoke-GeneXusKbBuildAll.ps1` ou `Invoke-GeneXusKbSpecifyGenerate.ps1` — o wrapper garante o lançamento automático em janela
-visível e registra evidência auditável no JSON (`watcherContext.watcherLaunched`). A
-única exceção permitida é quando há justificativa operacional explícita e documentada
-(ex.: ambiente sem `pwsh` no PATH, CI headless sem terminal) — nesse caso declarar
-explicitamente ao usuário e registrar `watcherContext.watcherLaunched: false` como
-evidência de ausência. Seguir a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**.
+`BuildAll` ou `SpecifyGenerate` sem **monitoramento legível** não é fluxo válido. Há dois
+fluxos de monitoramento legítimos:
+
+- **(padrão) janela visível** — use `-StartWatcher` ao chamar `Invoke-GeneXusKbBuildAll.ps1`
+  ou `Invoke-GeneXusKbSpecifyGenerate.ps1`; o wrapper garante o lançamento automático de
+  `Watch-GeneXusMsBuildLog.ps1` em janela visível e registra evidência auditável no JSON
+  (`watcherContext.watcherLaunched`).
+- **(opt-in, build longo) modo desacoplado** — lance via `Start-GeneXusKbBuildDetached.ps1`,
+  que roda o build sob uma Tarefa Agendada one-shot fora da sessão do agente (sobrevive a
+  fechar a janela ou o app) e sinaliza a conclusão por **arquivo-sentinela**; o monitoramento
+  legível passa a ser o `msbuild.stdout.log` (progresso) + a sentinela (conclusão), sem janela.
+
+O modo desacoplado **não é o default**: o agente o **propõe** quando o build for esperado
+longo ou for rodar em segundo plano, explicando o trade-off (perde a janela de progresso ao
+vivo, ganha robustez a fechamento acidental), e só o usa por **decisão consciente do usuário**.
+A **ausência de qualquer monitoramento** (nem janela, nem sentinela) permanece inválida; a
+única exceção é justificativa operacional explícita e documentada (ex.: ambiente sem `pwsh`
+no PATH, CI headless sem terminal) — nesse caso declarar explicitamente ao usuário e registrar
+`watcherContext.watcherLaunched: false` como evidência de ausência. Seguir a seção
+**ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**.
 
 ## PATH RESOLUTION
 
@@ -210,9 +223,10 @@ Skills externas não listadas nesta tabela não devem ser carregadas durante a e
 
 ## EXPECTED INTERFACE
 
-Dois scripts PowerShell próprios, seguindo o mesmo padrão de `xpz-msbuild-import-export`, e um wrapper integrador de handoff pós-import.
+Dois scripts PowerShell próprios, seguindo o mesmo padrão de `xpz-msbuild-import-export`, um wrapper integrador de handoff pós-import e um orquestrador opt-in de lançamento desacoplado.
 
 - `Invoke-GeneXusXpzImportThenBuild.ps1` pertence operacionalmente à trilha `xpz-msbuild-import-export`, mas chama `Invoke-GeneXusKbBuildAll.ps1` como etapa receptora. O build só roda quando `importReadyForBuild.ready=true`; com `buildSkippedReason`, tratar como import não apto para build, não como falha autônoma de build.
+- `Start-GeneXusKbBuildDetached.ps1` é o orquestrador **opt-in** do modo desacoplado (build longo / em segundo plano): registra uma Tarefa Agendada one-shot que executa `Invoke-GeneXusKbBuildAll.ps1` fora da sessão do agente e sinaliza a conclusão por arquivo-sentinela. Não altera o wrapper de build (apenas o invoca) e é transporte, não autoridade de política — os gates de reorg/rebuild/opções caras permanecem no wrapper. Contrato e fluxo na subseção **Modo desacoplado (opt-in, build longo)** da ORQUESTRAÇÃO. Self-test: `scripts/Test-StartGeneXusKbBuildDetachedContract.ps1`.
 
 ### Categoria B (rejeição MSBuild no log)
 
@@ -822,6 +836,60 @@ Campos relevantes:
 >
 > A promoção é **somente para visibilidade** — não muda classificação de status (warnings continuam sendo warnings, não viram erros). O build pode ser `compilou limpo` ou `specify e generate concluídos` mesmo com `pmm00xx` presentes.
 
+### Modo desacoplado (opt-in, build longo)
+
+O fluxo padrão acima (processo desanexado + Watch em **janela visível**) ainda acopla o
+build à console/sessão do agente: fechar acidentalmente a janela do Watch, ou a janela-pai
+do processo de fundo, derruba o grupo inteiro (wrapper + MSBuild + GeneXus) — matando um
+`BuildAll` longo no meio, sem erro no log. O paliativo da própria janela (título e aviso
+`NÃO FECHAR` impressos por `Watch-GeneXusMsBuildLog.ps1`) **reduz** o acidente humano, mas
+**não impede** o fechamento.
+
+Para build **esperado longo** (ex.: KB grande, `Rebuild All`, pós-import amplo) ou que vá
+**rodar em segundo plano** enquanto o agente conversa, há o modo desacoplado via
+`Start-GeneXusKbBuildDetached.ps1`. Ele registra uma **Tarefa Agendada one-shot** que executa
+`Invoke-GeneXusKbBuildAll.ps1` **fora** da console e do job da sessão do agente: fechar
+qualquer janela ou encerrar o app **não toca o build**.
+
+**Não é o default.** O agente **propõe** este modo quando detecta o gatilho (build longo ou
+em background), apresenta o trade-off — perde a janela de progresso ao vivo, ganha robustez a
+fechamento — e só o usa por **decisão consciente do usuário**. Build curto ou com o usuário
+acompanhando ao vivo: manter a janela visível padrão.
+
+Fluxo:
+
+1. Confirmar com o usuário a escolha pelo modo desacoplado (e, se houver reorg/rebuild,
+   obter as frases de confirmação **antes**, pois a tarefa não tem terminal interativo —
+   repassar `-AllowReorg -ConfirmReorg` / `-AllowWideRebuild -ConfirmWideRebuild` conforme o caso).
+2. Lançar (o orquestrador retorna **imediatamente**, sem bloquear a conversa):
+
+```powershell
+$scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Start-GeneXusKbBuildDetached.ps1"
+& $scriptPath `
+    -KbPath           'C:\KBs\<nome-da-kb>' `
+    -WorkingDirectory "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-<descritivo>" `
+    -LogPath          "C:\Dev\Knowledge\GeneXus-XPZ-Skills\Temp\xpz-build-<descritivo>\build-all.log" `
+    -EnvironmentName  '<env de deploy quando kb_environment_count > 1>' `
+    -ParallelKbRoot   '<raiz da pasta paralela>'
+    # -SentinelPath default: <LogPath>.sentinel
+```
+
+3. O JSON retornado traz `status: build desacoplado disparado`, `taskName`, `sentinelPath`,
+   `logPath` e `artifactBaseDir`. Guardar `sentinelPath` e `logPath`.
+4. **Polling da sentinela** (barato): aguardar a existência de `sentinelPath`. Quando existir,
+   ler — `{ "done": true, "exitCode": <n>, "logPath": "<...>" }`. Para progresso ao vivo
+   enquanto corre, ler o `msbuild.stdout.log` do artifact dir novo sob `artifactBaseDir`
+   (diff de diretórios, como no Passo 4 do fluxo padrão).
+5. Quando a sentinela indicar conclusão, ler o JSON completo de `logPath` com a ferramenta
+   `Read` e classificar o resultado **exatamente** como no fluxo padrão (mesmas categorias,
+   mesma leitura de `exitCode`/`msBuildCategoryBBlocked`/`buildErrors`). A Tarefa Agendada se
+   auto-remove ao fim; `timing.phases` fica vazio neste modo (sem watcher).
+
+> **Robustez vs. limites:** o modo desacoplado sobrevive a fechar janela e a encerrar o app
+> do agente. **Não** sobrevive a **logoff** do Windows (a Tarefa Agendada roda na sessão
+> interativa do usuário, na forma simples) nem a reboot — coerente com o cenário-alvo (o
+> incidente é fechar janela/app, não deslogar no meio do build).
+
 ### Observações críticas
 
 - **Não usar `C:\Temp\`** para nenhum arquivo: processos filhos desanexados não têm acesso.
@@ -886,7 +954,9 @@ Campos relevantes:
     - gate independente do gate de reorg: `-AllowReorg` não autoriza `-ForceRebuild=true`,
       e `-AllowWideRebuild` não autoriza reorg
 8. Executar o script escolhido seguindo a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**
-   (para `BuildAll`: processo desanexado + Watch em janela visível + `run_in_background`) e capturar:
+   (para `BuildAll`: processo desanexado + Watch em janela visível + `run_in_background`; **ou**,
+   para build longo/em segundo plano após o usuário optar conscientemente, o **modo desacoplado**
+   via `Start-GeneXusKbBuildDetached.ps1` + polling da sentinela — ver subseção própria) e capturar:
    - `exitCode`, `msBuildCategoryBBlocked`, `operationalSubState`
    - `buildErrors` ou `specifyErrors` no top-level do JSON (quando existirem)
    - `executionEvidence.msBuildExitCode` e `blockingReasons`
@@ -931,6 +1001,8 @@ Campos relevantes:
 - [ ] `KbPath`, `GeneXusDir`, `MsBuildPath`, `WorkingDirectory` e `LogPath` foram
       explicitados
 - [ ] Antes de abrir a KB por MSBuild em `BuildAll` ou `SpecifyGenerate`, o bloqueio preventivo de concorrência por KB foi executado; se `msBuildConcurrency.status=blocked` ou `exitCode=46`, a rodada foi abortada e o conflito foi reportado ao usuário, sem tentar enfileirar nem aguardar
+- [ ] Houve **monitoramento legível**: janela visível (`-StartWatcher`) **ou** modo desacoplado (`Start-GeneXusKbBuildDetached.ps1` com `msbuild.stdout.log` + arquivo-sentinela); nenhuma execução sem monitoramento, salvo justificativa registrada (`watcherContext.watcherLaunched: false`)
+- [ ] O modo desacoplado, quando usado, foi **proposto pelo agente** (build longo/em segundo plano) e escolhido por **decisão consciente do usuário** — não acionado como default; reorg/rebuild tiveram as frases de confirmação obtidas **antes** do lançamento (tarefa sem terminal interativo)
 - [ ] Quando o objetivo era `Invoke-GeneXusKbSpecifyGenerate.ps1`, os sinais de alteração estrutural do import recente foram avaliados antes de executar
 - [ ] Quando havia sinal de alteração estrutural, a confirmação com a frase exata foi exigida e obtida antes de executar
 - [ ] `FailIfReorg=true` foi mantido como default em `BuildAll`, salvo instrução explícita
@@ -975,7 +1047,7 @@ Campos relevantes:
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER executar `icacls` nem qualquer concessão NTFS na instalação do GeneXus — apenas oferecer comandos em `environmentRemediationHints` para o usuário executar uma vez, por conta própria, se quiser silenciar o ruído GAM filtrado
 - NEVER recomendar elevar o build MSBuild a cada execução como substituto do filtro de ruído GAM; a única elevação mencionada é terminal administrativo **one-time** para o usuário rodar `icacls` sugerido
-- NEVER executar `BuildAll` ou `SpecifyGenerate` sem watcher sem justificativa operacional explícita e documentada — usar `-StartWatcher` é o fluxo padrão; ausência de watcher deve ser declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
+- NEVER executar `BuildAll` ou `SpecifyGenerate` **sem monitoramento legível** — janela visível (`-StartWatcher`) **ou** modo desacoplado (`Start-GeneXusKbBuildDetached.ps1`, com `msbuild.stdout.log` + arquivo-sentinela). A janela visível é o fluxo padrão; o modo desacoplado é **opt-in consciente do usuário sob conselho do agente** (build longo ou em segundo plano), nunca acionado em silêncio. Ausência **total** de monitoramento (nem janela, nem sentinela) só com justificativa operacional explícita e documentada, declarada ao usuário com base em `watcherContext.watcherLaunched: false` no JSON
 - NEVER chamar MSBuild para `BuildAll` ou `SpecifyGenerate` quando o preflight `msBuildConcurrency` confirmar `MSBuild.exe` em execução para a mesma KB; abortar com exit 46 e reportar o processo conflitante
 - NEVER executar reorg sem autorização explícita do usuário
 - NEVER emitir `FailIfReorg=false` implicitamente — sempre explicitar quando e por quê

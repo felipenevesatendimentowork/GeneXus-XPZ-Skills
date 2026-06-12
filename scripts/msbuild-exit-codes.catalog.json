@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-06-02",
+  "lastUpdated": "2026-06-12",
   "legend": {
     "exitCode": "Valor classificado pelo wrapper GeneXus XPZ; e tambem o exit code do processo PowerShell.",
     "executionEvidence.msBuildExitCode": "Codigo bruto retornado pela invocacao MSBuild/task GeneXus; nao substitui exitCode quando o wrapper reclassifica (ex.: 48, 32, 41-45).",
@@ -267,7 +267,8 @@
         "Invoke-GeneXusXpzImportThenBuild.ps1",
         "Invoke-GeneXusXpzImport.ps1",
         "Invoke-GeneXusXpzExport.ps1",
-        "Test-GeneXusXpzImportPreview.ps1"
+        "Test-GeneXusXpzImportPreview.ps1",
+        "Start-GeneXusKbBuildDetached.ps1"
       ],
       "disambiguationRequired": true,
       "causes": [
@@ -348,6 +349,24 @@
           "condition": "KB multi-environment (kb_environment_count > 1 no metadata) sem -EnvironmentName e sem deployment_environment_name; ou metadata de environments ausente; ou chamada sem -ParallelKbRoot/-KbMetadataPath e sem -EnvironmentName.",
           "wrappers": ["Invoke-GeneXusKbBuildAll.ps1", "Invoke-GeneXusKbSpecifyGenerate.ps1"],
           "jsonHints": ["requestedContext.deploymentEnvironmentContext", "blockingReasons", "resolvedPaths.KbMetadataPath"]
+        },
+        {
+          "id": "detached-build-wrapper-missing",
+          "condition": "Start-GeneXusKbBuildDetached.ps1: Invoke-GeneXusKbBuildAll.ps1 nao encontrado ao lado do orquestrador.",
+          "wrappers": ["Start-GeneXusKbBuildDetached.ps1"],
+          "jsonHints": ["status", "blockingReasons", "buildScriptPath"]
+        },
+        {
+          "id": "detached-unsafe-path",
+          "condition": "Start-GeneXusKbBuildDetached.ps1: WorkingDirectory, LogPath ou SentinelPath sob Program Files (x86).",
+          "wrappers": ["Start-GeneXusKbBuildDetached.ps1"],
+          "jsonHints": ["status", "blockingReasons", "workingDirectory", "logPath", "sentinelPath"]
+        },
+        {
+          "id": "detached-task-register-or-start-failed",
+          "condition": "Start-GeneXusKbBuildDetached.ps1: falha ao registrar ou iniciar a Tarefa Agendada one-shot (ex.: permissoes do Task Scheduler).",
+          "wrappers": ["Start-GeneXusKbBuildDetached.ps1"],
+          "jsonHints": ["status", "blockingReasons", "taskName", "started"]
         }
       ]
     },

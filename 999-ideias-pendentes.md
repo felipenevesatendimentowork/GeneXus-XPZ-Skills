@@ -11,6 +11,47 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
+
+**Importância:** média
+**Maturidade:** pesquisa feita
+
+**Origem:** frente do modo desacoplado de build (`Start-GeneXusKbBuildDetached.ps1`), 2026-06-12. Decisão (b) do usuário: janela visível continua o default; desacoplado é opt-in. Durante a frente, o usuário perguntou se a janela default ganharia proteção contra fechamento acidental — e ela **não** ganha: o paliativo de título/aviso `NÃO FECHAR` em `Watch-GeneXusMsBuildLog.ps1` reduz o acidente humano, mas não impede o fechamento.
+
+### Problema concreto que motiva a ideia
+
+O fluxo de janela visível (default) continua acoplado à console/sessão do agente: fechar a janela ainda derruba wrapper + MSBuild + GeneXus. A frente cobriu o build longo (modo desacoplado opt-in via Tarefa Agendada), mas o default segue tecnicamente frágil para builds curtos.
+
+### Direção técnica proposta
+
+Tornar **todo** build sempre desacoplado por baixo (fundação `Start-GeneXusKbBuildDetached.ps1`), e a janela visível passar a ser apenas um **visualizador** (`Watch-GeneXusMsBuildLog.ps1` lendo `msbuild.stdout.log` + sentinela). Fechar a janela perderia só a visão, nunca o build; reabrir um visualizador reconectaria.
+
+### Por que **não** foi feito agora
+
+Custo: pôr o mecanismo desacoplado (Tarefa Agendada) no caminho mais usado da skill — ainda não comprovado em uso real — arrisca regredir o build comum, hoje confiável; e paga overhead de registro/limpeza de tarefa em todo build, inclusive curtos. Decisão consciente do usuário: introduzir só **depois** que o desacoplado provar valor no uso real, quando deixa de ser código novo no caminho crítico e vira promoção segura.
+
+### Decisões em aberto
+
+- Overhead real da Tarefa Agendada em builds curtos desta skill (medir).
+- Fallback quando o registro da tarefa falhar em algum ambiente (voltar à janela acoplada atual?).
+- Política/elevação do Task Scheduler no caminho comum.
+
+## Estender o modo desacoplado opt-in ao import real longo
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** mesma frente, 2026-06-12. O modo desacoplado foi restrito a `xpz-msbuild-build` (`BuildAll`/`SpecifyGenerate`) por escopo. O import real (`Invoke-GeneXusXpzImport.ps1`) também pode ser longo e tem gate de watcher visível — mais estrito: na **Decisão pós-gates** é obrigatório, sem exceção por justificativa.
+
+### Direção técnica proposta
+
+Avaliar um orquestrador análogo (ou generalizar `Start-GeneXusKbBuildDetached.ps1`) para import real longo, preservando o gate de import — "monitoramento legível obrigatório — janela **ou** sentinela" — sem afrouxar a barragem da Decisão pós-gates.
+
+### Decisões em aberto
+
+- Generalizar o orquestrador existente ou criar um por trilha.
+- Como o gate mais estrito da Decisão pós-gates interage com o monitoramento por sentinela.
+
 ## Eliminar globalmente o uso de `-AsJson`
 
 **Importância:** média

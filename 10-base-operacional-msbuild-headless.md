@@ -755,6 +755,12 @@ O contrato de watcher acima aplica-se aos wrappers MSBuild que o suportam:
 `Invoke-GeneXusXpzImport.ps1` (lista canônica também em `02-regras-operacionais-e-runtime.md`).
 Em `Invoke-GeneXusKbBuildAll.ps1` e `Invoke-GeneXusKbSpecifyGenerate.ps1`, watcher e fluxo padrão; em preview/export/import, e padrão para execução longa. **Fora** da **Decisão pós-gates** (import real já autorizado na sessão, envelope apto e inventário sem bloqueio — ver secção 2A), em importação real de pacote amplo ou com muitos `WorkWithForWeb`, a ausencia de watcher exige justificativa operacional explicita. Na **Decisão pós-gates**, `-StartWatcher` e `-MonitorLogPath` são obrigatórios na mesma invocação de `Invoke-GeneXusXpzImport.ps1`.
 Não se aplica a wrappers sem `-StartWatcher`, como `Open-GeneXusKbHeadless.ps1`.
+Para `Invoke-GeneXusKbBuildAll.ps1` em build **longo / em segundo plano**, há ainda o
+orquestrador opt-in `scripts/Start-GeneXusKbBuildDetached.ps1` (skill `xpz-msbuild-build`),
+que **não usa watcher**: roda o build sob uma Tarefa Agendada one-shot fora da sessão do
+agente (sobrevive a fechar janela/app) e substitui o monitoramento por janela pelo par
+`msbuild.stdout.log` + arquivo-sentinela. A janela visível permanece o fluxo padrão; o modo
+desacoplado é decisão consciente do usuário sob conselho do agente.
 O contrato é centralizado em `scripts/GeneXusMsBuildWatcherSupport.ps1`; ao evoluir watcher,
 timing ou `watcherContext`, manter o helper comum como sede da regra e evitar lógica
 divergente dentro dos wrappers.
