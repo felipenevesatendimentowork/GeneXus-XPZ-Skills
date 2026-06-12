@@ -5,30 +5,30 @@
     acento nunca e lexema pt-BR valido) nos arquivos indicados, preservando caixa.
 
 .DESCRIPTION
-    Contraparte aplicadora do detector Measure-PtBrAccentDegradation.ps1. NAO toca
+    Contraparte aplicadora do detector Measure-PtBrAccentDegradation.ps1. NÃO toca
     em tokens ambiguos (esta/tem/vem/so/numero) nem na conjuncao 'e': esses exigem
-    decisao humana e ficam de fora por construcao.
+    decisão humana e ficam de fora por construcao.
 
     Garantias de fidelidade ao detector:
     - Faz dot-source do detector para reaproveitar EXATAMENTE a mesma lista curada
       ($correctMap), o mesmo regex de inequivocas ($inequivRegex) e a mesma
-      supressao de codigo (cercas ``` / ~~~ e code inline `...`).
-    - A mascara de code inline e LENGTH-PRESERVING (cada span vira o mesmo numero de
+      supressao de código (cercas ``` / ~~~ e code inline `...`).
+    - A mascara de code inline e LENGTH-PRESERVING (cada span vira o mesmo número de
       espacos), de modo que os offsets de match no texto mascarado batem 1:1 com o
       texto original; a substituicao ocorre sempre no texto original.
     - Preserva caixa: ALLCAPS -> ALLCAPS, Title -> Title, resto -> minuscula curada.
     - Preserva EOL exato (split com captura de '(\r?\n)') e grava UTF-8 sem BOM,
-      conforme .gitattributes (*.md text eol=lf) e a regra do repositorio.
+      conforme .gitattributes (*.md text eol=lf) e a regra do repositório.
 
-    Em .ps1 a deteccao do detector mede so comentarios; este aplicador, por seguranca,
-    so opera arquivos .md (.ps1/.example.ps1 ficam fora deste passo).
+    Em .ps1 a deteccao do detector mede só comentarios; este aplicador, por seguranca,
+    só opera arquivos .md (.ps1/.example.ps1 ficam fora deste passo).
 
 .PARAMETER Files
     Caminhos (relativos a RepoRoot ou absolutos) dos .md a corrigir.
 .PARAMETER RepoRoot
-    Raiz do repositorio. Default: a pasta acima de scripts/.
+    Raiz do repositório. Default: a pasta acima de scripts/.
 .PARAMETER DryRun
-    Nao grava nada; so reporta quantas substituicoes ocorreriam por arquivo.
+    Não grava nada; só reporta quantas substituicoes ocorreriam por arquivo.
 .EXAMPLE
     pwsh -NoProfile -File scripts/Repair-PtBrAccentDegradation.ps1 -Files 02-regras-operacionais-e-runtime.md -DryRun
 .EXAMPLE
@@ -103,7 +103,7 @@ function Repair-MarkdownLine {
 
     $sb = [System.Text.StringBuilder]::new($Line)
     $n = 0
-    # Da direita para a esquerda: preserva os offsets ainda nao processados.
+    # Da direita para a esquerda: preserva os offsets ainda não processados.
     for ($k = $matches.Count - 1; $k -ge 0; $k--) {
         $m = $matches[$k]
         $found = $Line.Substring($m.Index, $m.Length)
@@ -138,10 +138,10 @@ foreach ($rel in $Files) {
     }
 
     $text = [System.IO.File]::ReadAllText($full)
-    # Em arquivo trilingue, corrige SO a faixa pt-BR (ignora secoes ES/EN, onde
+    # Em arquivo trilingue, corrige SÓ a faixa pt-BR (ignora seções ES/EN, onde
     # ha colisao com espanhol). Get-PtBrLineCount vem do detector dot-sourced.
     $ptBrEnd = Get-PtBrLineCount -Text $text
-    # Split com captura: indices pares = conteudo de linha; impares = EOL.
+    # Split com captura: índices pares = conteúdo de linha; impares = EOL.
     $parts = @([regex]::Split($text, '(\r?\n)'))
     $inFence = $false
     $fileCount = 0

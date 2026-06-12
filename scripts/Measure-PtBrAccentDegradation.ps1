@@ -2,33 +2,33 @@
 <#
 .SYNOPSIS
     Mede degradacao de acentuacao pt-BR (palavras gravadas em ASCII onde deveria
-    haver caractere acentuado) nos arquivos versionados do repositorio.
+    haver caractere acentuado) nos arquivos versionados do repositório.
 
 .DESCRIPTION
     Detector deterministico e reusavel (medidor de progresso entre sessoes de
-    correcao e, depois, guarda de regressao). NAO corrige nada: so mede e reporta.
+    correcao e, depois, guarda de regressao). NÃO corrige nada: só mede e reporta.
 
-    Metodo (ver tambem ptbr-accent-wordlist.json e o relatorio gerado):
+    Método (ver também ptbr-accent-wordlist.json e o relatório gerado):
     - Lista curada de palavras INEQUIVOCAS (forma sem acento nunca e lexema pt-BR
-      valido e nao colide com ingles comum) => coluna PISO FIRME.
+      valido e não colide com ingles comum) => coluna PISO FIRME.
     - Tokens AMBIGUOS (esta/tem/vem/so) contados a parte como TETO SOLTO, rotulados
-      "nao confirmados". 'e/e' nao e contado (frequencia da conjuncao inviabiliza).
-    - Supressao de codigo: em .md ignora blocos cercados (```), code inline (`...`)
+      "não confirmados". 'e/e' não e contado (frequência da conjuncao inviabiliza).
+    - Supressao de código: em .md ignora blocos cercados (```), code inline (`...`)
       e tokens colados a path/slug/identificador. Em .ps1/.example.ps1 mede SOMENTE
       comentarios de linha e de bloco; strings de mensagem ficam de fora
       (limite declarado) para garantir zero falso positivo de identificador.
-    - Enumeracao via 'git ls-files' => so arquivos versionados; exclui
+    - Enumeracao via 'git ls-files' => só arquivos versionados; exclui
       automaticamente Temp/, work/, _audit*/ e qualquer scratch ignorado.
 
     Segmentos (no TOTAL de trabalho pendente): skill-md, skill-satelite, raiz-md,
     outros-md, example-ps1, ps1. FORA do total (diagnostico): historico (registro
     imutavel) e aportes-comunidade (SKILL.md de terceiros).
 
-    PISO, NAO TETO: a lista e finita; nao pega palavras fora dela, troca de acento,
+    PISO, NÃO TETO: a lista e finita; não pega palavras fora dela, troca de acento,
     crase faltante nem erros nao-acentuais.
 
 .PARAMETER RepoRoot
-    Raiz do repositorio. Default: a pasta acima de scripts/.
+    Raiz do repositório. Default: a pasta acima de scripts/.
 .PARAMETER WordlistPath
     Caminho da lista curada. Default: scripts/ptbr-accent-wordlist.json.
 .PARAMETER OutputDir
@@ -73,8 +73,8 @@ foreach ($tok in $wordlist.ambiguousTokens) {
     $ambiguousForms.Add([regex]::Escape($tok))
 }
 
-# Boundary: nao colar a path/slug/identificador (/, \, -, _) nem a word char.
-# (Deliberadamente sem '.' na classe, para nao matar "nao." em fim de frase.)
+# Boundary: não colar a path/slug/identificador (/, \, -, _) nem a word char.
+# (Deliberadamente sem '.' na classe, para não matar "nao." em fim de frase.)
 $boundaryBefore = '(?<![\w/\\\-_])'
 $boundaryAfter  = '(?![\w/\\\-_])'
 $ignoreCase = [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
@@ -184,11 +184,11 @@ function Get-Segment {
 
 # ---------------------------------------------------------------------------
 # Fronteira pt-BR em arquivos trilingues (PT/ES/EN).
-# Este medidor cobre SO o pt-BR. Em arquivos com secao '## Español'/'## English'
+# Este medidor cobre SÓ o pt-BR. Em arquivos com seção '## Español'/'## English'
 # (ex.: README, CHANGELOG, CODE_OF_CONDUCT, SECURITY, CONTRIBUTING), palavras
 # espanholas validas colidem com a forma pt-ascii (repositorio, usuario,
 # criterio, experiencia, existencia, transferencia) e gerariam falso positivo
-# e re-corrupcao se medidas/editadas. So a faixa do inicio ate o primeiro
+# e re-corrupcao se medidas/editadas. Só a faixa do inicio ate o primeiro
 # cabecalho ES/EN e dominio deste detector e dos aplicadores que o reusam.
 # Retorna a contagem de linhas pt-BR (todas, se monolingue).
 function Get-PtBrLineCount {
@@ -200,7 +200,7 @@ function Get-PtBrLineCount {
     return $lines.Count
 }
 
-# Devolve so o prefixo pt-BR do texto (para medicao). Preserva numeracao de
+# Devolve só o prefixo pt-BR do texto (para medicao). Preserva numeração de
 # linha 1..N do prefixo (identica a do arquivo, por ser o inicio).
 function Get-PtBrText {
     param([Parameter(Mandatory)] [AllowEmptyString()] [string] $Text)
@@ -214,7 +214,7 @@ function Get-PtBrText {
 $includedSegments = @('skill-md', 'skill-satelite', 'raiz-md', 'outros-md', 'example-ps1', 'ps1')
 
 # ---------------------------------------------------------------------------
-# Se rodado com dot-source (self-test), nao executa o main
+# Se rodado com dot-source (self-test), não executa o main
 # ---------------------------------------------------------------------------
 if ($MyInvocation.InvocationName -eq '.') { return }
 
@@ -232,7 +232,7 @@ foreach ($rel in $targets) {
     $text = [System.IO.File]::ReadAllText($full)
     $isPs = $rel -match '\.ps1$'
     $seg = Get-Segment -RelPath $rel
-    # Mede so a faixa pt-BR (em .md trilingue, ignora secoes ES/EN).
+    # Mede só a faixa pt-BR (em .md trilingue, ignora seções ES/EN).
     if ($isPs) { $measureText = $text } else { $measureText = Get-PtBrText -Text $text }
     $res = Measure-AccentInText -Text $measureText -IsPowerShell:$isPs
 
@@ -275,7 +275,7 @@ foreach ($seg in $allSegments) {
 $totalIneq = 0; $totalAmb = 0
 foreach ($s in $segSummary) { if ($s.Included) { $totalIneq += $s.Inequiv; $totalAmb += $s.Ambiguous } }
 
-# Top palavras por frequencia (so segmentos incluidos)
+# Top palavras por frequência (só segmentos incluidos)
 $wordFreq = @{}
 foreach ($f in $fileResults) {
     if (-not $f.Included) { continue }

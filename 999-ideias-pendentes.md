@@ -1120,7 +1120,7 @@ Implementar quando houver: (a) caso real recente de migração em lote (10+ call
 ## Correção de acentuação pt-BR degradada nos SKILL.md
 
 **Importância:** alta
-**Maturidade:** raiz `.md`, `skill-md`, `skill-satelite` e `outros-md` concluídos em 2026-06-11 (ver «Execução 2026-06-11» ao fim desta seção); pendentes `ps1` (comentários) e `example-ps1`
+**Maturidade:** todos os segmentos versionados concluídos em 2026-06-11 — raiz `.md`, `skill-md`, `skill-satelite`, `outros-md`, comentários de `ps1` e `example-ps1` (ver as três subseções «Execução 2026-06-11» ao fim). Resíduo é só intencional (citações dos 3 arquivos do instrumento, conteúdo de string). **Dívidas abertas:** cópula geral `e/é` e textos pt-BR dentro de strings de `.ps1`
 
 **Origem:** avaliação de prompt externo em 2026-05-11 com verificação empírica feita na mesma sessão.
 
@@ -1247,6 +1247,16 @@ Sessão seguinte, mesmo dia, partindo do mapa regenerado pelo detector. Resultad
 - **Estado dos segmentos `.md`:** `skill-md`, `skill-satelite` e `outros-md` ficaram com **0 inequívocas e 0 ambíguas-defeito**; o resíduo ambíguo medido nesses segmentos (104+5+3) são demonstrativos/singulares/inglês corretos, não defeito.
 
 Pendente após esta continuação: comentários de `.ps1` (800 inequívocas + 125 ambíguas) e `.example.ps1` (98 + 9). O aplicador `Repair-PtBrAccentDegradation.ps1` rejeita não-`.md` por construção; atacar `.ps1` exige um aplicador irmão que opere **apenas** comentários (`#` de linha e `<#…#>` de bloco), reusando a mesma lista/regex e a detecção de comentário já presente no detector. A cópula geral `e/é` segue como dívida em toda a base.
+
+### Execução 2026-06-11 (continuação 2: comentários `.ps1` e `.example.ps1` concluídos)
+
+Mesma sessão. Aplicador **tokenizer-based** (tokens `Comment` do PowerShell, offset exato — nunca toca código nem strings; mais seguro que o split-por-`#` do detector). Decisões:
+
+- **Inequívocas:** 802 corrigidas em 138 arquivos (`example-ps1` zerado; `ps1` reduzido). Parse dos 200 scripts: 0 erros; self-test do detector: OK; EOL LF preservado.
+- **Ambíguas (68 de 108, decididas linha a linha):** uniformes `so`→`só` (34; 1 `so` **inglês** em `Test-PyScriptsParse.ps1:8` ficou), `módulo` (8), `específico` (3), `cálculo` (2), `número` (2), `prática` (1) — as 4 formas demovidas e `especifico` apareceram **todas** como substantivo/adjetivo nos comentários; posicionais `esta`→`está` (16), `tem`→`têm` (1 em `Start-OpenCodeJob.ps1:66`), `vem`→`vêm` (1 em `Test-XpzGlobalInstructionsSelfTest.ps1:15`). Preservados: `tem`/`vem` singular, `esta` demonstrativo.
+- **3 arquivos do próprio instrumento** (`Measure`/`Repair`/`Test-Measure…SelfTest`): tratados à parte por misturarem prosa degradada e **citações ASCII deliberadas**. Corrigida só a prosa clara de `Measure` (27) e `Repair` (15); **preservadas** as citações — 6 palavras-exemplo de colisão com espanhol (`repositorio/usuario/criterio/experiencia/existencia/transferencia`), id de segmento `historico`, token-exemplo `"nao."`, exemplos de caixa `NAO -> NAO`/`Padrao -> Padrao`. O `Test-Measure…SelfTest.ps1` (quase só citações de golden, ex.: `# L1 funcao,nao (2)`) ficou **intacto** — análogo aos 43 resíduos propositais da raiz no `999`/`998`.
+
+Resíduo medido após esta etapa (tudo correto-a-permanecer): `ps1` 66 inequívocas + 52 ambíguas = self-test intacto (~36) + 18 conteúdo de **string** (mensagens/fixtures/doc gerada, falso-positivo do detector pelo `#`) + citações preservadas de Measure/Repair + singular/demonstrativo. **Dívida remanescente:** a cópula geral `e/é` em toda a base, e os textos pt-BR dentro de **strings** de `.ps1` (ex.: mensagens `-Message "...nao..."`, doc gerada por `generate-kb-*`) — fora do escopo "comentários" desta frente.
 
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 
