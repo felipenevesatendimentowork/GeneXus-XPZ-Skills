@@ -46,7 +46,7 @@ Nome opcional da versão a posicionar antes do build.
 .PARAMETER EnvironmentName
 Nome opcional do Environment a posicionar antes do build. Em KB com kb_environment_count maior que 1
 em kb-source-metadata.md, e obrigatório (direto ou via deployment_environment_name gravado pelo
-xpz-kb-parallel-setup). Omitir so e valido quando kb_environment_count for 1 no metadata.
+xpz-kb-parallel-setup). Omitir só e valido quando kb_environment_count for 1 no metadata.
 
 .PARAMETER ParallelKbRoot
 Raiz da pasta paralela da KB para resolver kb-source-metadata.md (campos deployment_environment_name,
@@ -1316,7 +1316,7 @@ try {
 
     # Confirmação explícita de regeneração ampla (ForceRebuild=true + -AllowWideRebuild)
     # Esta confirmação é independente da reorg: a regeneração ampla pode ocorrer sem reorg.
-    # -AllowWideRebuild so autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
+    # -AllowWideRebuild só autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
     if ($ForceRebuild -eq 'true' -and $AllowWideRebuild.IsPresent) {
         if ($ConfirmWideRebuild.IsPresent) {
             $allowWideRebuildConfirmed = $true
@@ -1805,7 +1805,7 @@ try {
         # Classifica os eventos contra o conjunto registrado do environment ativo em
         # kb-source-metadata.md (kb_environment_post_build_event_hashes). Evento registrado =
         # esperado (informativo); não registrado = inesperado (rebaixa). Sem registro para o
-        # environment, cai na rede de seguranca por padrão de som. So rebaixa se houver evento
+        # environment, cai na rede de seguranca por padrão de som. Só rebaixa se houver evento
         # inesperado/nao reconhecido — sino e deploy registrados não rebaixam mais.
         $metadataPathForPostBuild = $null
         if ($null -ne $script:DeploymentEnvironmentContext) {
@@ -1838,12 +1838,12 @@ try {
         }
     }
 
-    # Promover warnings pmm00xx (versão de modulo GeneXus) a alertas top-level.
+    # Promover warnings pmm00xx (versão de módulo GeneXus) a alertas top-level.
     # pmm00xx aparecem em buildWarnings mas o usuário não costuma inspecionar essa
     # lista interna. Surfacing-los em warnings garante visibilidade no resumo do
     # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versão)
-    # merece texto mais explicito porque sinaliza estado não trivial (modulo
-    # satelite exige versão MAIS NOVA do modulo principal do que a instalada).
+    # merece texto mais explicito porque sinaliza estado não trivial (módulo
+    # satelite exige versão MAIS NOVA do módulo principal do que a instalada).
     foreach ($wLine in $buildWarningLines) {
         if ($wLine -match 'warning\s*:\s*(pmm\d{4}):\s*([^\r\n]+)') {
             $pmmCode = $matches[1]

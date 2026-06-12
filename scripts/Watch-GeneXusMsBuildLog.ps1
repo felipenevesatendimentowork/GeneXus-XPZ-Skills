@@ -107,7 +107,7 @@ $script:phasePatterns = @(
 # ── Estado do monitor ─────────────────────────────────────────────────────────
 
 $script:monitorStream    = $null
-$script:statusLineActive = $false   # true enquanto a linha de silencio esta na tela sem \n
+$script:statusLineActive = $false   # true enquanto a linha de silencio está na tela sem \n
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

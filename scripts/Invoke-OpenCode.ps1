@@ -23,7 +23,7 @@
 .PARAMETER Raw
     Devolve o stream JSON cru (um evento por linha) em vez do texto final.
 .PARAMETER AllText
-    Devolve toda a narracao (preambulos de passo + resposta final) concatenada, em vez de so a resposta final.
+    Devolve toda a narracao (preambulos de passo + resposta final) concatenada, em vez de só a resposta final.
 .PARAMETER TimeoutSec
     Tempo máximo de espera pela resposta (default 180s).
 .EXAMPLE

@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Verifica se o setup da pasta paralela da KB esta fresco em relacao ao contrato de setup XPZ.
+    Verifica se o setup da pasta paralela da KB está fresco em relacao ao contrato de setup XPZ.
 
 .DESCRIPTION
     Le last_setup_audit_run_at e setup_contract_signature_* de kb-source-metadata.md,

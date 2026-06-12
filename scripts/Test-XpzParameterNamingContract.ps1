@@ -140,7 +140,7 @@ Assert-ParameterAbsent -ScriptFileName 'Invoke-GeneXusXpzExport.ps1' -ParameterN
 
 # 5. Contrato de saida do motor de sanidade: emite JSON por padrão e NÃO expoe -AsJson.
 #    Trava negativa contra wrappers locais que carreguem essa flag de outro motor;
-#    o erro de binding so apareceria em runtime, invisivel ao parse.
+#    o erro de binding só apareceria em runtime, invisivel ao parse.
 Assert-ParameterAbsent -ScriptFileName 'Test-GeneXusSourceSanity.ps1' -ParameterName 'AsJson'
 
 Write-Output 'XPZ_PARAMETER_NAMING_CONTRACT_OK'

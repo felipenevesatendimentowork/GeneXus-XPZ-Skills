@@ -7,7 +7,7 @@
 .DESCRIPTION
     Recalcula o lastUpdate da raiz do Object para max(UtcNow + margem,
     baseline + margem) e grava no próprio arquivo (ou em OutputPath). Reusa o
-    motor de calculo (Get-GeneXusXpzLastUpdate.ps1) e as funções de leitura,
+    motor de cálculo (Get-GeneXusXpzLastUpdate.ps1) e as funções de leitura,
     gravacao e validação de GeneXusXmlSurgicalEditSupport.ps1; não altera nem
     depende do comportamento de edicao do Edit-GeneXusXmlSurgical.ps1.
 
@@ -26,7 +26,7 @@
     Destino opcional. Quando omitido, grava in-place em InputPath.
 
 .PARAMETER BaselineXmlPath
-    XML usado como baseline do calculo. Quando omitido, usa o próprio InputPath.
+    XML usado como baseline do cálculo. Quando omitido, usa o próprio InputPath.
 
 .PARAMETER FreshnessMarginSeconds
     Margem aplicada sobre UtcNow e sobre o baseline. Default: 60.

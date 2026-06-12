@@ -122,7 +122,7 @@ function Get-BCDependencies {
         if (-not $ct.ToLowerInvariant().StartsWith('bc:')) { continue }
         $fullName = ($ct.Substring(3)).Trim()
         if ([string]::IsNullOrEmpty($fullName)) { continue }
-        # Para 9-IDO, so a Transaction principal interessa
+        # Para 9-IDO, só a Transaction principal interessa
         $mainTxName = (@($fullName -split '\.'))[0]
         $deps += $mainTxName
     }
@@ -220,7 +220,7 @@ if ($batchObjects.Count -lt 2) {
             $calls = Get-ProcedureCalls -XmlPath $obj.Path -BatchProcedureNames $batchProcedureNames
             foreach ($callee in $calls) {
                 if ([string]::Equals($callee, $obj.Name, [System.StringComparison]::OrdinalIgnoreCase)) { continue }
-                # So gera edge se callee e nova no batch (não existe no corpus)
+                # Só gera edge se callee e nova no batch (não existe no corpus)
                 if ($corpusProcedureNames.Contains($callee)) { continue }
                 $edges += [pscustomobject]@{ From = $callee; To = $obj.Name; Kind = 'procedure-call' }
             }

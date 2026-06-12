@@ -68,7 +68,7 @@ function Get-AttributeClassification {
 
 function Get-ObjectGeneratesProgram {
     # Le GenerateObject do <Properties> de NÍVEL OBJECT (filho direto de <Object>),
-    # não os <Properties> aninhados das Parts. So e serializada quando False; ausente => True.
+    # não os <Properties> aninhados das Parts. Só e serializada quando False; ausente => True.
     param([System.Xml.XmlElement]$ObjectNode)
 
     $propsNode = $ObjectNode.SelectSingleNode("./Properties")

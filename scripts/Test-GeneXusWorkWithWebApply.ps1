@@ -258,7 +258,7 @@ if ($batchWWs.Count -eq 0) {
             $form = 'B'
         }
 
-        # 4b. Apply property (so vale para Form A; Form B trata como implicito True)
+        # 4b. Apply property (só vale para Form A; Form B trata como implicito True)
         if ($form -eq 'A' -or $form -eq 'A+B') {
             if ($null -eq $details.ApplyValue) {
                 $findings += New-Finding -Severity 'fail' -Code 'ww-form-a-apply-property-absent' `

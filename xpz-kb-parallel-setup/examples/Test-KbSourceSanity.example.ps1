@@ -5,7 +5,7 @@ Wrapper local sanitizado para gate leve de sanidade do `Source` em XMLs locais.
 
 .DESCRIPTION
 Executa o script compartilhado `Test-GeneXusSourceSanity.ps1` sobre um XML
-especifico ou sobre todos os XMLs da subpasta ativa de uma frente em
+específico ou sobre todos os XMLs da subpasta ativa de uma frente em
 `ObjetosGeradosParaImportacaoNaKbNoGenexus`.
 
 Use este wrapper antes de gerar `import_file.xml` a partir de XML local
@@ -13,7 +13,7 @@ ajustado pelo agente. Ele não prova importação nem build; apenas separa
 `xmlWellFormed`, `sourceSanityStatus` e `probablyImportable`.
 
 .PARAMETER InputPath
-Caminho de um XML especifico ou de uma pasta contendo os XMLs da frente ativa.
+Caminho de um XML específico ou de uma pasta contendo os XMLs da frente ativa.
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.

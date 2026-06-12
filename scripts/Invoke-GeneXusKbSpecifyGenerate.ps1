@@ -1036,7 +1036,7 @@ try {
     Add-StrategyTrace -Message ("PATH enriquecido com subdirs do GeneXus para tools internas: [{0}]. Subdirs ausentes: [{1}]." -f ($gxSubPathsAdded -join ', '), ($gxSubPathsSkipped -join ', '))
 
     # Confirmação explícita de regeneração ampla (ForceRebuild=true + -AllowWideRebuild)
-    # -AllowWideRebuild so autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
+    # -AllowWideRebuild só autoriza ForceRebuild=true; sozinho com ForceRebuild=false e redundante.
     if ($ForceRebuild -eq 'true' -and $AllowWideRebuild.IsPresent) {
         if ($ConfirmWideRebuild.IsPresent) {
             $allowWideRebuildConfirmed = $true
@@ -1349,7 +1349,7 @@ try {
 
     # Classifica os eventos contra o conjunto registrado do environment ativo em
     # kb-source-metadata.md. Registrado = esperado (informativo); não registrado = inesperado
-    # (rebaixa). Sem registro, rede de seguranca por padrão de som. So o veredito agregado
+    # (rebaixa). Sem registro, rede de seguranca por padrão de som. Só o veredito agregado
     # entra como impedimento em Resolve-BuildStatus.
     if ($postBuildEventLines.Count -gt 0) {
         $metadataPathForPostBuild = $null
@@ -1387,12 +1387,12 @@ try {
     $buildWarningLines   = @([regex]::Matches($stdOutFiltered, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
                              ForEach-Object { $_.Value.Trim() })
 
-    # Promover warnings pmm00xx (versão de modulo GeneXus) a alertas top-level.
+    # Promover warnings pmm00xx (versão de módulo GeneXus) a alertas top-level.
     # pmm00xx aparecem em buildWarnings mas o usuário não costuma inspecionar essa
     # lista interna. Surfacing-los em warnings garante visibilidade no resumo do
     # JSON. Resolucao tipica: 'Update Modules' na IDE. pmm0045 (inversao de versão)
-    # merece texto mais explicito porque sinaliza estado não trivial (modulo
-    # satelite exige versão MAIS NOVA do modulo principal do que a instalada).
+    # merece texto mais explicito porque sinaliza estado não trivial (módulo
+    # satelite exige versão MAIS NOVA do módulo principal do que a instalada).
     foreach ($wLine in $buildWarningLines) {
         if ($wLine -match 'warning\s*:\s*(pmm\d{4}):\s*([^\r\n]+)') {
             $pmmCode = $matches[1]

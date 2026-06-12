@@ -9,7 +9,7 @@
     arquivos .md e .ps1 (excluindo historico/), procurando caracteres que não
     pertencem aos alfabetos de pt-BR, es e en (CJK, Cirilico, Arabic, etc.).
     Para .md, linhas dentro de code blocks cercados (``` ... ```) são ignoradas
-    com base no arquivo atual completo, preservando o numero real da linha no
+    com base no arquivo atual completo, preservando o número real da linha no
     arquivo novo.
 
     O gate e consultivo: emite findings com severity='warn' e sempre exita 0.

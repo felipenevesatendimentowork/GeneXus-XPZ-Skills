@@ -63,7 +63,7 @@ if (-not (Test-Path -LiteralPath $TempDir -PathType Container)) {
 }
 
 # 2b) Auto-limpeza: remove arquivos de jobs com mais de -KeepDays dias.
-#     Remove por arquivo (LiteralPath); jobs em andamento tem arquivos recentes e são preservados.
+#     Remove por arquivo (LiteralPath); jobs em andamento têm arquivos recentes e são preservados.
 try {
     $limite = (Get-Date).AddDays(-[Math]::Abs($KeepDays))
     Get-ChildItem -LiteralPath $TempDir -File -ErrorAction SilentlyContinue |

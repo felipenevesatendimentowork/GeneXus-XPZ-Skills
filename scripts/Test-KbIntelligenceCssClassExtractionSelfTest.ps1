@@ -183,7 +183,7 @@ function Assert-True {
     if (-not $Condition) { throw "ASSERT FALHOU: $Message" }
 }
 
-# --- css-classes: visao padrão (so kb-authored) ---
+# --- css-classes: visao padrão (só kb-authored) ---
 $catalog = Invoke-CssQuery -QueryArgs @('--query', 'css-classes')
 $byName = @{}
 foreach ($row in $catalog.results) { $byName[$row.class_name] = $row }

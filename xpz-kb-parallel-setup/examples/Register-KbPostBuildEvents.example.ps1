@@ -9,7 +9,7 @@ Le os eventos pos-build observados no JSON de um build (stdoutSignals.postBuildE
 inertes (REM), gera fingerprints SHA-256 e grava kb_environment_post_build_event_hashes + a
 secao-espelho legivel. Ação sensivel (desarma o rebaixamento por evento pos-build daquele
 environment): exige confirmacao. Sem -ConfirmRegistration, o motor pede frase exata via Read-Host;
-o agente so passa -ConfirmRegistration após o usuário aprovar explicitamente os eventos listados.
+o agente só passa -ConfirmRegistration após o usuário aprovar explicitamente os eventos listados.
 
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.

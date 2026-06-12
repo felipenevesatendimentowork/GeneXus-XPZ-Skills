@@ -10,7 +10,7 @@
     inertes (linhas REM comentadas), normaliza e gera fingerprints SHA-256, e grava:
       - kb_environment_post_build_event_hashes: campo plano (env=h1,h2; ...) que o build le.
       - secao-espelho legivel "## Eventos pos-build registrados": auditoria humana, com as
-        linhas cruas; o build NÃO le o espelho, so os hashes.
+        linhas cruas; o build NÃO le o espelho, só os hashes.
 
     Ação sensivel: registrar desarma o rebaixamento por evento pos-build daquele environment.
     Exige confirmacao. Modo interativo pede frase exata; modo agente usa -ConfirmRegistration

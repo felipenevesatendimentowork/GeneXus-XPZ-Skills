@@ -16,7 +16,7 @@
       3. Se não for: git init + remote oficial + fetch + reset --mixed origin/<branch>,
          ligando a historia oficial SEM sobrescrever os arquivos vindos do ZIP.
       4. Gate anti-destrutivo: se o working tree divergir do oficial, reporta e para;
-         o alinhamento destrutivo (reset --hard) so ocorre com -AlignToOfficial.
+         o alinhamento destrutivo (reset --hard) só ocorre com -AlignToOfficial.
 
     NÃO clona pasta vazia: nesse caso esta skill nem existe na pasta. O clone e
     pre-requisito documentado (Cenário B no SKILL.md).

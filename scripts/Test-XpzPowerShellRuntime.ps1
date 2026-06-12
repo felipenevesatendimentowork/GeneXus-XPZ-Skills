@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Verifica se o runtime PowerShell mínimo da base XPZ esta disponível.
+    Verifica se o runtime PowerShell mínimo da base XPZ está disponível.
 
 .DESCRIPTION
     Gate consultivo para pastas paralelas de KB. Ele deve ser chamado antes

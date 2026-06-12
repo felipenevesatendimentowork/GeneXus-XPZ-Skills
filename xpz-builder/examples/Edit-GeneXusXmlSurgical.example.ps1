@@ -56,6 +56,6 @@ $anchorRule = 'Default(CampoExemplo,procExemplo());'
     -LastUpdateBaselinePath $acervoXml `
     -AsJson
 
-# 4) Dependencia reenviada sem mudanca funcional: patch proibido na pratica;
+# 4) Dependencia reenviada sem mudanca funcional: patch proibido na prática;
 #    se algum ajuste textual for inevitavel, preservar lastUpdate explicitamente:
 # & $enginePath -InputPath $workingXml -Anchor '...' -Replacement '...' -EditMode Replace -PreserveLastUpdate -AsJson

@@ -12,7 +12,7 @@ kb-source-metadata.md com last_xpz_materialization_run_at, comparacao de timesta
 (extractor_signature_version/extractor_signature_hash na metadata do SQLite contra
 scripts/Build-KbIntelligenceIndex.py do repositório ativo via
 scripts/GeneXusKbIntelligenceExtractorContract.ps1 em SharedSkillsRoot).
-Retorna GATE_OK em stdout quando o índice esta apto, ou lanca exceção com BLOCK: <motivo>.
+Retorna GATE_OK em stdout quando o índice está apto, ou lanca exceção com BLOCK: <motivo>.
 
 Deve ser o único ponto de execução do gate da pasta paralela da KB.
 Dependencias: Query-KbIntelligence.ps1 e Test-KbStructure.ps1 na mesma pasta.

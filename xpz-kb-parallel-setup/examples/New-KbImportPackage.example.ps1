@@ -37,7 +37,7 @@ Caminho para a pasta do acervo oficial (ObjetosDaKbEmXml). Opcional: quando
 omitido, o acervo canonico <RepoRoot>/ObjetosDaKbEmXml e resolvido
 automaticamente. O gate de drift frente-vs-acervo executa sempre antes do
 empacotamento (fail-closed); sem acervo resolvivel, o empacotamento e bloqueado.
-Se o gate detectar que um XML da frente esta mais antigo que o homonimo no
+Se o gate detectar que um XML da frente está mais antigo que o homonimo no
 acervo, o empacotamento e abortado.
 
 .PARAMETER SharedSkillsRoot

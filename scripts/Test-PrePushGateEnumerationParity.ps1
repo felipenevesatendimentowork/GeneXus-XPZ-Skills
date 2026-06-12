@@ -8,7 +8,7 @@
     Conserto da causa-raiz de um gap real: ao adicionar gates novos ao
     orquestrador, a tabela "Scripts do orquestrador" foi atualizada, mas uma
     OUTRA enumeracao em prosa (afirmacao fechada "os gates consultivos são X e
-    Y") ficou com o conjunto antigo. A verificacao "o termo novo esta presente?"
+    Y") ficou com o conjunto antigo. A verificacao "o termo novo está presente?"
     e cega a esse caso, porque a frase defasada não cita o termo novo — cita os
     antigos. Tres revisoes perderam isso.
 
@@ -21,7 +21,7 @@
     único gate não casam o critério ">= 2 na mesma linha".
 
     Consultivo (severity warn): o agente confronta cada candidata — completar a
-    enumeracao, ou justificar que o subconjunto e intencional (ex.: lista so os
+    enumeracao, ou justificar que o subconjunto e intencional (ex.: lista só os
     gates de um tema). Invariante: a doc não deve afirmar um conjunto de gates
     que contradiz o que o orquestrador executa.
 

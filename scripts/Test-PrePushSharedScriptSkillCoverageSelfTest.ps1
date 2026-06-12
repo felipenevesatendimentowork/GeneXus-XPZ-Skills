@@ -6,9 +6,9 @@
 .DESCRIPTION
     Monta um repositório git temporario com um script compartilhado alterado e
     quatro documentos de skill. Confirma:
-      - skill que cita o script e NÃO esta no diff -> candidata (transversal);
-      - quality-checklist.md que cita o script e NÃO esta no diff -> candidata;
-      - skill que cita o script mas ESTA no diff (dona tocada) -> não vira candidata;
+      - skill que cita o script e NÃO está no diff -> candidata (transversal);
+      - quality-checklist.md que cita o script e NÃO está no diff -> candidata;
+      - skill que cita o script mas ESTÁ no diff (dona tocada) -> não vira candidata;
       - skill que NÃO cita o script -> não vira candidata.
 #>
 

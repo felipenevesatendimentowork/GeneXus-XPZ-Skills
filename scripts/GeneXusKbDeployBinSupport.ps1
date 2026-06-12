@@ -6,9 +6,9 @@
 .DESCRIPTION
     Le deployment_hosting_kind e kb_environment_web_dirs do metadata; gate por publicacao em web\bin:
       object *.dll (exceto runtime GeneXus/System/Microsoft) ou *.config
-      dotnet-core-self-host: GxNetCoreStartup.dll so complementar (warning se velho)
+      dotnet-core-self-host: GxNetCoreStartup.dll só complementar (warning se velho)
 
-    Severidade hibrida (decisoes fechadas): status novo quando stale; exit 49 so com gate.
+    Severidade hibrida (decisoes fechadas): status novo quando stale; exit 49 só com gate.
 #>
 
 Set-StrictMode -Version Latest

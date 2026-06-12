@@ -40,7 +40,7 @@
     omitido, o acervo canonico <RepoRoot>/ObjetosDaKbEmXml e resolvido
     automaticamente. O gate de drift frente-vs-acervo roda sempre antes do
     empacotamento; sem acervo explicito nem canonico, o empacotamento e
-    bloqueado (fail-closed). Se o gate detectar que um XML da frente esta mais
+    bloqueado (fail-closed). Se o gate detectar que um XML da frente está mais
     antigo que o homonimo no acervo (front-older-than-acervo), o empacotamento e
     abortado. Findings warn (front-equals-acervo ou lastupdate-unparseable)
     também bloqueiam esta chamada automática ate confirmacao/resolucao fora do

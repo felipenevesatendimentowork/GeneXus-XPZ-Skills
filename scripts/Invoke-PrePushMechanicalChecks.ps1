@@ -27,7 +27,7 @@
     automático para main). Com a ref existente mas desatualizada em relacao ao
     remoto, o intervalo pode superestimar commits pendentes; o agente deve
     executar git fetch origin antes da rotina quando precisar comparar contra
-    o remoto atual (ver AGENTS.md). O upstream da branch so aparece no JSON
+    o remoto atual (ver AGENTS.md). O upstream da branch só aparece no JSON
     como contexto informativo.
 
 .PARAMETER AsJson

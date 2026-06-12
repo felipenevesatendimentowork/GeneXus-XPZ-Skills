@@ -22,7 +22,7 @@
       - front-newer-than-acervo: ignorado (frente já e mais recente)
       - lastupdate-unparseable: ignorado (requer resolucao manual)
 
-    Quando -ObjectList, -ObjectNames ou -ObjectGuids e fornecido, so os objetos listados
+    Quando -ObjectList, -ObjectNames ou -ObjectGuids e fornecido, só os objetos listados
     são considerados para copia. Quando omitido, todos os objetos com drift são copiados.
     Se um objeto listado explicitamente ainda não existir na frente, o script faz seed
     inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo explicito.
@@ -60,7 +60,7 @@
 
 .EXAMPLE
     # Seed inicial: copia objetos específicos do acervo para uma frente em que eles ainda
-    # não existem. Seed so ocorre com alvo explicito (-ObjectList/-ObjectNames/-ObjectGuids);
+    # não existem. Seed só ocorre com alvo explicito (-ObjectList/-ObjectNames/-ObjectGuids);
     # sem alvo, nada e semeado e o status pode vir 'not-applicable'/objectsScanned:0 — esperado, não erro.
     .\Copy-GeneXusAcervoToFront.ps1 -FrontFolder C:\Kb\ObjetosGeradosParaImportacaoNaKbNoGenexus\GtaP3_c34f_20260528 -AcervoFolder C:\Kb\ObjetosDaKbEmXml -ObjectList 'Procedure:PReabastecerEstoque','SDT_Item'
 #>

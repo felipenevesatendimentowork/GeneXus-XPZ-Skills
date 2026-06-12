@@ -12,7 +12,7 @@
       - paridade contrato <-> SKILL.md: cada SkillHeading do contrato existe no
         bloco "## AGENTS.MD RECOMENDADO" do SKILL.md (anti-drift).
 
-    As ferramentas são consideradas instaladas pelo PATH real; as FONTES vem do
+    As ferramentas são consideradas instaladas pelo PATH real; as FONTES vêm do
     perfil falso, isolando a deteccao.
 #>
 

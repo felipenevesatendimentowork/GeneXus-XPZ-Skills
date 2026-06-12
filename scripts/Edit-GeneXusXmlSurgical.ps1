@@ -24,7 +24,7 @@
     Replace ou InsertAfter.
 
 .PARAMETER ExpectedAnchorCount
-    Numero esperado de ocorrências da ancora. Default: 1.
+    Número esperado de ocorrências da ancora. Default: 1.
 
 .PARAMETER PreserveLastUpdate
     Não atualiza lastUpdate na raiz do Object.

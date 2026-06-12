@@ -25,13 +25,13 @@
       - Cursor le por compatibilidade de .claude/skills e .codex/skills.
 
     Orfas: vinculos sob um diretório de skills cujo alvo aponta para DENTRO do
-    repositório de skills XPZ, mas cujo nome não esta mais no inventario da raiz.
+    repositório de skills XPZ, mas cujo nome não está mais no inventario da raiz.
     Vinculos para outros repositórios não contam como orfas do repo XPZ.
 
-    Skills externas gerenciadas (ex.: nexa): vivem em outro repositório (nexa esta
+    Skills externas gerenciadas (ex.: nexa): vivem em outro repositório (nexa está
     em genexuslabs/genexus-skills) mas são auditadas por nome em uma seção separada
     (externalSkills / externalOverall), com a mesma classificação OK / coberta /
-    ausente / quebrada. So `nexa` e gerenciada por nome; demais skills do repo
+    ausente / quebrada. Só `nexa` e gerenciada por nome; demais skills do repo
     externo (ex.: gx-sap) ficam dormentes e não são auditadas nem reportadas.
 
     Freshness do MCP do Cursor (Candidato B): compara o server.py instalado com o

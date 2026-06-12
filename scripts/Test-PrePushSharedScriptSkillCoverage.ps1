@@ -8,14 +8,14 @@
     Apoio mecanico a "Comparacao documental" do 13-revisao-pre-push.md para o
     caso de skill transversal: um wrapper/motor/helper compartilhado costuma ser
     documentado em mais de uma skill (a dona e skills que o consomem). Quando a
-    frente altera o script mas mexe so na skill dona (ou em nenhuma), as outras
+    frente altera o script mas mexe só na skill dona (ou em nenhuma), as outras
     skills que descrevem o contrato/parametros/checklist do mesmo script podem
     ficar defasadas sem aparecer no diff.
 
     Para cada script compartilhado (scripts/*.ps1 ou *.py) no intervalo
     BaseRef..HEAD, procura o nome base do script (como palavra) em todos os
     SKILL.md e quality-checklist.md do repositório (fora de historico/). Cada
-    documento que cita o script e NÃO esta no diff vira CANDIDATA a comparacao
+    documento que cita o script e NÃO está no diff vira CANDIDATA a comparacao
     documental.
 
     Consultivo: severity 'warn'; findings entram em agentWarnings e a fase

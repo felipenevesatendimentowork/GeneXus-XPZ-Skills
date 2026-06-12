@@ -135,7 +135,7 @@ function Test-GeneXusPostBuildEventBenignBySound {
     param([AllowNull()][string]$Line)
 
     # Rede de seguranca (fallback) quando o environment ainda não tem eventos registrados:
-    # reconhece tocadores de som como benignos. Exige token especifico de som — não um
+    # reconhece tocadores de som como benignos. Exige token específico de som — não um
     # `start` genérico — para não confiar em comando arbitrario disfarcado.
     if ([string]::IsNullOrWhiteSpace($Line)) {
         return $false

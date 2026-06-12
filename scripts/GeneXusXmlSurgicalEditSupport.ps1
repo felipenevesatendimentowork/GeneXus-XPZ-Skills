@@ -193,7 +193,7 @@ function Invoke-GeneXusXmlSurgicalEditCore {
         [string]$Replacement,
 
         # Subconjunto intencional: este core (consumido pelo wrapper geral
-        # Edit-GeneXusXmlSurgical.ps1) so expoe Replace/InsertAfter, pois não ha
+        # Edit-GeneXusXmlSurgical.ps1) só expoe Replace/InsertAfter, pois não ha
         # caso de uso para InsertBefore por aqui. O primitivo
         # Invoke-GeneXusXmlLiteralPatch aceita também InsertBefore, consumido
         # diretamente pelo Add-GeneXusButton.ps1 (ancora -BeforeControlName).

@@ -3,7 +3,7 @@
 .SYNOPSIS
     Funções compartilhadas de parsing do stream JSON do opencode (skill xpz-llm-delegate).
 .DESCRIPTION
-    Modulo dot-source consumido por Invoke-OpenCode.ps1 e Watch-OpenCodeJob.ps1 para evitar
+    Módulo dot-source consumido por Invoke-OpenCode.ps1 e Watch-OpenCodeJob.ps1 para evitar
     duplicar a lógica de extracao. Sem efeitos colaterais; não invoca opencode.
 
     Eventos do `opencode run --format json`: um objeto JSON por linha, com `type`

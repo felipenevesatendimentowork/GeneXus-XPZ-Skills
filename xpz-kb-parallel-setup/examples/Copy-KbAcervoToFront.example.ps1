@@ -40,7 +40,7 @@ Raiz local da base compartilhada GeneXus-XPZ-Skills.
 
 .EXAMPLE
 # Seed inicial de objetos específicos do acervo para a frente (ainda não existem nela).
-# Seed so ocorre com alvo explicito; sem -ObjectList/-ObjectNames/-ObjectGuids nada e
+# Seed só ocorre com alvo explicito; sem -ObjectList/-ObjectNames/-ObjectGuids nada e
 # semeado e objectsScanned:0 / 'not-applicable' e o resultado esperado, não um erro.
 .\Copy-KbAcervoToFront.ps1 -FrontName GtaP3_c34f_20260528 -ObjectList 'Procedure:PReabastecerEstoque','SDT_Item'
 #>

@@ -12,7 +12,7 @@
     para o sidecar quando o motor gravou sidecar em confronto seletivo. Consumido por
     Build-GeneXusImportFileEnvelope.ps1, New-XpzImportPackage.ps1 e pelo export
     MSBuild via GeneXusXpzExportInventoryGovernance.ps1 (governanca de sub-estado
-    permanece no modulo de export, não neste arquivo).
+    permanece no módulo de export, não neste arquivo).
 #>
 
 Set-StrictMode -Version Latest

@@ -30,8 +30,8 @@
     severity 'warn'; o orquestrador os despeja em agentWarnings e a fase
     semantica confronta e justifica ou corrige cada candidata. Falso positivo e
     barato (justificar/descartar); o custo alto e o falso negativo (termo novo
-    que ficou so com o conjunto antigo, invisivel no diff). Limitacao conhecida:
-    so dispara quando ha transicao co-localizada no diff; alias adicionado sem
+    que ficou só com o conjunto antigo, invisivel no diff). Limitacao conhecida:
+    só dispara quando ha transicao co-localizada no diff; alias adicionado sem
     enumeracao pre-existente no mesmo hunk não gera par.
 
 .PARAMETER RootPath
@@ -116,7 +116,7 @@ function Get-LineTokens {
 
 function Test-TokensRelated {
     # Reduz ruido de co-localizacao coincidente (ex.: linhas de invocacao
-    # 'pwsh -NoProfile -File ... -FrontPrefix'): so trata como par quando os dois
+    # 'pwsh -NoProfile -File ... -FrontPrefix'): só trata como par quando os dois
     # tokens compartilham morfema (prefixo OU sufixo comum >= 4 chars,
     # case-insensitive). Alias/enumeracao de contrato quase sempre compartilham
     # raiz (ObjectList/ObjectNames -> 'Object'; InputPath/Path -> 'Path').
@@ -184,7 +184,7 @@ function Test-IsOwnDeclarationLine {
 function Get-MentionClass {
     # Classifica a FORMA da linha onde a candidata foi encontrada. A fase
     # semantica do 13 usa isso para não descartar candidatas em lote: 'prose'
-    # admite justificativa coletiva (so cita o nome canonico); 'param-list-item',
+    # admite justificativa coletiva (só cita o nome canonico); 'param-list-item',
     # 'param-table-cell' e 'command-example' exigem veredito item a item,
     # confrontados contra a lista/tabela/exemplo gemeo em outro documento.
     param(
@@ -358,7 +358,7 @@ if ($pairs.Count -gt 0) {
                 # Truncamento ciente de classe: candidatas nao-prosa
                 # (param-list-item/param-table-cell/command-example) NUNCA são
                 # truncadas — são as mais acionaveis e podem estar em arquivos
-                # varridos depois que o teto de prosa encheu. So a prosa e
+                # varridos depois que o teto de prosa encheu. Só a prosa e
                 # limitada por -MaxFindings.
                 if ($mentionClass -eq 'prose') {
                     if ($proseCount -ge $MaxFindings) {

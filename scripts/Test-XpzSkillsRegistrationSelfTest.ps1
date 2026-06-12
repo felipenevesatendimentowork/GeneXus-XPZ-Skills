@@ -93,7 +93,7 @@ try {
     New-Junction -LinkDir $claudeSkills -Name 'skill-a' -Target (Join-Path $fakeRepo 'skill-a')
     # quebrada em Claude (target removido depois)
     New-Junction -LinkDir $claudeSkills -Name 'skill-c' -Target $brokenTarget
-    # orfa em Claude (aponta para o repo, mas não esta no inventario)
+    # orfa em Claude (aponta para o repo, mas não está no inventario)
     New-Junction -LinkDir $claudeSkills -Name 'skill-removida' -Target (Join-Path $fakeRepo 'skill-removida')
     # OK em Codex
     New-Junction -LinkDir $codexSkills -Name 'skill-b' -Target (Join-Path $fakeRepo 'skill-b')
@@ -139,7 +139,7 @@ try {
     }
 
     # Skills externas gerenciadas: a nexa deve aparecer na seção separada, e o veredito
-    # externo deve ser independente do overall (aqui GAPS, pois a nexa esta ausente).
+    # externo deve ser independente do overall (aqui GAPS, pois a nexa está ausente).
     $script:cases++
     $nexaEntry = @($report.externalSkills | Where-Object { $_.name -eq 'nexa' })
     if ($nexaEntry.Count -eq 1) {

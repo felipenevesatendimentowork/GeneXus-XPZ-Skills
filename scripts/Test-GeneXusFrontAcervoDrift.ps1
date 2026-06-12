@@ -13,7 +13,7 @@
         da frente, porque a frente e o escopo operacional do empacotamento.
 
     Código de severidade por finding:
-      info    — não ha bloqueio (frente mais recente que acervo, ou objeto so existe
+      info    — não ha bloqueio (frente mais recente que acervo, ou objeto só existe
                  na frente = objeto novo)
       warn    — revisao obrigatória antes de empacotar (frente com mesmo lastUpdate
                  do acervo, ou lastUpdate não parseavel)
