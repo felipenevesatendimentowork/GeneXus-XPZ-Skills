@@ -20,11 +20,17 @@
     - Preserva EOL exato (split com captura de '(\r?\n)') e grava UTF-8 sem BOM,
       conforme .gitattributes (*.md text eol=lf) e a regra do repositório.
 
-    Em .ps1 a deteccao do detector mede só comentarios; este aplicador, por seguranca,
-    só opera arquivos .md (.ps1/.example.ps1 ficam fora deste passo).
+    Em .ps1/.example.ps1 corrige SOMENTE comentarios, isolados pelo tokenizer do
+    PowerShell (tokens Comment, com offset exato) — nunca toca codigo nem strings.
+    Esse caminho e mais seguro que o split-por-'#' que o detector usa ao MEDIR: um
+    '#' dentro de string nao vira correcao aqui (o detector pode conta-lo como ruido;
+    divergencia conhecida e deliberada — o aplicador prefere nao corromper string).
+    Dispatch por extensao: .md usa a supressao de Markdown (cercas/code inline) acima;
+    .ps1/.example.ps1 usa o tokenizer.
 
 .PARAMETER Files
-    Caminhos (relativos a RepoRoot ou absolutos) dos .md a corrigir.
+    Caminhos (relativos a RepoRoot ou absolutos) dos arquivos a corrigir
+    (.md, .ps1 ou .example.ps1).
 .PARAMETER RepoRoot
     Raiz do repositório. Default: a pasta acima de scripts/.
 .PARAMETER DryRun
@@ -118,6 +124,42 @@ function Repair-MarkdownLine {
 }
 
 # ---------------------------------------------------------------------------
+# Corrige inequivocas SOMENTE em comentarios de um .ps1/.example.ps1, via tokenizer
+# do PowerShell (tokens Comment, offset exato): nunca toca codigo nem strings.
+# Retorna [pscustomobject]{ Text; Count }.
+# ---------------------------------------------------------------------------
+function Repair-Ps1Comments {
+    param([Parameter(Mandatory)] [AllowEmptyString()] [string] $Text)
+    $tokens = $null; $perr = $null
+    [void][System.Management.Automation.Language.Parser]::ParseInput($Text, [ref]$tokens, [ref]$perr)
+    if ($perr -and $perr.Count -gt 0) {
+        throw "PARSE_ERRO ao tokenizar: $($perr[0].Message)"
+    }
+    $comments = @($tokens | Where-Object { $_.Kind -eq 'Comment' })
+    $edits = New-Object System.Collections.Generic.List[object]
+    foreach ($c in $comments) {
+        $ct = $c.Text
+        $start = $c.Extent.StartOffset
+        foreach ($m in $inequivRegex.Matches($ct)) {
+            $word = $m.Value
+            $correct = $correctMap[$word.ToLowerInvariant()]
+            if ([string]::IsNullOrEmpty($correct)) { continue }
+            $edits.Add([pscustomobject]@{
+                Off  = $start + $m.Index
+                Len  = $m.Length
+                Repl = (Get-CasedReplacement -Found $word -Correct $correct)
+            }) | Out-Null
+        }
+    }
+    $out = $Text
+    # De tras pra frente: preserva os offsets ainda nao aplicados.
+    foreach ($e in ($edits | Sort-Object Off -Descending)) {
+        $out = $out.Remove($e.Off, $e.Len).Insert($e.Off, $e.Repl)
+    }
+    return [pscustomobject]@{ Text = $out; Count = $edits.Count }
+}
+
+# ---------------------------------------------------------------------------
 # Processa cada arquivo
 # ---------------------------------------------------------------------------
 $enc = Get-Utf8NoBomEncoding
@@ -132,27 +174,32 @@ foreach ($rel in $Files) {
         Write-Host "AUSENTE: $rel"
         continue
     }
-    if ($full -notmatch '\.md$') {
-        Write-Host "IGNORADO (nao .md): $rel"
+    $text = [System.IO.File]::ReadAllText($full)
+    if ($full -match '\.ps1$') {
+        # .ps1/.example.ps1: corrige SOMENTE comentarios, via tokenizer.
+        $r = Repair-Ps1Comments -Text $text
+        $newText = $r.Text
+        $fileCount = $r.Count
+    } elseif ($full -match '\.md$') {
+        # Markdown: corrige a faixa pt-BR, com supressao de cercas/code inline.
+        # Em arquivo trilingue, ignora secoes ES/EN (colisao com espanhol).
+        $ptBrEnd = Get-PtBrLineCount -Text $text
+        # Split com captura: indices pares = conteudo de linha; impares = EOL.
+        $parts = @([regex]::Split($text, '(\r?\n)'))
+        $inFence = $false
+        $fileCount = 0
+        for ($i = 0; $i -lt $parts.Count; $i += 2) {
+            $lineNo = ($i / 2) + 1
+            if ($lineNo -gt $ptBrEnd) { continue }
+            $res = Repair-MarkdownLine -Line $parts[$i] -InFence ([ref]$inFence)
+            $parts[$i] = $res.Line
+            $fileCount += $res.Count
+        }
+        $newText = -join $parts
+    } else {
+        Write-Host "IGNORADO (extensao nao suportada): $rel"
         continue
     }
-
-    $text = [System.IO.File]::ReadAllText($full)
-    # Em arquivo trilingue, corrige SÓ a faixa pt-BR (ignora seções ES/EN, onde
-    # ha colisao com espanhol). Get-PtBrLineCount vem do detector dot-sourced.
-    $ptBrEnd = Get-PtBrLineCount -Text $text
-    # Split com captura: índices pares = conteúdo de linha; impares = EOL.
-    $parts = @([regex]::Split($text, '(\r?\n)'))
-    $inFence = $false
-    $fileCount = 0
-    for ($i = 0; $i -lt $parts.Count; $i += 2) {
-        $lineNo = ($i / 2) + 1
-        if ($lineNo -gt $ptBrEnd) { continue }
-        $res = Repair-MarkdownLine -Line $parts[$i] -InFence ([ref]$inFence)
-        $parts[$i] = $res.Line
-        $fileCount += $res.Count
-    }
-    $newText = -join $parts
 
     if ($DryRun) {
         Write-Host ("[dry-run] {0}: {1} substituicoes" -f ($rel -replace '\\', '/'), $fileCount)
