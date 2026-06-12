@@ -877,13 +877,20 @@ $scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Start-GeneXusKbBuildD
 3. O JSON retornado traz `status: build desacoplado disparado`, `taskName`, `sentinelPath`,
    `logPath` e `artifactBaseDir`. Guardar `sentinelPath` e `logPath`.
 4. **Polling da sentinela** (barato): aguardar a existência de `sentinelPath`. Quando existir,
-   ler — `{ "done": true, "exitCode": <n>, "logPath": "<...>" }`. Para progresso ao vivo
-   enquanto corre, ler o `msbuild.stdout.log` do artifact dir novo sob `artifactBaseDir`
-   (diff de diretórios, como no Passo 4 do fluxo padrão).
-5. Quando a sentinela indicar conclusão, ler o JSON completo de `logPath` com a ferramenta
-   `Read` e classificar o resultado **exatamente** como no fluxo padrão (mesmas categorias,
-   mesma leitura de `exitCode`/`msBuildCategoryBBlocked`/`buildErrors`). A Tarefa Agendada se
-   auto-remove ao fim; `timing.phases` fica vazio neste modo (sem watcher).
+   ler o JSON: `{ "done": true, "exitCode": <n>, "logPath": "<...>", "logExists": <bool>,
+   "error": "<msg ou vazio>", "stdoutPath": "<...>", "stderrPath": "<...>" }`.
+   - `logExists=true` → o wrapper concluiu e gravou o JSON de resultado em `logPath` (caminho normal).
+   - `logExists=false` com `error` preenchido → o wrapper falhou **antes** de escrever o log;
+     ler `error` e os arquivos `detached-payload-error.log` / `detached-payload-stderr.log` no
+     WorkingDirectory para diagnóstico (o payload **não** mascara mais a falha como exit cego).
+
+   Para progresso ao vivo enquanto corre, ler o `msbuild.stdout.log` do artifact dir novo sob
+   `artifactBaseDir` (diff de diretórios, como no Passo 4 do fluxo padrão).
+5. Quando a sentinela indicar conclusão **com `logExists=true`**, ler o JSON completo de `logPath`
+   com a ferramenta `Read` e classificar o resultado **exatamente** como no fluxo padrão (mesmas
+   categorias, mesma leitura de `exitCode`/`msBuildCategoryBBlocked`/`buildErrors`). A Tarefa
+   Agendada roda **sem janela** (console oculto — `-WindowStyle Hidden`; não há janela para fechar
+   acidentalmente) e se auto-remove ao fim; `timing.phases` fica vazio neste modo (sem watcher).
 
 > **Robustez vs. limites:** o modo desacoplado sobrevive a fechar janela e a encerrar o app
 > do agente. **Não** sobrevive a **logoff** do Windows (a Tarefa Agendada roda na sessão

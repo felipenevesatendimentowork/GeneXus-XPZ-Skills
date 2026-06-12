@@ -265,13 +265,24 @@ function Write-SentinelAtomic {
     param(
         [string]$TargetSentinelPath,
         [int]$ExitCodeValue,
-        [string]$ResultLogPath
+        [string]$ResultLogPath,
+        [string]$ErrorMessage,
+        [string]$StdoutPath,
+        [string]$StderrPath
     )
+
+    # logExists distingue "wrapper concluiu e gravou o JSON de resultado" de "wrapper falhou
+    # antes de escrever o log" — o agente usa isso para decidir se lê o logPath ou o error.
+    $logExists = (-not [string]::IsNullOrWhiteSpace($ResultLogPath)) -and (Test-Path -LiteralPath $ResultLogPath -PathType Leaf)
 
     $payload = [ordered]@{
         done       = $true
         exitCode   = $ExitCodeValue
         logPath    = $ResultLogPath
+        logExists  = $logExists
+        error      = $ErrorMessage
+        stdoutPath = $StdoutPath
+        stderrPath = $StderrPath
         finishedAt = Get-NowIso
     }
     $json = ($payload | ConvertTo-Json -Depth 4)
@@ -295,18 +306,47 @@ if ($PSCmdlet.ParameterSetName -eq 'Payload') {
     $sentinelTarget  = [string]$spec.sentinelPath
     $resultLogPath   = [string]$spec.logPath
     $taskNameToClean = [string]$spec.taskName
-    [string[]]$buildArgs = @($spec.buildArgs)
+
+    # Reconstrói a hashtable de parâmetros a partir do PSCustomObject desserializado, para
+    # splatting nomeado (@buildParams). NÃO usar array splatting: ele desalinha o binding.
+    $buildParams = @{}
+    if ($null -ne $spec.buildParams) {
+        foreach ($prop in $spec.buildParams.PSObject.Properties) {
+            $buildParams[$prop.Name] = $prop.Value
+        }
+    }
+
+    # Diagnóstico do contexto desacoplado: stdout/stderr do wrapper e erro do payload em
+    # arquivos ao lado da sentinela. Sem isso, uma falha do wrapper no contexto sem console
+    # da Tarefa Agendada vira uma sentinela com exitCode cego e nenhuma pista da causa.
+    $payloadDir = [System.IO.Path]::GetDirectoryName($sentinelTarget)
+    $payloadStdoutPath = Join-Path $payloadDir 'detached-payload-stdout.log'
+    $payloadStderrPath = Join-Path $payloadDir 'detached-payload-stderr.log'
+    $payloadErrorPath  = Join-Path $payloadDir 'detached-payload-error.log'
 
     $payloadExit = 90
+    $payloadErrorMessage = $null
     try {
-        & $buildScriptPath @buildArgs | Out-Null
+        # Redireciona os streams do wrapper para arquivos (em vez de descartá-los com
+        # Out-Null), preservando o diagnóstico mesmo sem console.
+        & $buildScriptPath @buildParams 1> $payloadStdoutPath 2> $payloadStderrPath
         $payloadExit = $LASTEXITCODE
         if ($null -eq $payloadExit) { $payloadExit = 90 }
     } catch {
         $payloadExit = 90
+        $payloadErrorMessage = "$($_.Exception.GetType().FullName): $($_.Exception.Message)"
+        # NÃO engolir: grava a exceção completa para diagnóstico do contexto desacoplado.
+        try {
+            $errText = $payloadErrorMessage + [Environment]::NewLine +
+                       'AT: ' + $_.InvocationInfo.PositionMessage + [Environment]::NewLine +
+                       'STACK: ' + $_.ScriptStackTrace
+            [System.IO.File]::WriteAllText($payloadErrorPath, $errText + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
+        } catch {
+            # Falha ao gravar o arquivo de erro não pode mascarar a sentinela.
+        }
     } finally {
         try {
-            Write-SentinelAtomic -TargetSentinelPath $sentinelTarget -ExitCodeValue $payloadExit -ResultLogPath $resultLogPath
+            Write-SentinelAtomic -TargetSentinelPath $sentinelTarget -ExitCodeValue $payloadExit -ResultLogPath $resultLogPath -ErrorMessage $payloadErrorMessage -StdoutPath $payloadStdoutPath -StderrPath $payloadStderrPath
         } catch {
             # Falha ao gravar a sentinela é o pior caso de observabilidade; registra no stderr da tarefa.
             [Console]::Error.WriteLine("Falha ao gravar sentinela em ${sentinelTarget}: $($_.Exception.Message)")
@@ -399,55 +439,57 @@ foreach ($dir in @($resolvedWorkingDir, (Split-Path -Parent $resolvedLogPath), (
     }
 }
 
-# Monta os argumentos repassados ao wrapper de build. Modo desacoplado NÃO usa watcher (v1).
-$forwardArgs = New-Object System.Collections.Generic.List[string]
-$forwardArgs.Add('-KbPath');           $forwardArgs.Add($resolvedKbPath)
-$forwardArgs.Add('-WorkingDirectory'); $forwardArgs.Add($resolvedWorkingDir)
-$forwardArgs.Add('-LogPath');          $forwardArgs.Add($resolvedLogPath)
+# Monta os parâmetros repassados ao wrapper de build como HASHTABLE (modo desacoplado NÃO
+# usa watcher na v1). Hashtable splatting (@hash) é o caminho correto para argumentos
+# nomeados; array splatting (@array) de pares '-Nome' 'valor' desalinha o binding e faz o
+# wrapper rejeitar um switch como se fosse valor de outro parâmetro.
+$buildParams = [ordered]@{
+    KbPath           = $resolvedKbPath
+    WorkingDirectory = $resolvedWorkingDir
+    LogPath          = $resolvedLogPath
+}
 
 function Add-OptionalValue {
     param([string]$Name, [string]$Value)
     if (-not [string]::IsNullOrWhiteSpace($Value)) {
-        $forwardArgs.Add($Name)
-        $forwardArgs.Add($Value)
+        $buildParams[$Name] = $Value
     }
 }
 
-Add-OptionalValue -Name '-GeneXusDir'      -Value $GeneXusDir
-Add-OptionalValue -Name '-MsBuildPath'     -Value $MsBuildPath
-Add-OptionalValue -Name '-VersionName'     -Value $VersionName
-Add-OptionalValue -Name '-EnvironmentName' -Value $EnvironmentName
-Add-OptionalValue -Name '-Configuration'   -Value $Configuration
-Add-OptionalValue -Name '-ParallelKbRoot'  -Value $ParallelKbRoot
-Add-OptionalValue -Name '-KbMetadataPath'  -Value $KbMetadataPath
+Add-OptionalValue -Name 'GeneXusDir'      -Value $GeneXusDir
+Add-OptionalValue -Name 'MsBuildPath'     -Value $MsBuildPath
+Add-OptionalValue -Name 'VersionName'     -Value $VersionName
+Add-OptionalValue -Name 'EnvironmentName' -Value $EnvironmentName
+Add-OptionalValue -Name 'Configuration'   -Value $Configuration
+Add-OptionalValue -Name 'ParallelKbRoot'  -Value $ParallelKbRoot
+Add-OptionalValue -Name 'KbMetadataPath'  -Value $KbMetadataPath
 
 # Parâmetros ValidateSet 'true'/'false': sempre repassados explicitamente.
-$forwardArgs.Add('-ForceRebuild');       $forwardArgs.Add($ForceRebuild)
-$forwardArgs.Add('-CompileMains');       $forwardArgs.Add($CompileMains)
-$forwardArgs.Add('-DetailedNavigation'); $forwardArgs.Add($DetailedNavigation)
-$forwardArgs.Add('-FailIfReorg');        $forwardArgs.Add($FailIfReorg)
-$forwardArgs.Add('-DoNotExecuteReorg');  $forwardArgs.Add($DoNotExecuteReorg)
+$buildParams['ForceRebuild']       = $ForceRebuild
+$buildParams['CompileMains']       = $CompileMains
+$buildParams['DetailedNavigation'] = $DetailedNavigation
+$buildParams['FailIfReorg']        = $FailIfReorg
+$buildParams['DoNotExecuteReorg']  = $DoNotExecuteReorg
 
 if ($TimeoutSeconds -gt 0) {
-    $forwardArgs.Add('-TimeoutSeconds')
-    $forwardArgs.Add([string]$TimeoutSeconds)
+    $buildParams['TimeoutSeconds'] = $TimeoutSeconds
 }
 
-# Switches repassados quando presentes.
+# Switches repassados quando presentes (valor booleano $true no splat de hashtable).
 function Add-OptionalSwitch {
     param([string]$Name, [bool]$Present)
-    if ($Present) { $forwardArgs.Add($Name) }
+    if ($Present) { $buildParams[$Name] = $true }
 }
 
-Add-OptionalSwitch -Name '-AllowReorg'                -Present $AllowReorg.IsPresent
-Add-OptionalSwitch -Name '-ConfirmReorg'             -Present $ConfirmReorg.IsPresent
-Add-OptionalSwitch -Name '-AllowWideRebuild'         -Present $AllowWideRebuild.IsPresent
-Add-OptionalSwitch -Name '-ConfirmWideRebuild'       -Present $ConfirmWideRebuild.IsPresent
-Add-OptionalSwitch -Name '-AllowCostlyBuildOptions'  -Present $AllowCostlyBuildOptions.IsPresent
-Add-OptionalSwitch -Name '-ConfirmCostlyBuildOptions' -Present $ConfirmCostlyBuildOptions.IsPresent
-Add-OptionalSwitch -Name '-PostImportDeployValidation' -Present $PostImportDeployValidation.IsPresent
-Add-OptionalSwitch -Name '-SkipDeployBinCheck'       -Present $SkipDeployBinCheck.IsPresent
-Add-OptionalSwitch -Name '-StrictDeployBinCheck'     -Present $StrictDeployBinCheck.IsPresent
+Add-OptionalSwitch -Name 'AllowReorg'                 -Present $AllowReorg.IsPresent
+Add-OptionalSwitch -Name 'ConfirmReorg'               -Present $ConfirmReorg.IsPresent
+Add-OptionalSwitch -Name 'AllowWideRebuild'           -Present $AllowWideRebuild.IsPresent
+Add-OptionalSwitch -Name 'ConfirmWideRebuild'         -Present $ConfirmWideRebuild.IsPresent
+Add-OptionalSwitch -Name 'AllowCostlyBuildOptions'    -Present $AllowCostlyBuildOptions.IsPresent
+Add-OptionalSwitch -Name 'ConfirmCostlyBuildOptions'  -Present $ConfirmCostlyBuildOptions.IsPresent
+Add-OptionalSwitch -Name 'PostImportDeployValidation' -Present $PostImportDeployValidation.IsPresent
+Add-OptionalSwitch -Name 'SkipDeployBinCheck'         -Present $SkipDeployBinCheck.IsPresent
+Add-OptionalSwitch -Name 'StrictDeployBinCheck'       -Present $StrictDeployBinCheck.IsPresent
 
 # Nome único da tarefa por execução.
 $kbLeaf = Split-Path -Leaf $resolvedKbPath
@@ -459,7 +501,7 @@ $taskName = "XpzBuildDetached_${kbLeafSafe}_${taskSuffix}"
 # Grava o PayloadSpec na WorkingDirectory (evita quoting frágil na linha de comando da tarefa).
 $payloadSpec = [ordered]@{
     buildScriptPath = $buildScriptPath
-    buildArgs       = @($forwardArgs)
+    buildParams     = $buildParams
     sentinelPath    = $resolvedSentinelPath
     logPath         = $resolvedLogPath
     taskName        = $taskName
@@ -476,7 +518,10 @@ if ([string]::IsNullOrWhiteSpace($pwshPath)) {
 }
 if ([string]::IsNullOrWhiteSpace($pwshPath)) { $pwshPath = 'pwsh.exe' }
 
-$actionArgument = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -RunDetachedPayload -PayloadSpecPath "{1}"' -f $PSCommandPath, $payloadSpecPath
+# -WindowStyle Hidden: a tarefa roda como usuário logado (LogonType Interactive) e, sem isto,
+# abriria um console visível na sessão do usuário — confuso e, pior, fechável (fechar a janela
+# mataria o build, reintroduzindo a fragilidade que o modo desacoplado existe para eliminar).
+$actionArgument = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -RunDetachedPayload -PayloadSpecPath "{1}"' -f $PSCommandPath, $payloadSpecPath
 
 try {
     $action = New-ScheduledTaskAction -Execute $pwshPath -Argument $actionArgument -WorkingDirectory $resolvedWorkingDir

@@ -6,15 +6,19 @@
 
 .DESCRIPTION
     Cobre, sem GeneXus, sem MSBuild e sem registrar Tarefa Agendada real:
-    - modo payload: wrapper falso com exit 0 -> sentinela { done:true, exitCode:0 };
-    - modo payload: wrapper falso com exit 45 -> sentinela exitCode 45 e exit do processo 45;
-    - modo payload: wrapper falso que lança exceção -> sentinela exitCode 90;
-    - modo payload: sentinela é JSON bem-formado com os campos do contrato e escrita atômica
-      (sem .tmp residual);
-    - modo launch: WorkingDirectory sob Program Files (x86) -> exit 46, status bloqueado,
-      sem registrar tarefa.
+    - modo payload com binding REAL de parâmetros: o mock tem a mesma assinatura do wrapper
+      (parâmetros ValidateSet 'true'/'false'), de modo que um splat desalinhado falharia no
+      binding — regressão direta do bug que o array splatting causava (corrigido com
+      hashtable splatting);
+    - wrapper que conclui escrevendo o LogPath e sai 0 -> sentinela exitCode 0, logExists true,
+      error null, e o binding chegou correto ao mock (CompileMains='false', FailIfReorg='true');
+    - wrapper que escreve LogPath e sai 45 -> sentinela exitCode 45, logExists true;
+    - wrapper que lança exceção (sem log) -> sentinela exitCode 90, logExists false, error
+      preenchido e detached-payload-error.log presente (catch NÃO engole mais o erro);
+    - sentinela sempre traz logExists/error/stdoutPath/stderrPath e escrita atômica (sem .tmp);
+    - modo launch: WorkingDirectory sob Program Files (x86) -> exit 46, status bloqueado.
 
-    NÃO cobre o caminho feliz do modo launch (registra e dispara Tarefa Agendada real), por
+    NÃO cobre o caminho feliz do modo launch (registra/dispara Tarefa Agendada real), por
     efeito colateral no Task Scheduler — esse caminho é validado em uso controlado.
 #>
 
@@ -50,15 +54,34 @@ function Assert-That {
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("start-detached-{0}" -f ([guid]::NewGuid().ToString('N')))
 New-Item -Path $workRoot -ItemType Directory -Force | Out-Null
 
+# Mock com a MESMA assinatura do wrapper real: parâmetros ValidateSet 'true'/'false'. Se o
+# splat desalinhar (bug do array splatting), o binding falha e o caso quebra — exatamente o
+# que precisamos detectar. Com -WriteLog, grava no LogPath os valores recebidos, para o
+# self-test confirmar que o binding chegou correto.
 function New-MockBuildWrapper {
-    param([int]$ExitWith, [switch]$Throw)
+    param([int]$ExitWith, [switch]$Throw, [switch]$WriteLog)
     $path = Join-Path $workRoot ("mock-build-{0}.ps1" -f ([guid]::NewGuid().ToString('N')))
-    if ($Throw.IsPresent) {
-        $body = "throw 'mock build wrapper failure'"
-    } else {
-        $body = "exit $ExitWith"
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add('param(')
+    $lines.Add('    [Parameter(Mandatory=$true)][string]$KbPath,')
+    $lines.Add('    [Parameter(Mandatory=$true)][string]$WorkingDirectory,')
+    $lines.Add('    [Parameter(Mandatory=$true)][string]$LogPath,')
+    $lines.Add('    [ValidateSet("true","false")][string]$ForceRebuild="false",')
+    $lines.Add('    [ValidateSet("true","false")][string]$CompileMains="false",')
+    $lines.Add('    [ValidateSet("true","false")][string]$DetailedNavigation="false",')
+    $lines.Add('    [ValidateSet("true","false")][string]$FailIfReorg="true",')
+    $lines.Add('    [ValidateSet("true","false")][string]$DoNotExecuteReorg="false"')
+    $lines.Add(')')
+    if ($WriteLog.IsPresent) {
+        $lines.Add('$received = [ordered]@{ KbPath=$KbPath; CompileMains=$CompileMains; FailIfReorg=$FailIfReorg; DoNotExecuteReorg=$DoNotExecuteReorg } | ConvertTo-Json -Compress')
+        $lines.Add('[System.IO.File]::WriteAllText($LogPath, $received)')
     }
-    [System.IO.File]::WriteAllText($path, $body + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
+    if ($Throw.IsPresent) {
+        $lines.Add("throw 'mock build wrapper failure'")
+    } else {
+        $lines.Add("exit $ExitWith")
+    }
+    [System.IO.File]::WriteAllText($path, ($lines -join [Environment]::NewLine) + [Environment]::NewLine, (Get-Utf8NoBomEncoding))
     return $path
 }
 
@@ -68,7 +91,16 @@ function Invoke-PayloadMode {
     $logPath  = Join-Path $workRoot ("result-{0}.json"   -f ([guid]::NewGuid().ToString('N')))
     $spec = [ordered]@{
         buildScriptPath = $MockBuildPath
-        buildArgs       = @()
+        buildParams     = [ordered]@{
+            KbPath             = 'C:\KBs\Mock'
+            WorkingDirectory   = $workRoot
+            LogPath            = $logPath
+            ForceRebuild       = 'false'
+            CompileMains       = 'false'
+            DetailedNavigation = 'false'
+            FailIfReorg        = 'true'
+            DoNotExecuteReorg  = 'false'
+        }
         sentinelPath    = $sentinel
         logPath         = $logPath
         taskName        = 'XpzBuildDetached_NaoExiste_00000000'
@@ -82,40 +114,63 @@ function Invoke-PayloadMode {
     if (Test-Path -LiteralPath $sentinel -PathType Leaf) {
         try { $sentinelObj = (Get-Content -LiteralPath $sentinel -Raw) | ConvertFrom-Json } catch { $sentinelObj = $null }
     }
+    $logContent = $null
+    if (Test-Path -LiteralPath $logPath -PathType Leaf) {
+        try { $logContent = (Get-Content -LiteralPath $logPath -Raw) | ConvertFrom-Json } catch { $logContent = $null }
+    }
+    $errorFile = Join-Path $workRoot 'detached-payload-error.log'
+    $errorFileText = ''
+    if (Test-Path -LiteralPath $errorFile -PathType Leaf) {
+        $errorFileText = Get-Content -LiteralPath $errorFile -Raw
+    }
     return [pscustomobject]@{
-        ExitCode    = $code
-        SentinelPath = $sentinel
-        Sentinel    = $sentinelObj
-        TmpExists   = (Test-Path -LiteralPath ($sentinel + '.tmp') -PathType Leaf)
-        Raw         = ($out | Out-String)
+        ExitCode      = $code
+        Sentinel      = $sentinelObj
+        LogContent    = $logContent
+        TmpExists     = (Test-Path -LiteralPath ($sentinel + '.tmp') -PathType Leaf)
+        ErrorFileText = $errorFileText
+        Raw           = ($out | Out-String)
     }
 }
 
 try {
-    # --- 1) payload com exit 0 ---------------------------------------------------
-    $mock0 = New-MockBuildWrapper -ExitWith 0
-    $r0 = Invoke-PayloadMode -MockBuildPath $mock0
-    Assert-That ($r0.ExitCode -eq 0) "payload exit 0: processo retorna 0 (obtido: $($r0.ExitCode))"
-    Assert-That ($null -ne $r0.Sentinel) 'payload exit 0: sentinela gravada e JSON bem-formado'
+    # --- 1) binding REAL + log + exit 0 (regressao do bug de splat) --------------
+    $mockOk = New-MockBuildWrapper -ExitWith 0 -WriteLog
+    $r0 = Invoke-PayloadMode -MockBuildPath $mockOk
+    Assert-That ($r0.ExitCode -eq 0) "binding/exit 0: processo retorna 0 (obtido: $($r0.ExitCode))"
+    Assert-That ($null -ne $r0.Sentinel) 'binding/exit 0: sentinela gravada e JSON bem-formado'
     if ($null -ne $r0.Sentinel) {
-        Assert-That ($r0.Sentinel.done -eq $true) 'payload exit 0: sentinela done=true'
-        Assert-That ($r0.Sentinel.exitCode -eq 0) "payload exit 0: sentinela exitCode 0 (obtido: $($r0.Sentinel.exitCode))"
-        Assert-That (-not [string]::IsNullOrWhiteSpace([string]$r0.Sentinel.finishedAt)) 'payload exit 0: sentinela tem finishedAt'
-        Assert-That (-not [string]::IsNullOrWhiteSpace([string]$r0.Sentinel.logPath)) 'payload exit 0: sentinela tem logPath'
+        Assert-That ($r0.Sentinel.exitCode -eq 0) "binding/exit 0: sentinela exitCode 0 (obtido: $($r0.Sentinel.exitCode))"
+        Assert-That ($r0.Sentinel.logExists -eq $true) 'binding/exit 0: sentinela logExists=true'
+        Assert-That ([string]::IsNullOrEmpty([string]$r0.Sentinel.error)) 'binding/exit 0: sentinela sem error'
+        Assert-That (-not [string]::IsNullOrWhiteSpace([string]$r0.Sentinel.stdoutPath)) 'binding/exit 0: sentinela tem stdoutPath'
+        Assert-That (-not [string]::IsNullOrWhiteSpace([string]$r0.Sentinel.stderrPath)) 'binding/exit 0: sentinela tem stderrPath'
     }
-    Assert-That (-not $r0.TmpExists) 'payload exit 0: escrita atomica (sem .tmp residual)'
+    Assert-That ($null -ne $r0.LogContent) 'binding/exit 0: wrapper escreveu o LogPath (binding nao falhou)'
+    if ($null -ne $r0.LogContent) {
+        Assert-That ($r0.LogContent.CompileMains -eq 'false') "binding/exit 0: CompileMains chegou 'false' (obtido: $($r0.LogContent.CompileMains))"
+        Assert-That ($r0.LogContent.FailIfReorg -eq 'true') "binding/exit 0: FailIfReorg chegou 'true' (obtido: $($r0.LogContent.FailIfReorg))"
+        Assert-That ($r0.LogContent.DoNotExecuteReorg -eq 'false') "binding/exit 0: DoNotExecuteReorg chegou 'false' (obtido: $($r0.LogContent.DoNotExecuteReorg))"
+    }
+    Assert-That (-not $r0.TmpExists) 'binding/exit 0: escrita atomica (sem .tmp residual)'
 
-    # --- 2) payload com exit 45 (compilou com erros) -----------------------------
-    $mock45 = New-MockBuildWrapper -ExitWith 45
+    # --- 2) log + exit 45 --------------------------------------------------------
+    $mock45 = New-MockBuildWrapper -ExitWith 45 -WriteLog
     $r45 = Invoke-PayloadMode -MockBuildPath $mock45
-    Assert-That ($r45.ExitCode -eq 45) "payload exit 45: processo propaga 45 (obtido: $($r45.ExitCode))"
-    Assert-That (($null -ne $r45.Sentinel) -and ($r45.Sentinel.exitCode -eq 45)) "payload exit 45: sentinela exitCode 45"
+    Assert-That ($r45.ExitCode -eq 45) "exit 45: processo propaga 45 (obtido: $($r45.ExitCode))"
+    Assert-That (($null -ne $r45.Sentinel) -and ($r45.Sentinel.exitCode -eq 45)) 'exit 45: sentinela exitCode 45'
+    Assert-That (($null -ne $r45.Sentinel) -and ($r45.Sentinel.logExists -eq $true)) 'exit 45: sentinela logExists=true'
 
-    # --- 3) payload com wrapper que lança excecao -> 90 --------------------------
+    # --- 3) wrapper que lanca excecao (sem log) -> 90 + error capturado ----------
     $mockThrow = New-MockBuildWrapper -ExitWith 0 -Throw
     $rThrow = Invoke-PayloadMode -MockBuildPath $mockThrow
-    Assert-That ($rThrow.ExitCode -eq 90) "payload throw: processo retorna 90 (obtido: $($rThrow.ExitCode))"
-    Assert-That (($null -ne $rThrow.Sentinel) -and ($rThrow.Sentinel.exitCode -eq 90)) 'payload throw: sentinela exitCode 90 (sentinela sempre gravada no finally)'
+    Assert-That ($rThrow.ExitCode -eq 90) "throw: processo retorna 90 (obtido: $($rThrow.ExitCode))"
+    if ($null -ne $rThrow.Sentinel) {
+        Assert-That ($rThrow.Sentinel.exitCode -eq 90) 'throw: sentinela exitCode 90'
+        Assert-That ($rThrow.Sentinel.logExists -eq $false) 'throw: sentinela logExists=false (wrapper nao escreveu log)'
+        Assert-That (-not [string]::IsNullOrWhiteSpace([string]$rThrow.Sentinel.error)) 'throw: sentinela error preenchido (catch nao engole)'
+    }
+    Assert-That (-not [string]::IsNullOrWhiteSpace($rThrow.ErrorFileText)) 'throw: detached-payload-error.log presente com a excecao'
 
     # --- 4) launch com WorkingDirectory sob Program Files (x86) -> 46 ------------
     $unsafeWork = 'C:\Program Files (x86)\xpz-detached-test-naoexiste'
