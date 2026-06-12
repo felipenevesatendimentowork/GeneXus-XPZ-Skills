@@ -33,6 +33,24 @@ Limitação conhecida (v1): o modo desacoplado não usa watcher, logo timing.pha
 de resultado fica vazio. O monitoramento legível por arquivo permanece: o agente lê o
 msbuild.stdout.log do artifact dir (progresso) e a sentinela (conclusão).
 
+Limitação conhecida — logoff: a Tarefa Agendada é registrada com LogonType Interactive
+(roda sob a sessão interativa do usuário logado). Por isso o modo sobrevive a fechar a
+janela do watcher e a encerrar o app do agente, MAS NÃO a um logoff completo do usuário
+(nem a reboot) — um logoff encerra a sessão interativa e, com ela, a tarefa. Isto é decisão
+consciente: NÃO se oferece o modo S4U/Password (que rodaria deslogado), porque exigiria
+armazenar e gerenciar credenciais e o build depende do contexto interativo do usuário
+(instalação do GeneXus, drives mapeados, perfil). O cenário-alvo é fechar janela/app, não
+deslogar no meio de um build longo.
+
+Contrato de espera (crash sem sentinela): a sentinela é escrita no sucesso E na falha, mas
+se o processo da tarefa for morto de forma dura (kill abrupto, OOM, ou estouro do
+-ExecutionTimeLimit) ANTES do bloco finally, a sentinela nunca aparece. Quem aguarda NÃO
+deve pollar só a existência da sentinela: deve combinar (a) sentinela com done=true =
+conclusão normal, com (b) heartbeat da tarefa via Get-ScheduledTask/Get-ScheduledTaskInfo —
+tarefa que parou de executar (ou sumiu) com a sentinela ainda ausente, após curta margem de
+corrida, é falha anômala (ler error/stderrPath). O helper Wait-GeneXusKbBuildDetached.ps1
+encapsula essa espera com timeout.
+
 Autoridade dos gates: este orquestrador é transporte, não autoridade de política. Os gates
 de reorg, wide rebuild e opções caras de build vivem no wrapper Invoke-GeneXusKbBuildAll.ps1
 e continuam valendo dentro da tarefa. Repassar -AllowReorg -ConfirmReorg (e equivalentes)
@@ -404,7 +422,7 @@ function Write-LaunchResult {
         buildScriptPath  = $buildScriptPath
         workingDirectory = $resolvedWorkingDir
         artifactBaseDir  = (Join-Path (Split-Path -Parent $scriptDirectory) 'Temp\xpz-msbuild-build')
-        pollHint         = 'Aguarde a existência de sentinelPath; quando { done: true }, ler logPath com a ferramenta Read. Para progresso ao vivo, ler o msbuild.stdout.log do artifact dir novo sob artifactBaseDir.'
+        pollHint         = 'Aguarde combinando DOIS sinais, nunca só a sentinela: (a) sentinela em sentinelPath com { done: true } = conclusão normal, leia logPath com a ferramenta Read; (b) heartbeat da tarefa via Get-ScheduledTask -TaskName <taskName> — se a tarefa parou de executar (State != Running) ou sumiu E a sentinela continua ausente após uma curta margem de corrida, é FALHA ANÔMALA (kill/OOM/estouro de ExecutionTimeLimit antes de escrever a sentinela): leia error e stderrPath. Pollar só a existência da sentinela deixaria a espera presa para sempre num kill duro. O helper scripts/Wait-GeneXusKbBuildDetached.ps1 encapsula essa espera (sentinela-ou-heartbeat) com timeout. Para progresso ao vivo, ler o msbuild.stdout.log do artifact dir novo sob artifactBaseDir.'
         blockingReasons  = @($blockingReasons)
     }
     $json = ($result | ConvertTo-Json -Depth 6)

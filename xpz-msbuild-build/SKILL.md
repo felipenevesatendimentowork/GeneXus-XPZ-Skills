@@ -227,6 +227,7 @@ Dois scripts PowerShell próprios, seguindo o mesmo padrão de `xpz-msbuild-impo
 
 - `Invoke-GeneXusXpzImportThenBuild.ps1` pertence operacionalmente à trilha `xpz-msbuild-import-export`, mas chama `Invoke-GeneXusKbBuildAll.ps1` como etapa receptora. O build só roda quando `importReadyForBuild.ready=true`; com `buildSkippedReason`, tratar como import não apto para build, não como falha autônoma de build.
 - `Start-GeneXusKbBuildDetached.ps1` é o orquestrador **opt-in** do modo desacoplado (build longo / em segundo plano): registra uma Tarefa Agendada one-shot que executa `Invoke-GeneXusKbBuildAll.ps1` fora da sessão do agente e sinaliza a conclusão por arquivo-sentinela. Não altera o wrapper de build (apenas o invoca) e é transporte, não autoridade de política — os gates de reorg/rebuild/opções caras permanecem no wrapper. Contrato e fluxo na subseção **Modo desacoplado (opt-in, build longo)** da ORQUESTRAÇÃO. Self-test: `scripts/Test-StartGeneXusKbBuildDetachedContract.ps1`.
+- `Wait-GeneXusKbBuildDetached.ps1` é o helper de **espera** do modo desacoplado: combina sentinela + heartbeat da Tarefa Agendada (com margem de corrida e timeout) para não ficar preso quando o processo morre de forma dura sem escrever a sentinela. Somente leitura; retorna `outcome` (`concluido` / `falha-anomala` / `timeout`); exit 0/70/71. Self-test: `scripts/Test-WaitGeneXusKbBuildDetachedContract.ps1`.
 
 ### Categoria B (rejeição MSBuild no log)
 
@@ -876,13 +877,24 @@ $scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Start-GeneXusKbBuildD
 
 3. O JSON retornado traz `status: build desacoplado disparado`, `taskName`, `sentinelPath`,
    `logPath` e `artifactBaseDir`. Guardar `sentinelPath` e `logPath`.
-4. **Polling da sentinela** (barato): aguardar a existência de `sentinelPath`. Quando existir,
-   ler o JSON: `{ "done": true, "exitCode": <n>, "logPath": "<...>", "logExists": <bool>,
-   "error": "<msg ou vazio>", "stdoutPath": "<...>", "stderrPath": "<...>" }`.
-   - `logExists=true` → o wrapper concluiu e gravou o JSON de resultado em `logPath` (caminho normal).
-   - `logExists=false` com `error` preenchido → o wrapper falhou **antes** de escrever o log;
-     ler `error` e os arquivos `detached-payload-error.log` / `detached-payload-stderr.log` no
-     WorkingDirectory para diagnóstico (o payload **não** mascara mais a falha como exit cego).
+4. **Espera por dois sinais** (nunca só a sentinela): prefira o helper
+   `scripts/Wait-GeneXusKbBuildDetached.ps1 -SentinelPath <...> -TaskName <...>` (rodar em
+   `run_in_background`), que encapsula a lógica abaixo e retorna `outcome`
+   (`concluido` / `falha-anomala` / `timeout`) com a margem de corrida e o timeout tratados.
+   Quando feito à mão, **combinar**:
+   - **(a) sentinela** em `sentinelPath` com `{ "done": true, "exitCode": <n>, "logPath": "<...>",
+     "logExists": <bool>, "error": "<msg ou vazio>", "stdoutPath": "<...>", "stderrPath": "<...>" }`
+     = **conclusão normal**:
+     - `logExists=true` → o wrapper concluiu e gravou o JSON de resultado em `logPath` (caminho normal).
+     - `logExists=false` com `error` preenchido → o wrapper falhou **antes** de escrever o log;
+       ler `error` e os arquivos `detached-payload-error.log` / `detached-payload-stderr.log` no
+       WorkingDirectory para diagnóstico (o payload **não** mascara mais a falha como exit cego).
+   - **(b) heartbeat** da tarefa via `Get-ScheduledTask -TaskName <taskName>` — se a tarefa parou
+     de executar (State ≠ `Running`) ou sumiu **e** a sentinela continua ausente após uma **curta
+     margem de corrida**, é **falha anômala** (kill abrupto / OOM / estouro de `-ExecutionTimeLimit`
+     antes do `finally`): ler `error`/`stderrPath`. **Pollar só a existência da sentinela deixaria a
+     espera presa para sempre num kill duro** — daí o heartbeat. (A margem de corrida cobre o
+     instante normal entre a tarefa deixar de estar `Running` e o `finally` escrever a sentinela.)
 
    Para progresso ao vivo enquanto corre, ler o `msbuild.stdout.log` do artifact dir novo sob
    `artifactBaseDir` (diff de diretórios, como no Passo 4 do fluxo padrão).
@@ -893,9 +905,12 @@ $scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Start-GeneXusKbBuildD
    acidentalmente) e se auto-remove ao fim; `timing.phases` fica vazio neste modo (sem watcher).
 
 > **Robustez vs. limites:** o modo desacoplado sobrevive a fechar janela e a encerrar o app
-> do agente. **Não** sobrevive a **logoff** do Windows (a Tarefa Agendada roda na sessão
-> interativa do usuário, na forma simples) nem a reboot — coerente com o cenário-alvo (o
-> incidente é fechar janela/app, não deslogar no meio do build).
+> do agente. **Não** sobrevive a **logoff** do Windows (a Tarefa Agendada é registrada com
+> `LogonType Interactive`, rodando sob a sessão interativa do usuário logado) nem a reboot —
+> coerente com o cenário-alvo (o incidente é fechar janela/app, não deslogar no meio do build).
+> O modo `S4U`/Password (que rodaria deslogado) **não é oferecido**, por decisão consciente:
+> exigiria armazenar/gerenciar credenciais e o build depende do contexto interativo do usuário
+> (instalação do GeneXus, drives mapeados, perfil).
 
 ### Observações críticas
 
