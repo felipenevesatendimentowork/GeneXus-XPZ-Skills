@@ -143,7 +143,7 @@ Adicionar ao extrator a relação **`references_attribute`** ("objeto X referenc
 ### Arquivo e âncoras (estado em 2026-06-12)
 
 `scripts/Build-KbIntelligenceIndex.py`:
-- `EXTRACTOR_SIGNATURE_VERSION = "6"` (linha ~42) → **bump para "7"** ao concluir, como higiene/sinal humano. **Atenção:** o bump **não** força rebuild via `Test-...KbIndexGate.ps1` — esse gate só checa timestamp + inventário, **não lê assinatura**. O frescor de assinatura é o **hash SHA-256 dos bytes do extrator** (muda sozinho ao editar), verificado por `GeneXusKbIntelligenceExtractorContract.ps1`, que **não está wirado a nenhum gate de runtime** (só self-test). Logo: **rodar o rebuild explicitamente** após editar o extrator, não confiar no gate.
+- `EXTRACTOR_SIGNATURE_VERSION = "6"` (linha ~42) → **bump para "7"** ao concluir; o bump muda `extractor_signature_version`, e **qualquer edição no `.py` muda o hash SHA-256 dos bytes** (também parte da assinatura). O gate canônico `Test-*KbIndexGate.ps1` **lê a assinatura** (via `GeneXusKbIntelligenceExtractorContract.ps1`) e **bloqueia com `BLOCK:`** quando a metadata do índice diverge do motor (ver `scripts/README-kb-intelligence.md:124-125` e `xpz-kb-parallel-setup/examples/Test-KbIndexGate.example.ps1:122-132`); o que o gate **não** faz é **executar** o rebuild. Logo: **rodar o rebuild explicitamente** após editar o extrator. (A instância local `Test-FabricaBrasilKbIndexGate.ps1` está **defasada** — sem o check de assinatura; wrapper stale, não o contrato canônico.)
 - Cada `def extract_*` devolve `list[Evidence]` com `relation_kind` e é registrado; espelhar:
   - **Código em `<Source>`**: `extract_source_for_each_explicit_table_evidence` (~728, `navigates_explicit_table`) — reusar o tokenizador de Source/CDATA.
   - **idBasedOn**: `extract_attribute_idbasedon_domain_evidence` (~1577, `based_on_domain`) + regex `idBasedOn` (~96). O value pode ser `Domain:X` **ou** `Attribute:X` (membro de SDT é `Attribute:OperacaoItemContaId`). Hoje filtra Domain; **estender** para emitir `references_attribute` quando o value for `Attribute:` — quase uma extensão, não código do zero.
@@ -166,7 +166,7 @@ Distinguir **atributo nu** (`OperacaoItemContaId`) de **membro de SDT** (`&sdt.O
 Após implementar + rebuild:
 - `who-uses(Attribute:OperacaoItemContaId)` deve saltar de **2** para **~21 consumidores** — incluindo `dsRelatoriosDeTitulosViaLancamentos`, `procRelatorioTitulosPor*`, `sdtTituloParametros`, `WorkWithWebOperacaoItem`, `procAtualizaLancamentoItens...` (os mesmos que o grep textual achou e o índice não).
 - Conferir que **variável** homônima **não** gera falso positivo.
-- **Não** confiar no gate para disparar rebuild: `Test-FabricaBrasilKbIndexGate.ps1` só checa timestamp/inventário, não assinatura. Rodar o rebuild **explicitamente** (`Rebuild-...KbIntelligenceIndex.ps1`) após editar o extrator.
+- O gate canônico **bloqueia** (`BLOCK:`) quando a assinatura do índice diverge do motor, mas **não executa** o rebuild — rodar o rebuild **explicitamente** (`Rebuild-...KbIntelligenceIndex.ps1`) após editar o extrator.
 
 ### Decisões fechadas / não fazer
 
