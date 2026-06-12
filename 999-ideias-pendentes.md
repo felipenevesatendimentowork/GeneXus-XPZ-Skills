@@ -1120,7 +1120,7 @@ Implementar quando houver: (a) caso real recente de migração em lote (10+ call
 ## Correção de acentuação pt-BR degradada nos SKILL.md
 
 **Importância:** alta
-**Maturidade:** raiz `.md` concluída em 2026-06-11 (ver «Execução 2026-06-11» ao fim desta seção); segmentos `skill-md`/`ps1`/`outros-md`/`example-ps1` ainda pendentes
+**Maturidade:** raiz `.md`, `skill-md`, `skill-satelite` e `outros-md` concluídos em 2026-06-11 (ver «Execução 2026-06-11» ao fim desta seção); pendentes `ps1` (comentários) e `example-ps1`
 
 **Origem:** avaliação de prompt externo em 2026-05-11 com verificação empírica feita na mesma sessão.
 
@@ -1237,6 +1237,16 @@ Endurecimentos do instrumento (detector + lista curada), feitos nesta frente:
 - **Consciência de seção pt-BR** no detector e nos aplicadores (`Get-PtBrLineCount`/`Get-PtBrText`): em arquivos trilíngues (PT/ES/EN — `README`, `CHANGELOG`, `CODE_OF_CONDUCT`, `SECURITY`, `CONTRIBUTING`), só a faixa pt-BR (até o primeiro cabeçalho `## Español`/`## English`) é medida e editada. Motivo: várias entradas colidem com **espanhol** válido sem acento (`repositorio`, `usuario`, `criterio`, `experiencia`, `existencia`, `transferencia`); a lista, vetada apenas contra inglês, corrompeu o espanhol antes do fix (revertido e reaplicado só à faixa pt-BR). O self-test ganhou golden multilíngue (18 asserts no total).
 
 Pendente (frentes separadas, fora do «maior retorno = raiz» desta sessão): `skill-md` (~1.396), comentários de `.ps1` (~786), `outros-md` (~211) e `.example.ps1` (~98). A cópula geral `e/é` permanece como dívida em toda a base.
+
+### Execução 2026-06-11 (continuação: `skill-md`, `skill-satelite`, `outros-md` concluídos)
+
+Sessão seguinte, mesmo dia, partindo do mapa regenerado pelo detector. Resultado e decisões:
+
+- **Inequívocas:** o aplicador determinístico `scripts/Repair-PtBrAccentDegradation.ps1` corrigiu 1.608 ocorrências nos 7 `.md` com defeito (`xpz-kb-parallel-setup/SKILL.md` 1.380, `scripts/README-kb-intelligence.md` 208, `xpz-msbuild-build`/`xpz-msbuild-import-export` 6 cada, `xpz-sync` 4, `scripts-maintenance/README.md` 3, satélite `transaction.md` 1). Total do repositório caiu de 2.549 para 941 inequívocas (o resíduo são `ps1`/`example-ps1` + os 43 exemplos propositais da raiz neste `999` e no `998`).
+- **Ambíguas (85, decididas linha a linha com o usuário):** uniformes — `so`→`só` (42; as 2 de `transaction.md` são **inglês** e ficaram), `especifico`→`específico` (12), `especifica`→`específica` (4), `analise`→`análise` (2, ambas substantivo); posicionais — `esta`→`está` (24 casos-cópula, ex.: «está pronta/apto/limpa/disponível/fora do escopo») e `tem`→`têm` (1, plural «motores diferentes têm contratos» em `xpz-kb-parallel-setup/SKILL.md:972`). Preservados: `vem` e `tem` no singular, todos os `esta` demonstrativos («esta skill/seção/regra»), e o `so` inglês de `transaction.md`. Aplicadas por aplicador transitório em `work/` (git-ignored) que reusa boundary, supressão de código e faixa pt-BR do detector; `esta`/`tem` por âncora (linha + predicado), nunca por troca cega.
+- **Estado dos segmentos `.md`:** `skill-md`, `skill-satelite` e `outros-md` ficaram com **0 inequívocas e 0 ambíguas-defeito**; o resíduo ambíguo medido nesses segmentos (104+5+3) são demonstrativos/singulares/inglês corretos, não defeito.
+
+Pendente após esta continuação: comentários de `.ps1` (800 inequívocas + 125 ambíguas) e `.example.ps1` (98 + 9). O aplicador `Repair-PtBrAccentDegradation.ps1` rejeita não-`.md` por construção; atacar `.ps1` exige um aplicador irmão que opere **apenas** comentários (`#` de linha e `<#…#>` de bloco), reusando a mesma lista/regex e a detecção de comentário já presente no detector. A cópula geral `e/é` segue como dívida em toda a base.
 
 ## Síntese operacional pós-build — descoberta de URL/hosting da aplicação gerada
 

@@ -28,7 +28,7 @@ This file consolidates type-specific RESPONSIBILITIES and QUALITY CHECKLIST entr
 
 ### Evidence labels for Transaction catalogs (XPZ generation)
 
-Canonical policy (Portuguese): [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md), subsection **Politica de evidencia para catalogos `Transaction` (geracao XPZ)** under **Politica para `Transaction`**.
+Canonical policy (Portuguese): [02-regras-operacionais-e-runtime.md](../../02-regras-operacionais-e-runtime.md), subsection **Politica de evidencia para catalogos `Transaction` (geração XPZ)** under **Politica para `Transaction`**.
 
 Every row in a consultable catalog here (`on <event>`, `Event` types, symptom→error) must carry **exactly one** label:
 

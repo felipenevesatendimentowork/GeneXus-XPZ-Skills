@@ -181,7 +181,7 @@ Os wrappers seguem esta convenção de parâmetros:
 - `-KbMetadataPath` *(opcional)* — salva metadados da KB em formato Markdown
 - `-ParallelKbRoot` *(opcional)* — raiz da pasta paralela; resolve `scripts/gx-object-type-catalog.override.json`
 - `-CatalogOverridePath` / `-DiscoveryReportPath` *(opcionais)* — override local e relatório JSON quando o pacote tiver GUID não mapeado
-- se esse parâmetro estiver ativo no wrapper local, `kb-source-metadata.md` faz parte normal do fluxo; o motor `scripts/Sync-GeneXusXpzToXml.ps1` (via `scripts/XpzKbSourceMetadataEditSupport.ps1`) atualiza **cirurgicamente** somente campos de materializacao (`updated`, `last_xpz_materialization_run_at`, `source_xpz`, `source_refresh_status` e tabelas `KMW`/`Source`/`Source/Version`), preservando `last_setup_audit_run_at`, `setup_contract_signature_*`, demais frontmatter e secoes fora do escopo, com EOL dominante via `scripts/XpzTextFileEolSupport.ps1`
+- se esse parâmetro estiver ativo no wrapper local, `kb-source-metadata.md` faz parte normal do fluxo; o motor `scripts/Sync-GeneXusXpzToXml.ps1` (via `scripts/XpzKbSourceMetadataEditSupport.ps1`) atualiza **cirurgicamente** somente campos de materialização (`updated`, `last_xpz_materialization_run_at`, `source_xpz`, `source_refresh_status` e tabelas `KMW`/`Source`/`Source/Version`), preservando `last_setup_audit_run_at`, `setup_contract_signature_*`, demais frontmatter e seções fora do escopo, com EOL dominante via `scripts/XpzTextFileEolSupport.ps1`
 - quando `kb-source-metadata.md` for atualizado pelo sync, ele deve registrar `last_xpz_materialization_run_at` como horário do processamento XPZ/XML solicitado, mesmo quando nenhum XML tiver mudança material
 - se o `XPZ` vier com `Source` vazio, incompleto ou ausente, o wrapper deve preservar valores estáveis conhecidos e emitir warning de refresh parcial; isso não invalida o sync de objetos
 - depois de materialização XPZ/XML bem-sucedida em `ObjetosDaKbEmXml`, o wrapper local deve acionar compulsoriamente a regeneração/validação do índice derivado por wrapper local de `KbIntelligence`
@@ -338,9 +338,9 @@ PastaParalelaDaKb/
 
 O arquivo `kb-source-metadata.md`, quando exposto pelo wrapper local via
 `-KbMetadataPath`, é artefato normal de processamento e recebe atualizacao
-cirurgica em cada sync (nao regeneracao total do arquivo). O motor preserva
+cirurgica em cada sync (não regeneracao total do arquivo). O motor preserva
 `last_setup_audit_run_at` (autoridade de `xpz-kb-parallel-setup`), demais
-frontmatter fora do escopo do sync e secoes extras; atualiza valores estaveis de
+frontmatter fora do escopo do sync e seções extras; atualiza valores estaveis de
 `Source`/`KMW` quando o `XPZ` atual vier com metadados vazios ou parciais.
 
 Esse arquivo também é o local esperado de `last_xpz_materialization_run_at`

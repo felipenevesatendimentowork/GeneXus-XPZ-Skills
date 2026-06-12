@@ -101,13 +101,13 @@ Do NOT use esta skill para:
 - Tratar `-ForceRebuild=true` como operação ampla análoga a reorg autorizada: bloqueada
   por default e habilitada apenas via `-AllowWideRebuild` com confirmação explícita do
   usuário por frase exata (modo interativo) ou `-AllowWideRebuild -ConfirmWideRebuild`
-  apos confirmar com o usuário humano (modo não-interativo). Nunca emitir `ForceRebuild=true`
+  após confirmar com o usuário humano (modo não-interativo). Nunca emitir `ForceRebuild=true`
   implicitamente em fluxo pós-import nem em validação cotidiana — `BuildAll` incremental
   é o suficiente
 - Tratar `-CompileMains=true` e `-DetailedNavigation=true` como opções caras de build:
   bloqueadas por default e habilitadas apenas via `-AllowCostlyBuildOptions` com
   confirmação explícita do usuário por frase exata (modo interativo) ou
-  `-AllowCostlyBuildOptions -ConfirmCostlyBuildOptions` apos confirmar com o usuário
+  `-AllowCostlyBuildOptions -ConfirmCostlyBuildOptions` após confirmar com o usuário
   humano (modo não-interativo). Nunca emitir essas opções implicitamente em fluxo
   pós-import nem em validação cotidiana
 - Distinguir claramente:
@@ -245,7 +245,7 @@ Motor compartilhado de **diagnóstico** no `.cs` gerado (camada web), complement
 - `-Attribute` (obrigatório) — nome com ou sem prefixo `A<n>`; o motor normaliza para a forma canônica no arquivo
 - `-AsJson` (opcional) — saída estruturada (`methods[]`, `totals`, `tripletPattern.cascadeOrder`, `hasAssignAttriInMethod`)
 
-Antes de montar `-CsPath`, preferir `scripts/Resolve-GeneXusGeneratedCsPath.ps1` com `-KbPath`, `-ParallelKbRoot`/`-KbMetadataPath`, `-EnvironmentName` quando necessario e `-ObjectName`. O resolvedor usa `kb_environment_web_dirs` em `kb-source-metadata.md`; se o campo estiver ausente, bloquear e encaminhar para `xpz-kb-parallel-setup`, sem glob recursivo na KB nativa nem inferencia por `CSharpModel`.
+Antes de montar `-CsPath`, preferir `scripts/Resolve-GeneXusGeneratedCsPath.ps1` com `-KbPath`, `-ParallelKbRoot`/`-KbMetadataPath`, `-EnvironmentName` quando necessário e `-ObjectName`. O resolvedor usa `kb_environment_web_dirs` em `kb-source-metadata.md`; se o campo estiver ausente, bloquear e encaminhar para `xpz-kb-parallel-setup`, sem glob recursivo na KB nativa nem inferencia por `CSharpModel`.
 
 **Mapa dos métodos `.cs` gerados onde a atribuição pode aparecer:** use `methods[].name` como nome literal gerado e cruze com o mapa canônico longo em [xpz-builder/responsibilities-by-type/transaction.md](../xpz-builder/responsibilities-by-type/transaction.md#generated-cs-map-where-a-transaction-assignment-rule-lives-in-xpz-quarantine).
 
@@ -806,7 +806,7 @@ Campos relevantes:
 - `timing.msbuildDurationSeconds` — duração do MSBuild em segundos
 - `timing.phases` — lista de fases com `name`, `start`, `end`, `durationSeconds`
 - `observedContext.ReorgDetected` — se reorg foi detectada
-- `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado APÓS filtro de ruído estrutural, ou `null`), `postBuildEvents` (linhas capturadas na janela `Executando eventos pos-construcao ...` ate o proximo separador `==========`; em logs sem marcador, fallback para `start c:` / `start cmd`; prefixo `(commented) ` quando o GeneXus encenou o comando como comentado), `buildWarnings` (linhas de warning com posição; warnings `pmm00xx` de versão de módulo são adicionalmente promovidos a `warnings` top-level — ver nota abaixo)
+- `stdoutSignals` — sinais estruturados de stdout: `blockingPattern` (primeiro padrão bloqueante detectado APÓS filtro de ruído estrutural, ou `null`), `postBuildEvents` (linhas capturadas na janela `Executando eventos pos-construcao ...` ate o próximo separador `==========`; em logs sem marcador, fallback para `start c:` / `start cmd`; prefixo `(commented) ` quando o GeneXus encenou o comando como comentado), `buildWarnings` (linhas de warning com posição; warnings `pmm00xx` de versão de módulo são adicionalmente promovidos a `warnings` top-level — ver nota abaixo)
 - `stdoutFilteredNoise` — ruído estrutural removido de stdout antes de classificar (ex: linhas `error MSB3491` ou `NuGet.targets(...): error :` do `dotnet publish` em `GAM\Platforms\NetCore*` quando rodando sem elevação); quando o único conteúdo bloqueante em stdout for ruído filtrado, o build é classificado como limpo
 - `environmentRemediationHints` — **omitido** quando não houve ruído GAM filtrado; quando presente, contém `gamPlatformsWriteDeniedFiltered` com `condition`, `filteredLineCount`, `resolvedGeneXusDir`, `resolvedPlatformsPath`, `buildUser`, `summaryForUser`, `suggestedCommands` (`grant`, `verify`, `revert`) e flags `oneTimeUserAction` / `skillDoesNotExecuteGrant` / `doesNotRecommendElevatedBuild`. Oferta consultiva para silenciar o ruído de vez com permissão NTFS — **não** é warning, erro nem mudança de classificação
 - `stderrContent` — linhas reais de stderr após remoção do ruído estrutural do GeneXus 18
@@ -896,7 +896,7 @@ Campos relevantes:
    - caminho do log
 9. Ler `exitCode`, `msBuildCategoryBBlocked` e `buildErrors`/`specifyErrors` no JSON **antes** de classificar. Com `exitCode=48` ou `msBuildCategoryBBlocked=true`, classificar como `falha operacional com rejeicao MSBuild no log`, reproduzir linhas `error :` ao usuário e **não** usar `compilou limpo` nem `specify e generate concluídos`. Caso contrário, escanear stdout e stderr por padrões de erro e risco antes de classificar, inclusive quando `executionEvidence.msBuildExitCode=0` e `exitCode=0`:
    - padrão bloqueante máximo: `Reorganiza` em stdout → status `reorg detectada ou executada`; não declarar sucesso; informar ao usuário e aguardar instrução
-   - eventos pós-build: linhas dentro da janela `Executando eventos pos-construcao ...` ate o proximo separador `==========` em stdout; se o marcador nao existir, fallback para linhas `start c:` ou `start cmd`. Classificados contra `kb_environment_post_build_event_hashes` do environment ativo (`kb-source-metadata.md`): registrado = esperado (informativo, **não** rebaixa); não registrado/não reconhecido = rebaixa por cautela; `REM` comentado é inerte; sem registro para o environment, player de som (`SoundPlayer`/`PlaySync`/`.wav`) é benigno e o resto rebaixa. Registrar via `xpz-kb-parallel-setup` (`Register-GeneXusKbPostBuildEvents.ps1`); ver `stdoutSignals.postBuildEventClassification`
+   - eventos pós-build: linhas dentro da janela `Executando eventos pos-construcao ...` ate o próximo separador `==========` em stdout; se o marcador não existir, fallback para linhas `start c:` ou `start cmd`. Classificados contra `kb_environment_post_build_event_hashes` do environment ativo (`kb-source-metadata.md`): registrado = esperado (informativo, **não** rebaixa); não registrado/não reconhecido = rebaixa por cautela; `REM` comentado é inerte; sem registro para o environment, player de som (`SoundPlayer`/`PlaySync`/`.wav`) é benigno e o resto rebaixa. Registrar via `xpz-kb-parallel-setup` (`Register-GeneXusKbPostBuildEvents.ps1`); ver `stdoutSignals.postBuildEventClassification`
    - stderr não vazio: qualquer conteúdo → registrar como warning; impede `specify e generate concluídos`
    - demais padrões relevantes: `Access denied`, `error MSB`, `: error `, `FAILED`, stack traces de exceção
    - **carve-out para ruído estrutural GAM/NetCore:** linhas que casam uma das assinaturas conhecidas (`error MSB3491` ou `NuGet.targets(...): error :`) junto com `is denied`/`acesso negado` e caminho contendo `\GeneXus\` e `\Library\GAM\Platforms\` são removidas de stdout antes desta varredura e listadas em `stdoutFilteredNoise`; padrões legítimos de `Access denied` em qualquer outro contexto **permanecem** bloqueantes

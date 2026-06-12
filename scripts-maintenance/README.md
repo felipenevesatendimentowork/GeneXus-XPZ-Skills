@@ -2,8 +2,8 @@
 
 Esta pasta concentra ferramentas usadas para manter a base `GeneXus-XPZ-Skills`.
 Elas podem executar campanhas empiricas, consolidar evidencias e atualizar
-catalogos/documentacao deste repositorio.
+catalogos/documentacao deste repositório.
 
-Esses scripts nao sao runtime publico das skills em pastas paralelas de KB
+Esses scripts não são runtime publico das skills em pastas paralelas de KB
 GeneXus. Fluxos operacionais de agentes em pastas paralelas devem consumir os
 motores publicos em `scripts/` e os contratos documentados na raiz.
