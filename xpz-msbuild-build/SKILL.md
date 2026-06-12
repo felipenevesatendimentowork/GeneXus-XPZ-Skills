@@ -978,7 +978,7 @@ $scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Start-GeneXusKbBuildD
 8. Executar o script escolhido seguindo a seção **ORQUESTRAÇÃO — PASSO A PASSO EXECUTÁVEL**
    (para `BuildAll`: processo desanexado + Watch em janela visível + `run_in_background`; **ou**,
    para build longo/em segundo plano após o usuário optar conscientemente, o **modo desacoplado**
-   via `Start-GeneXusKbBuildDetached.ps1` + polling da sentinela — ver subseção própria) e capturar:
+   via `Start-GeneXusKbBuildDetached.ps1` + espera por sentinela + heartbeat (helper `Wait-GeneXusKbBuildDetached.ps1`) — ver subseção própria) e capturar:
    - `exitCode`, `msBuildCategoryBBlocked`, `operationalSubState`
    - `buildErrors` ou `specifyErrors` no top-level do JSON (quando existirem)
    - `executionEvidence.msBuildExitCode` e `blockingReasons`
