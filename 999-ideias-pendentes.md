@@ -2229,3 +2229,31 @@ Parse; falso-positivo zero contra Conditions legítima real (WebPanel com part `
 
 - `scripts/Test-GeneXusSourceSanity.ps1`, `01a-catalogo-e-padroes-empiricos.md:138-139`
 - Lote CPJAPP 2026-06-10 (Frente B resolvida, C declinada no `998`, D Fase 1 implementada)
+
+## Mensagem acionável uniforme de "frente não aberta" nos demais scripts que recebem `-FrontFolder`
+
+**Importância:** baixa (gap de ergonomia/DX; o fluxo real — `Copy-GeneXusAcervoToFront.ps1` e o gate 9-FD `Test-GeneXusFrontAcervoDrift.ps1` — já foi tratado)
+**Maturidade:** pesquisa feita (direção resolvida por painel de 4 modelos em 2026-06-13; falta decidir entre duplicação e helper compartilhado)
+
+**Origem:** sessão 2026-06-13, relato externo (agente pulou `New-KbFront`, criou a pasta da frente manualmente e bateu no `throw` opaco do `Copy`). O caminho mínimo foi aplicado: mensagem acionável (prefixo `FRENTE_NAO_ABERTA:`, cita `-ReuseIfExists`, aponta o `New-`) em `Copy-GeneXusAcervoToFront.ps1` e em `Test-GeneXusFrontAcervoDrift.ps1` (único gate comprovadamente upstream do Copy), mais reforço documental (`xpz-builder/SKILL.md` gate 9-FD, `quality-checklist.md`). Esta entrada é o resíduo deliberadamente adiado.
+
+### O gap
+
+O mesmo `throw "FrontFolder nao encontrado ou nao e diretorio"` existe em **7 scripts** que recebem `-FrontFolder`. Dois já foram tornados acionáveis (Copy + drift gate). Restam **5 gates downstream**, de baixa probabilidade de serem o primeiro script chamado sem frente aberta (sempre rodam depois do populate/edição):
+
+- `Test-GeneXusWorkWithWebApply.ps1` (9-WW)
+- `Test-GeneXusBatchDependencyOrdering.ps1` (9-IDO)
+- `Test-GeneXusProcedureSubPattern.ps1` (9-PSM)
+- `Test-GeneXusBCDependency.ps1` (9-BC)
+- `Test-GeneXusNewWritableTargets.ps1` (9-PNW)
+
+### Decisão a fechar em sessão dedicada
+
+(a) **Duplicar** a frase-sentinela acionável nos 5 gates restantes (≈5 linhas, zero acoplamento novo); ou (b) **extrair um helper compartilhado** (ex.: `Assert-GeneXusFrontFolderExists` em um `*Support.ps1`) consumido pelos 7 — uma única fonte de mensagem, ao custo de uma dependência nova entre scripts.
+
+Painel dividido (2026-06-13): deepseek-v4-pro, glm-5.1 e minimax-m3 inclinaram a **não** padronizar agora (over-engineering para N pequeno; os gates são downstream — minimax sugeriu primeiro medir "quantos realmente podem ser o primeiro chamado" antes de padronizar); o subagente Opus inclinou ao **helper** por consistência e por ter confirmado que o drift gate (já tratado) roda antes do Copy. Régua sugerida: o helper só compensa se a política realmente abraçar os 7; caso contrário, aplicar a frase incrementalmente quando cada gate for tocado.
+
+### Relacionado
+
+- `scripts/Copy-GeneXusAcervoToFront.ps1`, `scripts/Test-GeneXusFrontAcervoDrift.ps1`, `scripts/New-GeneXusXpzFront.ps1`
+- `xpz-builder/SKILL.md` (gate 9-FD), `xpz-builder/quality-checklist.md`

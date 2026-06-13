@@ -12,7 +12,9 @@ Quando ObjectList, ObjectNames ou ObjectGuids e informado e o objeto ainda não 
 faz seed inicial desse objeto a partir do acervo. Seed nunca ocorre sem alvo explicito.
 
 .PARAMETER FrontName
-Nome da subpasta da frente no formato NomeCurto_GUID_YYYYMMDD.
+Nome da subpasta da frente no formato NomeCurto_GUID_YYYYMMDD, conforme devolvido por
+New-KbFront.ps1. A frente deve ter sido aberta antes (New-KbFront -ReuseIfExists para
+retomar); este wrapper apenas popula uma frente existente, não cria a pasta.
 
 .PARAMETER ObjectList
 Nome canonico da selecao de objeto por nome. Aceita nomes simples ou entradas
@@ -35,7 +37,11 @@ Mostra o que seria copiado sem gravar.
 Raiz local da base compartilhada GeneXus-XPZ-Skills.
 
 .EXAMPLE
-# Refresh por drift: copia do acervo todos os objetos da frente que estiverem mais antigos.
+# Fluxo de 2 passos. O nome da frente (NomeCurto_GUID_YYYYMMDD) NÃO é inventado: ele é
+# gerado/retomado pelo passo 1. Nunca crie a pasta da frente manualmente.
+# Passo 1 - abrir/retomar a frente (devolve frontDir = ...\NomeCurto_GUID_YYYYMMDD):
+.\New-KbFront.ps1 -NomeCurto GtaP3 -ReuseIfExists
+# Passo 2 - popular a frente, usando o nome da subpasta devolvida pelo passo 1 como -FrontName:
 .\Copy-KbAcervoToFront.ps1 -FrontName GtaP3_c34f_20260528
 
 .EXAMPLE

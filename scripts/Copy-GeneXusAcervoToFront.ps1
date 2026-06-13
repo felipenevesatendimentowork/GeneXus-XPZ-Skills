@@ -29,6 +29,9 @@
 
 .PARAMETER FrontFolder
     Caminho da pasta da frente (ObjetosGeradosParaImportacaoNaKbNoGenexus/<NomeCurto_GUID_YYYYMMDD>).
+    Pre-condicao: a frente deve ter sido aberta por New-GeneXusXpzFront.ps1 (wrapper local
+    New-*KbFront.ps1, com -ReuseIfExists para retomar); este script apenas popula uma frente
+    existente, nao a cria.
 
 .PARAMETER AcervoFolder
     Caminho da pasta do acervo oficial (ObjetosDaKbEmXml).
@@ -369,7 +372,7 @@ function Find-AcervoObjectXml {
 
 # Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
-    throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
+    throw "FRENTE_NAO_ABERTA: FrontFolder nao encontrado ou nao e diretorio: $FrontFolder. A frente deve ser aberta/retomada por New-GeneXusXpzFront.ps1 (wrapper local New-*KbFront.ps1) com -ReuseIfExists antes de popular; nao crie a pasta manualmente."
 }
 if (-not (Test-Path -LiteralPath $AcervoFolder -PathType Container)) {
     throw "AcervoFolder nao encontrado ou nao e diretorio: $AcervoFolder"

@@ -203,7 +203,7 @@ function Find-AcervoObjectXml {
 
 # Validar parâmetros
 if (-not (Test-Path -LiteralPath $FrontFolder -PathType Container)) {
-    throw "FrontFolder nao encontrado ou nao e diretorio: $FrontFolder"
+    throw "FRENTE_NAO_ABERTA: FrontFolder nao encontrado ou nao e diretorio: $FrontFolder. Abra/retome a frente com New-GeneXusXpzFront.ps1 (wrapper local New-*KbFront.ps1) com -ReuseIfExists antes deste gate; nao crie a pasta manualmente."
 }
 if (-not (Test-Path -LiteralPath $AcervoFolder -PathType Container)) {
     throw "AcervoFolder nao encontrado ou nao e diretorio: $AcervoFolder"
