@@ -61,19 +61,20 @@ function Assert-Codex {
 }
 
 try {
-    Assert-Codex -Label 'gpt-5.5 default'          -Expected 'external' -ExpectedKey 'openai/gpt-5.5'            -CallArgs @{ Model = 'gpt-5.5' }
+    Assert-Codex -Label 'default da config'         -Expected 'external' -ExpectedKey 'openai/gpt-5.5'            -CallArgs @{}
+    Assert-Codex -Label 'gpt-5.5 explicito'        -Expected 'external' -ExpectedKey 'openai/gpt-5.5'            -CallArgs @{ Model = 'gpt-5.5' }
     Assert-Codex -Label 'openai/gpt-5.5 prefixado' -Expected 'external' -ExpectedKey 'openai/gpt-5.5'            -CallArgs @{ Model = 'openai/gpt-5.5' }
     Assert-Codex -Label 'oss ollama'               -Expected 'local'    -ExpectedKey 'ollama/qwen2.5-coder:7b'   -CallArgs @{ Model = 'qwen2.5-coder:7b'; Oss = $true; LocalProvider = 'ollama' }
     Assert-Codex -Label 'oss lmstudio'             -Expected 'local'    -ExpectedKey 'lmstudio/foo'              -CallArgs @{ Model = 'foo'; Oss = $true; LocalProvider = 'lmstudio' }
-    Assert-Codex -Label 'profile local (loopback)' -Expected 'local'    -ExpectedKey 'localx/qwen2.5-coder:7b'   -CallArgs @{ Model = 'qwen2.5-coder:7b'; Profile = 'plocal' }
-    Assert-Codex -Label 'profile remoto'           -Expected 'external' -ExpectedKey 'remotex/some-model'        -CallArgs @{ Model = 'some-model'; Profile = 'premote' }
+    Assert-Codex -Label 'profile local (loopback)' -Expected 'local'    -ExpectedKey 'localx/qwen2.5-coder:7b'   -CallArgs @{ Profile = 'plocal' }
+    Assert-Codex -Label 'profile remoto'           -Expected 'external' -ExpectedKey 'remotex/some-model'        -CallArgs @{ Profile = 'premote' }
     Assert-Codex -Label 'profile inexistente'      -Expected 'unknown'  -ExpectedKey ''                          -CallArgs @{ Model = 'x'; Profile = 'naoexiste' }
 } finally {
     Get-ChildItem -LiteralPath $tmp -File -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $tmp -Force -Recurse -ErrorAction SilentlyContinue
 }
 
-# Config ausente: default cai para openai/external (built-in), nao unknown.
+# Config ausente com modelo explicito: cai para openai/external (built-in), nao unknown.
 $missing = Join-Path $tmp 'inexistente.toml'
 $out = & $target -Model 'gpt-5.5' -ConfigPath $missing | ConvertFrom-Json
 if ([string]$out.locality -eq 'external') {
@@ -81,6 +82,15 @@ if ([string]$out.locality -eq 'external') {
 } else {
     $fail++
     Write-Host ("FAIL  config ausente -> {0} (esperado external)" -f $out.locality) -ForegroundColor Red
+}
+
+# Config ausente e modelo omitido: nao inventa modelo; fica unknown.
+$outMissingDefault = & $target -ConfigPath $missing | ConvertFrom-Json
+if ([string]$outMissingDefault.locality -eq 'unknown') {
+    Write-Host ("PASS  {0,-40} -> {1}" -f 'config ausente + modelo omitido', $outMissingDefault.locality) -ForegroundColor Green
+} else {
+    $fail++
+    Write-Host ("FAIL  config ausente + modelo omitido -> {0} (esperado unknown)" -f $outMissingDefault.locality) -ForegroundColor Red
 }
 
 if ($fail -gt 0) { throw "BLOCK: $fail caso(s) falharam em Test-CodexModelLocalitySelfTest.ps1" }

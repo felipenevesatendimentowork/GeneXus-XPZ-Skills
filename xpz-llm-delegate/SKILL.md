@@ -1,6 +1,6 @@
 ---
 name: xpz-llm-delegate
-description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode, Codex (GPT-5.5), Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
+description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode, Codex, Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
 ---
 
 # xpz-llm-delegate
@@ -12,7 +12,7 @@ pelo agente — só a pedido do usuário ou com a concordância explícita dele 
 sugestão.
 
 Há cinco motores de delegação (backends): o **opencode** (backend #1, agêntico), o
-**Codex** (backend #2, `codex exec` com GPT-5.5 por padrão), o **Claude Code**
+**Codex** (backend #2, `codex exec`, usando o default da própria ferramenta quando `-Model` é omitido), o **Claude Code**
 (backend #3, `claude -p` com Opus 4.8 por padrão), o **GitHub Copilot CLI**
 (backend #4, `copilot -p`) e o **Gemini CLI** (backend #5, `gemini -p`). A skill é **backend-agnóstica**:
 o núcleo (classificação de localidade, política de confidencialidade por KB, validação de
@@ -79,7 +79,7 @@ política pelo backend abre brecha de confidencialidade). Os eixos:
 **Invariante de destino (a regra que evita o erro):** a chave de modelo no gate e na
 política é o **`provider/modelo` de DESTINO** — para onde o tráfego vai. Adapters diferentes
 que enviam para o **mesmo** provider normalizam para a **mesma** chave; o backend/adapter
-**nunca** entra na chave. Por isso o Codex com GPT-5.5 (que vai para a OpenAI) casa a chave
+**nunca** entra na chave. Por isso o Codex com `gpt-5.5` explícito ou derivado da config (que vai para a OpenAI) casa a chave
 `openai/gpt-5.5` e é governado pelas **mesmas** regras `openai/*` que o opencode — não por uma
 chave `codex/*`. Namespear por adapter faria uma regra `openai/*: deny-external` deixar o
 Codex passar: brecha silenciosa no eixo que o gate existe para proteger. Pelo mesmo motivo,
@@ -101,8 +101,8 @@ Mapa de responsabilidade por componente (em `scripts/`, na raiz):
 
 A classificação **local vs externo é determinística**, lida da config do backend pelo
 `baseURL`/`base_url` do provider de destino (loopback ⇒ local; caso contrário ⇒ externo).
-No opencode vem da config JSON; no Codex, da `config.toml` (`model_providers`/`profiles`) ou
-das flags `--oss`/`--local-provider` — GPT-5.5 sem `--oss` ⇒ provider `openai` ⇒ externo.
+No opencode vem da config JSON; no Codex, da `config.toml` (`model`, `model_providers`/`profiles`) ou
+das flags `--oss`/`--local-provider`; quando `-Model` é omitido, vale o default do próprio Codex/config.
 No Claude Code, modelos Claude explícitos são tratados como destino Anthropic externo;
 `opus` é normalizado conservadoramente para `anthropic/claude-opus-4-8`, e aliases não
 mapeados ficam `unknown`.
@@ -122,7 +122,7 @@ Dois eixos independentes:
 Scripts do gate (em `scripts/`, na raiz do repositório):
 
 - `Resolve-OpenCodeModelLocality.ps1 -Model <provider/modelo>` → JSON `{ locality: local|external|unknown, baseUrl, reason }`. Backend opencode.
-- `Resolve-CodexModelLocality.ps1 -Model <m> [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>]` → JSON `{ locality, baseUrl, canonicalModel, reason }`. Backend codex; `canonicalModel` é a chave de destino (ex.: `openai/gpt-5.5`).
+- `Resolve-CodexModelLocality.ps1 [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>]` → JSON `{ locality, baseUrl, canonicalModel, reason }`. Backend codex; quando `-Model` é omitido, tenta derivar o modelo do `config.toml`; `canonicalModel` é a chave de destino (ex.: `openai/gpt-5.5`).
 - `Resolve-ClaudeCodeModelLocality.ps1 -Model <m>` → JSON `{ locality, canonicalModel, reason }`. Backend Claude Code; `opus` e `claude-opus-4-8` casam `anthropic/claude-opus-4-8`.
 - `Resolve-CopilotModelLocality.ps1 -Model <m>` → JSON `{ locality, canonicalModel, reason }`. Backend Copilot; `canonicalModel` casa `github-copilot/<modelo>`.
 - `Resolve-GeminiModelLocality.ps1 -Model <m>` → JSON `{ locality, canonicalModel, reason }`. Backend Gemini; `canonicalModel` casa `google/<modelo>`.
@@ -162,7 +162,7 @@ Resolução do modelo na política: chave exata → curinga `provider/*` → cur
 `allow-external`, `deny-external`, `ask`.
 
 A chave é sempre o **provider de destino** (ver `## ANATOMIA`), não o backend. O Codex com
-GPT-5.5 casa `openai/gpt-5.5` / `openai/*` — as **mesmas** entradas que governam o opencode
+`gpt-5.5` casa `openai/gpt-5.5` / `openai/*` — as **mesmas** entradas que governam o opencode
 quando manda para a OpenAI. Não existe (nem deve existir) prefixo `codex/` na política.
 O Claude Code com Opus 4.8 casa `anthropic/claude-opus-4-8` / `anthropic/*`; não existe
 prefixo `claude-code/` na política.
@@ -198,7 +198,7 @@ Use esta skill para:
   dele a uma sugestão
 - Pedir segunda opinião de um modelo distinto (ex.: diversidade de modelo na revisão pré-push)
 - Disparar uma tarefa longa sem bloquear (job assíncrono com janela de acompanhamento)
-- Delegar a um sub-agente Codex (`codex exec`, GPT-5.5) — síncrono ou assíncrono
+- Delegar a um sub-agente Codex (`codex exec`) — síncrono ou assíncrono
 - Delegar a um sub-agente Claude Code (`claude -p`, Opus 4.8) — síncrono ou assíncrono
 - Delegar consulta curta ao GitHub Copilot CLI (`copilot -p`) — síncrono
 - Delegar consulta curta ao Gemini CLI (`gemini -p`) — síncrono
@@ -221,11 +221,16 @@ Backend opencode:
 - `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. Também usa runner temporário para evitar fragmentação de prompt pelo `Start-Process`.
 - `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`).
 
-Backend codex (`codex exec`, GPT-5.5 por padrão, sandbox `read-only` fixo):
+Backend codex (`codex exec`, default da própria ferramenta/config quando `-Model` é omitido, sandbox `read-only` fixo):
 - `Invoke-Codex.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; resposta final pelo `output-last-message`.
 - `Start-CodexJob.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result, watcher}`; abre janela de acompanhamento por padrão.
 - `Watch-CodexJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental do stream `--json`; grava `<GUID>.result.json` ao fim (`status`, `finalText`, `error`, `inputTokens`, `outputTokens`).
 - `CodexCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `codex.exe` compatível (app desktop sob `%LOCALAPPDATA%\OpenAI\Codex\bin`, maior versão; ignora o shim npm do PATH, rejeitado para GPT-5.5).
+
+Nota de default de modelo: `Invoke-OpenCode.ps1` e `Invoke-Codex.ps1` seguem o mesmo contrato.
+Se `-Model` for omitido, o adapter não força modelo e deixa o default da ferramenta/config valer.
+`gpt-5.5` permanece apenas como exemplo/sugestão de revisor Codex no painel reforçado, não como
+modelo fixado pelo adapter.
 
 Backend Claude Code (`claude -p`, Opus 4.8 por padrão, externo Anthropic):
 - `Invoke-ClaudeCode.ps1 <prompt> [-Model <m>] [-PermissionMode <mode>] [-Tools <list>] [-MaxTurns <n>] [-Cd <dir>] [-ClaudeExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; por padrão usa consulta curta restrita (`PermissionMode=plan`, `Tools=Read,Glob,Grep`, sem persistência de sessão). `-MaxTurns` é aplicado somente quando a versão local do Claude Code expõe `--max-turns`.
@@ -241,7 +246,7 @@ Backend Gemini CLI (`gemini -p`, externo Google):
 - `Invoke-Gemini.ps1 <prompt> [-Model <m>] [-ApprovalMode plan] [-Cd <dir>] [-GeminiExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--approval-mode plan` e `--output-format json`; o adapter bloqueia modos diferentes de `plan`.
 - `GeminiCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `gemini`, validação de versão/flags mínimas e extração de erros.
 
-Latência por provedor: modelos externos OAuth (`openai/*`, GPT-5.5 do Codex; `anthropic/*`,
+Latência por provedor: modelos externos OAuth (`openai/*`, Codex externo; `anthropic/*`,
 Opus 4.8 do Claude Code; `github-copilot/*`; `google/*`) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e
 `opencode-go/*` costumam responder mais rápido.
 

@@ -41,7 +41,8 @@
     Saida: objeto JSON de maquina no stdout.
 .PARAMETER Model
     Modelo. No backend opencode, formato provider/modelo (ex: openai/gpt-5.4). No backend
-    codex, o nome nu (ex: gpt-5.5); o resolvedor codex deriva o provider de destino.
+    codex, o nome nu (ex: gpt-5.5); quando omitido, o resolvedor codex tenta derivar o
+    default da config do Codex.
 .PARAMETER Backend
     Backend de delegacao: 'opencode' (default), 'codex', 'claude-code', 'copilot' ou
     'gemini'. Seleciona o resolvedor de localidade.
@@ -66,7 +67,7 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Model,
+    [Parameter(Position = 0)] [string] $Model,
     [Parameter(Mandatory)] [ValidateSet('kb-sensitive', 'public')] [string] $PayloadSensitivity,
     [ValidateSet('opencode', 'codex', 'claude-code', 'copilot', 'gemini')] [string] $Backend = 'opencode',
     [switch] $Oss,

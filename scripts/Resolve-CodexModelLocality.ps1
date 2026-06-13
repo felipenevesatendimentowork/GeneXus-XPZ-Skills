@@ -13,8 +13,9 @@
     NAO entra na chave: se o trafego vai para a OpenAI, a chave e openai/<modelo>, igual
     ao opencode. Por isso uma regra de politica 'openai/*' cobre os dois backends.
 
-    O Codex nao usa o formato provider/modelo na linha de comando (usa '-m gpt-5.5' nu, com
-    o provider implicito pela config/flags). Este resolvedor determina o provider efetivo:
+    O Codex nao usa o formato provider/modelo na linha de comando (quando -Model e informado,
+    usa '-m <modelo>' nu; quando omitido, vale o default do proprio Codex/config). Este
+    resolvedor determina o provider efetivo:
 
         -Oss / -LocalProvider <ollama|lmstudio>  -> provider OSS local (loopback) -> local
         -Profile <id>                            -> [profiles.<id>].model_provider ->
@@ -34,9 +35,10 @@
     Saida: objeto JSON de maquina no stdout, com os mesmos campos do resolvedor opencode
     mais 'canonicalModel' (a chave de destino que o gate casa na politica).
 .PARAMETER Model
-    Nome do modelo como o Codex o aceita (ex: gpt-5.5). Aceita tambem a forma prefixada
-    (openai/gpt-5.5); nesse caso so a parte do modelo e usada, e o provider e determinado
-    pela invocacao/config, nao pelo prefixo.
+    Nome do modelo como o Codex o aceita (ex: gpt-5.5). Opcional; quando omitido, o
+    resolvedor tenta derivar de [profiles.<id>].model ou do model de topo da config.
+    Aceita tambem a forma prefixada (openai/gpt-5.5); nesse caso so a parte do modelo e
+    usada, e o provider e determinado pela invocacao/config, nao pelo prefixo.
 .PARAMETER Oss
     Indica invocacao com provider open-source local (codex exec --oss). Implica local.
 .PARAMETER LocalProvider
@@ -55,7 +57,7 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Model,
+    [Parameter(Position = 0)] [string] $Model,
     [switch] $Oss,
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
     [string] $Profile,
@@ -65,9 +67,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Modelo nu: se vier prefixado (provider/modelo), usar so a parte do modelo.
-$modelParts = @($Model -split '/')
-$modelId = $modelParts[$modelParts.Count - 1].Trim()
+$script:modelId = $null
+if (-not [string]::IsNullOrWhiteSpace($Model)) {
+    $initialModelParts = @($Model -split '/')
+    $script:modelId = $initialModelParts[$initialModelParts.Count - 1].Trim()
+    if ([string]::IsNullOrWhiteSpace($script:modelId)) { $script:modelId = $null }
+}
 
 function Test-LoopbackHost {
     param([string]$HostName)
@@ -86,10 +91,10 @@ function Get-BaseUrlLocality {
 
 function New-LocalityResult {
     param([string]$Provider, [string]$BaseUrl, [string]$Locality, [string]$Reason)
-    $canonical = if ($Provider) { "$Provider/$modelId" } else { $modelId }
+    $canonical = if ($Provider -and $script:modelId) { "$Provider/$script:modelId" } elseif ($script:modelId) { $script:modelId } else { $null }
     [pscustomobject]@{
         model          = $Model
-        modelId        = $modelId
+        modelId        = $script:modelId
         provider       = $Provider
         baseUrl        = $BaseUrl
         locality       = $Locality
@@ -99,13 +104,17 @@ function New-LocalityResult {
 }
 
 # Mini-parser TOML focado: coleta apenas o que o resolvedor precisa.
+#   - $topLevelModel    : 'model' antes da primeira secao [..]
 #   - $topLevelProvider : 'model_provider' antes da primeira secao [..]
 #   - $providerBaseUrl  : base_url por [model_providers.<id>]
+#   - $profileModel     : model por [profiles.<id>]
 #   - $profileProvider  : model_provider por [profiles.<id>]
 function Read-CodexConfigSubset {
     param([string]$Path)
     $providerBaseUrl = @{}
+    $profileModel = @{}
     $profileProvider = @{}
+    $topLevelModel = $null
     $topLevelProvider = $null
     $section = ''   # '' = topo
 
@@ -122,6 +131,7 @@ function Read-CodexConfigSubset {
         $val = $kvMatch.Groups[2].Value
 
         if ($section -eq '') {
+            if ($key -eq 'model') { $topLevelModel = $val }
             if ($key -eq 'model_provider') { $topLevelProvider = $val }
         }
         elseif ($section -like 'model_providers.*') {
@@ -131,6 +141,10 @@ function Read-CodexConfigSubset {
             }
         }
         elseif ($section -like 'profiles.*') {
+            if ($key -eq 'model') {
+                $id = $section.Substring('profiles.'.Length)
+                $profileModel[$id] = $val
+            }
             if ($key -eq 'model_provider') {
                 $id = $section.Substring('profiles.'.Length)
                 $profileProvider[$id] = $val
@@ -139,8 +153,10 @@ function Read-CodexConfigSubset {
     }
 
     [pscustomobject]@{
+        topLevelModel    = $topLevelModel
         topLevelProvider = $topLevelProvider
         providerBaseUrl  = $providerBaseUrl
+        profileModel     = $profileModel
         profileProvider  = $profileProvider
     }
 }
@@ -167,6 +183,21 @@ if ($configFound) {
     }
 }
 
+# Modelo efetivo: se -Model foi omitido, usar profile.model ou model de topo da config.
+if ($script:modelId) {
+    # -Model explicito vence a config.
+}
+elseif ($Profile -and $configFound -and $cfg.profileModel.ContainsKey($Profile)) {
+    $script:modelId = [string]$cfg.profileModel[$Profile]
+}
+elseif ($configFound -and $cfg.topLevelModel) {
+    $script:modelId = [string]$cfg.topLevelModel
+}
+
+if ([string]::IsNullOrWhiteSpace($script:modelId)) {
+    $script:modelId = $null
+}
+
 # 3) Caminho por PROFILE: resolve provider -> base_url pela config.
 if ($Profile) {
     if (-not $configFound) {
@@ -180,6 +211,11 @@ if ($Profile) {
         return
     }
     $prov = $cfg.profileProvider[$Profile]
+    if (-not $script:modelId) {
+        New-LocalityResult -Provider $prov -BaseUrl $null -Locality 'unknown' `
+            -Reason "profile '$Profile' sem model na config e -Model omitido; modelo de destino nao resolvivel"
+        return
+    }
     if (-not $cfg.providerBaseUrl.ContainsKey($prov)) {
         # Provider built-in (ex: openai) sem base_url na config -> externo.
         New-LocalityResult -Provider $prov -BaseUrl $null -Locality 'external' `
@@ -195,6 +231,12 @@ if ($Profile) {
 
 # 4) Caminho DEFAULT: provider de topo da config, ou openai built-in.
 $prov = if ($configFound -and $cfg.topLevelProvider) { $cfg.topLevelProvider } else { 'openai' }
+
+if (-not $script:modelId) {
+    New-LocalityResult -Provider $prov -BaseUrl $null -Locality 'unknown' `
+        -Reason "modelo omitido e config sem model de topo; destino exato nao resolvivel"
+    return
+}
 
 if (-not $configFound -or -not $cfg.providerBaseUrl.ContainsKey($prov)) {
     # openai (ou outro built-in) sem base_url local -> externo, por definicao.

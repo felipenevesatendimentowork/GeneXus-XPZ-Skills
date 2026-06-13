@@ -84,6 +84,7 @@ try {
     Assert-Verdict -Model 'gpt-5.4' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex casa openai/gpt-5.4 exata (mesma regra do opencode)'
     Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex casa curinga openai/* (unificacao por destino)'
     Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'codex externo sem politica -> ask'
+    Assert-Verdict -Model ''        -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex sem -Model deriva model da config e casa openai/*'
 
     # Backend claude-code: chave de DESTINO Anthropic, nunca claude-code/*.
     Assert-Verdict -Model 'claude-opus-4-8' -Backend claude-code -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'Claude Code publico -> allow'

@@ -25,7 +25,8 @@
 .PARAMETER Message
     Prompt a enviar (posicional, obrigatorio).
 .PARAMETER Model
-    Modelo do Codex (nu). Default gpt-5.5.
+    Modelo do Codex (nu). Opcional; quando omitido, o adapter nao passa -m e deixa o
+    default do proprio Codex/config valer.
 .PARAMETER Oss
     Usa provider open-source local (--oss). Implica modelo local.
 .PARAMETER LocalProvider
@@ -48,7 +49,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)] [string] $Message,
-    [string] $Model = 'gpt-5.5',
+    [string] $Model,
     [switch] $Oss,
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
     [string] $Profile,
@@ -94,7 +95,7 @@ $resultPath = "$base.result.json"
 # 4) request.json
 $request = [ordered]@{
     jobId       = $jobId
-    model       = $Model
+    model       = if ($Model) { $Model } else { $null }
     prompt      = $Message
     startedAt   = (Get-Date).ToString('o')
     streamPath  = $streamPath
@@ -109,8 +110,9 @@ Set-Content -LiteralPath $stdinPath -Value $Message -Encoding utf8 -NoNewline
 # 6) Dispara o codex exec desanexado (janela oculta, nao espera)
 $cxArgs = @(
     'exec', '--skip-git-repo-check', '-s', 'read-only', '--color', 'never',
-    '-m', $Model, '--json', '-o', $lastMsgPath
+    '--json', '-o', $lastMsgPath
 )
+if ($Model) { $cxArgs += @('-m', $Model) }
 if ($Oss) { $cxArgs += '--oss' }
 if ($LocalProvider) { $cxArgs += @('--local-provider', $LocalProvider) }
 if ($Profile) { $cxArgs += @('-p', $Profile) }

@@ -20,7 +20,8 @@
 .PARAMETER Message
     Prompt a enviar ao agente (posicional, obrigatorio). Enviado via stdin.
 .PARAMETER Model
-    Modelo do Codex (nu). Default gpt-5.5.
+    Modelo do Codex (nu). Opcional; quando omitido, o adapter nao passa -m e deixa o
+    default do proprio Codex/config valer.
 .PARAMETER Oss
     Usa provider open-source local (codex exec --oss). Implica modelo local.
 .PARAMETER LocalProvider
@@ -41,7 +42,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)] [string] $Message,
-    [string] $Model = 'gpt-5.5',
+    [string] $Model,
     [switch] $Oss,
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
     [string] $Profile,
@@ -66,8 +67,9 @@ $exe = Resolve-CodexExe -Override $CodexExe
 $outMsg = (New-TemporaryFile).FullName
 $arguments = @(
     'exec', '--skip-git-repo-check', '-s', 'read-only', '--color', 'never',
-    '-m', $Model, '-o', $outMsg
+    '-o', $outMsg
 )
+if ($Model) { $arguments += @('-m', $Model) }
 if ($Oss) { $arguments += '--oss' }
 if ($LocalProvider) { $arguments += @('--local-provider', $LocalProvider) }
 if ($Profile) { $arguments += @('-p', $Profile) }
