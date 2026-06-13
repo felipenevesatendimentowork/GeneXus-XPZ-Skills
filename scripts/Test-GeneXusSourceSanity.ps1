@@ -27,6 +27,21 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Regra type-aware: partes que NAO devem ter Source nao-vazio em certos tipos de objeto.
+# Hoje so Procedure (84a12160): a parte Conditions (763f0d8b) de um Procedure deve estar
+# vazia — Procedure nao tem filtro de Conditions (predicados vivem em For Each ... Where,
+# parte 528d1c06); conteudo aqui causa erro de import src0055 ("Missed ';' at the end of
+# the condition"). Evidencia: confirmado-import (GX18U13 + WorkWithPlus_Web 16.0.3.1) +
+# confirmado-acervo (0/milhares de Procedures no FabricaBrasil). Outros tipos ficam fora
+# por falta de evidencia (ex.: Data Selector tem Conditions legitima) — ver 999. GUID da
+# parte Conditions documentado em 01a-catalogo-e-padroes-empiricos.md:138-139.
+$script:ConditionsPartType = '763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9'
+$script:ProcedureObjectType = '84a12160-f59b-4ad7-a683-ea4481ac23e9'
+
+$script:ForbiddenNonEmptyParts = @{}
+$script:ForbiddenNonEmptyParts[$script:ProcedureObjectType] = @{}
+$script:ForbiddenNonEmptyParts[$script:ProcedureObjectType][$script:ConditionsPartType] = 'Procedure nao deve ter codigo na parte Conditions; mover predicados para For Each ... Where ou remover (conteudo aqui causa src0055 no import).'
+
 trap {
     [ordered]@{
         status = 'bloqueado'
@@ -299,6 +314,16 @@ if ($root.LocalName -eq "ExportFile") {
 $allFindings = New-Object System.Collections.Generic.List[object]
 foreach ($sourceTarget in $sourceTargets) {
     if ([string]::IsNullOrWhiteSpace($sourceTarget.sourceText)) {
+        continue
+    }
+
+    # Type-aware: parte que nao deve ter conteudo neste tipo de objeto (ex.: Conditions em Procedure).
+    if ($script:ForbiddenNonEmptyParts.ContainsKey($sourceTarget.objectType) -and
+        $script:ForbiddenNonEmptyParts[$sourceTarget.objectType].ContainsKey($sourceTarget.partType)) {
+        $nonEmpty = @($sourceTarget.sourceText -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        if ($nonEmpty.Count -gt 0) { $preview = $nonEmpty[0] } else { $preview = '' }
+        $message = "$($sourceTarget.sourceLabel): $($script:ForbiddenNonEmptyParts[$sourceTarget.objectType][$sourceTarget.partType])"
+        $allFindings.Add((New-Finding -Severity "fail" -Code "procedural-in-conditions" -Message $message -LineNumber 1 -LinePreview (Get-LinePreview -Line $preview))) | Out-Null
         continue
     }
 

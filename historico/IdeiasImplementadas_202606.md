@@ -414,3 +414,30 @@ Desenho D1-D4 revisado por painel multi-modelo (deepseek-v4-pro, glm-5.1, minima
 ### Rastreabilidade
 
 - Commit: `29a37ee` (`Adiciona gate de coerencia para Transaction GenerateObject=False com bagagem WorkWithPlus`)
+
+## Gate type-aware procedural-in-conditions: Procedure nao deve ter codigo na parte Conditions
+
+**Importancia original:** média
+**Status:** concluida em 2026-06-13
+
+### Origem
+
+Frente A do lote CPJAPP (item 1/7). Erro real `src0055` ("Missed ';' at the end of the condition") quando codigo procedural foi parar indevidamente na parte Conditions de um Procedure. Parqueada em 2026-06-10 aguardando o exemplo sanitizado real do CPJAPP; recebido em 2026-06-13, ele mudou o desenho (de heuristica de construcoes para type-aware).
+
+### Problema concreto
+
+A parte Conditions (`763f0d8b`) tem `<Source>`, entao o `Test-GeneXusSourceSanity.ps1` ja a percorre, mas aplicava o balanceador procedural a toda parte sem ramificar por tipo. Em Procedure, qualquer codigo na Conditions causa `src0055` no import — e Procedure nao tem filtro de Conditions (predicados vivem em `For Each ... Where`, parte `528d1c06`). O exemplo real do CPJAPP trouxe comentario `//`, atribuicoes a variavel (`&var = ...`), `If`, `Return`, `For Each`/`Endfor`, `Where`, `defined by`, `.IsEmpty()`, `procY.Call(...)` — `Do Case` e `Sub` nem apareceram, o que tornou fragil a heuristica de blocos do desenho anterior.
+
+### Implementacao
+
+- `scripts/Test-GeneXusSourceSanity.ps1`: regra type-aware via mapa extensivel `$script:ForbiddenNonEmptyParts` (objectType -> partType -> mensagem; hoje so Procedure `84a12160` -> Conditions `763f0d8b`). Procedure com Conditions nao-vazia -> finding `procedural-in-conditions` (`fail`). Aditivo: o loop ja pula Source vazio/whitespace, entao Procedure normal (Conditions vazia) nao dispara. Match por `type` GUID exato.
+- `scripts/Test-GeneXusSourceSanitySelfTest.ps1`: novo self-test, 6 casos (positivo Procedure; negativos Conditions vazia, whitespace-only, sem a parte, WebPanel com filtro legitimo, ExportFile com 2 objetos).
+- Docs: `CHANGELOG.md` (trilingue), `02-regras-operacionais-e-runtime.md` e `09-inventario-e-rastreabilidade-publica.md`.
+
+### Decisao final
+
+Desenho type-aware (Procedure + Conditions nao-vazia = fail) revisado por painel multi-modelo (deepseek-v4-pro, glm-5.1, minimax-m3 via opencode) + subagente Opus, mais uma 2a passada de revisao de implementacao do Opus. Decisoes-chave: severidade `fail` (confirmado-import `src0055` + confirmado-acervo 0/milhares no FabricaBrasil — o Opus varreu o acervo inteiro e achou 0 Procedures com Conditions nao-vazia, refutando o catch de `For Each` do minimax); escopo so Procedure (Data Selector tem Conditions legitima — catch do glm); descartar a heuristica de construcoes (seria nociva em filtro legitimo de WebPanel/Prompt). Extensao a DataProvider/outros tipos fica como residuo no `999`, condicionada a evidencia.
+
+### Rastreabilidade
+
+- Commit: `este commit` (`Adiciona gate type-aware procedural-in-conditions ao Test-GeneXusSourceSanity`)

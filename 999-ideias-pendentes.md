@@ -2152,83 +2152,26 @@ A Fase 1 detecta a contradição **dentro do XML da Transaction** (`GenerateObje
 - `historico/IdeiasImplementadas_202606.md` (Fase 1 implementada)
 - `scripts/Test-GeneXusTransactionCoherence.ps1`, `xpz-builder/wwp-packaging.md`
 
-## Gate de Conditions no `Test-GeneXusSourceSanity.ps1` — código procedural órfão em parte Conditions
+## Gate `procedural-in-conditions` — estender a outros tipos sem filtro de Conditions
 
-**Importância:** média
-**Maturidade:** pronta para implementar (desenho travado e revisado por painel; aguarda 1 insumo externo do CPJAPP para fixture + promoção a `fail`)
+**Importância:** baixa
+**Maturidade:** pesquisa feita (Procedure implementado; outros tipos carecem de acervo com evidência)
 
-**Origem:** lote de 4 gaps do relato CPJAPP (2026-06-10), item 1/7 — Frente "A". Erro real `src0055: Missed ';' at the end of the condition` quando código procedural foi parar indevidamente na parte Conditions de um Procedure. **Parqueada em 2026-06-10** aguardando o outro agente (CPJAPP) mandar um exemplo sanitizado real do caso que falha (prompt já enviado em 2026-06-10). Prazo estimado do colega: ~2 dias.
+**Origem:** a Frente A do lote CPJAPP foi **implementada em 2026-06-13** — gate type-aware `procedural-in-conditions` (`fail`) no `Test-GeneXusSourceSanity.ps1` para **Procedure** (`type 84a12160`) com a parte Conditions (`763f0d8b`) não-vazia; migrada para `historico/IdeiasImplementadas_202606.md`. Restou esta subfrente residual.
 
-### Diagnóstico (verificado nesta base)
+### O que falta
 
-- A parte **Conditions** tem GUID estável `763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9` (catálogo `01a-catalogo-e-padroes-empiricos.md:138-139`). Tem `<Source>`, então o `Test-GeneXusSourceSanity.ps1` já a percorre (via `./Part[Source]`).
-- Hoje o gate aplica o **balanceador procedural** (`If/For/Do/Sub`) + warns de estilo a TODA parte com Source, sem ramificar por tipo. Sobre Conditions legítima (lista de predicados `Attr = &x;`) não acha nada → passa limpo (**sem falso positivo hoje**).
-- Falha: código procedural na Conditions (ex.: `Do Case`) **balanceia** e passa como `pass` → **falso negativo**. O gate nunca verifica "isto não deveria ser procedural".
+O gate usa um mapa extensível `objectType → partes-proibidas-não-vazias` (hoje só `Procedure→Conditions`, em `$script:ForbiddenNonEmptyParts`). Outros tipos **sem tela/filtro** poderiam ter a mesma invariante (parte Conditions sempre vazia) — candidato principal: `DataProvider`. **NÃO** estender a `Data Selector`: ele tem Conditions legítima (catch do glm no painel). Adicionar um tipo = uma entrada no mapa, trivial.
 
-### Decisões travadas (revisadas por painel deepseek-v4-pro, glm-5.1, minimax-m3 + subagente Opus, 2026-06-10; severidade confirmada pelo usuário)
+### Por que adiada
 
-1. **Heurística estreita**, não gramática completa (Opus achou predicado legítimo de 5 linhas terminando só na última em `;` — `promptVendaPrecoConformeParametros.xml:129-133` — o que mata a ideia de "toda linha termina em `;`").
-2. **NÃO detectar "atribuição como statement"** — dentro de Conditions todo `=` é comparação; `Attr = &var;` é predicado legítimo (Opus provou no acervo: `VendaPrecoId = &x when ...`, `VendaPrecoEmpresaId = procLeEmpresaSessao();`). Detector de atribuição = falso positivo em massa.
-3. **Gatilho = só construções de bloco procedural**, reutilizando a ancoragem que o gate já tem em `Get-OpenTokenKind` (`^\s*(do case|for|sub|if)` com `\b`), que já evita casar prefixo de identificador (`SubTotal`, `Fornecedor`). Incluir `If`/`EndIf` e `Do While`/`Do Until`.
-4. **Severidade `warn`** (sem o caso falho reproduzido aqui). Promover a `fail` quando chegar o exemplo real do CPJAPP.
-5. Strip de `//` já existe no gate; match já é case-insensitive (`(?i)`). GUID hardcoded com comentário citando `01a`.
-
-### Diff pronto (aplicar em `scripts/Test-GeneXusSourceSanity.ps1`)
-
-Constante + função, após `Test-SourceTextSanity` (antes de `Get-ObjectSourceParts`):
-
-```powershell
-# Part type GUID da parte Conditions (filtro declarativo), estavel entre KBs.
-# Catalogo: 01a-catalogo-e-padroes-empiricos.md:138-139.
-$script:ConditionsPartType = '763f0d8b-d8ac-4db4-8dd4-de8979f2b5b9'
-
-function Test-ConditionsTextSanity {
-    param([string]$SourceText, [string]$SourceLabel)
-    $lines = ($SourceText -split "`r?`n")
-    $findings = New-Object System.Collections.Generic.List[object]
-    for ($index = 0; $index -lt $lines.Count; $index++) {
-        $lineNumber = $index + 1
-        $rawLine = $lines[$index]
-        $lineWithoutComment = [regex]::Replace($rawLine, '//.*$', '')
-        $preview = Get-LinePreview -Line $rawLine
-        $openKind = Get-OpenTokenKind -Line $lineWithoutComment
-        $isDoLoop = $lineWithoutComment -match '^(?i)\s*do\s+(while|until)\b'
-        if ($null -ne $openKind -or $isDoLoop) {
-            if ($null -ne $openKind) { $kindLabel = $openKind } else { $kindLabel = 'DoLoop' }
-            $message = "${SourceLabel}: construcao procedural '$kindLabel' detectada na parte Conditions; Conditions deve conter apenas predicados de filtro, nao codigo procedural (possivel causa de src0055 no import)."
-            $findings.Add((New-Finding -Severity "warn" -Code "procedural-in-conditions" -Message $message -LineNumber $lineNumber -LinePreview $preview)) | Out-Null
-        }
-    }
-    return $findings
-}
-```
-
-Ramificar por parte no loop principal (substitui o `foreach ($sourceTarget in $sourceTargets)` de empacotamento dos findings):
-
-```powershell
-foreach ($sourceTarget in $sourceTargets) {
-    if ([string]::IsNullOrWhiteSpace($sourceTarget.sourceText)) { continue }
-    if ($sourceTarget.partType -eq $script:ConditionsPartType) {
-        $findings = Test-ConditionsTextSanity -SourceText $sourceTarget.sourceText -SourceLabel $sourceTarget.sourceLabel
-    } else {
-        $findings = Test-SourceTextSanity -SourceText $sourceTarget.sourceText -SourceLabel $sourceTarget.sourceLabel
-    }
-    foreach ($finding in $findings) { $allFindings.Add($finding) | Out-Null }
-}
-```
-
-### O que falta (insumo externo — prompt já enviado ao CPJAPP em 2026-06-10)
-
-Exemplo sanitizado real de "código procedural dentro de Conditions" que causou `src0055`: quais construções apareceram, o GUID da Conditions na KB deles, e a mensagem de erro. Serve para (a) fixture de regressão positivo e (b) promover `warn` → `fail` com rótulo `confirmado-import`. Sem isso, dá para implementar como `warn` a qualquer momento (calibrado contra Conditions legítima do acervo); a decisão foi **esperar** o exemplo para nascer já com fixture e severidade fundamentada.
-
-### Validação ao implementar
-
-Parse; falso-positivo zero contra Conditions legítima real (WebPanel com part `763f0d8b` não-vazio, ex.: `promptVendaPreco` no acervo FabricaBrasil); positivo no fixture sintético; `Test-XpzParameterNamingContract.ps1` segue `OK` (não mexe em parâmetros). Considerar um self-test dedicado.
+- Sem evidência empírica (nem de bug, nem de "sempre vazio") para esses tipos — o acervo FabricaBrasil consultado nem tem pasta `DataProvider`.
+- Estender sem varrer um acervo que contenha esses tipos arrisca falso positivo. Régua (a mesma usada para Procedure): confirmar o GUID do tipo + 0 ocorrências legítimas de Conditions não-vazia no acervo, antes de habilitar.
 
 ### Relacionado
 
-- `scripts/Test-GeneXusSourceSanity.ps1`, `01a-catalogo-e-padroes-empiricos.md:138-139`
-- Lote CPJAPP 2026-06-10 (Frente B resolvida, C declinada no `998`, D Fase 1 implementada)
+- `historico/IdeiasImplementadas_202606.md` (Procedure implementado, 2026-06-13)
+- `scripts/Test-GeneXusSourceSanity.ps1` (mapa `$script:ForbiddenNonEmptyParts`), `scripts/Test-GeneXusSourceSanitySelfTest.ps1`
 
 ## Mensagem acionável uniforme de "frente não aberta" nos demais scripts que recebem `-FrontFolder`
 
