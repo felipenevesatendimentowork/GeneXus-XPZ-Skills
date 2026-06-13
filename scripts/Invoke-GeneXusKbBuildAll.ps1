@@ -666,9 +666,10 @@ $script:DeploymentEnvironmentContext = $null
 # o log para qualquer campo null. Decide a confianca sem o agente ter de inferir
 # o significado do null campo a campo.
 $script:BuildSignals = [ordered]@{
-    Complete      = $false
-    ReorgDetected = $null
-    ErrorCount    = $null
+    Complete        = $false
+    ReorgDetected   = $null
+    ErrorCount      = $null
+    PostBuildEvents = $null
 }
 $confirmReorgMode       = $null
 $confirmWideRebuildMode = $null
@@ -1796,6 +1797,11 @@ try {
     $detectedBlockingPattern    = if ($blockingPatternMatch.Success) { $blockingPatternMatch.Value } else { $null }
 
     $postBuildEventLines = @(Get-GeneXusMsBuildPostBuildEventLines -StdOutLines $stdOutNonNoiseLines)
+    # Carrega adiante as linhas pos-build (deploy, sino etc.) para os caminhos de
+    # excecao. Generico e KB-agnostico: a linha bruta (ex.: o .bat de deploy) chega
+    # ao bucket sem detector dedicado. @() = computou sem eventos; null (default) =
+    # a falha estourou antes daqui.
+    $script:BuildSignals.PostBuildEvents = @($postBuildEventLines)
 
     $buildWarningLines   = @([regex]::Matches($stdOutFiltered, '(?m)[^\r\n]*\(\d+,\d+\)\s*:\s*warning\s*:[^\r\n]*') |
                              ForEach-Object { $_.Value.Trim() })
@@ -1894,9 +1900,10 @@ try {
     # analise abortou antes daqui, ErrorCount permanece null (parcial honesto). Se
     # chegou aqui, este 0/N e o mesmo valor que o caminho feliz reportaria.
     $script:BuildSignals.ErrorCount = @($buildErrors).Count
-    # ErrorCount e o ultimo sinal da sequencia; alcancar esta linha significa que
-    # reorg e erros foram ambos calculados. Marca o bucket como integral. Ao
-    # adicionar novos sinais (ex.: deploy), mover esta marcacao para depois deles.
+    # ErrorCount e o ultimo sinal da sequencia (reorg, eventos pos-build e erros ja
+    # foram calculados antes daqui); alcancar esta linha marca o bucket como integral.
+    # Ao adicionar um sinal calculado DEPOIS deste ponto, mover esta marcacao para
+    # depois dele.
     $script:BuildSignals.Complete = $true
 
     $msBuildCategoryBBlocked = $false
@@ -2167,7 +2174,7 @@ try {
             }
             watcherContext       = $script:WatcherContext
             timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
-            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria. buildSignals.Complete=true: reorg/erros sao integrais e confiaveis (nao reabrir o log para eles). Complete=false: bucket parcial — campo null nao e zero, reabrir o log para os campos null.'
+            note                 = 'Diagnostico completo nao pode ser serializado; consultar msbuild.stdout.log para evidencia primaria. buildSignals.Complete=true: reorg/erros/eventos pos-build sao integrais e confiaveis (nao reabrir o log para eles). Complete=false: bucket parcial — campo null nao e zero/vazio, reabrir o log para os campos null.'
         }
         try {
             $json = $fallback | ConvertTo-Json -Depth 3
@@ -2233,7 +2240,7 @@ catch {
             }
             watcherContext       = $script:WatcherContext
             timing               = (Get-GeneXusMsBuildTimingSection -TimingLog $script:TimingLog -MonitorLogPath $MonitorLogPath)
-            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria. buildSignals.Complete=true: reorg/erros sao integrais e confiaveis (nao reabrir o log para eles). Complete=false: bucket parcial — campo null nao e zero, reabrir o log para os campos null.'
+            note                 = 'Diagnostico completo indisponivel apos falha interna; consultar msbuild.stdout.log para evidencia primaria. buildSignals.Complete=true: reorg/erros/eventos pos-build sao integrais e confiaveis (nao reabrir o log para eles). Complete=false: bucket parcial — campo null nao e zero/vazio, reabrir o log para os campos null.'
         }
         try {
             $recoveryJson = ConvertTo-JsonText -InputObject $recovery
