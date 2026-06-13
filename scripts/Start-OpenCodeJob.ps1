@@ -82,11 +82,11 @@ $runnerPath = "$base.runner.ps1"
 $resultPath = "$base.result.json"
 
 # 4) request.json
-$modelLabel = if ($Model) { $Model } else { '(default da config)' }
 $agentLabel = if ($Agent) { $Agent } else { $null }
 $request = [ordered]@{
     jobId      = $jobId
-    model      = $modelLabel
+    model      = if ($Model) { $Model } else { $null }
+    modelLabel = if ($Model) { $Model } else { '(default da config)' }
     agent      = $agentLabel
     prompt     = $Message
     startedAt  = (Get-Date).ToString('o')
