@@ -440,4 +440,4 @@ Desenho type-aware (Procedure + Conditions nao-vazia = fail) revisado por painel
 
 ### Rastreabilidade
 
-- Commit: `este commit` (`Adiciona gate type-aware procedural-in-conditions ao Test-GeneXusSourceSanity`)
+- Commit: `b759d70` (`Adiciona gate type-aware procedural-in-conditions ao Test-GeneXusSourceSanity`)
