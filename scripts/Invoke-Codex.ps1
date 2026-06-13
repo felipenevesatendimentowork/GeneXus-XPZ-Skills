@@ -91,21 +91,24 @@ try {
     $stdoutText = (Get-Content -LiteralPath $out -Raw -ErrorAction SilentlyContinue)
     $stderrText = (Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue)
 
-    # Erro explicito do servidor/agente (ex: modelo nao suportado) tem prioridade
-    $errMsg = Get-CodexExecErrorMessage -StdoutText $stdoutText -StderrText $stderrText
-    if ($errMsg) { throw "BLOCK: codex retornou erro: $errMsg" }
-
     $final = ''
     if (Test-Path -LiteralPath $outMsg -PathType Leaf) {
         $final = (Get-Content -LiteralPath $outMsg -Raw -Encoding utf8 -ErrorAction SilentlyContinue)
     }
-    if ([string]::IsNullOrWhiteSpace($final)) {
-        if ($p.ExitCode -ne 0) {
-            throw "BLOCK: codex saiu com codigo $($p.ExitCode) sem resposta.`nstderr:`n$stderrText"
-        }
-        throw "BLOCK: codex nao produziu resposta (output-last-message vazio)."
+
+    # A resposta final (output-last-message) e a evidencia primaria de sucesso: havendo-a,
+    # devolve-se direto. So sem resposta investiga-se erro — o stdout/stderr do agente pode
+    # conter "ERROR: {...}" de comandos internos (grep, leitura de arquivos) sem ser erro da sessao.
+    if (-not [string]::IsNullOrWhiteSpace($final)) {
+        return $final.TrimEnd("`r", "`n")
     }
-    return $final.TrimEnd("`r", "`n")
+
+    $errMsg = Get-CodexExecErrorMessage -StdoutText $stdoutText -StderrText $stderrText
+    if ($errMsg) { throw "BLOCK: codex retornou erro: $errMsg" }
+    if ($p.ExitCode -ne 0) {
+        throw "BLOCK: codex saiu com codigo $($p.ExitCode) sem resposta.`nstderr:`n$stderrText"
+    }
+    throw "BLOCK: codex nao produziu resposta (output-last-message vazio)."
 }
 finally {
     Remove-Item -LiteralPath $out, $err, $in, $outMsg -Force -ErrorAction SilentlyContinue

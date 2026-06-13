@@ -86,3 +86,24 @@ function Get-CodexExecErrorMessage {
     if ($lineMatch.Success) { return $lineMatch.Groups[1].Value.Trim() }
     return $null
 }
+
+function Resolve-CodexJobStatus {
+    # Decide o status final de um job do Codex (completed | error | sem-texto).
+    # A resposta final (output-last-message) e a evidencia PRIMARIA de sucesso: havendo-a, o
+    # status e 'completed' mesmo que o stderr contenha texto "ERROR: {...}" — no modo async o
+    # stderr do `codex exec --json` carrega logs de comandos internos do agente (grep, leitura
+    # de arquivos) que podem incluir essa string sem serem erro da sessao. So SEM resposta final
+    # investiga-se erro: primeiro um erro estruturado do stream ($StreamError), depois o stderr.
+    param([string]$FinalText, [string]$StreamError, [string]$Stderr)
+    if (-not [string]::IsNullOrWhiteSpace($FinalText)) {
+        return [pscustomobject]@{ status = 'completed'; error = $null }
+    }
+    $err = $StreamError
+    if ([string]::IsNullOrWhiteSpace($err)) {
+        $err = Get-CodexExecErrorMessage -StdoutText '' -StderrText $Stderr
+    }
+    if (-not [string]::IsNullOrWhiteSpace($err)) {
+        return [pscustomobject]@{ status = 'error'; error = $err }
+    }
+    return [pscustomobject]@{ status = 'sem-texto'; error = $null }
+}

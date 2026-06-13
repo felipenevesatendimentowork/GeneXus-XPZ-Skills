@@ -49,5 +49,18 @@ $threw = $false
 try { Resolve-CodexExe -Override 'C:\__nao_existe__\codex.exe' | Out-Null } catch { $threw = $true }
 Assert-Equal 'override inexistente lanca BLOCK' $threw $true
 
+# Resolve-CodexJobStatus — a resposta final manda; stderr ruidoso nao gera falso 'error'
+$s1 = Resolve-CodexJobStatus -FinalText 'VEREDICTO: nenhum gap' -StreamError '' -Stderr 'ERROR: {"error":{"message":"x"}}'
+Assert-Equal 'status: resposta final + stderr ruidoso -> completed' $s1.status 'completed'
+
+$s2 = Resolve-CodexJobStatus -FinalText '' -StreamError '' -Stderr 'ERROR: {"error":{"message":"modelo nao suportado"}}'
+Assert-Equal 'status: sem resposta + erro de servidor -> error' $s2.status 'error'
+
+$s3 = Resolve-CodexJobStatus -FinalText '' -StreamError 'evento de erro do stream' -Stderr ''
+Assert-Equal 'status: sem resposta + erro de stream -> error' $s3.status 'error'
+
+$s4 = Resolve-CodexJobStatus -FinalText '' -StreamError '' -Stderr 'tudo limpo, sem erro'
+Assert-Equal 'status: sem resposta sem erro -> sem-texto' $s4.status 'sem-texto'
+
 if ($fail -gt 0) { throw "BLOCK: $fail caso(s) falharam em Test-CodexCliSupportSelfTest.ps1" }
 Write-Host 'OK: Test-CodexCliSupportSelfTest.ps1' -ForegroundColor Cyan

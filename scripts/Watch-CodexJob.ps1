@@ -209,12 +209,12 @@ try {
     if (Test-Path -LiteralPath $errPath -PathType Leaf) {
         $errText = (Get-Content -LiteralPath $errPath -Raw -ErrorAction SilentlyContinue)
     }
-    # Erro explicito do servidor/agente no stderr tem prioridade
-    if (-not $script:lastError) {
-        $srvErr = Get-CodexExecErrorMessage -StdoutText '' -StderrText $errText
-        if ($srvErr) { $script:lastError = $srvErr }
-    }
-    $status = if ($script:lastError) { 'error' } elseif ([string]::IsNullOrWhiteSpace($final)) { 'sem-texto' } else { 'completed' }
+    # Classificacao: a resposta final manda. So investiga erro (do stream ou do stderr) quando
+    # NAO ha resposta — evita o falso 'error' quando o stderr async traz "ERROR: {...}" de
+    # comandos internos do agente. Ver Resolve-CodexJobStatus em CodexCliSupport.ps1.
+    $statusInfo = Resolve-CodexJobStatus -FinalText $final -StreamError $script:lastError -Stderr $errText
+    $status = $statusInfo.status
+    $script:lastError = $statusInfo.error
 
     $result = [ordered]@{
         jobId        = $JobId
