@@ -201,7 +201,7 @@ Backend opencode:
 
 Backend codex (`codex exec`, GPT-5.5 por padrão, sandbox `read-only` fixo):
 - `Invoke-Codex.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; resposta final pelo `output-last-message`.
-- `Start-CodexJob.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result}`; abre janela de acompanhamento por padrão.
+- `Start-CodexJob.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result, watcher}`; abre janela de acompanhamento por padrão.
 - `Watch-CodexJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental do stream `--json`; grava `<GUID>.result.json` ao fim (`status`, `finalText`, `error`, `inputTokens`, `outputTokens`).
 - `CodexCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `codex.exe` compatível (app desktop sob `%LOCALAPPDATA%\OpenAI\Codex\bin`, maior versão; ignora o shim npm do PATH, rejeitado para GPT-5.5).
 

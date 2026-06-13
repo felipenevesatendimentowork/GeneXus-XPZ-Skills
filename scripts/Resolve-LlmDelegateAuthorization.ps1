@@ -54,7 +54,8 @@
 .PARAMETER PolicyPath
     Caminho do opencode-delegation-policy.json da pasta paralela. Opcional; ausente => 'ask'.
 .PARAMETER ConfigPath
-    Caminho do opencode.json (repassado ao resolvedor de localidade). Opcional.
+    Caminho da config do backend, repassado ao resolvedor de localidade: opencode.json no
+    backend opencode; config.toml do Codex quando -Backend codex. Opcional.
 .EXAMPLE
     .\Resolve-LlmDelegateAuthorization.ps1 -Model ollama/qwen2.5-coder:7b_8192ctx -PayloadSensitivity kb-sensitive
 .EXAMPLE
