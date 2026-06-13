@@ -36,6 +36,8 @@ $pol = Join-Path $tmp 'opencode-delegation-policy.json'
   "models": {
     "openai/gpt-5.4": "allow-external",
     "openai/*": "allow-external",
+    "anthropic/claude-opus-4-8": "allow-external",
+    "anthropic/claude-deny-test": "deny-external",
     "remote-x/*": "deny-external"
   }
 }
@@ -56,7 +58,7 @@ function Assert-Verdict {
     $out = & $target @callArgs | ConvertFrom-Json
     $got = [string]$out.verdict
     $tagPol = if ($WithPolicy) { ' +pol' } else { '' }
-    $tagBk = if ($Backend -eq 'codex') { ' codex' } else { '' }
+    $tagBk = if ($Backend -ne 'opencode') { " $Backend" } else { '' }
     $label = "{0} [{1}]{2}{3}" -f $Model, $Sensitivity, $tagPol, $tagBk
     if ($got -eq $Expected) {
         Write-Host ("PASS  {0,-40} -> {1}  ({2})" -f $label, $got, $Note) -ForegroundColor Green
@@ -80,6 +82,13 @@ try {
     Assert-Verdict -Model 'gpt-5.4' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex casa openai/gpt-5.4 exata (mesma regra do opencode)'
     Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex casa curinga openai/* (unificacao por destino)'
     Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'codex externo sem politica -> ask'
+
+    # Backend claude-code: chave de DESTINO Anthropic, nunca claude-code/*.
+    Assert-Verdict -Model 'claude-opus-4-8' -Backend claude-code -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'Claude Code publico -> allow'
+    Assert-Verdict -Model 'claude-opus-4-8' -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'Claude Code casa anthropic/claude-opus-4-8 exata'
+    Assert-Verdict -Model 'opus'             -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'alias opus normalizado para Opus 4.8'
+    Assert-Verdict -Model 'claude-deny-test' -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'deny'  -WithPolicy -Note 'Claude Code respeita deny-external exato'
+    Assert-Verdict -Model 'claude-opus-4-8' -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Claude Code externo sem politica -> ask'
 } finally {
     Get-ChildItem -LiteralPath $tmp -File -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $tmp -Force -Recurse -ErrorAction SilentlyContinue

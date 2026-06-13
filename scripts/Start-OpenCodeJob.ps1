@@ -4,9 +4,10 @@
     Dispara um job assincrono (nao-bloqueante) do opencode e abre o watcher.
 .DESCRIPTION
     Backend opencode da skill xpz-llm-delegate. Cria um job identificado por GUID em
-    <TempDir> e dispara `opencode run` desanexado, com o stream JSON crescendo em
-    <GUID>.stream.jsonl. Retorna imediatamente jobId+pid (não bloqueia o chamador). Por
-    padrão abre Watch-OpenCodeJob.ps1 numa janela visivel para acompanhar ao vivo; use
+    <TempDir> e dispara um runner PowerShell desanexado que chama `opencode run`, com o
+    stream JSON crescendo em <GUID>.stream.jsonl. O runner preserva prompt multilinha
+    como argumento nativo unico. Retorna imediatamente jobId+pid (não bloqueia o chamador).
+    Por padrão abre Watch-OpenCodeJob.ps1 numa janela visivel para acompanhar ao vivo; use
     -NoWatcher para suprimir.
 
     Para perguntas curtas (resposta na hora) use Invoke-OpenCode.ps1. Este script e para
@@ -20,7 +21,7 @@
         <GUID>.request.json   o que foi pedido (model, prompt, agent)
         <GUID>.stream.jsonl   saida do opencode, cresce incrementalmente
         <GUID>.stderr.txt     erros do processo
-        <GUID>.stdin.txt      stdin vazio (EOF imediato; destrava o run)
+        <GUID>.runner.ps1     runner temporario do job
         <GUID>.result.json    resposta final + custo (gravado pelo watcher no fim)
 .PARAMETER Message
     Prompt a enviar (posicional, obrigatório).
@@ -77,7 +78,7 @@ $base       = Join-Path $TempDir $jobId
 $reqPath    = "$base.request.json"
 $streamPath = "$base.stream.jsonl"
 $errPath    = "$base.stderr.txt"
-$stdinPath  = "$base.stdin.txt"
+$runnerPath = "$base.runner.ps1"
 $resultPath = "$base.result.json"
 
 # 4) request.json
@@ -90,20 +91,29 @@ $request = [ordered]@{
     prompt     = $Message
     startedAt  = (Get-Date).ToString('o')
     streamPath = $streamPath
+    stderrPath = $errPath
+    runnerPath = $runnerPath
     resultPath = $resultPath
+    exe        = $exe
 }
 $request | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reqPath -Encoding utf8
 
-# 5) stdin vazio (EOF imediato — sem isso o run trava)
-New-Item -Path $stdinPath -ItemType File -Force | Out-Null
+# 5) Runner: le request.json e chama opencode com array nativo de argumentos. Evita que
+#    Start-Process fragmente prompt multilinha em muitos argumentos.
+@'
+param([Parameter(Mandatory)][string]$RequestPath)
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$req = Get-Content -LiteralPath $RequestPath -Raw -Encoding utf8 | ConvertFrom-Json
+$ocArgs = @('run', [string]$req.prompt, '--format', 'json')
+if (-not [string]::IsNullOrWhiteSpace([string]$req.model)) { $ocArgs += @('--model', [string]$req.model) }
+if (-not [string]::IsNullOrWhiteSpace([string]$req.agent)) { $ocArgs += @('--agent', [string]$req.agent) }
+& ([string]$req.exe) @ocArgs 1> ([string]$req.streamPath) 2> ([string]$req.stderrPath)
+exit $LASTEXITCODE
+'@ | Set-Content -LiteralPath $runnerPath -Encoding utf8
 
-# 6) Dispara o opencode desanexado (janela oculta, não espera)
-$ocArgs = @('run', $Message, '--format', 'json')
-if ($Model) { $ocArgs += @('--model', $Model) }
-if ($Agent) { $ocArgs += @('--agent', $Agent) }
-
-$proc = Start-Process -FilePath $exe -ArgumentList $ocArgs -WindowStyle Hidden -PassThru `
-    -RedirectStandardOutput $streamPath -RedirectStandardError $errPath -RedirectStandardInput $stdinPath
+# 6) Dispara o runner desanexado (janela oculta, não espera)
+$proc = Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile', '-File', $runnerPath, '-RequestPath', $reqPath) -WindowStyle Hidden -PassThru
 $procId = $proc.Id
 
 # 7) Abre o watcher numa janela visivel (a menos que -NoWatcher)

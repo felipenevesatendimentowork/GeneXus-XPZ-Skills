@@ -1,0 +1,118 @@
+#requires -Version 7.4
+<#
+.SYNOPSIS
+    Monitor incremental de um job assincrono do Claude Code.
+.DESCRIPTION
+    Le o stream JSONL emitido por `claude -p --output-format stream-json`, mostra texto
+    parcial quando disponivel e grava <GUID>.result.json ao final.
+#>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)] [string] $JobId,
+    [Parameter(Mandatory)] [int] $ProcessId,
+    [string] $TempDir = (Join-Path ([System.IO.Path]::GetTempPath()) 'claude-code-jobs'),
+    [ValidateRange(1, 30)] [int] $IntervalSeconds = 2,
+    [ValidateRange(30, 3600)] [int] $SilenceThresholdSeconds = 180
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot 'ClaudeCodeCliSupport.ps1')
+
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
+
+$base = Join-Path $TempDir $JobId
+$streamPath = "$base.stream.jsonl"
+$errPath = "$base.stderr.txt"
+$resultPath = "$base.result.json"
+
+function Get-CcProp {
+    param($Obj, [string]$Name)
+    if ($null -ne $Obj -and $Obj.PSObject.Properties[$Name]) {
+        return $Obj.PSObject.Properties[$Name].Value
+    }
+    return $null
+}
+
+function Get-ClaudeStreamText {
+    param($Event)
+    $type = [string](Get-CcProp $Event 'type')
+    if ($type -eq 'assistant') {
+        $message = Get-CcProp $Event 'message'
+        $content = @(Get-CcProp $message 'content')
+        $parts = @()
+        foreach ($c in $content) {
+            $txt = Get-CcProp $c 'text'
+            if (-not [string]::IsNullOrEmpty([string]$txt)) { $parts += [string]$txt }
+        }
+        return ($parts -join '')
+    }
+    if ($type -eq 'content_block_delta') {
+        $delta = Get-CcProp $Event 'delta'
+        $txt = Get-CcProp $delta 'text'
+        if ($txt) { return [string]$txt }
+    }
+    return ''
+}
+
+Write-Host "Monitorando Claude Code job $JobId (PID $ProcessId)" -ForegroundColor Cyan
+Write-Host "Stream: $streamPath" -ForegroundColor DarkGray
+
+$seen = 0
+$finalText = ''
+$streamError = ''
+$lastActivity = Get-Date
+
+while ($true) {
+    if (Test-Path -LiteralPath $streamPath -PathType Leaf) {
+        $lines = @(Get-Content -LiteralPath $streamPath -Encoding utf8 -ErrorAction SilentlyContinue)
+        for ($i = $seen; $i -lt $lines.Count; $i++) {
+            $line = $lines[$i]
+            if ([string]::IsNullOrWhiteSpace($line)) { continue }
+            $ev = $null
+            try { $ev = $line | ConvertFrom-Json } catch { continue }
+            $txt = Get-ClaudeStreamText -Event $ev
+            if (-not [string]::IsNullOrEmpty($txt)) {
+                Write-Host $txt -NoNewline
+                $finalText += $txt
+                $lastActivity = Get-Date
+            }
+            $type = [string](Get-CcProp $ev 'type')
+            if ($type -eq 'error') {
+                $streamError = ($ev | ConvertTo-Json -Compress)
+                $lastActivity = Get-Date
+            }
+        }
+        $seen = $lines.Count
+    }
+
+    $running = $false
+    try { $running = $null -ne (Get-Process -Id $ProcessId -ErrorAction Stop) } catch { $running = $false }
+    if (-not $running) { break }
+
+    if (((Get-Date) - $lastActivity).TotalSeconds -gt $SilenceThresholdSeconds) {
+        Write-Host "`nSem nova saida ha mais de $SilenceThresholdSeconds s; processo ainda ativo." -ForegroundColor Yellow
+        $lastActivity = Get-Date
+    }
+    Start-Sleep -Seconds $IntervalSeconds
+}
+
+$stderr = ''
+if (Test-Path -LiteralPath $errPath -PathType Leaf) {
+    $stderr = Get-Content -LiteralPath $errPath -Raw -Encoding utf8 -ErrorAction SilentlyContinue
+}
+$status = Resolve-ClaudeCodeJobStatus -FinalText $finalText -StreamError $streamError -Stderr $stderr
+
+$result = [ordered]@{
+    jobId = $JobId
+    status = $status.status
+    finalText = $finalText
+    error = $status.error
+    stderr = $stderr
+    finishedAt = (Get-Date).ToString('o')
+}
+$result | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $resultPath -Encoding utf8
+
+Write-Host "`nStatus: $($status.status)" -ForegroundColor Cyan
+Write-Host "Result: $resultPath" -ForegroundColor DarkGray

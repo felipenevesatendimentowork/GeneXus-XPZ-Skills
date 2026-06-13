@@ -7,7 +7,8 @@
 .DESCRIPTION
     Nucleo backend-agnostico da skill. A localidade e resolvida pelo resolvedor do backend
     selecionado por -Backend: opencode -> Resolve-OpenCodeModelLocality.ps1; codex ->
-    Resolve-CodexModelLocality.ps1 (mesma pasta). A chave que casa na politica e o
+    Resolve-CodexModelLocality.ps1; claude-code -> Resolve-ClaudeCodeModelLocality.ps1
+    (mesma pasta). A chave que casa na politica e o
     provider/modelo de DESTINO (canonicalModel do resolvedor), nao o backend/adapter: dois
     backends que enviam para o mesmo provider casam a mesma regra (ex: 'openai/*').
 
@@ -41,7 +42,8 @@
     Modelo. No backend opencode, formato provider/modelo (ex: openai/gpt-5.4). No backend
     codex, o nome nu (ex: gpt-5.5); o resolvedor codex deriva o provider de destino.
 .PARAMETER Backend
-    Backend de delegacao: 'opencode' (default) ou 'codex'. Seleciona o resolvedor de localidade.
+    Backend de delegacao: 'opencode' (default), 'codex' ou 'claude-code'. Seleciona o
+    resolvedor de localidade.
 .PARAMETER Oss
     (codex) Invocacao OSS local (--oss); implica modelo local. Repassado ao resolvedor codex.
 .PARAMETER LocalProvider
@@ -65,7 +67,7 @@
 param(
     [Parameter(Mandatory, Position = 0)] [string] $Model,
     [Parameter(Mandatory)] [ValidateSet('kb-sensitive', 'public')] [string] $PayloadSensitivity,
-    [ValidateSet('opencode', 'codex')] [string] $Backend = 'opencode',
+    [ValidateSet('opencode', 'codex', 'claude-code')] [string] $Backend = 'opencode',
     [switch] $Oss,
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
     [string] $Profile,
@@ -104,13 +106,19 @@ function New-AuthResult {
 }
 
 # 1) Resolve a localidade do modelo (resolvedor por backend)
-$resolverName = if ($Backend -eq 'codex') { 'Resolve-CodexModelLocality.ps1' } else { 'Resolve-OpenCodeModelLocality.ps1' }
+$resolverName = switch ($Backend) {
+    'codex'       { 'Resolve-CodexModelLocality.ps1' }
+    'claude-code' { 'Resolve-ClaudeCodeModelLocality.ps1' }
+    default       { 'Resolve-OpenCodeModelLocality.ps1' }
+}
 $localityScript = Join-Path $PSScriptRoot $resolverName
 if (-not (Test-Path -LiteralPath $localityScript -PathType Leaf)) {
     throw "BLOCK: resolvedor de localidade nao encontrado: $localityScript"
 }
 $localityArgs = @{ Model = $Model }
-if ($PSBoundParameters.ContainsKey('ConfigPath')) { $localityArgs['ConfigPath'] = $ConfigPath }
+if ($Backend -ne 'claude-code' -and $PSBoundParameters.ContainsKey('ConfigPath')) {
+    $localityArgs['ConfigPath'] = $ConfigPath
+}
 if ($Backend -eq 'codex') {
     if ($Oss) { $localityArgs['Oss'] = $true }
     if ($PSBoundParameters.ContainsKey('LocalProvider')) { $localityArgs['LocalProvider'] = $LocalProvider }
