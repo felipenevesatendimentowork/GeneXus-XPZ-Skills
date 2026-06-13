@@ -5,8 +5,11 @@
     enviado a um modelo (allow / ask / deny), combinando sensibilidade declarada,
     localidade do modelo e politica por-KB.
 .DESCRIPTION
-    Nucleo backend-agnostico da skill. Para o backend opencode (único na v1), a localidade
-    e resolvida por Resolve-OpenCodeModelLocality.ps1 (mesma pasta).
+    Nucleo backend-agnostico da skill. A localidade e resolvida pelo resolvedor do backend
+    selecionado por -Backend: opencode -> Resolve-OpenCodeModelLocality.ps1; codex ->
+    Resolve-CodexModelLocality.ps1 (mesma pasta). A chave que casa na politica e o
+    provider/modelo de DESTINO (canonicalModel do resolvedor), nao o backend/adapter: dois
+    backends que enviam para o mesmo provider casam a mesma regra (ex: 'openai/*').
 
     Lógica deterministica:
 
@@ -35,7 +38,16 @@
 
     Saida: objeto JSON de maquina no stdout.
 .PARAMETER Model
-    Modelo no formato provider/modelo.
+    Modelo. No backend opencode, formato provider/modelo (ex: openai/gpt-5.4). No backend
+    codex, o nome nu (ex: gpt-5.5); o resolvedor codex deriva o provider de destino.
+.PARAMETER Backend
+    Backend de delegacao: 'opencode' (default) ou 'codex'. Seleciona o resolvedor de localidade.
+.PARAMETER Oss
+    (codex) Invocacao OSS local (--oss); implica modelo local. Repassado ao resolvedor codex.
+.PARAMETER LocalProvider
+    (codex) Provider OSS local quando -Oss: 'ollama' ou 'lmstudio'. Repassado ao resolvedor codex.
+.PARAMETER Profile
+    (codex) Profile da config do Codex (-p); resolve o provider de destino. Repassado ao resolvedor codex.
 .PARAMETER PayloadSensitivity
     Classe do payload declarada pelo chamador: 'kb-sensitive' (conteúdo de pasta paralela
     de KB) ou 'public' (diff do repo publico, molde sanitizado, README).
@@ -52,6 +64,10 @@
 param(
     [Parameter(Mandatory, Position = 0)] [string] $Model,
     [Parameter(Mandatory)] [ValidateSet('kb-sensitive', 'public')] [string] $PayloadSensitivity,
+    [ValidateSet('opencode', 'codex')] [string] $Backend = 'opencode',
+    [switch] $Oss,
+    [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
+    [string] $Profile,
     [string] $PolicyPath,
     [string] $ConfigPath
 )
@@ -74,6 +90,8 @@ function New-AuthResult {
     )
     [pscustomobject]@{
         model              = $Model
+        backend            = $Backend
+        targetModelKey     = $matchKey
         payloadSensitivity = $PayloadSensitivity
         locality           = $Locality
         baseUrl            = $BaseUrl
@@ -84,17 +102,27 @@ function New-AuthResult {
     } | ConvertTo-Json -Compress
 }
 
-# 1) Resolve a localidade do modelo (backend opencode)
-$localityScript = Join-Path $PSScriptRoot 'Resolve-OpenCodeModelLocality.ps1'
+# 1) Resolve a localidade do modelo (resolvedor por backend)
+$resolverName = if ($Backend -eq 'codex') { 'Resolve-CodexModelLocality.ps1' } else { 'Resolve-OpenCodeModelLocality.ps1' }
+$localityScript = Join-Path $PSScriptRoot $resolverName
 if (-not (Test-Path -LiteralPath $localityScript -PathType Leaf)) {
     throw "BLOCK: resolvedor de localidade nao encontrado: $localityScript"
 }
 $localityArgs = @{ Model = $Model }
 if ($PSBoundParameters.ContainsKey('ConfigPath')) { $localityArgs['ConfigPath'] = $ConfigPath }
+if ($Backend -eq 'codex') {
+    if ($Oss) { $localityArgs['Oss'] = $true }
+    if ($PSBoundParameters.ContainsKey('LocalProvider')) { $localityArgs['LocalProvider'] = $LocalProvider }
+    if ($PSBoundParameters.ContainsKey('Profile')) { $localityArgs['Profile'] = $Profile }
+}
 $localityJson = & $localityScript @localityArgs
 $loc = $localityJson | ConvertFrom-Json
 $locality = [string]$loc.locality
 $baseUrl  = [string]$loc.baseUrl
+# Chave de DESTINO para casar a politica: o canonicalModel quando o resolvedor o fornece
+# (codex normaliza para o provider de destino); senao o proprio Model (opencode ja e canonico).
+$matchKey = [string](Get-Prop $loc 'canonicalModel')
+if ([string]::IsNullOrWhiteSpace($matchKey)) { $matchKey = $Model }
 
 # 2) Payload publico: sempre liberado
 if ($PayloadSensitivity -eq 'public') {
@@ -127,8 +155,8 @@ if ($PolicyPath -and (Test-Path -LiteralPath $PolicyPath -PathType Leaf)) {
     }
 
     $models = Get-Prop $policy 'models'
-    $providerWildcard = (@($Model -split '/', 2)[0]) + '/*'
-    foreach ($key in @($Model, $providerWildcard, '*')) {
+    $providerWildcard = (@($matchKey -split '/', 2)[0]) + '/*'
+    foreach ($key in @($matchKey, $providerWildcard, '*')) {
         $decision = Get-Prop $models $key
         if ($null -ne $decision) {
             $policyDecision = [string]$decision

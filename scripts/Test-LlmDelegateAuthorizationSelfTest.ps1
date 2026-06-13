@@ -35,19 +35,29 @@ $pol = Join-Path $tmp 'opencode-delegation-policy.json'
   "defaultExternal": "ask",
   "models": {
     "openai/gpt-5.4": "allow-external",
+    "openai/*": "allow-external",
     "remote-x/*": "deny-external"
   }
 }
 '@ | Set-Content -LiteralPath $pol -Encoding utf8
 
+# Config.toml sintetica para os casos do backend codex (default cai em openai/external).
+$cfgToml = Join-Path $tmp 'config.toml'
+@'
+model = "gpt-5.5"
+'@ | Set-Content -LiteralPath $cfgToml -Encoding utf8
+
 $fail = 0
 function Assert-Verdict {
-    param([string]$Model, [string]$Sensitivity, [string]$Expected, [switch]$WithPolicy, [string]$Note)
-    $callArgs = @{ Model = $Model; PayloadSensitivity = $Sensitivity; ConfigPath = $cfg }
+    param([string]$Model, [string]$Sensitivity, [string]$Expected, [switch]$WithPolicy, [string]$Note, [string]$Backend = 'opencode')
+    $cfgForBackend = if ($Backend -eq 'codex') { $cfgToml } else { $cfg }
+    $callArgs = @{ Model = $Model; PayloadSensitivity = $Sensitivity; ConfigPath = $cfgForBackend; Backend = $Backend }
     if ($WithPolicy) { $callArgs['PolicyPath'] = $pol }
     $out = & $target @callArgs | ConvertFrom-Json
     $got = [string]$out.verdict
-    $label = "{0} [{1}]{2}" -f $Model, $Sensitivity, ($(if ($WithPolicy) { ' +pol' } else { '' }))
+    $tagPol = if ($WithPolicy) { ' +pol' } else { '' }
+    $tagBk = if ($Backend -eq 'codex') { ' codex' } else { '' }
+    $label = "{0} [{1}]{2}{3}" -f $Model, $Sensitivity, $tagPol, $tagBk
     if ($got -eq $Expected) {
         Write-Host ("PASS  {0,-40} -> {1}  ({2})" -f $label, $got, $Note) -ForegroundColor Green
     } else {
@@ -63,6 +73,13 @@ try {
     Assert-Verdict -Model 'remote-x/zzz'   -Sensitivity 'kb-sensitive' -Expected 'deny'  -WithPolicy -Note 'curinga remote-x/* deny'
     Assert-Verdict -Model 'opencode-go/x'  -Sensitivity 'kb-sensitive' -Expected 'ask'   -WithPolicy -Note 'nao listado -> defaultExternal ask'
     Assert-Verdict -Model 'remote-x/foo'   -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'externo sem arquivo de politica -> ask'
+
+    # Backend codex: a chave de DESTINO (openai/...) casa a MESMA regra de politica que o
+    # opencode usaria; o adapter nao entra na chave. Esta e a prova do design 'openai/' != 'codex/'.
+    Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'codex publico -> allow'
+    Assert-Verdict -Model 'gpt-5.4' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex casa openai/gpt-5.4 exata (mesma regra do opencode)'
+    Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'codex casa curinga openai/* (unificacao por destino)'
+    Assert-Verdict -Model 'gpt-5.5' -Backend codex -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'codex externo sem politica -> ask'
 } finally {
     Get-ChildItem -LiteralPath $tmp -File -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $tmp -Force -Recurse -ErrorAction SilentlyContinue

@@ -1,6 +1,6 @@
 ---
 name: xpz-llm-delegate
-description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
+description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode ou Codex (GPT-5.5), com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
 ---
 
 # xpz-llm-delegate
@@ -11,10 +11,13 @@ delegação é uma **ferramenta dirigida pelo humano**: nunca é acionada automa
 pelo agente — só a pedido do usuário ou com a concordância explícita dele a uma
 sugestão.
 
-O motor de delegação na v1 é o **opencode** (backend #1). A skill é desenhada como
-**backend-agnóstica**: o núcleo (classificação de localidade, política de
-confidencialidade por KB, validação de saída) não muda quando outros backends
-entrarem em versões futuras.
+Há dois motores de delegação (backends): o **opencode** (backend #1, agêntico) e o
+**Codex** (backend #2, `codex exec` com GPT-5.5 por padrão). A skill é **backend-agnóstica**:
+o núcleo (classificação de localidade, política de confidencialidade por KB, validação de
+saída) é o mesmo para os dois; cada backend só contribui seu **adapter de invocação** e seu
+**resolvedor de localidade**. O backend é distinguido pelo script que se chama
+(`Invoke-Codex` vs `Invoke-OpenCode`) e pelo parâmetro `-Backend` do gate — **nunca** pela
+chave de modelo na política (ver `## ANATOMIA`).
 
 Esta skill é transversal — opera tanto na **raiz de desenvolvimento das skills XPZ**
 quanto, com regras mais estreitas, em sessão dentro de uma **pasta paralela de KB**.
@@ -60,12 +63,43 @@ guarda o mecanismo de delegação.
 A revisão pré-push (`13-revisao-pre-push.md`) **não** se aplica a pastas paralelas. O caso
 de diversidade de modelo vive na raiz de desenvolvimento, não na pasta paralela.
 
+## ANATOMIA (cada parte faz o quê, e qual eixo governa)
+
+A skill separa **três eixos independentes**. Confundi-los gera erro (ex.: namespear a
+política pelo backend abre brecha de confidencialidade). Os eixos:
+
+| Eixo | Pergunta | Onde mora |
+|---|---|---|
+| **Tarefa** | é delegável (mecânica/2ª opinião) ou é juízo GeneXus? | `## O QUE NÃO DELEGAR` |
+| **Adapter** (como o dado é enviado) | qual motor leva o prompt? | o **script** que se chama (`Invoke-Codex` vs `Invoke-OpenCode`) |
+| **Destino** (para onde o dado vai) | o tráfego sai da máquina? para qual provider? | resolvedor de localidade + política |
+
+**Invariante de destino (a regra que evita o erro):** a chave de modelo no gate e na
+política é o **`provider/modelo` de DESTINO** — para onde o tráfego vai. Adapters diferentes
+que enviam para o **mesmo** provider normalizam para a **mesma** chave; o backend/adapter
+**nunca** entra na chave. Por isso o Codex com GPT-5.5 (que vai para a OpenAI) casa a chave
+`openai/gpt-5.5` e é governado pelas **mesmas** regras `openai/*` que o opencode — não por uma
+chave `codex/*`. Namespear por adapter faria uma regra `openai/*: deny-external` deixar o
+Codex passar: brecha silenciosa no eixo que o gate existe para proteger.
+
+Mapa de responsabilidade por componente (em `scripts/`, na raiz):
+
+| Componente | Governa | Não faz |
+|---|---|---|
+| `Invoke-*` / `Start-*Job` (adapter) | **como** o prompt é enviado (mecânica do motor) | não decide destino nem confidencialidade |
+| `Resolve-OpenCodeModelLocality` / `Resolve-CodexModelLocality` | traduz a invocação → **`provider/modelo` de destino** (`canonicalModel`) + local/external | não lê o payload |
+| `Resolve-LlmDelegateAuthorization` (gate) | veredito allow/ask/deny por destino + sensibilidade + política | não envia nada; seleciona o resolvedor por `-Backend` |
+| `opencode-delegation-policy.json` (política por-KB) | autorização durável por **chave de destino** | não conhece o adapter |
+
 ## CONFIDENCIALIDADE
 
-A classificação **local vs externo é determinística**, lida da config do opencode pelo
-`baseURL` do provider (loopback ⇒ local; caso contrário ⇒ externo). Já a pergunta *"este
-payload é sensível?"* **não** é determinística — ancora no **contexto/origem**, não em
-varrer o texto. Não há selo técnico: o que segura é gatilho humano + gate + contrato.
+A classificação **local vs externo é determinística**, lida da config do backend pelo
+`baseURL`/`base_url` do provider de destino (loopback ⇒ local; caso contrário ⇒ externo).
+No opencode vem da config JSON; no Codex, da `config.toml` (`model_providers`/`profiles`) ou
+das flags `--oss`/`--local-provider` — GPT-5.5 sem `--oss` ⇒ provider `openai` ⇒ externo.
+Já a pergunta *"este payload é sensível?"* **não** é determinística — ancora no
+**contexto/origem**, não em varrer o texto. Não há selo técnico: o que segura é gatilho
+humano + gate + contrato.
 
 Dois eixos independentes:
 
@@ -77,7 +111,8 @@ Dois eixos independentes:
 Scripts do gate (em `scripts/`, na raiz do repositório):
 
 - `Resolve-OpenCodeModelLocality.ps1 -Model <provider/modelo>` → JSON `{ locality: local|external|unknown, baseUrl, reason }`. Backend opencode.
-- `Resolve-LlmDelegateAuthorization.ps1 -Model <m> -PayloadSensitivity <kb-sensitive|public> [-PolicyPath <json>]` → JSON `{ verdict: allow|ask|deny, ... }`. Núcleo backend-agnóstico; chama o resolvedor de localidade.
+- `Resolve-CodexModelLocality.ps1 -Model <m> [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>]` → JSON `{ locality, baseUrl, canonicalModel, reason }`. Backend codex; `canonicalModel` é a chave de destino (ex.: `openai/gpt-5.5`).
+- `Resolve-LlmDelegateAuthorization.ps1 -Model <m> -PayloadSensitivity <kb-sensitive|public> [-Backend <opencode|codex>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-PolicyPath <json>]` → JSON `{ verdict: allow|ask|deny, targetModelKey, ... }`. Núcleo backend-agnóstico; seleciona o resolvedor por `-Backend` e casa a política pela chave de destino.
 
 Lógica do gate:
 
@@ -112,6 +147,10 @@ Resolução do modelo na política: chave exata → curinga `provider/*` → cur
 `defaultExternal` → `ask` (quando não há arquivo). Valores válidos por entrada:
 `allow-external`, `deny-external`, `ask`.
 
+A chave é sempre o **provider de destino** (ver `## ANATOMIA`), não o backend. O Codex com
+GPT-5.5 casa `openai/gpt-5.5` / `openai/*` — as **mesmas** entradas que governam o opencode
+quando manda para a OpenAI. Não existe (nem deve existir) prefixo `codex/` na política.
+
 ## O QUE NÃO DELEGAR
 
 Fica sempre com o agente forte (nunca no subagente):
@@ -140,8 +179,9 @@ Use esta skill para:
   dele a uma sugestão
 - Pedir segunda opinião de um modelo distinto (ex.: diversidade de modelo na revisão pré-push)
 - Disparar uma tarefa longa sem bloquear (job assíncrono com janela de acompanhamento)
-- Classificar se um modelo do opencode é local ou externo
-- Decidir, via gate, se um payload pode ser enviado a um modelo (allow/ask/deny)
+- Delegar a um sub-agente Codex (`codex exec`, GPT-5.5) — síncrono ou assíncrono
+- Classificar se um modelo do opencode ou do Codex é local ou externo
+- Decidir, via gate, se um payload pode ser enviado a um modelo (allow/ask/deny), em qualquer backend
 
 Do NOT use esta skill para:
 - Delegar juízo estrutural GeneXus (ver `## O QUE NÃO DELEGAR`)
@@ -159,10 +199,16 @@ Backend opencode:
 - `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão.
 - `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`).
 
-Latência por provedor: modelos externos OAuth (`openai/*`) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e `opencode-go/*` costumam responder mais rápido.
+Backend codex (`codex exec`, GPT-5.5 por padrão, sandbox `read-only` fixo):
+- `Invoke-Codex.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; resposta final pelo `output-last-message`.
+- `Start-CodexJob.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result}`; abre janela de acompanhamento por padrão.
+- `Watch-CodexJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental do stream `--json`; grava `<GUID>.result.json` ao fim (`status`, `finalText`, `error`, `inputTokens`, `outputTokens`).
+- `CodexCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `codex.exe` compatível (app desktop sob `%LOCALAPPDATA%\OpenAI\Codex\bin`, maior versão; ignora o shim npm do PATH, rejeitado para GPT-5.5).
+
+Latência por provedor: modelos externos OAuth (`openai/*`, GPT-5.5 do Codex) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e `opencode-go/*` costumam responder mais rápido.
 
 Núcleo backend-agnóstico:
-- `Resolve-OpenCodeModelLocality.ps1` e `Resolve-LlmDelegateAuthorization.ps1` (ver `## CONFIDENCIALIDADE`).
+- `Resolve-OpenCodeModelLocality.ps1`, `Resolve-CodexModelLocality.ps1` e `Resolve-LlmDelegateAuthorization.ps1` (ver `## ANATOMIA` e `## CONFIDENCIALIDADE`).
 
 `PATH RESOLUTION`: este `SKILL.md` fica numa subpasta sob a raiz; os scripts ficam em
 `../scripts/` relativos a esta pasta. Resolver caminhos a partir da raiz do repositório.
@@ -175,14 +221,14 @@ Núcleo backend-agnóstico:
    juízo, **não delegar** (ver `## O QUE NÃO DELEGAR`).
 3. Classificar o payload: `public` (texto do repo público, molde sanitizado) ou
    `kb-sensitive` (conteúdo de pasta paralela). Na dúvida, tratar como `kb-sensitive`.
-4. Escolher o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo + sensibilidade
-   (+ `-PolicyPath` quando em pasta paralela).
-   - `allow` → seguir; **anunciar o destino** ao usuário.
+4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
+   sensibilidade + `-Backend opencode|codex` (+ `-PolicyPath` quando em pasta paralela).
+   - `allow` → seguir; **anunciar o destino** ao usuário (use `targetModelKey` do resultado).
    - `deny` → não enviar; informar o motivo e oferecer alternativa local.
    - `ask` → pedir autorização explícita ao usuário; se autorizado, oferecer **persistir** a
      escolha no `opencode-delegation-policy.json` (liberação durável).
-5. Invocar o backend: `Invoke-OpenCode.ps1` (curto/síncrono) ou `Start-OpenCodeJob.ps1`
-   (longo/assíncrono).
+5. Invocar o adapter do backend escolhido: opencode (`Invoke-OpenCode.ps1` / `Start-OpenCodeJob.ps1`)
+   ou codex (`Invoke-Codex.ps1` / `Start-CodexJob.ps1`) — síncrono (curto) ou assíncrono (longo).
 6. **Validar a saída** com o agente forte antes de usá-la. Não confiar em timestamps/fatos
    reportados pelo subagente.
 
@@ -206,13 +252,30 @@ validado) e reservar **modelo local pequeno** para o backend **one-shot** futuro
 que envia só o prompt — sem schemas de ferramentas nem `instructions` — então o modelo local
 responde rápido e cabe folgado na VRAM.
 
-## BACKENDS FUTUROS (fora da v1)
+## LIMITE CONHECIDO — CODEX É AGÊNTICO (HERDA O AGENTS.md, PODE EXECUTAR)
 
-A v1 traz só o backend **opencode** (agêntico). Expansões futuras (ex.: CLIs one-shot tipo
-`llm`/`mods`, mais seguras para segunda opinião pois não varrem o filesystem) entram como
-novos adapters, sem renomear o núcleo `LlmDelegate`. O classificador de localidade já é
-agnóstico de backend pela leitura de `baseURL`; cada backend novo ganha seu próprio
-resolvedor de localidade quando necessário.
+O `codex exec` também é **agêntico**: carrega o `AGENTS.md`/config do Codex como instruções e,
+mesmo com sandbox `read-only` (fixo nos adapters), **pode ler o filesystem do workspace e
+executar comandos read-only** para cumprir as instruções herdadas (medido: ~50k tokens de input
+e execução espontânea de `Get-Date` por causa de uma regra do `AGENTS.md` global). Consequências:
+
+- **Não** é um backend one-shot: o prompt por chamada é grande e o agente pode agir no workspace.
+  Para segunda opinião limpa, confinar com `-Cd <dir>` e preferir um workspace sem dados sensíveis.
+- O `read-only` **não** contorna o gate: o Codex envia para a OpenAI (externo). Em pasta paralela
+  de KB, payload sensível continua exigindo autorização — o adapter agêntico não tem proteção
+  nativa de leitura ali (mesmo alerta do opencode em `## CONTEXTOS DE USO`).
+- Reserva-se ainda o backend **one-shot** futuro (`llm`/`mods`) para o caso que precisa enviar
+  só o prompt, sem agente nem varredura de filesystem.
+
+## BACKENDS
+
+Ativos: **opencode** (#1) e **Codex** (#2). O Codex exerceu o ponto de extensão do núcleo: o
+gate ganhou `-Backend` e passou a casar a política pelo `canonicalModel` do resolvedor (chave
+de destino), sem renomear `LlmDelegate` nem tocar o resolvedor do opencode.
+
+Futuros (ex.: CLIs one-shot tipo `llm`/`mods`, mais seguras para segunda opinião pois não varrem
+o filesystem) entram do mesmo jeito: um adapter de invocação + um resolvedor de localidade
+próprio, plugados no mesmo gate por `-Backend`.
 
 ---
 
