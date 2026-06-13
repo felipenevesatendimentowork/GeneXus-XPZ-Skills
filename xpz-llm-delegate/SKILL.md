@@ -1,6 +1,6 @@
 ---
 name: xpz-llm-delegate
-description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode, Codex (GPT-5.5) ou Claude Code (Opus 4.8), com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
+description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode, Codex (GPT-5.5), Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
 ---
 
 # xpz-llm-delegate
@@ -11,13 +11,14 @@ delegação é uma **ferramenta dirigida pelo humano**: nunca é acionada automa
 pelo agente — só a pedido do usuário ou com a concordância explícita dele a uma
 sugestão.
 
-Há três motores de delegação (backends): o **opencode** (backend #1, agêntico), o
-**Codex** (backend #2, `codex exec` com GPT-5.5 por padrão) e o **Claude Code**
-(backend #3, `claude -p` com Opus 4.8 por padrão). A skill é **backend-agnóstica**:
+Há cinco motores de delegação (backends): o **opencode** (backend #1, agêntico), o
+**Codex** (backend #2, `codex exec` com GPT-5.5 por padrão), o **Claude Code**
+(backend #3, `claude -p` com Opus 4.8 por padrão), o **GitHub Copilot CLI**
+(backend #4, `copilot -p`) e o **Gemini CLI** (backend #5, `gemini -p`). A skill é **backend-agnóstica**:
 o núcleo (classificação de localidade, política de confidencialidade por KB, validação de
-saída) é o mesmo para os três; cada backend só contribui seu **adapter de invocação** e seu
+saída) é o mesmo para todos; cada backend só contribui seu **adapter de invocação** e seu
 **resolvedor de localidade**. O backend é distinguido pelo script que se chama
-(`Invoke-Codex`, `Invoke-OpenCode` ou `Invoke-ClaudeCode`) e pelo parâmetro `-Backend`
+(`Invoke-Codex`, `Invoke-OpenCode`, `Invoke-ClaudeCode`, `Invoke-Copilot` ou `Invoke-Gemini`) e pelo parâmetro `-Backend`
 do gate — **nunca** pela chave de modelo na política (ver `## ANATOMIA`).
 
 Esta skill é transversal — opera tanto na **raiz de desenvolvimento das skills XPZ**
@@ -72,7 +73,7 @@ política pelo backend abre brecha de confidencialidade). Os eixos:
 | Eixo | Pergunta | Onde mora |
 |---|---|---|
 | **Tarefa** | é delegável (mecânica/2ª opinião) ou é juízo GeneXus? | `## O QUE NÃO DELEGAR` |
-| **Adapter** (como o dado é enviado) | qual motor leva o prompt? | o **script** que se chama (`Invoke-Codex`, `Invoke-OpenCode`, `Invoke-ClaudeCode`) |
+| **Adapter** (como o dado é enviado) | qual motor leva o prompt? | o **script** que se chama (`Invoke-Codex`, `Invoke-OpenCode`, `Invoke-ClaudeCode`, `Invoke-Copilot`, `Invoke-Gemini`) |
 | **Destino** (para onde o dado vai) | o tráfego sai da máquina? para qual provider? | resolvedor de localidade + política |
 
 **Invariante de destino (a regra que evita o erro):** a chave de modelo no gate e na
@@ -83,13 +84,16 @@ que enviam para o **mesmo** provider normalizam para a **mesma** chave; o backen
 chave `codex/*`. Namespear por adapter faria uma regra `openai/*: deny-external` deixar o
 Codex passar: brecha silenciosa no eixo que o gate existe para proteger. Pelo mesmo motivo,
 Claude Code com Opus 4.8 casa `anthropic/claude-opus-4-8`, nunca `claude-code/*`.
+GitHub Copilot CLI casa `github-copilot/<modelo>` (ex.: `github-copilot/gpt-5-mini`),
+nunca `openai/*`, porque o destino operacional é o serviço Copilot. Gemini CLI casa
+`google/<modelo>` (ex.: `google/gemini-3-flash-preview`).
 
 Mapa de responsabilidade por componente (em `scripts/`, na raiz):
 
 | Componente | Governa | Não faz |
 |---|---|---|
 | `Invoke-*` / `Start-*Job` (adapter) | **como** o prompt é enviado (mecânica do motor) | não decide destino nem confidencialidade |
-| `Resolve-OpenCodeModelLocality` / `Resolve-CodexModelLocality` / `Resolve-ClaudeCodeModelLocality` | traduz a invocação → **`provider/modelo` de destino** (`canonicalModel`) + local/external | não lê o payload |
+| `Resolve-OpenCodeModelLocality` / `Resolve-CodexModelLocality` / `Resolve-ClaudeCodeModelLocality` / `Resolve-CopilotModelLocality` / `Resolve-GeminiModelLocality` | traduz a invocação → **`provider/modelo` de destino** (`canonicalModel`) + local/external | não lê o payload |
 | `Resolve-LlmDelegateAuthorization` (gate) | veredito allow/ask/deny por destino + sensibilidade + política | não envia nada; seleciona o resolvedor por `-Backend` |
 | `opencode-delegation-policy.json` (política por-KB) | autorização durável por **chave de destino** | não conhece o adapter |
 
@@ -102,6 +106,8 @@ das flags `--oss`/`--local-provider` — GPT-5.5 sem `--oss` ⇒ provider `opena
 No Claude Code, modelos Claude explícitos são tratados como destino Anthropic externo;
 `opus` é normalizado conservadoramente para `anthropic/claude-opus-4-8`, e aliases não
 mapeados ficam `unknown`.
+No Copilot CLI, o destino é sempre externo e normalizado para `github-copilot/<modelo>`.
+No Gemini CLI, o destino é sempre externo e normalizado para `google/<modelo>`.
 Já a pergunta *"este payload é sensível?"* **não** é determinística — ancora no
 **contexto/origem**, não em varrer o texto. Não há selo técnico: o que segura é gatilho
 humano + gate + contrato.
@@ -118,7 +124,9 @@ Scripts do gate (em `scripts/`, na raiz do repositório):
 - `Resolve-OpenCodeModelLocality.ps1 -Model <provider/modelo>` → JSON `{ locality: local|external|unknown, baseUrl, reason }`. Backend opencode.
 - `Resolve-CodexModelLocality.ps1 -Model <m> [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>]` → JSON `{ locality, baseUrl, canonicalModel, reason }`. Backend codex; `canonicalModel` é a chave de destino (ex.: `openai/gpt-5.5`).
 - `Resolve-ClaudeCodeModelLocality.ps1 -Model <m>` → JSON `{ locality, canonicalModel, reason }`. Backend Claude Code; `opus` e `claude-opus-4-8` casam `anthropic/claude-opus-4-8`.
-- `Resolve-LlmDelegateAuthorization.ps1 -Model <m> -PayloadSensitivity <kb-sensitive|public> [-Backend <opencode|codex|claude-code>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-PolicyPath <json>]` → JSON `{ verdict: allow|ask|deny, targetModelKey, ... }`. Núcleo backend-agnóstico; seleciona o resolvedor por `-Backend` e casa a política pela chave de destino.
+- `Resolve-CopilotModelLocality.ps1 -Model <m>` → JSON `{ locality, canonicalModel, reason }`. Backend Copilot; `canonicalModel` casa `github-copilot/<modelo>`.
+- `Resolve-GeminiModelLocality.ps1 -Model <m>` → JSON `{ locality, canonicalModel, reason }`. Backend Gemini; `canonicalModel` casa `google/<modelo>`.
+- `Resolve-LlmDelegateAuthorization.ps1 -Model <m> -PayloadSensitivity <kb-sensitive|public> [-Backend <opencode|codex|claude-code|copilot|gemini>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-PolicyPath <json>]` → JSON `{ verdict: allow|ask|deny, targetModelKey, ... }`. Núcleo backend-agnóstico; seleciona o resolvedor por `-Backend` e casa a política pela chave de destino.
 
 Lógica do gate:
 
@@ -158,6 +166,9 @@ GPT-5.5 casa `openai/gpt-5.5` / `openai/*` — as **mesmas** entradas que govern
 quando manda para a OpenAI. Não existe (nem deve existir) prefixo `codex/` na política.
 O Claude Code com Opus 4.8 casa `anthropic/claude-opus-4-8` / `anthropic/*`; não existe
 prefixo `claude-code/` na política.
+O Copilot CLI casa `github-copilot/gpt-5-mini` / `github-copilot/*`; não existe prefixo
+`copilot/` na política. O Gemini CLI casa `google/gemini-3-flash-preview` / `google/*`;
+não existe prefixo `gemini/` na política.
 
 ## O QUE NÃO DELEGAR
 
@@ -189,7 +200,9 @@ Use esta skill para:
 - Disparar uma tarefa longa sem bloquear (job assíncrono com janela de acompanhamento)
 - Delegar a um sub-agente Codex (`codex exec`, GPT-5.5) — síncrono ou assíncrono
 - Delegar a um sub-agente Claude Code (`claude -p`, Opus 4.8) — síncrono ou assíncrono
-- Classificar se um modelo do opencode, Codex ou Claude Code é local ou externo
+- Delegar consulta curta ao GitHub Copilot CLI (`copilot -p`) — síncrono
+- Delegar consulta curta ao Gemini CLI (`gemini -p`) — síncrono
+- Classificar se um modelo do opencode, Codex, Claude Code, Copilot ou Gemini é local ou externo
 - Decidir, via gate, se um payload pode ser enviado a um modelo (allow/ask/deny), em qualquer backend
 
 Do NOT use esta skill para:
@@ -220,12 +233,20 @@ Backend Claude Code (`claude -p`, Opus 4.8 por padrão, externo Anthropic):
 - `Watch-ClaudeCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental do stream `--output-format stream-json`; grava `<GUID>.result.json` ao fim (`status`, `finalText`, `error`).
 - `ClaudeCodeCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `claude.exe`, validação de versão/flags mínimas e extração de erros.
 
+Backend GitHub Copilot CLI (`copilot -p`, externo GitHub Copilot):
+- `Invoke-Copilot.ps1 <prompt> [-Model <m>] [-Cd <dir>] [-CopilotExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--no-custom-instructions`, `--disable-builtin-mcps`, `--available-tools=` e JSONL para consulta curta sem ferramentas disponíveis; `--allow-all-tools` permanece porque o CLI exige aprovação automática em modo não interativo.
+- `CopilotCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `copilot`, validação de versão/flags mínimas e extração de resposta do JSONL.
+
+Backend Gemini CLI (`gemini -p`, externo Google):
+- `Invoke-Gemini.ps1 <prompt> [-Model <m>] [-ApprovalMode plan] [-Cd <dir>] [-GeminiExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--approval-mode plan` e `--output-format json`; o adapter bloqueia modos diferentes de `plan`.
+- `GeminiCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `gemini`, validação de versão/flags mínimas e extração de erros.
+
 Latência por provedor: modelos externos OAuth (`openai/*`, GPT-5.5 do Codex; `anthropic/*`,
-Opus 4.8 do Claude Code) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e
+Opus 4.8 do Claude Code; `github-copilot/*`; `google/*`) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e
 `opencode-go/*` costumam responder mais rápido.
 
 Núcleo backend-agnóstico:
-- `Resolve-OpenCodeModelLocality.ps1`, `Resolve-CodexModelLocality.ps1`, `Resolve-ClaudeCodeModelLocality.ps1` e `Resolve-LlmDelegateAuthorization.ps1` (ver `## ANATOMIA` e `## CONFIDENCIALIDADE`).
+- `Resolve-OpenCodeModelLocality.ps1`, `Resolve-CodexModelLocality.ps1`, `Resolve-ClaudeCodeModelLocality.ps1`, `Resolve-CopilotModelLocality.ps1`, `Resolve-GeminiModelLocality.ps1` e `Resolve-LlmDelegateAuthorization.ps1` (ver `## ANATOMIA` e `## CONFIDENCIALIDADE`).
 
 `PATH RESOLUTION`: este `SKILL.md` fica numa subpasta sob a raiz; os scripts ficam em
 `../scripts/` relativos a esta pasta. Resolver caminhos a partir da raiz do repositório.
@@ -239,14 +260,15 @@ Núcleo backend-agnóstico:
 3. Classificar o payload: `public` (texto do repo público, molde sanitizado) ou
    `kb-sensitive` (conteúdo de pasta paralela). Na dúvida, tratar como `kb-sensitive`.
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
-   sensibilidade + `-Backend opencode|codex|claude-code` (+ `-PolicyPath` quando em pasta paralela).
+   sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (+ `-PolicyPath` quando em pasta paralela).
    - `allow` → seguir; **anunciar o destino** ao usuário (use `targetModelKey` do resultado).
    - `deny` → não enviar; informar o motivo e oferecer alternativa local.
    - `ask` → pedir autorização explícita ao usuário; se autorizado, oferecer **persistir** a
      escolha no `opencode-delegation-policy.json` (liberação durável).
 5. Invocar o adapter do backend escolhido: opencode (`Invoke-OpenCode.ps1` / `Start-OpenCodeJob.ps1`),
-   codex (`Invoke-Codex.ps1` / `Start-CodexJob.ps1`) ou Claude Code
-   (`Invoke-ClaudeCode.ps1` / `Start-ClaudeCodeJob.ps1`) — síncrono (curto) ou assíncrono (longo).
+   codex (`Invoke-Codex.ps1` / `Start-CodexJob.ps1`), Claude Code
+   (`Invoke-ClaudeCode.ps1` / `Start-ClaudeCodeJob.ps1`), Copilot (`Invoke-Copilot.ps1`) ou
+   Gemini (`Invoke-Gemini.ps1`) — síncrono (curto) ou assíncrono (longo, quando o backend tiver job).
 6. **Validar a saída** com o agente forte antes de usá-la. Não confiar em timestamps/fatos
    reportados pelo subagente.
 
@@ -302,13 +324,31 @@ payload para Anthropic (`anthropic/claude-opus-4-8`) e, portanto, é externo. Co
 - Os adapters `Invoke-ClaudeCode.ps1` e `Start-ClaudeCodeJob.ps1` bloqueiam
   `PermissionMode=bypassPermissions`; esse modo não faz parte da delegação XPZ.
 
+## LIMITE CONHECIDO — COPILOT CLI E GEMINI CLI TAMBÉM SÃO AGÊNTICOS EXTERNOS
+
+O `copilot -p` e o `gemini -p` são CLIs agênticas, não backends one-shot puros. Mesmo em
+consulta curta, podem carregar contexto próprio e são serviços externos: Copilot casa
+`github-copilot/*`; Gemini casa `google/*`. Consequências:
+
+- O gate de confidencialidade continua obrigatório para payload `kb-sensitive`; sem política
+  durável, ambos devolvem `ask`.
+- Para Copilot, o adapter usa `--no-custom-instructions`, `--disable-builtin-mcps` e
+  `--available-tools=`; o teste local comprovou resposta com `tools_updated` sem ferramentas
+  executadas e `filesModified=[]`.
+- Para Gemini, o adapter usa `--approval-mode plan`; os testes manuais em PowerShell 7
+  comprovaram `tools.totalCalls=0` e `files.totalLinesAdded/Removed=0`.
+- Nenhum dos dois substitui o backend one-shot futuro (`llm`/`mods`/equivalente) para o caso
+  em que é essencial enviar só o prompt sem camada agêntica.
+
 ## BACKENDS
 
-Ativos: **opencode** (#1), **Codex** (#2) e **Claude Code** (#3). O Codex exerceu o ponto de
+Ativos: **opencode** (#1), **Codex** (#2), **Claude Code** (#3), **GitHub Copilot CLI** (#4)
+e **Gemini CLI** (#5). O Codex exerceu o ponto de
 extensão do núcleo: o gate ganhou `-Backend` e passou a casar a política pelo `canonicalModel`
 do resolvedor (chave de destino), sem renomear `LlmDelegate` nem tocar o resolvedor do
 opencode. O Claude Code reaproveita o mesmo eixo: adapter próprio, resolvedor próprio e chave
-de destino `anthropic/*`.
+de destino `anthropic/*`. Copilot e Gemini seguem a mesma regra, com chave de destino
+`github-copilot/*` e `google/*`, respectivamente.
 
 Futuros (ex.: CLIs one-shot tipo `llm`/`mods`, mais seguras para segunda opinião pois não varrem
 o filesystem) entram do mesmo jeito: um adapter de invocação + um resolvedor de localidade

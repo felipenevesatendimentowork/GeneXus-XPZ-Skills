@@ -34,11 +34,13 @@ $pol = Join-Path $tmp 'opencode-delegation-policy.json'
   "schemaVersion": 1,
   "defaultExternal": "ask",
   "models": {
-    "openai/gpt-5.4": "allow-external",
-    "openai/*": "allow-external",
-    "anthropic/claude-opus-4-8": "allow-external",
-    "anthropic/claude-deny-test": "deny-external",
-    "remote-x/*": "deny-external"
+            "openai/gpt-5.4": "allow-external",
+            "openai/*": "allow-external",
+            "anthropic/claude-opus-4-8": "allow-external",
+            "anthropic/claude-deny-test": "deny-external",
+            "github-copilot/*": "allow-external",
+            "google/gemini-deny-test": "deny-external",
+            "remote-x/*": "deny-external"
   }
 }
 '@ | Set-Content -LiteralPath $pol -Encoding utf8
@@ -89,6 +91,14 @@ try {
     Assert-Verdict -Model 'opus'             -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'alias opus normalizado para Opus 4.8'
     Assert-Verdict -Model 'claude-deny-test' -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'deny'  -WithPolicy -Note 'Claude Code respeita deny-external exato'
     Assert-Verdict -Model 'claude-opus-4-8' -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Claude Code externo sem politica -> ask'
+
+    # Backends copilot/gemini: tambem casam por chave de DESTINO, nao por adapter generico.
+    Assert-Verdict -Model 'gpt-5-mini' -Backend copilot -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'Copilot publico -> allow'
+    Assert-Verdict -Model 'gpt-5-mini' -Backend copilot -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'Copilot casa github-copilot/*'
+    Assert-Verdict -Model 'gpt-5-mini' -Backend copilot -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Copilot externo sem politica -> ask'
+    Assert-Verdict -Model 'gemini-3-flash-preview' -Backend gemini -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'Gemini publico -> allow'
+    Assert-Verdict -Model 'gemini-deny-test'        -Backend gemini -Sensitivity 'kb-sensitive' -Expected 'deny'  -WithPolicy -Note 'Gemini respeita deny-external exato'
+    Assert-Verdict -Model 'gemini-3-flash-preview' -Backend gemini -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Gemini externo sem politica -> ask'
 } finally {
     Get-ChildItem -LiteralPath $tmp -File -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $tmp -Force -Recurse -ErrorAction SilentlyContinue

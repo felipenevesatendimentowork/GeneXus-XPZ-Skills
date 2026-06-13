@@ -211,10 +211,10 @@ Pre-varredura obrigatória antes de sync full ou primeira materialização longa
 
 ## Regra de delegacao a LLM secundario
 
-- delegar tarefa menor ou pedir segunda opiniao a um modelo secundario (skill `xpz-llm-delegate`, backends opencode, Codex — `codex exec`, GPT-5.5 — e Claude Code — `claude -p`, Opus 4.8) só **a pedido do usuário ou com concordancia explicita dele**; nunca por iniciativa própria
+- delegar tarefa menor ou pedir segunda opiniao a um modelo secundario (skill `xpz-llm-delegate`, backends opencode, Codex — `codex exec`, GPT-5.5 —, Claude Code — `claude -p`, Opus 4.8 —, GitHub Copilot CLI — `copilot -p` — e Gemini CLI — `gemini -p`) só **a pedido do usuário ou com concordancia explicita dele**; nunca por iniciativa própria
 - manter no agente forte todo juizo estrutural GeneXus; o subagente serve para tarefa mecanica ou segunda opiniao, e sua saida deve ser validada pelo agente forte antes de usar
-- antes de enviar conteúdo a um modelo, classificar `kb-sensitive` (pasta paralela de KB) vs `public` (repo publico/molde sanitizado) e rodar `scripts/Resolve-LlmDelegateAuthorization.ps1` com `-Backend opencode|codex|claude-code`: `deny` não envia, `ask` exige autorizacao explicita do usuário, `allow` segue anunciando o destino ao usuário (campo `targetModelKey`)
-- preferir modelo local (loopback) para conteúdo de KB; conteúdo de pasta paralela só vai a modelo externo com autorizacao; o Codex casa a politica pela chave de destino (`openai/*` para GPT-5.5, nunca `codex/`) e Claude Code casa `anthropic/*` para Opus 4.8 (nunca `claude-code/`); adapters agenticos com permissao/sandbox restritos **não** contornam o gate; ver `02-regras-operacionais-e-runtime.md` e `xpz-llm-delegate/SKILL.md`
+- antes de enviar conteúdo a um modelo, classificar `kb-sensitive` (pasta paralela de KB) vs `public` (repo publico/molde sanitizado) e rodar `scripts/Resolve-LlmDelegateAuthorization.ps1` com `-Backend opencode|codex|claude-code|copilot|gemini`: `deny` não envia, `ask` exige autorizacao explicita do usuário, `allow` segue anunciando o destino ao usuário (campo `targetModelKey`)
+- preferir modelo local (loopback) para conteúdo de KB; conteúdo de pasta paralela só vai a modelo externo com autorizacao; o Codex casa a politica pela chave de destino (`openai/*` para GPT-5.5, nunca `codex/`), Claude Code casa `anthropic/*` para Opus 4.8 (nunca `claude-code/`), Copilot casa `github-copilot/*` (nunca `copilot/`) e Gemini casa `google/*` (nunca `gemini/`); adapters agenticos com permissao/sandbox/modo restritos **não** contornam o gate; ver `02-regras-operacionais-e-runtime.md` e `xpz-llm-delegate/SKILL.md`
 
 ## Regra de triagem exploratoria
 
