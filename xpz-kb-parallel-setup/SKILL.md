@@ -418,6 +418,7 @@ Referencia rápida para decidir o peso operacional da ausencia de cada wrapper. 
   - cria ou reutiliza a subpasta `NomeCurto_GUID_YYYYMMDD` em chamada atômica
   - devolve `frontGuid`, `yyyymmdd`, `frontDir`, `createdAtUtc`, GUIDs adicionais e motivo de bloqueio quando aplicavel
   - não decide sozinho se o trabalho e `same front` ou `new front`; essa decisão continua pertencendo ao fluxo da `xpz-builder`
+  - este wrapper (ou o motor `New-GeneXusXpzFront.ps1`) é o passo que **cria ou retoma** a pasta da frente; popular (`Copy-*KbAcervoToFront.ps1` / `Copy-GeneXusAcervoToFront.ps1`) e os gates que recebem `-FrontFolder` (9-FD `Test-GeneXusFrontAcervoDrift.ps1` e os demais) operam sobre uma frente **já existente** e não criam a pasta — abrir a frente aqui, com `-ReuseIfExists` para retomar, antes de popular ou empacotar; criar a pasta manualmente é anti-padrão (o motor emite o erro `FRENTE_NAO_ABERTA` quando a frente não existe)
 - Quando agentes atualizarem `lastUpdate` em XMLs locais com frequência, recomendar wrapper local fino para timestamp, por exemplo `Get-*KbLastUpdate.ps1`:
   - recebe opcionalmente `Count`, `AsJson`, baseline oficial e margem de frescor
   - delega para `scripts\Get-GeneXusXpzLastUpdate.ps1` da base compartilhada
