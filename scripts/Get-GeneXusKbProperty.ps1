@@ -84,6 +84,12 @@ if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) 
 }
 . $utf8NoBomEncodingSupportPath
 
+$logPathGateSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildLogPathSupport.ps1'
+if (-not (Test-Path -LiteralPath $logPathGateSupportPath -PathType Leaf)) {
+    throw "LogPath gate support script not found: $logPathGateSupportPath"
+}
+. $logPathGateSupportPath
+
 $ProgramFilesX86 = [System.IO.Path]::GetFullPath('C:\Program Files (x86)')
 
 
@@ -380,6 +386,12 @@ $script:Warnings        = New-Object System.Collections.Generic.List[string]
 $script:StrategyTrace   = New-Object System.Collections.Generic.List[string]
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
+
+$logPathRejection = Get-GeneXusMsBuildLogPathRejection -ResolvedLogPath $resolvedLogPath
+if ($logPathRejection.rejected) {
+    Write-Output (New-GeneXusMsBuildLogPathBlockJson -WrapperName 'Get-GeneXusKbProperty.ps1' -ResolvedLogPath $resolvedLogPath -Reason $logPathRejection.reason)
+    exit 50
+}
 
 try {
     $levelRequiresTarget = @('Generator', 'DataStore', 'Object')

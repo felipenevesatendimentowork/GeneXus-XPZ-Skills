@@ -294,7 +294,7 @@ WORKFLOW e nota de comportamento crítico abaixo.
 - `-VersionName` (opcional)
 - `-EnvironmentName` (opcional)
 - `-WorkingDirectory` (obrigatório)
-- `-LogPath` (obrigatório)
+- `-LogPath` (obrigatório — caminho de **arquivo** de log onde o wrapper grava o JSON de resultado; apontar para um **diretório existente** é bloqueado cedo com **exit 50** — gate fail-fast `parametro-invalido`, antes de abrir a KB / registrar tarefa; motor `scripts/GeneXusMsBuildLogPathSupport.ps1`)
 - `-VerboseLog` (opcional)
 - `-MonitorLogPath` (String, opcional — caminho do arquivo gravado pelo parâmetro
   `-MonitorLog` de `Watch-GeneXusMsBuildLog.ps1`; quando fornecido e o arquivo existir
@@ -1067,7 +1067,7 @@ $scriptPath = "C:\Dev\Knowledge\GeneXus-XPZ-Skills\scripts\Start-GeneXusKbBuildD
 
 ## CONSTRAINTS
 
-- Ao interpretar `exitCode` do processo ou do JSON (`46`, `47`, `49`, `40`–`45`, `48`, …), consultar `scripts/msbuild-exit-codes.catalog.json` — especialmente o anexo `causes[]` do **46** e exit **49** (`deployBinFreshness`); não inferir causa só pelo número no terminal
+- Ao interpretar `exitCode` do processo ou do JSON (`46`, `47`, `49`, `50`, `40`–`45`, `48`, …), consultar `scripts/msbuild-exit-codes.catalog.json` — especialmente o anexo `causes[]` do **46**, exit **49** (`deployBinFreshness`) e exit **50** (`-LogPath` apontando para diretório existente); não inferir causa só pelo número no terminal
 - NEVER gravar qualquer artefato em `C:\Program Files (x86)`
 - NEVER executar `icacls` nem qualquer concessão NTFS na instalação do GeneXus — apenas oferecer comandos em `environmentRemediationHints` para o usuário executar uma vez, por conta própria, se quiser silenciar o ruído GAM filtrado
 - NEVER recomendar elevar o build MSBuild a cada execução como substituto do filtro de ruído GAM; a única elevação mencionada é terminal administrativo **one-time** para o usuário rodar `icacls` sugerido

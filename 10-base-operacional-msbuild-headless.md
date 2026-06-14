@@ -821,6 +821,7 @@ Saídas esperadas dos scripts:
 - **`02` e `08`:** ponteiro operacional curto; **`09`:** rastreabilidade pública; skills `xpz-msbuild-build` / `xpz-msbuild-import-export`: subconjunto operacional + link para o JSON.
 - **Exit `46`:** `disambiguationRequired=true` no catálogo — políticas distintas (watcher, wide rebuild, reorg). Ler `summary`, `blockingReasons`, `requestedContext` e `causes[]` no JSON; **não** inferir causa só pelo número no terminal.
 - **Exit `48`:** Categoria B — ver secção anterior; detalhe de campos no catálogo (`jsonHints`).
+- **Exit `50`:** gate fail-fast de `-LogPath` (categoria `parametro-invalido`) — o `-LogPath` resolvido aponta para um **diretório existente**. O wrapper bloqueia **cedo** (antes de abrir a KB / registrar tarefa) emitindo o bloco **só no stdout**, em vez de rodar a operação inteira e só falhar na gravação final do JSON, mascarando o resultado como `exit 90` («falha operacional») quando a operação concluiu. Motor compartilhado `scripts/GeneXusMsBuildLogPathSupport.ps1`; condição `Test-Path -PathType Container` (não bloqueia arquivo-a-criar com pai válido). Informe um caminho de **arquivo** de log.
 - **Build/specify:** códigos `40`–`45` e `status` rico (`compilou limpo`, `reorg necessaria detectada`, …) estão no catálogo; quando `exitCode` e `status` divergirem em importância, priorizar o JSON completo do wrapper.
 
 ### Contrato Transversal De Diagnóstico JSON Dos Wrappers MSBuild

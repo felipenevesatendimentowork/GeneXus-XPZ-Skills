@@ -305,7 +305,7 @@ Parâmetros transversais esperados:
 - `-VersionName`
 - `-EnvironmentName`
 - `-WorkingDirectory`
-- `-LogPath`
+- `-LogPath` (caminho de **arquivo** de log onde o wrapper grava o JSON de resultado; apontar para um **diretório existente** é bloqueado cedo com **exit 50** — gate fail-fast `parametro-invalido`, antes de abrir a KB; motor `scripts/GeneXusMsBuildLogPathSupport.ps1`)
 - `-VerboseLog`
 - `-StartWatcher` (quando suportado pelo wrapper, dispara `Watch-GeneXusMsBuildLog.ps1` antes do MSBuild; requer `-MonitorLogPath`; ausência de `-MonitorLogPath` deve bloquear cedo por política com exit 46)
 - `-MonitorLogPath` (caminho do log próprio do watcher; quando existir, alimenta `timing.phases`)
@@ -473,7 +473,7 @@ pwsh -NoProfile -File scripts/Invoke-GeneXusXpzImport.ps1 `
   -VersionName "<versao>" `
   -EnvironmentName "<ambiente>" `
   -WorkingDirectory "<pasta-msbuild-segura>" `
-  -LogPath "<pasta-artefatos>/import" `
+  -LogPath "<pasta-artefatos>/import/import.log" `
   -MonitorLogPath "<pasta-artefatos>/import/watcher.log" `
   -StartWatcher
 ```

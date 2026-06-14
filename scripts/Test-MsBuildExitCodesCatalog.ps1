@@ -41,10 +41,12 @@ $wrapperScanList = @(
     'Invoke-GeneXusKbSpecifyGenerate.ps1'
     'Test-GeneXusXpzImportPreview.ps1'
     'Invoke-GeneXusXpzImport.ps1'
+    'Invoke-GeneXusXpzImportThenBuild.ps1'
     'Invoke-GeneXusXpzExport.ps1'
     'Open-GeneXusKbHeadless.ps1'
     'Get-GeneXusKbProperty.ps1'
     'Test-GeneXusKbConsistency.ps1'
+    'Start-GeneXusKbBuildDetached.ps1'
     'Test-GeneXusMsBuildSetup.ps1'
 )
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-06-12",
+  "lastUpdated": "2026-06-14",
   "legend": {
     "exitCode": "Valor classificado pelo wrapper GeneXus XPZ; e tambem o exit code do processo PowerShell.",
     "executionEvidence.msBuildExitCode": "Codigo bruto retornado pela invocacao MSBuild/task GeneXus; nao substitui exitCode quando o wrapper reclassifica (ex.: 48, 32, 41-45).",
@@ -416,6 +416,25 @@
         "invalidTypesRejected",
         "executionEvidence.msBuildExitCode"
       ]
+    },
+    {
+      "exit": 50,
+      "category": "parametro-invalido",
+      "summary": "Gate fail-fast de -LogPath: o -LogPath resolvido aponta para um diretorio existente. O wrapper gravaria o diagnostico JSON nesse caminho; um diretorio faria a operacao concluir e so falhar na gravacao final (mascarada como exit 90 'falha operacional'). Informe um caminho de ARQUIVO de log. Validado cedo, antes de abrir a KB / registrar tarefa; bloco emitido so no stdout (sem gravar no -LogPath invalido). Condicao Test-Path -PathType Container (nao bloqueia arquivo-a-criar com pai valido).",
+      "wrappers": [
+        "Invoke-GeneXusKbBuildAll.ps1",
+        "Invoke-GeneXusKbSpecifyGenerate.ps1",
+        "Invoke-GeneXusXpzImport.ps1",
+        "Invoke-GeneXusXpzImportThenBuild.ps1",
+        "Invoke-GeneXusXpzExport.ps1",
+        "Test-GeneXusXpzImportPreview.ps1",
+        "Get-GeneXusKbProperty.ps1",
+        "Open-GeneXusKbHeadless.ps1",
+        "Test-GeneXusKbConsistency.ps1",
+        "Start-GeneXusKbBuildDetached.ps1"
+      ],
+      "documentedIn": "scripts/GeneXusMsBuildLogPathSupport.ps1",
+      "jsonHints": ["stage", "requestedContext.LogPathIsExistingDirectory", "resolvedPaths.LogPath", "blockingReasons"]
     },
     {
       "exit": 70,

@@ -256,6 +256,12 @@ if (-not (Test-Path -LiteralPath $utf8NoBomEncodingSupportPath -PathType Leaf)) 
 }
 . $utf8NoBomEncodingSupportPath
 
+$logPathGateSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildLogPathSupport.ps1'
+if (-not (Test-Path -LiteralPath $logPathGateSupportPath -PathType Leaf)) {
+    throw "LogPath gate support script not found: $logPathGateSupportPath"
+}
+. $logPathGateSupportPath
+
 $watcherSupportPath = Join-Path (Split-Path -Parent $PSCommandPath) 'GeneXusMsBuildWatcherSupport.ps1'
 if (-not (Test-Path -LiteralPath $watcherSupportPath -PathType Leaf)) {
     throw "Watcher support script not found: $watcherSupportPath"
@@ -677,6 +683,13 @@ $confirmCostlyBuildOptionsMode = $null
 $allowCostlyBuildOptionsConfirmed = $false
 
 $resolvedLogPath = Get-FullPathSafe -PathValue $LogPath
+
+$logPathRejection = Get-GeneXusMsBuildLogPathRejection -ResolvedLogPath $resolvedLogPath
+if ($logPathRejection.rejected) {
+    Write-Output (New-GeneXusMsBuildLogPathBlockJson -WrapperName 'Invoke-GeneXusKbBuildAll.ps1' -ResolvedLogPath $resolvedLogPath -Reason $logPathRejection.reason)
+    exit 50
+}
+
 $script:TimingLog['scriptStart'] = Get-GeneXusMsBuildNowIso
 
 try {
