@@ -68,6 +68,7 @@ The checklist below is the consolidated end-to-end verification for any packagin
 - [ ] Every new operator, function, conversion, and string/numeric pattern introduced in `Source` is backed by layer-1 methodological evidence
 - [ ] Local corpus evidence, when used for `Source`, was treated only as confirmation or tie-breaker
 - [ ] No essential `Source` construct was accepted only because it looked plausible
+- [ ] When a local XML candidate depended materially on `Source`, `scripts/Test-GeneXusSourceSanity.ps1 -InputPath <xml>` was run before packaging; `sourceSanityStatus=fail` blocked packaging and `warn` was reviewed as consultative conservative review (mirrors `SKILL.md`)
 - [ ] For generated large XML, header, tail, expected root closing tag, complete `CDATA`, and absence of truncated final line were verified before packaging
 - [ ] Any heredoc/here-string writer stderr was checked, and no artifact ended by EOF before the expected delimiter
 - [ ] Procedure `Source` deltas that changed candidate/identity filters searched for paired cursor blocks and reconciled or justified `count/then-copy`, `exists/then-load`, `validate/then-apply`, or `select-candidate/then-materialize` criteria
