@@ -15,9 +15,11 @@
 
   K2 - pasta nativa da KB no diff
     Examina os NOMES de arquivo do intervalo (nivel de path, NAO o conteudo dos
-    arquivos): qualquer path do diff batendo o padrao da pasta nativa da KB
-    GeneXus (default: C:\GxModels\) e terreno proibido por contrato. Assertion
-    defensiva contra symlink esquisito ou caminho absoluto versionado por engano.
+    arquivos): qualquer path do diff cujo segmento bata o padrao da pasta nativa
+    da KB GeneXus (default: segmento 'GxModels' em qualquer separador) e terreno
+    proibido por contrato. Como git diff --name-only da paths repo-relativos com
+    '/', o default casa 'GxModels/' nesse formato e tambem a variante com '\'.
+    Assertion defensiva contra symlink ou pasta nativa versionada por engano.
     Severidade: block.
 
   CONTRATO DE SAIDA: JSON de maquina por padrao no stdout (sem -AsJson, conforme
@@ -41,7 +43,9 @@
   Nome(s) de pasta descartavel que nunca deve ser versionada (default: Temp).
 
 .PARAMETER NativeKbRootPattern
-  Padrao regex do caminho da pasta nativa da KB (default: 'C:\\GxModels\\').
+  Padrao regex que casa um SEGMENTO de path da pasta nativa da KB GeneXus em
+  qualquer separador (default casa 'GxModels/' ou 'GxModels\' em qualquer posicao
+  do path; git diff --name-only emite paths com '/').
 
 .PARAMETER AsText
   Saida humana em texto em vez do JSON padrao.
@@ -61,7 +65,7 @@ param(
   [string]$BaseRef = 'origin/main',
   [string]$RepoRoot = (Get-Location).Path,
   [string[]]$TempDirNames = @('Temp'),
-  [string]$NativeKbRootPattern = 'C:\\GxModels\\',
+  [string]$NativeKbRootPattern = '(?i)(^|[\\/])GxModels[\\/]',
   [switch]$AsText,
   [switch]$AsJson
 )

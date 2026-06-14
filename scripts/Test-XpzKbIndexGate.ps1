@@ -92,6 +92,11 @@ function Fail-Gate {
   throw "BLOCK: $Reason"
 }
 
+# Safety-net do contrato "-AsJson nunca lanca": alem dos Fail-Gate conhecidos,
+# qualquer excecao inesperada (parse de datetime, wrapper local que lanca, contrato
+# de assinatura) tambem vira { status: BLOCK, reason } sob -AsJson, nunca um throw.
+try {
+
 # 1. estrutura
 if (-not (Test-Path -LiteralPath $StructureWrapperPath -PathType Leaf)) { Fail-Gate 'wrapper local de estrutura ausente' }
 $structureOutput = & $StructureWrapperPath *>&1
@@ -154,3 +159,16 @@ if ($AsJson) {
   'GATE_OK'
 }
 exit 0
+
+} catch {
+  # Excecao fora dos Fail-Gate conhecidos. Sob -AsJson honra o contrato (nunca
+  # lanca): emite { status: BLOCK, reason } + exit 1. Em texto, re-lanca (default
+  # retrocompativel, preserva o "BLOCK: <motivo>").
+  if ($AsJson) {
+    $out['status'] = 'BLOCK'
+    $out['reason'] = ($_.Exception.Message -replace '^BLOCK:\s*', '')
+    [pscustomobject]$out | ConvertTo-Json -Depth 4
+    exit 1
+  }
+  throw
+}

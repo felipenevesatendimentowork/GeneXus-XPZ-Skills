@@ -87,7 +87,7 @@ function Get-LayerToken {
 }
 
 $tempDirNames        = @(Get-LayerToken 'tempDirNames' @('Temp'))
-$nativeKbRootPattern = [string](Get-LayerToken 'nativeKbRootPattern' 'C:\\GxModels\\')
+$nativeKbRootPattern = [string](Get-LayerToken 'nativeKbRootPattern' '(?i)(^|[\\/])GxModels[\\/]')
 $indexDirName        = [string](Get-LayerToken 'indexDirName' 'KbIntelligence')
 $acervoDirName       = [string](Get-LayerToken 'acervoDirName' 'ObjetosDaKbEmXml')
 $metadataFileName    = [string](Get-LayerToken 'metadataFileName' 'kb-source-metadata.md')
@@ -155,16 +155,24 @@ else { Add-Gate 'G3' 'ok' "working tree limpo ($indexDirName/ untracked ignorado
 # Trailing whitespace em XMLs do acervo (default ObjetosDaKbEmXml/) vem do exportador
 # do GeneXus IDE (saida de gerador, nao codigo humano) -- policy override declarada:
 # warn, nao block. Demais arquivos: block.
-$diffCheck = @(git -C $RepoRoot diff --check $range 2>&1)
+# Stringifica a saida (incl. stderr via 2>&1): evita ErrorRecord profundo no
+# detail, que truncaria o JSON de maquina; mantem o -match por linha funcionando.
+$diffCheck = @(git -C $RepoRoot diff --check $range 2>&1 | ForEach-Object { $_.ToString() })
 $diffCheckExit = $LASTEXITCODE
 if ($diffCheckExit -ne 0) {
   $errorLines = @($diffCheck | Where-Object { $_ -match '^([^:]+):\d+:' })
-  $acervoPrefix = "$(($acervoDirName -replace '\\','/').TrimEnd('/'))/"
-  $nonGeneratedHits = @($errorLines | Where-Object { $_ -notmatch ("^" + [regex]::Escape($acervoPrefix)) })
-  if ($nonGeneratedHits.Count -eq 0) {
-    Add-Gate 'G4' 'warn' "$($errorLines.Count) whitespace error(s), exclusivamente em XMLs do acervo ($acervoDirName/, gerados pelo IDE) -- policy override" $diffCheck
+  if ($errorLines.Count -eq 0) {
+    # exit != 0 sem nenhuma linha no formato de erro de whitespace = falha tecnica
+    # do git (ex.: BaseRef/range invalido), NAO "0 erros". Nao mascarar como warn.
+    Add-Gate 'G4' 'unknown' "git diff --check retornou exit $diffCheckExit sem linhas de erro de whitespace -- BaseRef/range invalido?" $diffCheck
   } else {
-    Add-Gate 'G4' 'block' "$($nonGeneratedHits.Count) whitespace error(s) em arquivos NAO gerados pelo IDE" $nonGeneratedHits
+    $acervoPrefix = "$(($acervoDirName -replace '\\','/').TrimEnd('/'))/"
+    $nonGeneratedHits = @($errorLines | Where-Object { $_ -notmatch ("^" + [regex]::Escape($acervoPrefix)) })
+    if ($nonGeneratedHits.Count -eq 0) {
+      Add-Gate 'G4' 'warn' "$($errorLines.Count) whitespace error(s), exclusivamente em XMLs do acervo ($acervoDirName/, gerados pelo IDE) -- policy override" $diffCheck
+    } else {
+      Add-Gate 'G4' 'block' "$($nonGeneratedHits.Count) whitespace error(s) em arquivos NAO gerados pelo IDE" $nonGeneratedHits
+    }
   }
 } else {
   Add-Gate 'G4' 'ok' 'sem whitespace errors'
@@ -214,7 +222,10 @@ if (-not $k8w.ok) {
     $j = $raw | ConvertFrom-Json
     $estado = [string]$j.'estado_operacional_sugerido'
     $verdes = @('materializado_e_indice_validado', 'wrappers_atualizados', 'pronto_para_primeira_materializacao')
-    $st = if ($estado -in $verdes) { 'ok' } else { 'warn' }
+    # Estados explicitamente bloqueantes (fail-closed): runtime PowerShell quebrado
+    # na pasta paralela impede qualquer uso operacional -> block, nao warn.
+    $vermelhos = @('runtime_powershell_bloqueado')
+    $st = if ($estado -in $vermelhos) { 'block' } elseif ($estado -in $verdes) { 'ok' } else { 'warn' }
     Add-Gate 'K8' $st "estado_operacional_sugerido=$estado (resolvedBy=$($k8w.resolvedBy))"
   } catch {
     Add-Gate 'K8' 'block' "setup desatualizado: wrapper de auditoria de setup nao emitiu contrato estruturado (-AsJson) -- atualize via xpz-kb-parallel-setup (resolvedBy=$($k8w.resolvedBy))"
@@ -244,7 +255,7 @@ try {
   $k11 = & (Join-Path $sharedScripts 'Test-XpzNotNotIsAntipattern.ps1') -BaseRef $BaseRef -RepoRoot $RepoRoot -AcervoDirName $acervoDirName | ConvertFrom-Json
   switch ($k11.status) {
     'block'   { Add-Gate 'K11' 'block' "$($k11.findings.Count) achado(s) de antipattern not-not em $($k11.scanned) XML(s)" $k11.findings }
-    'unknown' { Add-Gate 'K11' 'unknown' $k11.blockingReasons }
+    'unknown' { Add-Gate 'K11' 'unknown' (@($k11.blockingReasons) -join '; ') }
     default   { Add-Gate 'K11' 'ok' "$($k11.scanned) XML(s) varrido(s); zero achados" }
   }
 } catch { Add-Gate 'K11' 'unknown' "falha ao executar Test-XpzNotNotIsAntipattern: $($_.Exception.Message)" }
@@ -288,7 +299,7 @@ if ($AsText) {
   ""
   "pushReadiness: $($pushReadiness.ToUpper())"
 } else {
-  $result | ConvertTo-Json -Depth 6
+  $result | ConvertTo-Json -Depth 8
 }
 
 switch ($pushReadiness) {
