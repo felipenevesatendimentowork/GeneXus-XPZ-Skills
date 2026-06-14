@@ -53,6 +53,8 @@ try {
     Assert-Locality -Model 'openai/gpt-5.4'             -Expected 'external' -ConfigPath $cfg   # provider ausente da config
     Assert-Locality -Model 'semBarra'                   -Expected 'unknown'  -ConfigPath $cfg
     Assert-Locality -Model 'ollama/foo' -Expected 'unknown' -ConfigPath (Join-Path $tmp 'inexistente.json')
+    Assert-Locality -Model 'ollama-cloud/deepseek-v4-pro' -Expected 'external' -ConfigPath (Join-Path $tmp 'inexistente.json')
+    Assert-Locality -Model 'opencode-go/deepseek-v4-pro'  -Expected 'external' -ConfigPath (Join-Path $tmp 'inexistente.json')
 } finally {
     Get-ChildItem -LiteralPath $tmp -File -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $tmp -Force -Recurse -ErrorAction SilentlyContinue

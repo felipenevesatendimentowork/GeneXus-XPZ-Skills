@@ -101,7 +101,9 @@ Mapa de responsabilidade por componente (em `scripts/`, na raiz):
 
 A classificação **local vs externo é determinística**, lida da config do backend pelo
 `baseURL`/`base_url` do provider de destino (loopback ⇒ local; caso contrário ⇒ externo).
-No opencode vem da config JSON; no Codex, da `config.toml` (`model`, `model_providers`/`profiles`) ou
+No opencode vem da config JSON; provedores cloud conhecidos (`ollama-cloud/*`,
+`opencode-go/*`) são classificados como externos mesmo quando a config local não está legível.
+No Codex, a classificação vem da `config.toml` (`model`, `model_providers`/`profiles`) ou
 das flags `--oss`/`--local-provider`; quando `-Model` é omitido, vale o default do próprio Codex/config.
 No Claude Code, modelos Claude explícitos são tratados como destino Anthropic externo;
 `opus` é normalizado conservadoramente para `anthropic/claude-opus-4-8`, e aliases não
@@ -121,7 +123,7 @@ Dois eixos independentes:
 
 Scripts do gate (em `scripts/`, na raiz do repositório):
 
-- `Resolve-OpenCodeModelLocality.ps1 -Model <provider/modelo>` → JSON `{ locality: local|external|unknown, baseUrl, reason }`. Backend opencode.
+- `Resolve-OpenCodeModelLocality.ps1 -Model <provider/modelo>` → JSON `{ locality: local|external|unknown, baseUrl, reason }`. Backend opencode; `ollama-cloud/*` e `opencode-go/*` são externos conhecidos mesmo sem config legível.
 - `Resolve-CodexModelLocality.ps1 [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>]` → JSON `{ locality, baseUrl, canonicalModel, reason }`. Backend codex; quando `-Model` é omitido, tenta derivar o modelo do `config.toml`; `canonicalModel` é a chave de destino (ex.: `openai/gpt-5.5`).
 - `Resolve-ClaudeCodeModelLocality.ps1 [-Model <m>]` → JSON `{ locality, canonicalModel, reason }`. Backend Claude Code; `opus` e `claude-opus-4-8` casam `anthropic/claude-opus-4-8`.
 - `Resolve-CopilotModelLocality.ps1 [-Model <m>]` → JSON `{ locality, canonicalModel, reason }`. Backend Copilot; `canonicalModel` casa `github-copilot/<modelo>`.
@@ -227,6 +229,10 @@ Backend opencode:
 - `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. Também usa runner temporário para evitar fragmentação de prompt pelo `Start-Process`.
 - `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`).
 
+No backend opencode, `-Model` deve usar o identificador aceito pelo CLI no formato
+`provider/modelo`. Para Ollama Cloud, use `ollama-cloud/deepseek-v4-pro`; o nome curto
+`deepseek-v4-pro` não identifica o provider e tende a falhar antes da chamada.
+
 Backend codex (`codex exec`, default da própria ferramenta/config quando `-Model` é omitido, sandbox `read-only` fixo):
 - `Invoke-Codex.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; resposta final pelo `output-last-message`.
 - `Start-CodexJob.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result, watcher}`; abre janela de acompanhamento por padrão.
@@ -292,6 +298,11 @@ Núcleo backend-agnóstico:
 O backend opencode é **agêntico**: cada chamada carrega system prompt + schemas de todas as
 ferramentas + o que estiver em `instructions` da config do opencode (ex.: um `AGENTS.md` global
 extenso). Esse prompt por chamada pode passar de ~16k tokens.
+
+Falhas do CLI antes da chamada ao modelo com mensagens de SQLite/`PRAGMA`/`CREATE TABLE` indicam
+estado local corrompido do opencode, não erro do adapter. Recuperação operacional conservadora:
+fechar o OpenCode desktop e renomear `opencode.db*` na pasta de dados do opencode para backup,
+preservando arquivos de autenticação/configuração.
 
 Consequência em GPU de pouca VRAM (medido empiricamente em RX 580 8 GB, Vulkan, com placement
 100% GPU e sem spill para RAM/compartilhada):

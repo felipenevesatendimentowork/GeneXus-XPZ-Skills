@@ -11,6 +11,7 @@
         - baseURL externa explicita           -> external
         - provider sem baseURL na config       -> external (custom sem endpoint local)
         - provider ausente da config           -> external (gateway embutido/remoto por definicao)
+        - provider cloud conhecido              -> external (mesmo sem config legivel)
         - modelo não parseavel ou config ausente -> unknown
 
     A única forma de um modelo ser LOCAL e seu provider apontar para uma baseURL loopback.
@@ -50,6 +51,11 @@ function Test-LoopbackHost {
     return ($h -ieq 'localhost' -or $h -eq '::1' -or $h -match '^127\.')
 }
 
+function Test-KnownExternalProvider {
+    param([string]$Provider)
+    return @('ollama-cloud', 'opencode-go') -contains $Provider
+}
+
 function New-LocalityResult {
     param([string]$Provider, [string]$BaseUrl, [string]$Locality, [string]$Reason)
     [pscustomobject]@{
@@ -72,6 +78,11 @@ $provider = $parts[0].Trim()
 
 # 2) Config legivel?
 if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
+    if (Test-KnownExternalProvider $provider) {
+        New-LocalityResult -Provider $provider -BaseUrl $null -Locality 'external' `
+            -Reason "provider cloud conhecido ('$provider'); tratado como externo mesmo sem config legivel"
+        return
+    }
     New-LocalityResult -Provider $provider -BaseUrl $null -Locality 'unknown' `
         -Reason "config do opencode nao encontrada: $ConfigPath"
     return
@@ -80,6 +91,11 @@ if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
 try {
     $config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
 } catch {
+    if (Test-KnownExternalProvider $provider) {
+        New-LocalityResult -Provider $provider -BaseUrl $null -Locality 'external' `
+            -Reason "provider cloud conhecido ('$provider'); tratado como externo apesar de falha ao ler/parsear a config: $($_.Exception.Message)"
+        return
+    }
     New-LocalityResult -Provider $provider -BaseUrl $null -Locality 'unknown' `
         -Reason "falha ao ler/parsear a config do opencode: $($_.Exception.Message)"
     return
