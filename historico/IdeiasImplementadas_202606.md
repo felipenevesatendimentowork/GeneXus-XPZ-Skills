@@ -299,7 +299,7 @@ A reconciliacao por GUID e gated por `-FullSnapshot`, o unico regime que ja varr
 
 ### Rastreabilidade
 
-- Commit: `a preencher` (frente Sync GUID-aware desta sessao; hash no commit seguinte)
+- Commit: `a4288cc` (`Reconcilia rename por GUID no Sync-GeneXusXpzToXml`)
 
 ### Decisao final
 
