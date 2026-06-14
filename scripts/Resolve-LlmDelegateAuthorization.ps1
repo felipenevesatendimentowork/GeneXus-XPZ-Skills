@@ -42,7 +42,11 @@
 .PARAMETER Model
     Modelo. No backend opencode, formato provider/modelo (ex: openai/gpt-5.4). No backend
     codex, o nome nu (ex: gpt-5.5); quando omitido, o resolvedor codex tenta derivar o
-    default da config do Codex.
+    default da config do Codex. No backend claude-code, o nome do modelo Claude
+    (ex: claude-opus-4-8; alias 'opus' normalizado); quando omitido, a localidade fica
+    'unknown' e o gate trata como externo (fail-safe -> ask para payload sensivel). Nos
+    backends copilot e gemini, o nome do modelo; quando omitido, o resolvedor aplica o
+    default do proprio CLI (gpt-5-mini no copilot, gemini-3-flash-preview no gemini).
 .PARAMETER Backend
     Backend de delegacao: 'opencode' (default), 'codex', 'claude-code', 'copilot' ou
     'gemini'. Seleciona o resolvedor de localidade.
