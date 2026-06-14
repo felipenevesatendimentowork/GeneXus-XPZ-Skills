@@ -40,6 +40,11 @@ Caminho opcional para `Test-KbObjetosDaKbNaming.ps1`.
 .PARAMETER SharedSkillsRoot
 Raiz local da base compartilhada `GeneXus-XPZ-Skills`.
 
+.PARAMETER AsJson
+Repassa o contrato estruturado ao motor (`Test-XpzSetupAudit.ps1 -AsJson`),
+consumido pelo gate K8 do orquestrador da rotina pre-push. Sem o switch, a saida
+textual (default) e preservada para os consumidores existentes.
+
 .EXAMPLE
 .\Test-KbSetupAudit.ps1
 
@@ -62,7 +67,9 @@ param(
 
     [string]$NamingWrapperPath,
 
-    [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills"
+    [string]$SharedSkillsRoot = "C:\CAMINHO\PARA\GeneXus-XPZ-Skills",
+
+    [switch]$AsJson
 )
 
 Set-StrictMode -Version Latest
@@ -117,5 +124,6 @@ if (-not (Test-Path -LiteralPath $enginePath -PathType Leaf)) {
     -PowerShellRuntimeTestPath $PowerShellRuntimeWrapperPath `
     -NamingWrapperPath $NamingWrapperPath `
     -SourceSanityWrapperPath $SourceSanityWrapperPath `
-    -PackageCollisionWrapperPath $PackageCollisionWrapperPath
+    -PackageCollisionWrapperPath $PackageCollisionWrapperPath `
+    -AsJson:$AsJson
 exit $LASTEXITCODE
