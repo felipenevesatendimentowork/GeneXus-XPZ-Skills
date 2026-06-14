@@ -16,7 +16,7 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Model
+    [Parameter(Position = 0)] [string] $Model = ''
 )
 
 Set-StrictMode -Version Latest
@@ -33,7 +33,10 @@ $locality = 'unknown'
 $provider = $null
 $reason = ''
 
-if ($modelId -ieq 'opus') {
+if ([string]::IsNullOrWhiteSpace($modelId)) {
+    $reason = "modelo nao informado; destino desconhecido (fail-closed no gate: payload kb-sensitive -> ask, public -> allow)"
+}
+elseif ($modelId -ieq 'opus') {
     $provider = 'anthropic'
     $modelId = 'claude-opus-4-8'
     $canonicalModel = 'anthropic/claude-opus-4-8'

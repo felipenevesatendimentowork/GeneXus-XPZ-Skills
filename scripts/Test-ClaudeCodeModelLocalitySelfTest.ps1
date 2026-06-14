@@ -31,6 +31,7 @@ Assert-Claude -Model 'claude-opus-4-8' -ExpectedLocality 'external' -ExpectedKey
 Assert-Claude -Model 'anthropic/claude-opus-4-8' -ExpectedLocality 'external' -ExpectedKey 'anthropic/claude-opus-4-8'
 Assert-Claude -Model 'sonnet' -ExpectedLocality 'unknown' -ExpectedKey ''
 Assert-Claude -Model 'gpt-5.5' -ExpectedLocality 'unknown' -ExpectedKey ''
+Assert-Claude -Model '' -ExpectedLocality 'unknown' -ExpectedKey ''
 
 if ($fail -gt 0) { throw "BLOCK: $fail caso(s) falharam em Test-ClaudeCodeModelLocalitySelfTest.ps1" }
 Write-Host 'OK: Test-ClaudeCodeModelLocalitySelfTest.ps1' -ForegroundColor Cyan
