@@ -401,6 +401,7 @@ Reference files and when to load them:
    - Interpret the JSON result conservatively:
      - `xmlWellFormed=false` -> **ABORT** before any packaging discussion
    - `sourceSanityStatus=fail` -> **ABORT** packaging and correct structural balance first
+     - `fail` also covers the type-aware finding `procedural-in-conditions`: a `Procedure` with a non-empty `Conditions` part is rejected because `Procedure` has no `Conditions` filter (predicates live in `For Each ... Where`) and code there triggers `src0055` on import; `WebPanel`/`Prompt`/`Selection List`, where `Conditions` is a legitimate filter, and `Data Selector`, which has its own `Conditions`, stay out
    - `sourceSanityStatus=warn` with `probablyImportable=true` -> keep packaging blocked until each warning is either rewritten to a documented conservative form or explicitly justified as residual risk
    - `sourceSanityStatus=pass` with `xmlWellFormed=true` -> proceed only to the next packaging gate; do NOT describe this as proof of import/build success
    - If GeneXus `Source` is serialized inside `CDATA`, scan the saved block before packaging and **ABORT** if the literal code still contains XML entity spellings such as `&amp;`, `&quot;`, `&gt;`, or `&lt;` that should have remained raw code characters
