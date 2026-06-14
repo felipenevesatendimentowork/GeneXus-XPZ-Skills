@@ -288,10 +288,11 @@ Levantada em 2026-06-12 durante a probe de rename (`DistribuidoraNome` -> `Distr
 ### Implementacao
 
 - `Get-LogicalNameFromExtractedFile` passou a extrair tambem o `guid`; `Convert-PackageToItems` passou a carregar o `guid` nos itens (Object e Attribute).
-- Nova funcao `Resolve-GuidAwareRenames`: indexa o acervo por `guid` e, para cada item do pacote com GUID valido que casa no mesmo `FolderType` sob nome diferente, trata como rename — `Move-Item` antigo -> novo antes da gravacao (ou remove orfao de mesmo GUID quando o alvo ja existe). Gated por `-FullSnapshot`; em `-VerifyOnly` apenas classifica o residuo sem tocar o disco.
-- Guardas: GUID zero/ausente e ignorado (fallback ao nome); GUID duplicado no acervo emite warning e e pulado; GUID que casa em `FolderType` diferente (troca de tipo) fica fora de escopo e segue o caminho atual.
+- Nova funcao `Resolve-GuidAwareRenames`: indexa o acervo por `guid` e, para cada item do pacote com GUID valido que casa no mesmo `FolderType` sob nome diferente, trata como rename — `Move-Item` antigo -> novo antes da gravacao. Gated por `-FullSnapshot`; em `-VerifyOnly` apenas classifica o residuo sem tocar o disco.
+- Quando o nome novo ja existe no acervo: se for o **mesmo** GUID (orfao de materializacao anterior), remove o arquivo de nome antigo; se for GUID **diferente** (colisao de nome com outro objeto), **aborta fail-closed** antes do laco de escrita, preservando o objeto existente. Rename que difere so na caixa e efetivado via etapa intermediaria (NTFS trata nomes que diferem so na caixa como o mesmo arquivo).
+- Guardas: GUID zero/ausente e ignorado (fallback ao nome); GUID duplicado no acervo emite warning e e pulado; GUID que casa em `FolderType` diferente (troca de tipo) fica fora de escopo e segue o caminho atual; lista de renames vazia retorna array vazio (sem regressao StrictMode no caminho de zero renames).
 - Novos campos: `RenamedByGuid` e `RenameResidualsDetected` no summary, `Renames` no relatorio.
-- Self-test `scripts/Test-XpzSyncGuidRenameSelfTest.ps1` cobre rename real em `-FullSnapshot` e classificacao sem mover em `-VerifyOnly`.
+- Self-test `scripts/Test-XpzSyncGuidRenameSelfTest.ps1` cobre 5 cenarios: rename real (`-FullSnapshot`), classificacao sem mover (`-VerifyOnly`), zero renames (acervo sincronizado), colisao de GUID (fail-closed preservando o existente) e rename so de caixa.
 
 ### Decisao final
 

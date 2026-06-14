@@ -651,17 +651,39 @@ function Resolve-GuidAwareRenames {
         }
 
         $existing = $sameFolderMatches[0]
-        if ($existing.FileBaseName -eq $item.NormalizedName) { continue }
+        if ($existing.FileBaseName -ceq $item.NormalizedName) { continue }
 
         $folderPath = Join-Path $Root $item.FolderType
         $newPath = Join-Path $folderPath ($item.NormalizedName + ".xml")
         $oldPath = $existing.FilePath
+        $isCaseOnlyRename = ($existing.FileBaseName -ieq $item.NormalizedName)
         $action = "detected"
 
         if ($Apply) {
-            if (Test-Path -LiteralPath $newPath) {
-                Remove-Item -LiteralPath $oldPath -Force
-                $action = "orphan-removed"
+            if ($isCaseOnlyRename) {
+                # No NTFS, nomes que diferem so na caixa apontam para o mesmo
+                # arquivo; renomear via etapa intermediaria efetiva a troca de caixa.
+                $tempPath = Join-Path $folderPath ($item.NormalizedName + ".gxcasetmp")
+                Move-Item -LiteralPath $oldPath -Destination $tempPath
+                Move-Item -LiteralPath $tempPath -Destination $newPath
+                $action = "renamed"
+            } elseif (Test-Path -LiteralPath $newPath) {
+                $newPathGuidRaw = (Get-LogicalNameFromExtractedFile -FilePath $newPath).Guid
+                if (Test-IsMeaningfulGuid -Guid $newPathGuidRaw) {
+                    $newPathGuid = $newPathGuidRaw.Trim().ToLowerInvariant()
+                } else {
+                    $newPathGuid = ""
+                }
+                if ($newPathGuid -eq $guidKey) {
+                    # Orfao real: o alvo ja e o MESMO objeto (mesmo GUID), resquicio
+                    # de materializacao anterior; remover o arquivo de nome antigo.
+                    Remove-Item -LiteralPath $oldPath -Force
+                    $action = "orphan-removed"
+                } else {
+                    # Colisao: o alvo pertence a outro objeto (GUID diferente).
+                    # Fail-closed antes do laco de escrita sobrescrever o existente.
+                    throw "Colisao de nome no acervo: '$($item.NormalizedName).xml' em '$($item.FolderType)' ja existe com GUID diferente ('$newPathGuid') do item renomeado (GUID '$guidKey', '$($existing.FileBaseName)' -> '$($item.NormalizedName)'). Rename por GUID abortado para preservar o arquivo existente."
+                }
             } else {
                 Move-Item -LiteralPath $oldPath -Destination $newPath
                 $action = "renamed"
@@ -736,7 +758,7 @@ try {
 
     $renameResults = @()
     if ($FullSnapshot) {
-        $renameResults = @(Resolve-GuidAwareRenames -Items $items -Root $DestinationRoot -Warnings $warnings -Apply (-not [bool]$VerifyOnly))
+        $renameResults = Resolve-GuidAwareRenames -Items $items -Root $DestinationRoot -Warnings $warnings -Apply (-not [bool]$VerifyOnly)
     }
 
     $writeResults = @()
