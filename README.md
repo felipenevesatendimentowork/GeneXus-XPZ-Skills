@@ -186,6 +186,7 @@ Se você quer entender a base rapidamente:
 - `KbIntelligence` guarda o SQLite derivado e os relatórios de validação do índice, quando esse fluxo estiver adotado na KB
 - a Carga Inicial pode usar um `XPZ` completo novo a qualquer momento para reatualizar `ObjetosDaKbEmXml`
 - `XPZ` full define o insumo exportado; a materialização normal desse insumo não implica `-FullSnapshot`, que deve ficar restrito a conferencia full explicita ou exigencia documental nominal
+- sob `-FullSnapshot`, o sync reconcilia o acervo por `guid` (identidade estável do nó raiz): um rename (mesmo `guid`, nome diferente) é tratado como rename do arquivo no acervo (`Move-Item`), não como delete-antigo + create-novo; cobre `Attribute` e `Object`, e o git detecta rename por similaridade
 - a mesma estrutura também vale para `XPZ` parciais com objetos alterados desde a última atualização
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus` guarda objetos temporários destinados à importação manual na IDE
 - cada frente ativa em `ObjetosGeradosParaImportacaoNaKbNoGenexus` deve ter sua própria subpasta `NomeCurto_GUID_YYYYMMDD`
@@ -419,6 +420,7 @@ Si quieres entender la base rápidamente:
 - `KbIntelligence` guarda el SQLite derivado y los informes de validación del índice, cuando ese flujo esté adoptado en la KB
 - la Carga Inicial puede usar un `XPZ` completo nuevo en cualquier momento para reactualizar `ObjetosDaKbEmXml`
 - `XPZ` full define el insumo exportado; la materialización normal de ese insumo no implica `-FullSnapshot`, que debe quedar restringido a la verificación full explícita o a exigencia documental nominal
+- bajo `-FullSnapshot`, el sync reconcilia el acervo por `guid` (identidad estable del nodo raíz): un rename (mismo `guid`, nombre distinto) se trata como rename del archivo en el acervo (`Move-Item`), no como borrar-antiguo + crear-nuevo; cubre `Attribute` y `Object`, y el git detecta rename por similitud
 - la misma estructura también vale para `XPZ` parciales con objetos alterados desde la última actualización
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus` guarda objetos temporales destinados a la importación manual en la IDE
 - cada frente activa en `ObjetosGeradosParaImportacaoNaKbNoGenexus` debe tener su propia subcarpeta `NomeCurto_GUID_YYYYMMDD`
@@ -652,6 +654,7 @@ If you want to understand the repository quickly:
 - `KbIntelligence` stores the derived SQLite index and index validation reports when that flow is adopted in the KB
 - the Initial Load can use a new full `XPZ` at any time to refresh `ObjetosDaKbEmXml`
 - full `XPZ` defines the exported input; normal materialization of that input does not imply `-FullSnapshot`, which must stay restricted to explicit full verification or nominal documentary requirement
+- under `-FullSnapshot`, the sync reconciles the store by `guid` (stable root-node identity): a rename (same `guid`, different name) is treated as a file rename in the store (`Move-Item`), not delete-old + create-new; covers `Attribute` and `Object`, and git detects the rename by similarity
 - the same structure also applies to partial `XPZ` files with objects changed since the last update
 - `ObjetosGeradosParaImportacaoNaKbNoGenexus` stores temporary objects intended for manual IDE import
 - each active front in `ObjetosGeradosParaImportacaoNaKbNoGenexus` must have its own `NomeCurto_GUID_YYYYMMDD` subfolder

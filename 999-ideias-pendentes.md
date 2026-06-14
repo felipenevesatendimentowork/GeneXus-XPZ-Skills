@@ -227,30 +227,6 @@ As probes mostraram que destrutivo/tipo/domínio são cobertos por **IDE+build**
 - Paridade doc (README trilíngue, `02`, `08`, `09`, `13`) + registro global via `xpz-skills-setup`.
 - A skill **não** deve depender de FabricaBrasil; usar só como referência.
 
-## Sync GUID-aware: rename de atributo/objeto tratado como rename, não delete+create
-
-**Importância:** média (a cada rename: resíduo no acervo + histórico git poluído; hoje exige decisão manual e deixa dois XMLs separados)
-**Maturidade:** pronta para implementar (mecanismo verificado na fonte; correção e requisitos fechados)
-
-**Origem:** 2026-06-12, durante a probe de rename (`DistribuidoraNome` → `DistribuidoraNomeTeste`, KB `wsEducacaoSpTeste`). O full sync deixou o arquivo do nome antigo como resíduo e abortou com `Extra=1`. O dev apontou que, do ponto de vista do acervo de XMLs, **o sync deveria ter reconhecido o rename sozinho** — sem deixar os dois XMLs separados e de modo que o git trate como rename, não delete+create.
-
-### Mecanismo verificado (`scripts/Sync-GeneXusXpzToXml.ps1`)
-
-- `Get-FullSnapshotComparison` (~553-584) monta a chave de reconciliação como **`FolderType|name`** — só pelo nome lógico; `Get-LogicalNameFromExtractedFile` (~491-500) lê apenas `rootNode.GetAttribute("name")`. **O GUID está no mesmo nó (`GetAttribute("guid")`) e não é usado.**
-- Por isso o rename vira drift: o export tem o nome novo; o acervo tem novo + resíduo antigo; comparado **por nome**, o antigo cai como `Extra` → `throw` (~740), sem ver que é o **mesmo GUID** do recém-materializado.
-- Segundo gap: a limpeza de resíduo na materialização cobre `<Object>` por GUID mas **ignora `<Attribute>`**.
-
-### Correção (requisitos do dev)
-
-1. `Get-LogicalNameFromExtractedFile` extrai também o `guid`; reconciliar por **GUID**, não por nome.
-2. GUID casa entre acervo e export mas o nome difere → é **rename**. Resolver **renomeando o arquivo existente no disco** (`Move-Item` antigo → novo) e atualizando o conteúdo — **não** create-new + orphan-old.
-3. **Resultado: um arquivo só** (nome novo) — sem deixar os dois XMLs separados.
-4. **Git como rename, não delete+create:** git não grava rename, detecta por similaridade no diff (`-M`, default 50%). Rename de atributo muda quase nada → similaridade altíssima; com delete-antigo + add-novo **no mesmo commit** (garantido pelo `Move-Item` antes do commit), `git diff -M` / `git log --follow` mostram rename e preservam histórico.
-
-### Escopo e doutrina
-
-Vale para **atributo e objeto** (o gap de `<Attribute>` é o mais agudo; a reconciliação GUID-aware unifica os dois). A remoção do resíduo aqui é parte de um rename **reconhecido por GUID** (não drift cego) — auto-resolvível com segurança; no mínimo, **classificar** como "resíduo de rename (GUID=X)" em vez de `Extra` genérico, respeitando a cautela de deleção no acervo. Domínio: motor compartilhado `Sync-GeneXusXpzToXml.ps1` + skill **xpz-sync**; frente separada da pré-push.
-
 ## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
 
 **Importância:** média

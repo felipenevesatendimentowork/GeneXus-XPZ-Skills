@@ -151,6 +151,7 @@ Os wrappers seguem esta convenção de parâmetros:
 - `-InputPath` *(obrigatório)* — caminho para `.xpz`, XML ou pasta contendo o XML
 - `-VerifyOnly` *(switch)* — só confere, não regrava
 - `-FullSnapshot` *(switch)* — compara snapshot completo do acervo
+- sob `-FullSnapshot`, o motor reconcilia o acervo pela identidade estável do nó raiz (`guid`), não só pelo nome lógico: quando o mesmo `guid` aparece no acervo sob nome de arquivo diferente, trata como **rename** e renomeia o arquivo existente (`Move-Item` antigo → novo) em vez de criar-novo + abandonar-antigo; o resultado é um arquivo só (nome novo) e o git detecta rename por similaridade. Cobre `Attribute` e `Object`. Em `-VerifyOnly`, o motor apenas **classifica** o resíduo de rename no relatório (`RenameResidualsDetected`), sem tocar o disco
 - `XPZ` full define apenas o insumo; não define, por si só, o modo de verificação
 - para materialização normal, inclusive carga inicial por `XPZ` full vindo da IDE ou por export headless via `MSBuild`, não presumir `-FullSnapshot` como padrão implícito nem como atalho ergonômico
 - usar `-FullSnapshot` somente em um destes casos: pedido explícito do usuário por conferência full, uso do wrapper específico de conferência full, ou exigência nominal da documentação local do repositório
@@ -267,6 +268,7 @@ Os wrappers seguem esta convenção de parâmetros:
 15. Se o processamento foi concluído com sucesso, permitir renomear o `.xpz` consumido para `processado_<nome-original>.xpz`
 16. Reportar: objetos criados, atualizados, ignorados, resíduos removidos, refresh do índice e resumo Git
     - se o resumo do wrapper expuser `MaterializationInterpretation`, usar esse campo como leitura principal do resultado em vez de inferir pela combinação solta de `Created`, `Updated` e `Unchanged`
+    - quando o sync em `-FullSnapshot` reconciliar rename por `guid`, reportar `RenamedByGuid` (arquivos renomeados no acervo ou órfãos de mesmo `guid` removidos); em `-VerifyOnly`, reportar `RenameResidualsDetected` (renames detectados sem mover); esses números explicam por que um nome antigo deixou de existir no acervo e devem ser lidos como rename reconhecido, não como deleção cega
     - explicar que `updated` significa que o wrapper materializou conteúdo mais novo/relevante para o acervo naquele processamento
     - explicar que `unchanged` significa que o item já tinha no acervo oficial conteúdo compatível ou mais novo, tipicamente com `lastUpdate` igual ou superior ao XML vindo do `XPZ`
     - explicar que `updated`/`unchanged` pertencem ao processamento do `XPZ` contra o arquivo materializado atual, não ao estado Git do repositório

@@ -1464,6 +1464,7 @@ Não confundir `src0056` em `Transaction` `Rules` com o playbook de `Procedure` 
 - `Evidência direta`: no acervo extraido para filesystem Windows, apareceu ao menos um caso real de nome lógico invalido como nome de arquivo (`ThemeClass` com `name="ImageHandCenter:hover"`), materializado em disco como `ImageHandCenter_hover.xml`.
 - `Regra operacional`: quando o nome lógico do objeto ou atributo contiver caractere invalido para o filesystem alvo, aplicar normalizacao mínima, deterministica e rastreavel apenas no nome do arquivo em disco, preservando o `name` interno do XML sem alteracao.
 - `Regra operacional`: na auditoria de completude entre o XML total e o acervo extraido, comparar por `tipo + nome logico` e considerar explicitamente a camada de normalizacao de filename quando houver caractere invalido para o filesystem.
+- `Regra operacional`: a reconciliação do sync em `-FullSnapshot` (`scripts/Sync-GeneXusXpzToXml.ps1`) usa a identidade estável `guid` do nó raiz, não só `tipo + nome logico`: quando o mesmo `guid` aparece no acervo sob nome diferente, o motor trata como rename e renomeia o arquivo no acervo (`Move-Item` antigo → novo), preservando um arquivo só e o histórico git por similaridade; cobre `Attribute` e `Object`. Em `-VerifyOnly`, apenas classifica o resíduo de rename no relatório (`RenameResidualsDetected`), sem tocar o disco. Resíduo de nome antigo removido por rename reconhecido por `guid` não é deleção cega do acervo.
 
 ### Politica para `Theme`
 

@@ -272,6 +272,35 @@ Footgun nomeado: um pacote cujo objeto tem `lastUpdate` menor ou igual ao objeto
 - Footgun do import inocuo por `lastUpdate` velho/igual nomeado e documentado em `xpz-msbuild-import-export/SKILL.md`, com o limite honesto da protecao (os gates comparam contra o acervo, nao contra a KB viva).
 - Propagacao do contrato fail-closed em `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `README.md` (trilingue), `xpz-builder/SKILL.md`, `xpz-builder/quality-checklist.md`, `xpz-kb-parallel-setup/SKILL.md` e no exemplo `xpz-kb-parallel-setup/examples/New-KbImportPackage.example.ps1`. Entrada correspondente em `CHANGELOG.md` (`Unreleased`, trilingue).
 
+## Sync GUID-aware: rename de atributo/objeto tratado como rename, nao delete+create
+
+**Importancia original:** media
+**Status:** concluida em 2026-06-13
+
+### Origem
+
+Levantada em 2026-06-12 durante a probe de rename (`DistribuidoraNome` -> `DistribuidoraNomeTeste`, KB `wsEducacaoSpTeste`). O full sync deixou o arquivo do nome antigo como residuo no acervo e abortou com `Extra=1`. O dev apontou que, do ponto de vista do acervo de XMLs, o sync deveria ter reconhecido o rename sozinho — sem deixar dois XMLs separados e de modo que o git trate como rename, nao delete+create.
+
+### Problema concreto
+
+`Get-FullSnapshotComparison` em `scripts/Sync-GeneXusXpzToXml.ps1` montava a chave de reconciliacao como `FolderType|name`, so pelo nome logico; `Get-LogicalNameFromExtractedFile` lia apenas `rootNode.GetAttribute("name")`. O `guid` estava no mesmo no raiz mas era ignorado. Por isso um rename virava drift: o export trazia o nome novo, o acervo ficava com novo + residuo antigo, e comparado por nome o antigo caia como `Extra` -> `throw`, sem ver que era o mesmo GUID do recem-materializado. Resultado: residuo no acervo, full sync abortado e historico git poluido (delete-antigo + create-novo, sem rename detectavel).
+
+### Implementacao
+
+- `Get-LogicalNameFromExtractedFile` passou a extrair tambem o `guid`; `Convert-PackageToItems` passou a carregar o `guid` nos itens (Object e Attribute).
+- Nova funcao `Resolve-GuidAwareRenames`: indexa o acervo por `guid` e, para cada item do pacote com GUID valido que casa no mesmo `FolderType` sob nome diferente, trata como rename — `Move-Item` antigo -> novo antes da gravacao (ou remove orfao de mesmo GUID quando o alvo ja existe). Gated por `-FullSnapshot`; em `-VerifyOnly` apenas classifica o residuo sem tocar o disco.
+- Guardas: GUID zero/ausente e ignorado (fallback ao nome); GUID duplicado no acervo emite warning e e pulado; GUID que casa em `FolderType` diferente (troca de tipo) fica fora de escopo e segue o caminho atual.
+- Novos campos: `RenamedByGuid` e `RenameResidualsDetected` no summary, `Renames` no relatorio.
+- Self-test `scripts/Test-XpzSyncGuidRenameSelfTest.ps1` cobre rename real em `-FullSnapshot` e classificacao sem mover em `-VerifyOnly`.
+
+### Decisao final
+
+A reconciliacao por GUID e gated por `-FullSnapshot`, o unico regime que ja varre o acervo inteiro e onde o residuo era erro — sem regressao no sync direcionado e sem custo extra no caminho comum. A premissa original da ideia (de que existiria limpeza de residuo por GUID cobrindo `<Object>` e ignorando `<Attribute>`) foi corrigida na implementacao: nao havia limpeza nenhuma; o motor so lancava `throw` em `Extra > 0`. O comportamento foi introduzido ja cobrindo Object e Attribute. Troca de tipo e GUID ausente ficaram registrados como fora de escopo.
+
+### Rastreabilidade
+
+- Commit: `a preencher` (frente Sync GUID-aware desta sessao; hash no commit seguinte)
+
 ### Decisao final
 
 Optou-se por fail-closed com auto-resolucao canonica em vez de manter o gate condicional: omitir `-AcervoPath` nao pode ser um caminho para pular a verificacao. A protecao cobre o caso comum (esquecer de bumpar), mas nao substitui ressincronizar o acervo quando ha suspeita de defasagem frente a KB viva — limite registrado explicitamente na doc. A propagacao do contrato antigo (condicional) para o novo (fail-closed) foi inicialmente incompleta e so fechada apos revisao pre-push por modelos distintos (GLM, DeepSeek, MiniMax), que tambem apontaram a paridade de enumeracao no gate de parametros, a entrada de CHANGELOG e este registro de historico.

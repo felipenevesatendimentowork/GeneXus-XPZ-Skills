@@ -329,6 +329,7 @@ function Convert-PackageToItems {
                 LogicalName = $logicalName
                 NormalizedName = $normalizedName
                 TypeGuid = $typeGuid
+                Guid = $node.GetAttribute("guid")
                 Node = $node
             }) | Out-Null
         }
@@ -346,6 +347,7 @@ function Convert-PackageToItems {
                 LogicalName = $logicalName
                 NormalizedName = $normalizedName
                 TypeGuid = "attribute-top-level"
+                Guid = $node.GetAttribute("guid")
                 Node = $node
             }) | Out-Null
         }
@@ -496,6 +498,7 @@ function Get-LogicalNameFromExtractedFile {
     return [pscustomobject]@{
         RootTag = $rootNode.LocalName
         LogicalName = $rootNode.GetAttribute("name")
+        Guid = $rootNode.GetAttribute("guid")
     }
 }
 
@@ -583,6 +586,102 @@ function Get-FullSnapshotComparison {
     }
 }
 
+function Test-IsMeaningfulGuid {
+    param([string]$Guid)
+
+    if ([string]::IsNullOrWhiteSpace($Guid)) { return $false }
+    if ($Guid.Trim().ToLowerInvariant() -eq "00000000-0000-0000-0000-000000000000") { return $false }
+    return $true
+}
+
+function Resolve-GuidAwareRenames {
+    <#
+        Reconcilia o acervo com o pacote pela identidade estavel (GUID do no raiz),
+        nao pelo nome logico. Quando o mesmo GUID aparece no acervo sob um nome de
+        arquivo diferente do alvo do pacote, trata como rename: renomeia o arquivo
+        existente no disco (Move-Item antigo -> novo) em vez de criar-novo +
+        abandonar-antigo. Assim o resultado e um arquivo so e o git detecta rename.
+
+        -Apply $true  : executa o rename/limpeza no disco (modo materializacao).
+        -Apply $false : apenas detecta e classifica (modo -VerifyOnly), sem tocar disco.
+
+        Escopo: casa GUID dentro do MESMO FolderType. GUID que casa em FolderType
+        diferente (troca de tipo) fica fora de escopo e segue o caminho atual.
+    #>
+    param(
+        [object[]]$Items,
+        [string]$Root,
+        [System.Collections.Generic.List[string]]$Warnings,
+        [bool]$Apply
+    )
+
+    $renames = New-Object System.Collections.Generic.List[object]
+    if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
+        return ,($renames.ToArray())
+    }
+
+    $acervoByGuid = @{}
+    $xmlFiles = Get-ChildItem -LiteralPath $Root -Recurse -Filter *.xml -File
+    foreach ($file in $xmlFiles) {
+        $details = Get-LogicalNameFromExtractedFile -FilePath $file.FullName
+        if (-not (Test-IsMeaningfulGuid -Guid $details.Guid)) { continue }
+        $guidKey = $details.Guid.Trim().ToLowerInvariant()
+        $info = [pscustomobject]@{
+            FilePath = $file.FullName
+            FolderType = $file.Directory.Name
+            LogicalName = $details.LogicalName
+            FileBaseName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+        }
+        if (-not $acervoByGuid.ContainsKey($guidKey)) {
+            $acervoByGuid[$guidKey] = New-Object System.Collections.Generic.List[object]
+        }
+        $acervoByGuid[$guidKey].Add($info)
+    }
+
+    foreach ($item in $Items) {
+        if (-not (Test-IsMeaningfulGuid -Guid $item.Guid)) { continue }
+        $guidKey = $item.Guid.Trim().ToLowerInvariant()
+        if (-not $acervoByGuid.ContainsKey($guidKey)) { continue }
+
+        $sameFolderMatches = @($acervoByGuid[$guidKey] | Where-Object { $_.FolderType -eq $item.FolderType })
+        if ($sameFolderMatches.Count -eq 0) { continue }
+        if ($sameFolderMatches.Count -gt 1) {
+            $Warnings.Add("GUID duplicado no acervo ($guidKey) em $($item.FolderType); rename por GUID ignorado para '$($item.LogicalName)'.") | Out-Null
+            continue
+        }
+
+        $existing = $sameFolderMatches[0]
+        if ($existing.FileBaseName -eq $item.NormalizedName) { continue }
+
+        $folderPath = Join-Path $Root $item.FolderType
+        $newPath = Join-Path $folderPath ($item.NormalizedName + ".xml")
+        $oldPath = $existing.FilePath
+        $action = "detected"
+
+        if ($Apply) {
+            if (Test-Path -LiteralPath $newPath) {
+                Remove-Item -LiteralPath $oldPath -Force
+                $action = "orphan-removed"
+            } else {
+                Move-Item -LiteralPath $oldPath -Destination $newPath
+                $action = "renamed"
+            }
+        }
+
+        $renames.Add([pscustomobject]@{
+            Guid = $guidKey
+            FolderType = $item.FolderType
+            OldName = $existing.LogicalName
+            OldFileBaseName = $existing.FileBaseName
+            NewName = $item.LogicalName
+            NewFileBaseName = $item.NormalizedName
+            Action = $action
+        }) | Out-Null
+    }
+
+    return ,($renames.ToArray())
+}
+
 function Write-Report {
     param(
         [string]$Path,
@@ -635,6 +734,11 @@ try {
     $attributesBlockCount = @($items | Where-Object { $_.PackageSection -eq "Attributes" }).Count
     $preExistingOfficialXmlCount = Get-OfficialXmlCount -Root $DestinationRoot
 
+    $renameResults = @()
+    if ($FullSnapshot) {
+        $renameResults = @(Resolve-GuidAwareRenames -Items $items -Root $DestinationRoot -Warnings $warnings -Apply (-not [bool]$VerifyOnly))
+    }
+
     $writeResults = @()
     if (-not $VerifyOnly) {
         foreach ($item in $items) {
@@ -685,6 +789,8 @@ try {
         Unchanged = $unchangedCount
         SkippedOlderLastUpdate = $skippedOlderLastUpdateCount
         NormalizedFileNames = $normalizedFileNamesCount
+        RenamedByGuid = @($renameResults | Where-Object { $_.Action -eq "renamed" -or $_.Action -eq "orphan-removed" }).Count
+        RenameResidualsDetected = @($renameResults | Where-Object { $_.Action -eq "detected" }).Count
         MissingAfterVerification = $verification.Missing.Count
         MismatchesAfterVerification = $verification.Mismatch.Count
         FullSnapshotMissing = if ($null -ne $fullSnapshotResult) { $fullSnapshotResult.MissingKeys.Count } else { $null }
@@ -710,6 +816,7 @@ try {
         Mismatch = $verification.Mismatch
         FullSnapshot = $fullSnapshotResult
         ExpectedComparison = $expectedComparison
+        Renames = $renameResults
         Writes = $writeResults
         Warnings = @($warnings)
         KbMetadataStatus = if ($null -ne $metadataResult) { $metadataResult.MetadataStatus } else { "not-requested" }
