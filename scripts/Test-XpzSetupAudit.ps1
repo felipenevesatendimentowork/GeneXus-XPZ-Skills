@@ -17,11 +17,18 @@ param(
 
     [string]$SourceSanityWrapperPath,
 
-    [string]$PackageCollisionWrapperPath
+    [string]$PackageCollisionWrapperPath,
+
+    [switch]$AsJson
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Acumulador para o contrato estruturado opcional (-AsJson). O default textual
+# (Emit-Line) permanece byte-identico; -AsJson emite os MESMOS pares como JSON,
+# consumido pelo orquestrador da skill xpz-kb-parallel-pre-push (gates K8/K9).
+$script:emitted = [ordered]@{}
 
 function Invoke-WrapperText {
     param(
@@ -83,7 +90,10 @@ function Emit-Line {
         [string]$Value
     )
 
-    '{0}: {1}' -f $Key, $Value
+    $script:emitted[$Key] = $Value
+    if (-not $AsJson) {
+        '{0}: {1}' -f $Key, $Value
+    }
 }
 
 function Get-SuggestedPowerShellRuntimeWrapperPath {
@@ -169,6 +179,7 @@ if ($powerShellRuntimeStatus -ne 'OK') {
     Emit-Line -Key 'powershell/runtime.wrapper_sugerido' -Value $powerShellRuntimeDetection['suggestedPath']
     Emit-Line -Key 'powershell/runtime.molde' -Value $powerShellRuntimeDetection['examplePath']
     Emit-Line -Key 'estado_operacional_sugerido' -Value 'runtime_powershell_bloqueado'
+    if ($AsJson) { $script:emitted | ConvertTo-Json -Depth 5 }
     exit 1
 }
 
@@ -407,3 +418,5 @@ if ($inventoryStatus -match '\|') {
     Emit-Line -Key 'wrappers/inventario' -Value $inventoryStatus
 }
 Emit-Line -Key 'estado_operacional_sugerido' -Value $suggestedState
+
+if ($AsJson) { $script:emitted | ConvertTo-Json -Depth 5 }
