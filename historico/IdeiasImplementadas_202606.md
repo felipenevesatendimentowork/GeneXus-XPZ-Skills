@@ -471,3 +471,61 @@ Desenho type-aware (Procedure + Conditions nao-vazia = fail) revisado por painel
 ### Rastreabilidade
 
 - Commit: `b759d70` (`Adiciona gate type-aware procedural-in-conditions ao Test-GeneXusSourceSanity`)
+
+## Gate fail-fast de `-LogPath` (rejeitar diretorio) nos wrappers MSBuild
+
+**Importancia original:** média
+**Status:** concluida em 2026-06-14
+
+### Origem
+
+Prompt de outro agente a partir de uso real (frente OperacaoItem / Titulo Intermediario na KB FabricaBrasil18), 2026-06-13. Plano revisado por 3 analises independentes convergentes (verificacao propria + subagente Opus + Codex/GPT-5.5).
+
+### Problema concreto
+
+O `-LogPath` dos wrappers MSBuild era resolvido cedo mas sem validar que aponta para um arquivo. Quando o chamador passava por engano um diretorio existente como `-LogPath`, o wrapper rodava a operacao inteira (abria a KB, buildava/importava) e so falhava na gravacao final do diagnostico JSON via `[System.IO.File]::WriteAllText(<diretorio>, ...)`, caindo no catch e retornando exit 90 ("falha operacional") quando a operacao na verdade concluira. O guard de escrita so checava o diretorio-pai, e um diretorio existente passava nesse gate.
+
+### Implementacao
+
+- Motor puro compartilhado `scripts/GeneXusMsBuildLogPathSupport.ps1`: `Get-GeneXusMsBuildLogPathRejection` (condicao `Test-Path -PathType Container`, nunca `-not -PathType Leaf`, para nao bloquear arquivo-a-criar com pai valido) e `New-GeneXusMsBuildLogPathBlockJson` (bloco exit 50, categoria `parametro-invalido`). Funcao pura: nao grava nada, nao resolve caminho (recebe o `-LogPath` ja resolvido pelo `Get-FullPathSafe` local de cada wrapper).
+- Descoberta-chave: o probe `Test-GeneXusMsBuildSetup.ps1` (`Validate-LogPath`, exit 14) nao valida o `-LogPath` do wrapper — os wrappers chamam o probe com um LogPath interno (`probe-stage.json`). Logo o gate roda no proprio wrapper com o `-LogPath` real, emitindo o bloco so no stdout (sem `Write-JsonLog`, para nao tentar gravar no `-LogPath` invalido).
+- Gate fiado cedo (antes de abrir a KB / registrar tarefa) nos 10 wrappers: `Invoke-GeneXusKbBuildAll`, `Invoke-GeneXusXpzImport`, `Get-GeneXusKbProperty`, `Start-GeneXusKbBuildDetached` (nuance: cria o diretorio-pai do log/sentinela — o gate bloqueia "diretorio existente" mas preserva arquivo-a-criar), `Invoke-GeneXusXpzImportThenBuild`, `Invoke-GeneXusKbSpecifyGenerate`, `Invoke-GeneXusXpzExport`, `Test-GeneXusXpzImportPreview`, `Open-GeneXusKbHeadless`, `Test-GeneXusKbConsistency` (os 2 ultimos achados pelo Codex).
+- Exit 50 novo em `scripts/msbuild-exit-codes.catalog.json` (nao reusou 46 nem 14); `wrapperScanList` de `scripts/Test-MsBuildExitCodesCatalog.ps1` ampliado com `Start-GeneXusKbBuildDetached` e `Invoke-GeneXusXpzImportThenBuild`.
+- Self-test `scripts/Test-GeneXusMsBuildLogPathSupportSelfTest.ps1` (5 cenarios); smoke real exit 50 + JSON confirmado em `Open-GeneXusKbHeadless`.
+- Docs: `10-base-operacional-msbuild-headless.md`, `09-inventario-e-rastreabilidade-publica.md`, `xpz-msbuild-build/SKILL.md`, `xpz-msbuild-import-export/SKILL.md` (com correcao do exemplo de `-LogPath` que apontava para o que parecia um diretorio) e `CHANGELOG.md` (trilingue).
+
+### Decisao final
+
+Exit 50 novo (categoria `parametro-invalido`), nao reuso de 46 (politica multi-causa) nem 14 (probe). Funcao pura compartilhada com escopo minimo, condicao `Test-Path -PathType Container` exata para nao regredir o arquivo-a-criar legitimo. README trilingue ficou de fora por ser detalhe operacional dos wrappers, nao regra geral.
+
+### Rastreabilidade
+
+- Commit: `79d759a` (`Adiciona gate fail-fast de -LogPath (exit 50) aos wrappers MSBuild`)
+
+## Catalogar o anti-padrao `src0239` (regra `Default` com condicional) em Transaction
+
+**Importancia original:** baixa
+**Status:** concluida em 2026-06-14
+
+### Origem
+
+Prompt de outro agente, 2026-06-13. Reproducao real `confirmado-import` na propria maquina: `src0239: 'Default' rule does not support a conditional expression. (Transaction 'OperacaoItem' Rules, Linha: 116, Char: 1)`, `importTaskSuccess=false`, KB FabricaBrasil18 / environment NETPostgreSQL.
+
+### Problema concreto
+
+Uma regra de Transaction na forma `Default(<Atributo>, <expressao>)` nao aceita clausula condicional. Escrever `Default(OperacaoItemTituloIntermediarioEmpresaId, procEmpresaPessoa()) if not OperacaoItemTituloIntermediarioId.IsEmpty();` faz o specify/import falhar com `src0239`. O anti-padrao nao estava catalogado.
+
+### Implementacao
+
+- Corpo nomeado `transaction-default-rule-with-conditional` em `02-regras-operacionais-e-runtime.md`, na secao "Anti-padroes nomeados (`Transaction` — motor XPZ)", no mesmo formato das irmas (`src0056`/`spc0150`): sintoma observado / erro exato verbatim / causa raiz / correcao idiomatica, rotulo `confirmado-import`.
+- Ponteiro curto no Catalog 3 de `xpz-builder/responsibilities-by-type/transaction.md` apontando ao `02`, seguindo o precedente da entrada da cascata.
+- Cross-ref a secao "Cascade ordering" como tema relacionado mas mecanismo distinto: `src0239` e rejeicao no import (o Specifier barra antes); a cascata e sombreamento em runtime com import/build limpos. Nao fundir.
+- `CHANGELOG.md` (trilingue).
+
+### Decisao final
+
+Ressalva semantica explicita: a correcao "manter o `Default` incondicional e mover a condicao para uma regra de assignment separada" nao e equivalente de runtime ao `Default` condicional pretendido — os gatilhos diferem (`Default` = valor inicial quando o atributo esta vazio; assignment = avaliacao de rule). Documentado como forma idiomatica sem afirmar equivalencia; a semantica correta de cada uma e conhecimento de modelagem GeneXus (fronteira nexa), como nas irmas.
+
+### Rastreabilidade
+
+- Commit: `f798c1a` (`Cataloga o anti-padrao src0239 (Default com condicional) em Transaction`)
