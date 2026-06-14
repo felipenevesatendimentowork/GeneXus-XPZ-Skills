@@ -90,7 +90,22 @@ function Emit-Line {
         [string]$Value
     )
 
-    $script:emitted[$Key] = $Value
+    # Chave repetida (ex.: 'wrappers/inventario' multi-parte) acumula como lista,
+    # preservando todas as partes no JSON do contrato estruturado (-AsJson). Chave
+    # unica permanece string.
+    if ($script:emitted.Contains($Key)) {
+        $existing = $script:emitted[$Key]
+        if ($existing -is [System.Collections.Generic.List[string]]) {
+            [void]$existing.Add([string]$Value)
+        } else {
+            $list = [System.Collections.Generic.List[string]]::new()
+            [void]$list.Add([string]$existing)
+            [void]$list.Add([string]$Value)
+            $script:emitted[$Key] = $list
+        }
+    } else {
+        $script:emitted[$Key] = $Value
+    }
     if (-not $AsJson) {
         '{0}: {1}' -f $Key, $Value
     }
@@ -182,6 +197,12 @@ if ($powerShellRuntimeStatus -ne 'OK') {
     if ($AsJson) { $script:emitted | ConvertTo-Json -Depth 5 }
     exit 1
 }
+
+# Safety-net do contrato "-AsJson nunca lanca" (simetrico ao Test-XpzKbIndexGate):
+# qualquer throw daqui pra frente (metadata ausente, leitura, etc.) vira, sob
+# -AsJson, JSON com estado bloqueante + error -- nunca um throw que o orquestrador
+# interpretaria erradamente como "wrapper desatualizado".
+try {
 
 $metadataPath = Join-Path $KbRoot 'kb-source-metadata.md'
 if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) {
@@ -420,3 +441,18 @@ if ($inventoryStatus -match '\|') {
 Emit-Line -Key 'estado_operacional_sugerido' -Value $suggestedState
 
 if ($AsJson) { $script:emitted | ConvertTo-Json -Depth 5 }
+
+} catch {
+    # Excecao fora dos try/catch internos (ex.: kb-source-metadata.md ausente).
+    # Sob -AsJson honra o contrato: estado bloqueante (auditoria_incompleta) +
+    # error, nunca throw. Em texto re-lanca (default retrocompativel).
+    if ($AsJson) {
+        if (-not $script:emitted.Contains('estado_operacional_sugerido')) {
+            $script:emitted['estado_operacional_sugerido'] = 'auditoria_incompleta'
+        }
+        $script:emitted['error'] = ($_.Exception.Message -replace '^BLOCK:\s*', '')
+        $script:emitted | ConvertTo-Json -Depth 5
+        exit 1
+    }
+    throw
+}

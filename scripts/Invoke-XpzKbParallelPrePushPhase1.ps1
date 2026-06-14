@@ -133,7 +133,7 @@ $ahead = [int](git -C $RepoRoot rev-list --count "$BaseRef..HEAD" 2>$null)
 $revExit = $LASTEXITCODE
 if ($revExit -ne 0) {
   Add-Gate 'G1' 'unknown' "rev-list falhou (exit $revExit) para BaseRef '$BaseRef' -- ref inexistente?"
-  $behind = -1
+  $behind = $null
 } else {
   $behind = [int](git -C $RepoRoot rev-list --count "HEAD..$BaseRef" 2>$null)
   if ($behind -gt 0) { Add-Gate 'G1' 'block' "commitsBehind=$behind -- push proibido ate integrar o remoto" }
@@ -141,7 +141,10 @@ if ($revExit -ne 0) {
 }
 
 # ---- G2: branch ----
-$branch = (git -C $RepoRoot branch --show-current 2>$null).Trim()
+# Guarda contra $null: em detached HEAD (rebase/checkout de commit) o git nao
+# retorna ramo -> .Trim() em null derrubaria o orquestrador sob StrictMode.
+$branchRaw = git -C $RepoRoot branch --show-current 2>$null
+$branch = if ($branchRaw) { ([string]$branchRaw).Trim() } else { '' }
 if ($branch -ne 'main') { Add-Gate 'G2' 'warn' "branch=$branch (esperado: main)" }
 else { Add-Gate 'G2' 'ok' 'branch=main' }
 
@@ -197,18 +200,28 @@ else { Add-Gate 'G5' 'ok' "$($psFiles.Count) .ps1 locais parseados sem erros" }
 # ---- K1/K2 ----
 try {
   $k1k2 = & (Join-Path $sharedScripts 'Test-XpzKbDangerousPaths.ps1') -BaseRef $BaseRef -RepoRoot $RepoRoot -TempDirNames $tempDirNames -NativeKbRootPattern $nativeKbRootPattern | ConvertFrom-Json
-  foreach ($g in $k1k2.gates) {
-    $st = switch ($g.status) { 'block' { 'block' } 'unknown' { 'unknown' } default { 'ok' } }
-    Add-Gate $g.gate $st $g.message $g.hits
+  if ($k1k2.status -eq 'unknown') {
+    # Motor falhou (ex.: git) e retorna gates vazio -> ler o status top-level,
+    # senao o gate sumiria da consolidacao (fail-open).
+    Add-Gate 'K1/K2' 'unknown' (@($k1k2.blockingReasons) -join '; ')
+  } else {
+    foreach ($g in $k1k2.gates) {
+      $st = switch ($g.status) { 'block' { 'block' } 'unknown' { 'unknown' } default { 'ok' } }
+      Add-Gate $g.gate $st $g.message $g.hits
+    }
   }
 } catch { Add-Gate 'K1/K2' 'unknown' "falha ao executar Test-XpzKbDangerousPaths: $($_.Exception.Message)" }
 
 # ---- K3/K4 ----
 try {
   $k3k4 = & (Join-Path $sharedScripts 'Test-XpzKbLayerDiff.ps1') -BaseRef $BaseRef -RepoRoot $RepoRoot -IndexDirName $indexDirName -AcervoDirName $acervoDirName -MetadataFileName $metadataFileName | ConvertFrom-Json
-  foreach ($g in $k3k4.gates) {
-    $st = switch ($g.status) { 'warn' { 'warn' } 'unknown' { 'unknown' } default { 'ok' } }
-    Add-Gate $g.gate $st $g.message
+  if ($k3k4.status -eq 'unknown') {
+    Add-Gate 'K3/K4' 'unknown' (@($k3k4.blockingReasons) -join '; ')
+  } else {
+    foreach ($g in $k3k4.gates) {
+      $st = switch ($g.status) { 'warn' { 'warn' } 'unknown' { 'unknown' } default { 'ok' } }
+      Add-Gate $g.gate $st $g.message
+    }
   }
 } catch { Add-Gate 'K3/K4' 'unknown' "falha ao executar Test-XpzKbLayerDiff: $($_.Exception.Message)" }
 
@@ -221,12 +234,15 @@ if (-not $k8w.ok) {
     $raw = (& $k8w.path -AsJson 2>&1 | Out-String).Trim()
     $j = $raw | ConvertFrom-Json
     $estado = [string]$j.'estado_operacional_sugerido'
+    $erroK8 = if ($j.PSObject.Properties.Name -contains 'error') { [string]$j.error } else { $null }
     $verdes = @('materializado_e_indice_validado', 'wrappers_atualizados', 'pronto_para_primeira_materializacao')
     # Estados explicitamente bloqueantes (fail-closed): runtime PowerShell quebrado
-    # na pasta paralela impede qualquer uso operacional -> block, nao warn.
-    $vermelhos = @('runtime_powershell_bloqueado')
+    # ou auditoria que nao pode concluir (ex.: metadata ausente) -> block, nao warn.
+    $vermelhos = @('runtime_powershell_bloqueado', 'auditoria_incompleta')
     $st = if ($estado -in $vermelhos) { 'block' } elseif ($estado -in $verdes) { 'ok' } else { 'warn' }
-    Add-Gate 'K8' $st "estado_operacional_sugerido=$estado (resolvedBy=$($k8w.resolvedBy))"
+    $msgK8 = "estado_operacional_sugerido=$estado (resolvedBy=$($k8w.resolvedBy))"
+    if ($erroK8) { $msgK8 += " -- $erroK8" }
+    Add-Gate 'K8' $st $msgK8
   } catch {
     Add-Gate 'K8' 'block' "setup desatualizado: wrapper de auditoria de setup nao emitiu contrato estruturado (-AsJson) -- atualize via xpz-kb-parallel-setup (resolvedBy=$($k8w.resolvedBy))"
   }

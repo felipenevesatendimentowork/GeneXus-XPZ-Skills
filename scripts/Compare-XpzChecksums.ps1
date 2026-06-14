@@ -95,6 +95,7 @@ $results = @(foreach ($f in $Files) {
   $newChk = if ($newXml -match 'checksum="([^"]+)"') { $Matches[1] } else { $null }
 
   $status = switch ($true) {
+    ($null -eq $oldChk -and $null -eq $newChk) { 'NO_CHECKSUM' ; break }
     ($null -eq $oldChk -and $null -ne $newChk) { 'NEW' ; break }
     ($null -ne $oldChk -and $null -eq $newChk) { 'DELETED' ; break }
     ($oldChk -eq $newChk)                      { 'SAME' ; break }
