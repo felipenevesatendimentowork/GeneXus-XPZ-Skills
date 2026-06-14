@@ -272,6 +272,18 @@ Footgun nomeado: um pacote cujo objeto tem `lastUpdate` menor ou igual ao objeto
 - Footgun do import inocuo por `lastUpdate` velho/igual nomeado e documentado em `xpz-msbuild-import-export/SKILL.md`, com o limite honesto da protecao (os gates comparam contra o acervo, nao contra a KB viva).
 - Propagacao do contrato fail-closed em `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md`, `README.md` (trilingue), `xpz-builder/SKILL.md`, `xpz-builder/quality-checklist.md`, `xpz-kb-parallel-setup/SKILL.md` e no exemplo `xpz-kb-parallel-setup/examples/New-KbImportPackage.example.ps1`. Entrada correspondente em `CHANGELOG.md` (`Unreleased`, trilingue).
 
+### Decisao final
+
+Optou-se por fail-closed com auto-resolucao canonica em vez de manter o gate condicional: omitir `-AcervoPath` nao pode ser um caminho para pular a verificacao. A protecao cobre o caso comum (esquecer de bumpar), mas nao substitui ressincronizar o acervo quando ha suspeita de defasagem frente a KB viva — limite registrado explicitamente na doc. A propagacao do contrato antigo (condicional) para o novo (fail-closed) foi inicialmente incompleta e so fechada apos revisao pre-push por modelos distintos (GLM, DeepSeek, MiniMax), que tambem apontaram a paridade de enumeracao no gate de parametros, a entrada de CHANGELOG e este registro de historico.
+
+### Rastreabilidade
+
+- Commit: `2c8b699` (`Torna fail-closed o gate de drift de lastUpdate no empacotamento por frente`)
+- Commit: `8949c76` (`Adiciona Set-GeneXusXmlLastUpdate para re-bumpar lastUpdate sem delta`)
+- Commit: `5aa96cb` (`Atualiza o inventario 09 com o contrato fail-closed e o motor Set-`)
+- Commit: `e77c67e` (`Alinha README trilingue e molde da kb-parallel-setup ao contrato fail-closed do gate de drift`)
+- Commit: `94fc0cf` (`Completa a propagacao do contrato fail-closed do gate de drift em 02, 08 e kb-parallel-setup`)
+
 ## Sync GUID-aware: rename de atributo/objeto tratado como rename, nao delete+create
 
 **Importancia original:** media
@@ -301,18 +313,6 @@ A reconciliacao por GUID e gated por `-FullSnapshot`, o unico regime que ja varr
 ### Rastreabilidade
 
 - Commit: `a4288cc` (`Reconcilia rename por GUID no Sync-GeneXusXpzToXml`)
-
-### Decisao final
-
-Optou-se por fail-closed com auto-resolucao canonica em vez de manter o gate condicional: omitir `-AcervoPath` nao pode ser um caminho para pular a verificacao. A protecao cobre o caso comum (esquecer de bumpar), mas nao substitui ressincronizar o acervo quando ha suspeita de defasagem frente a KB viva — limite registrado explicitamente na doc. A propagacao do contrato antigo (condicional) para o novo (fail-closed) foi inicialmente incompleta e so fechada apos revisao pre-push por modelos distintos (GLM, DeepSeek, MiniMax), que tambem apontaram a paridade de enumeracao no gate de parametros, a entrada de CHANGELOG e este registro de historico.
-
-### Rastreabilidade
-
-- Commit: `2c8b699` (`Torna fail-closed o gate de drift de lastUpdate no empacotamento por frente`)
-- Commit: `8949c76` (`Adiciona Set-GeneXusXmlLastUpdate para re-bumpar lastUpdate sem delta`)
-- Commit: `5aa96cb` (`Atualiza o inventario 09 com o contrato fail-closed e o motor Set-`)
-- Commit: `e77c67e` (`Alinha README trilingue e molde da kb-parallel-setup ao contrato fail-closed do gate de drift`)
-- Commit: `94fc0cf` (`Completa a propagacao do contrato fail-closed do gate de drift em 02, 08 e kb-parallel-setup`)
 
 ## Suporte a WebPanel classico: inspetor de shape, regra de botao e Add-GeneXusButton
 
