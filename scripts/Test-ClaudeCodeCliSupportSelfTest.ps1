@@ -1,7 +1,7 @@
 #requires -Version 7.4
 <#
 .SYNOPSIS
-    Self-test das funcoes puras de ClaudeCodeCliSupport.ps1.
+    Self-test das funcoes de ClaudeCodeCliSupport.ps1 e da montagem de argumentos dos adapters.
 #>
 [CmdletBinding()]
 param()
@@ -47,6 +47,67 @@ $s3 = Resolve-ClaudeCodeJobStatus -FinalText '' -StreamError '' -Stderr 'Error: 
 Assert-Equal 'status erro stderr' $s3.status 'error'
 $s4 = Resolve-ClaudeCodeJobStatus -FinalText '' -StreamError '' -Stderr ''
 Assert-Equal 'status sem texto' $s4.status 'sem-texto'
+
+function New-FakeClaudeCodeExe {
+    param([string]$TempRoot)
+
+    $fakeExe = Join-Path $TempRoot 'claude.cmd'
+    $argsFile = Join-Path $TempRoot 'args.txt'
+    $script = @"
+@echo off
+if "%1"=="--version" (
+  echo 2.1.118
+  exit /b 0
+)
+if "%1"=="--help" (
+  echo --model --print --output-format --no-session-persistence --permission-mode --tools --max-turns
+  exit /b 0
+)
+echo %*>>"$argsFile"
+echo OK fake claude
+exit /b 0
+"@
+    Set-Content -LiteralPath $fakeExe -Value $script -Encoding ascii
+    return [pscustomobject]@{ Exe = $fakeExe; ArgsFile = $argsFile }
+}
+
+function Read-LastFakeClaudeArgs {
+    param([string]$Path)
+    $lines = @(Get-Content -LiteralPath $Path -ErrorAction Stop)
+    if ($lines.Count -eq 0) { return '' }
+    return [string]$lines[-1]
+}
+
+$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("claude-code-cli-support-selftest-" + [guid]::NewGuid().ToString('N'))
+try {
+    New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+    $fake = New-FakeClaudeCodeExe -TempRoot $tmp
+
+    & (Join-Path $PSScriptRoot 'Invoke-ClaudeCode.ps1') 'adapter default tools' -ClaudeExe $fake.Exe -TimeoutSec 30 | Out-Null
+    $invokeDefaultArgs = Read-LastFakeClaudeArgs -Path $fake.ArgsFile
+    Assert-Equal 'invoke default passa --tools' ($invokeDefaultArgs -match '--tools Read,Glob,Grep') $true
+
+    & (Join-Path $PSScriptRoot 'Invoke-ClaudeCode.ps1') 'adapter tools vazio' -ClaudeExe $fake.Exe -Tools '' -TimeoutSec 30 | Out-Null
+    $invokeEmptyArgs = Read-LastFakeClaudeArgs -Path $fake.ArgsFile
+    Assert-Equal 'invoke tools vazio omite --tools' ($invokeEmptyArgs -notmatch '--tools') $true
+
+    $jobDir = Join-Path $tmp 'jobs'
+    $jobJson = & (Join-Path $PSScriptRoot 'Start-ClaudeCodeJob.ps1') 'job default tools' -ClaudeExe $fake.Exe -NoWatcher -TempDir $jobDir
+    $job = $jobJson | ConvertFrom-Json
+    $deadline = (Get-Date).AddSeconds(10)
+    do {
+        Start-Sleep -Milliseconds 100
+        $jobDefaultArgs = Read-LastFakeClaudeArgs -Path $fake.ArgsFile
+    } while ($jobDefaultArgs -notmatch 'stream-json' -and (Get-Date) -lt $deadline)
+    Assert-Equal 'job default passa --tools' ($jobDefaultArgs -match '--tools Read,Glob,Grep') $true
+    if ($job.pid) {
+        Wait-Process -Id ([int]$job.pid) -Timeout 5 -ErrorAction SilentlyContinue
+    }
+} finally {
+    if (Test-Path -LiteralPath $tmp) {
+        Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 
 if ($fail -gt 0) { throw "BLOCK: $fail caso(s) falharam em Test-ClaudeCodeCliSupportSelfTest.ps1" }
 Write-Host 'OK: Test-ClaudeCodeCliSupportSelfTest.ps1' -ForegroundColor Cyan

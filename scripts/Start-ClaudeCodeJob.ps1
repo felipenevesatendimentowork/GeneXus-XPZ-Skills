@@ -79,7 +79,7 @@ try {
         $arguments += @('--max-turns', "$MaxTurns")
     }
 } catch { }
-if ($PSBoundParameters.ContainsKey('Tools')) {
+if (-not [string]::IsNullOrWhiteSpace($Tools)) {
     $arguments += @('--tools', $Tools)
 }
 
