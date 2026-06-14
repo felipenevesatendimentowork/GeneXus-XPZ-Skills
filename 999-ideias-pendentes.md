@@ -245,6 +245,56 @@ As probes mostraram que destrutivo/tipo/domínio são cobertos por **IDE+build**
 - Paridade doc (README trilíngue, `02`, `08`, `09`, `13`) + registro global via `xpz-skills-setup`.
 - A skill **não** deve depender de FabricaBrasil; usar só como referência.
 
+## Formalizar o ciclo «Revisão por Pares» (validação de plano por painel multi-modelo)
+
+**Importância:** média
+**Maturidade:** pesquisa feita (exercido ao vivo e comprovado na sessão de 2026-06-14; falta formalizar como artefato reutilizável)
+
+**Origem:** sessão 2026-06-14, durante a execução do Plano B (promoção da skill `xpz-kb-parallel-pre-push`). O usuário pediu para registrar o ciclo como ideia a implementar. O nome «Revisão por Pares» foi escolhido pelo usuário, ancorado no conceito acadêmico de *peer review* (pesquisado na sessão).
+
+### O que é
+
+Um ciclo de validação de **plano/design** (não de diff pronto, não de pré-push) em que o agente principal («autor») submete a sua **leitura do problema + a solução proposta** (um «manuscrito») a um **painel de revisores independentes multi-modelo**, via `xpz-llm-delegate`. Cada par:
+
+- pensa por si e devolve a **sua** versão (concordar / revisar / rejeitar) com justificativa e recomendações priorizadas;
+- **consulta as fontes por conta própria** (repo de skills + pasta paralela/experimento, sob `-Cd`/cwd) para confirmar, refinar ou **refutar** o que o autor afirma — o manuscrito não é tratado como verdade, é insumo de avaliação;
+- o autor **reavalia a cada resposta e carrega a versão melhorada adiante** (*revise-and-resubmit*), de modo que o plano evolui em cadeia (v1 → v2 → … até o estado final).
+
+### Régua de convergência
+
+Execução/push só liberada quando o **painel inteiro** converge «sem gap» sobre o **estado final** (mesma régua do `14-revisao-pre-push-reforcada.md`). Um par que antes aprovou deve rever a versão **atualizada** — o plano que ele aprovou já não é o plano. Variante para código: revisar **um exemplar** antes de replicar o padrão em N arquivos.
+
+### Por que vale (evidência empírica desta sessão)
+
+Em 13 consultas (deepseek-v4-pro, glm-5.1, kimi-k2.7-code, minimax-m3 no opencode + opus 4.8 + codex gpt-5.5), o ciclo pegou o que passadas únicas não pegariam:
+
+- bug real do `git … 2>$null` sem checar `$LASTEXITCODE` (silent-pass → `ready` falso), que teria sido replicado em vários motores;
+- *overstatement* do contrato K8 (o motor de auditoria emitia texto, não JSON estruturado);
+- assimetria K8↔K9 (o gate de índice devia ser motor compartilhado — apontado pelo dono, confirmado pelo painel);
+- escolha de nome, formato de config (JSON de máquina > seção de README), parametrização de tokens de camada, sutileza cabeça-detalhe no F1.
+
+Diversidade de modelo importou: modelos distintos pegaram pontos cegos que repetições do mesmo modelo deixavam passar (inclusive modelos marcados como «fracos» no README contribuíram com achados válidos quando puderam ler as fontes).
+
+### O que «implementar» significa
+
+Formalizar o ciclo num artefato reutilizável, decidindo entre (ou combinando):
+
+- um **documento de metodologia** (ex.: `15-revisao-por-pares.md`), análogo ao `13`/`14`, descrevendo manuscrito → painel independente lendo as fontes → revise-and-resubmit → convergência;
+- um **harness reutilizável** (workflow/script) que dispara o painel multi-modelo sobre um manuscrito e coleta vereditos de forma estruturada (job assíncrono + watcher + `result.json`, como foi feito ad-hoc nesta sessão);
+- uma **skill** dedicada, se o acionamento merecer empacotamento próprio.
+
+### Relação com o que já existe
+
+- `14-revisao-pre-push-reforcada.md`: painel multi-modelo + régua de convergência **para pré-push**. A «Revisão por Pares» generaliza isso para **validação de plano/design antes/durante a implementação**, não só pré-push.
+- `xpz-llm-delegate`: já fornece o mecanismo (adapters opencode/Codex/Claude Code/Copilot/Gemini, gate de confidencialidade por KB, job assíncrono + watcher). A formalização reusa esse mecanismo, não o reinventa.
+
+### Decisões em aberto
+
+- Documento de metodologia, harness executável, ou ambos? E onde mora (raiz `15-*` vs dentro de `xpz-llm-delegate`)?
+- Quantos/quais revisores por padrão, e como calibrar leve vs reforçado pelo tamanho/risco da frente.
+- Como registrar o «manuscrito» e o livro-razão de vereditos de forma auditável (artefato em `Temp/`? handoff?).
+- Confidencialidade: quando o manuscrito referencia pasta paralela de KB real, o gate de `xpz-llm-delegate` se aplica (foi autorizado ad-hoc pelo dono nesta sessão); a formalização deve tornar explícito o ponto de autorização.
+
 ## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
 
 **Importância:** média
