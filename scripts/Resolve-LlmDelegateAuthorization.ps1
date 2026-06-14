@@ -60,7 +60,14 @@
     Classe do payload declarada pelo chamador: 'kb-sensitive' (conteúdo de pasta paralela
     de KB) ou 'public' (diff do repo publico, molde sanitizado, README).
 .PARAMETER PolicyPath
-    Caminho do opencode-delegation-policy.json da pasta paralela. Opcional; ausente => 'ask'.
+    Caminho explicito do arquivo de politica da pasta paralela. Tem precedencia sobre
+    -ParallelKbRoot. Opcional; ausente (e sem -ParallelKbRoot) => 'ask'.
+.PARAMETER ParallelKbRoot
+    Raiz da pasta paralela de KB. Quando informado e -PolicyPath e omitido, o gate descobre
+    o arquivo de politica via Resolve-LlmDelegationPolicyPath.ps1: nome canonico
+    'llm-delegation-policy.json' com fallback ao legado 'opencode-delegation-policy.json'.
+    O JSON de saida traz policyNameStatus (new|legacy|both|none) para o agente avisar quando
+    o nome legado estiver em uso.
 .PARAMETER ConfigPath
     Caminho da config do backend, repassado ao resolvedor de localidade: opencode.json no
     backend opencode; config.toml do Codex quando -Backend codex. Opcional.
@@ -78,6 +85,7 @@ param(
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
     [string] $Profile,
     [string] $PolicyPath,
+    [string] $ParallelKbRoot,
     [string] $ConfigPath
 )
 
@@ -107,8 +115,27 @@ function New-AuthResult {
         verdict            = $Verdict
         policyDecision     = $PolicyDecision
         policySource       = $PolicySource
+        policyFileName     = $policyFileName
+        policyNameStatus   = $policyNameStatus
         reason             = $Reason
     } | ConvertTo-Json -Compress
+}
+
+# 0) Resolve o caminho efetivo do arquivo de politica (nome canonico com fallback ao legado).
+#    -PolicyPath explicito prevalece; -ParallelKbRoot aciona a descoberta com fallback.
+$policyFileName   = $null
+$policyNameStatus = $null
+if (-not $PolicyPath -and $ParallelKbRoot) {
+    $policyPathResolver = Join-Path $PSScriptRoot 'Resolve-LlmDelegationPolicyPath.ps1'
+    if (-not (Test-Path -LiteralPath $policyPathResolver -PathType Leaf)) {
+        throw "BLOCK: resolvedor de caminho de politica nao encontrado: $policyPathResolver"
+    }
+    $polInfo = & $policyPathResolver -ParallelKbRoot $ParallelKbRoot | ConvertFrom-Json
+    $policyNameStatus = [string]$polInfo.status
+    if ($polInfo.exists) {
+        $PolicyPath     = [string]$polInfo.path
+        $policyFileName = [string]$polInfo.fileName
+    }
 }
 
 # 1) Resolve a localidade do modelo (resolvedor por backend)

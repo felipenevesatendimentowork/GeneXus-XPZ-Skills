@@ -156,12 +156,13 @@ Depois de classificar o subestado transitorio (`setup_apto`, `setup_apto_com_met
 
 ### Politica de delegacao a LLM (opcional, adiavel, nao-bloqueante)
 
-A skill `xpz-llm-delegate` usa um arquivo de politica por-KB, `opencode-delegation-policy.json` na raiz da pasta paralela, para autorizar de forma duravel o envio de conteúdo desta KB a modelos externos (ver `xpz-llm-delegate/SKILL.md`).
+A skill `xpz-llm-delegate` usa um arquivo de politica por-KB na raiz da pasta paralela para autorizar de forma duravel o envio de conteúdo desta KB a modelos externos (ver `xpz-llm-delegate/SKILL.md`). O nome canonico e `llm-delegation-policy.json`; o nome legado `opencode-delegation-policy.json` permanece aceito para retrocompatibilidade.
 
 - Este item **nunca** e gate de setup, não entra na matriz de wrappers exigidos e **não** bloqueia nenhum estado de conclusao. O setup fecha normalmente sem ele.
 - Ao concluir o setup, **oferecer** (sem cobrar) definir a politica, com pergunta em prosa e opção explicita de **adiar** — no setup o usuário costuma ter muito a digerir.
 - Ausencia do arquivo ⇒ comportamento `ask` no gate (`Resolve-LlmDelegateAuthorization.ps1`); adiar nunca abre brecha.
-- Se o usuário aceitar, gravar `opencode-delegation-policy.json` com `schemaVersion`, `defaultExternal` e entradas finas por `provider/modelo` conforme a escolha; nunca presumir `allow-external` por conta própria.
+- Se o usuário aceitar, gravar `llm-delegation-policy.json` (nome canonico) com `schemaVersion`, `defaultExternal` e entradas finas por `provider/modelo` conforme a escolha; nunca presumir `allow-external` por conta própria.
+- Se a pasta ja tiver o arquivo com o nome legado `opencode-delegation-policy.json`, ele continua valendo; oferecer (sem cobrar) renomear para `llm-delegation-policy.json`. Com os dois presentes, o `scripts/Resolve-LlmDelegationPolicyPath.ps1` usa o canonico e sinaliza `status=both`.
 
 ## PATH RESOLUTION
 

@@ -70,6 +70,16 @@ function Assert-Verdict {
     }
 }
 
+function Assert-Equal {
+    param([string]$Label, $Got, $Expected)
+    if ([string]$Got -eq [string]$Expected) {
+        Write-Host ("PASS  {0}" -f $Label) -ForegroundColor Green
+    } else {
+        $script:fail++
+        Write-Host ("FAIL  {0} -> '{1}' (esperado '{2}')" -f $Label, $Got, $Expected) -ForegroundColor Red
+    }
+}
+
 try {
     Assert-Verdict -Model 'remote-x/foo'   -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'payload publico'
     Assert-Verdict -Model 'ollama/foo'     -Sensitivity 'kb-sensitive' -Expected 'allow' -WithPolicy -Note 'local: dado nao sai'
@@ -100,6 +110,29 @@ try {
     Assert-Verdict -Model 'gemini-3-flash-preview' -Backend gemini -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'Gemini publico -> allow'
     Assert-Verdict -Model 'gemini-deny-test'        -Backend gemini -Sensitivity 'kb-sensitive' -Expected 'deny'  -WithPolicy -Note 'Gemini respeita deny-external exato'
     Assert-Verdict -Model 'gemini-3-flash-preview' -Backend gemini -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Gemini externo sem politica -> ask'
+
+    # B2: descoberta do arquivo de politica por -ParallelKbRoot, com fallback de nome.
+    # $tmp ja contem o nome legado (opencode-delegation-policy.json).
+    $oLegacy = & $target -Model 'openai/gpt-5.4' -PayloadSensitivity 'kb-sensitive' -ConfigPath $cfg -ParallelKbRoot $tmp | ConvertFrom-Json
+    Assert-Equal 'ParallelKbRoot acha legado -> allow' $oLegacy.verdict 'allow'
+    Assert-Equal 'ParallelKbRoot legado -> status legacy' $oLegacy.policyNameStatus 'legacy'
+
+    $kbNew = Join-Path $tmp 'kb-new'
+    New-Item -ItemType Directory -Path $kbNew -Force | Out-Null
+    Copy-Item -LiteralPath $pol -Destination (Join-Path $kbNew 'llm-delegation-policy.json')
+    $oNew = & $target -Model 'openai/gpt-5.4' -PayloadSensitivity 'kb-sensitive' -ConfigPath $cfg -ParallelKbRoot $kbNew | ConvertFrom-Json
+    Assert-Equal 'ParallelKbRoot acha nome novo -> allow' $oNew.verdict 'allow'
+    Assert-Equal 'ParallelKbRoot novo -> status new' $oNew.policyNameStatus 'new'
+
+    $kbNone = Join-Path $tmp 'kb-none'
+    New-Item -ItemType Directory -Path $kbNone -Force | Out-Null
+    $oNone = & $target -Model 'openai/gpt-5.4' -PayloadSensitivity 'kb-sensitive' -ConfigPath $cfg -ParallelKbRoot $kbNone | ConvertFrom-Json
+    Assert-Equal 'ParallelKbRoot sem politica -> ask' $oNone.verdict 'ask'
+    Assert-Equal 'ParallelKbRoot sem politica -> status none' $oNone.policyNameStatus 'none'
+
+    # -PolicyPath explicito prevalece sobre -ParallelKbRoot (retrocompat).
+    $oPrec = & $target -Model 'openai/gpt-5.4' -PayloadSensitivity 'kb-sensitive' -ConfigPath $cfg -PolicyPath $pol -ParallelKbRoot $kbNone | ConvertFrom-Json
+    Assert-Equal 'PolicyPath explicito prevalece sobre ParallelKbRoot' $oPrec.verdict 'allow'
 } finally {
     Get-ChildItem -LiteralPath $tmp -File -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $tmp -Force -Recurse -ErrorAction SilentlyContinue
