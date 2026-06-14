@@ -177,7 +177,25 @@ Após implementar + rebuild:
 ## Plano B — Promover a `pre-push-routine` a skill `xpz-pre-push-routine`
 
 **Importância:** média
-**Maturidade:** pronta para implementar (design fechado; falta executar)
+**Maturidade:** EM IMPLEMENTAÇÃO (parcial) — núcleo de engenharia feito e commitado localmente (não pushado); falta a pasta da skill, docs e self-tests.
+
+> **STATUS DE IMPLEMENTAÇÃO (2026-06-14, sessão de execução do Plano B)**
+>
+> Nome final travado pelo dono: **`xpz-kb-parallel-pre-push`** (irmã de `xpz-kb-parallel-setup`), **não** `xpz-pre-push-routine`. Outras decisões travadas: saída JSON de máquina por padrão (sem `-AsJson` nos motores novos); frente única sequenciada. O plano completo (v9) foi endurecido por um ciclo de **Revisão por Pares** (13 consultas multi-modelo: deepseek-v4-pro, glm-5.1, kimi-k2.7-code, minimax-m3, opus 4.8, codex gpt-5.5) mais uma revisão de pares de código.
+>
+> **FEITO (commitado local em `main`, NÃO pushado — 5 commits `578fc9f`..`870e971`):** o núcleo de engenharia, ou seja, a Fase 1 mecânica inteira.
+> - 5 motores generalizados em `scripts/`: `Test-XpzKbDangerousPaths` (K1/K2), `Test-XpzKbLayerDiff` (K3/K4), `Test-XpzNotNotIsAntipattern` (K11), `Test-XpzKbFrenteHygiene` (Fase 2a parcial), `Compare-XpzChecksums` (F1). JSON-default, tokens de camada parametrizados (defaults = nomes-padrão da casa), `git -C` + captura de `$LASTEXITCODE`→`unknown`, StrictMode-safe, campos acionáveis.
+> - `scripts/Invoke-XpzKbParallelPrePushPhase1.ps1`: orquestrador G0–G5 + K1–K4/K8/K9/K11, `pushReadiness` 0/2/1, `git fetch`/`rev-list` com captura de exit (falha → `unknown` que bloqueia, sem `ready` falso silencioso), descoberta de wrapper local por config → convenção → fail-closed.
+> - Contrato estruturado K8/K9 (lê campo JSON, não grep de texto): `Test-XpzSetupAudit.ps1` ganhou `-AsJson` aditivo (K8, textual continua default); **gate de índice promovido a motor compartilhado `scripts/Test-XpzKbIndexGate.ps1` com `-AsJson`** (K9 — corrigiu a assimetria: antes a lógica vivia inline no molde local). Moldes locais (`xpz-kb-parallel-setup/examples/Test-KbSetupAudit` e `Test-KbIndexGate`) repassam `-AsJson`. Wrapper local antigo (sem repasse) → block "setup desatualizado".
+> - Tudo parse-OK + runtime-validado (caminhos normal / falha-de-git→`unknown` / fail-closed).
+>
+> **FALTA (não iniciado):**
+> - **Bloco A — pasta da skill `xpz-kb-parallel-pre-push/`:** `SKILL.md` (espelhar `xpz-sync`), 3 satélites (`fase1-mecanica`, `fase2a-estrutural`, `fase2b-classificador-de-regime`), `agents/openai.yaml`, `examples/` (`kb-parallel-pre-push.config.json.example`, wrapper-local do orquestrador, molde de relatório de rodada). **Sem `SKILL.md` a skill não é descobrível pelo `xpz-skills-setup`.**
+> - **Bloco C — self-tests:** do orquestrador (cenários de fixture: fetch falho→`unknown`, múltiplos wrappers→fail-closed, wrapper stale→block, `BaseRef` inválido, K11 dispara, G4 só XML do acervo) e por motor, com sentinela `OK: <self-test>`, registrados no `09`.
+> - **Blocos D–G — paridade documental:** README trilíngue (lista de skills), `02`, `08`, `09` (entrada de evidência direta por motor), desambiguação no `13` (pré-push do repo de skills vs pré-push de pasta paralela), não-conflito no `14`, CHANGELOG `Unreleased`.
+> - **Bloco H — fechamento:** `kb-parallel-pre-push.config.json` na pasta paralela; renomear as referências remanescentes `xpz-pre-push-routine` → `xpz-kb-parallel-pre-push` (inclusive o título desta entrada); mover este bloco para `historico/IdeiasImplementadas_202606.md` deixando linha-ponteiro; adendo de superação na `decisao-001` do experimento.
+>
+> A entrada-diagnóstico «Maturar a Fase 2b…» **permanece** no 999 (direção de pesquisa do Plano A ainda aberta, independente desta promoção).
 
 **Origem:** mesma sessão 2026-06-12. **Ler antes:** entrada "Maturar a Fase 2b..." (diagnóstico) e o experimento incubado em `C:\Dev\Prod\Gx_FabricaBrasil\pre-push-routine` (README + 8 experimentos + `decisao-001`), como corpus (consulta de fora, read-only).
 
