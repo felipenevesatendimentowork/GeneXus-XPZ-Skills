@@ -645,16 +645,23 @@ function Resolve-GuidAwareRenames {
 
         $sameFolderMatches = @($acervoByGuid[$guidKey] | Where-Object { $_.FolderType -eq $item.FolderType })
         if ($sameFolderMatches.Count -eq 0) { continue }
-        if ($sameFolderMatches.Count -gt 1) {
-            $Warnings.Add("GUID duplicado no acervo ($guidKey) em $($item.FolderType); rename por GUID ignorado para '$($item.LogicalName)'.") | Out-Null
-            continue
-        }
-
-        $existing = $sameFolderMatches[0]
-        if ($existing.FileBaseName -ceq $item.NormalizedName) { continue }
-
         $folderPath = Join-Path $Root $item.FolderType
         $newPath = Join-Path $folderPath ($item.NormalizedName + ".xml")
+        if ($sameFolderMatches.Count -gt 1) {
+            $targetMatches = @($sameFolderMatches | Where-Object { $_.FileBaseName -ceq $item.NormalizedName })
+            $oldMatches = @($sameFolderMatches | Where-Object { $_.FileBaseName -cne $item.NormalizedName })
+            if ($targetMatches.Count -eq 1 -and $oldMatches.Count -eq 1) {
+                $existing = $oldMatches[0]
+            } else {
+                $Warnings.Add("GUID duplicado no acervo ($guidKey) em $($item.FolderType); rename por GUID ignorado para '$($item.LogicalName)'.") | Out-Null
+                continue
+            }
+        } else {
+            $existing = $sameFolderMatches[0]
+        }
+
+        if ($existing.FileBaseName -ceq $item.NormalizedName) { continue }
+
         $oldPath = $existing.FilePath
         $isCaseOnlyRename = ($existing.FileBaseName -ieq $item.NormalizedName)
         $action = "detected"

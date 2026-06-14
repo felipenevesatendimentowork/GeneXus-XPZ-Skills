@@ -13,10 +13,12 @@
          antes do throw, ja explica que e um rename.
       C. Zero renames (Apply): acervo ja sincronizado -> exit 0, sem erro
          (regressao StrictMode quando a lista de renames vinha vazia).
-      D. Colisao de GUID (Apply): o nome novo ja pertence a OUTRO objeto (GUID
+      D. Orfao de materializacao anterior: nome antigo e nome novo existem com
+         mesmo GUID -> remove o nome antigo e preserva o alvo.
+      E. Colisao de GUID (Apply): o nome novo ja pertence a OUTRO objeto (GUID
          diferente) -> fail-closed (throw) ANTES da escrita; o objeto existente e
          o de nome antigo sao preservados (sem perda de dado).
-      E. Rename so de caixa (Apply): mesmo GUID, nome diferente apenas na caixa ->
+      F. Rename so de caixa (Apply): mesmo GUID, nome diferente apenas na caixa ->
          o arquivo no disco passa a ter o nome com a caixa nova.
 #>
 
@@ -118,32 +120,46 @@ try {
     if ($repCObj.Summary.RenamedByGuid -ne 0) { throw "C: RenamedByGuid deveria ser 0; obtido $($repCObj.Summary.RenamedByGuid)" }
     if ($repCObj.Summary.RenameResidualsDetected -ne 0) { throw "C: RenameResidualsDetected deveria ser 0; obtido $($repCObj.Summary.RenameResidualsDetected)" }
 
-    # --- D: colisao de GUID (nome novo ja pertence a outro objeto) ---
-    $d = New-CaseDir -Name 'collision'
+    # --- D: orfao de materializacao anterior (nome novo ja existe com o mesmo GUID) ---
+    $d = New-CaseDir -Name 'orphan'
     New-AttrFile -Path (Join-Path $d.AttrDir 'Old.xml') -Guid $guid1 -Name 'Old' -LastUpdate '2020-01-01T00:00:00.0000000Z' -Description 'G1 renomeado para New'
-    New-AttrFile -Path (Join-Path $d.AttrDir 'New.xml') -Guid $guid2 -Name 'New' -LastUpdate '2020-01-01T00:00:00.0000000Z' -Description 'G2 legitimo nao relacionado'
+    New-AttrFile -Path (Join-Path $d.AttrDir 'New.xml') -Guid $guid1 -Name 'New' -LastUpdate '2026-01-01T00:00:00.0000000Z' -Description 'G1 ja materializado com nome novo'
     $pkgD = Join-Path $d.Root 'pacote.xml'
     New-Package -Path $pkgD -Guid $guid1 -Name 'New' -LastUpdate '2026-01-01T00:00:00.0000000Z'
-    $rD = Invoke-Sync -Pkg $pkgD -Acervo $d.Acervo
-    if ($rD.ExitCode -eq 0) { throw "D: colisao de GUID deveria falhar (fail-closed), nao exit 0" }
-    if ($rD.Output -notmatch 'Colisao de nome no acervo') { throw "D: deveria reportar colisao de nome; saida: $($rD.Output)" }
-    if (-not (Test-Path -LiteralPath (Join-Path $d.AttrDir 'Old.xml'))) { throw "D: o arquivo antigo deveria ter sido preservado" }
-    $newGuidD = (Select-String -LiteralPath (Join-Path $d.AttrDir 'New.xml') -Pattern 'guid="([0-9a-f-]+)"').Matches[0].Groups[1].Value
-    if ($newGuidD -ne $guid2) { throw "D: New.xml deveria preservar o GUID de G2 ($guid2); obtido $newGuidD (objeto destruido!)" }
+    $repD = Join-Path $d.Root 'report.json'
+    $rD = Invoke-Sync -Pkg $pkgD -Acervo $d.Acervo -ReportPath $repD
+    if ($rD.ExitCode -ne 0) { throw "D: orfao de mesmo GUID deveria sair com exit 0; obtido $($rD.ExitCode). Saida: $($rD.Output)" }
+    if (Test-Path -LiteralPath (Join-Path $d.AttrDir 'Old.xml')) { throw "D: o arquivo antigo deveria ter sido removido como orfao" }
+    if (-not (Test-Path -LiteralPath (Join-Path $d.AttrDir 'New.xml'))) { throw "D: o arquivo novo deveria ser preservado" }
+    $repDObj = Get-Content -LiteralPath $repD -Raw | ConvertFrom-Json
+    if ($repDObj.Summary.RenamedByGuid -ne 1) { throw "D: RenamedByGuid deveria contar o orfao removido; obtido $($repDObj.Summary.RenamedByGuid)" }
 
-    # --- E: rename so de caixa ---
-    $e = New-CaseDir -Name 'caseonly'
-    New-AttrFile -Path (Join-Path $e.AttrDir 'Alpha.xml') -Guid $guid1 -Name 'Alpha' -LastUpdate '2020-01-01T00:00:00.0000000Z'
+    # --- E: colisao de GUID (nome novo ja pertence a outro objeto) ---
+    $e = New-CaseDir -Name 'collision'
+    New-AttrFile -Path (Join-Path $e.AttrDir 'Old.xml') -Guid $guid1 -Name 'Old' -LastUpdate '2020-01-01T00:00:00.0000000Z' -Description 'G1 renomeado para New'
+    New-AttrFile -Path (Join-Path $e.AttrDir 'New.xml') -Guid $guid2 -Name 'New' -LastUpdate '2020-01-01T00:00:00.0000000Z' -Description 'G2 legitimo nao relacionado'
     $pkgE = Join-Path $e.Root 'pacote.xml'
-    New-Package -Path $pkgE -Guid $guid1 -Name 'alpha' -LastUpdate '2026-01-01T00:00:00.0000000Z'
-    $repE = Join-Path $e.Root 'report.json'
-    $rE = Invoke-Sync -Pkg $pkgE -Acervo $e.Acervo -ReportPath $repE
-    if ($rE.ExitCode -ne 0) { throw "E: rename so de caixa deveria sair com exit 0; obtido $($rE.ExitCode). Saida: $($rE.Output)" }
-    $namesE = @(Get-ChildItem -LiteralPath $e.AttrDir -Filter *.xml -File | ForEach-Object { $_.Name })
-    if ($namesE.Count -ne 1) { throw "E: deveria sobrar um unico arquivo; encontrados $($namesE.Count): $($namesE -join ', ')" }
-    if ($namesE[0] -cne 'alpha.xml') { throw "E: o filename deveria ter a caixa nova 'alpha.xml'; obtido '$($namesE[0])'" }
-    $repEObj = Get-Content -LiteralPath $repE -Raw | ConvertFrom-Json
-    if ($repEObj.Summary.RenamedByGuid -ne 1) { throw "E: RenamedByGuid deveria ser 1; obtido $($repEObj.Summary.RenamedByGuid)" }
+    New-Package -Path $pkgE -Guid $guid1 -Name 'New' -LastUpdate '2026-01-01T00:00:00.0000000Z'
+    $rE = Invoke-Sync -Pkg $pkgE -Acervo $e.Acervo
+    if ($rE.ExitCode -eq 0) { throw "E: colisao de GUID deveria falhar (fail-closed), nao exit 0" }
+    if ($rE.Output -notmatch 'Colisao de nome no acervo') { throw "E: deveria reportar colisao de nome; saida: $($rE.Output)" }
+    if (-not (Test-Path -LiteralPath (Join-Path $e.AttrDir 'Old.xml'))) { throw "E: o arquivo antigo deveria ter sido preservado" }
+    $newGuidE = (Select-String -LiteralPath (Join-Path $e.AttrDir 'New.xml') -Pattern 'guid="([0-9a-f-]+)"').Matches[0].Groups[1].Value
+    if ($newGuidE -ne $guid2) { throw "E: New.xml deveria preservar o GUID de G2 ($guid2); obtido $newGuidE (objeto destruido!)" }
+
+    # --- F: rename so de caixa ---
+    $f = New-CaseDir -Name 'caseonly'
+    New-AttrFile -Path (Join-Path $f.AttrDir 'Alpha.xml') -Guid $guid1 -Name 'Alpha' -LastUpdate '2020-01-01T00:00:00.0000000Z'
+    $pkgF = Join-Path $f.Root 'pacote.xml'
+    New-Package -Path $pkgF -Guid $guid1 -Name 'alpha' -LastUpdate '2026-01-01T00:00:00.0000000Z'
+    $repF = Join-Path $f.Root 'report.json'
+    $rF = Invoke-Sync -Pkg $pkgF -Acervo $f.Acervo -ReportPath $repF
+    if ($rF.ExitCode -ne 0) { throw "F: rename so de caixa deveria sair com exit 0; obtido $($rF.ExitCode). Saida: $($rF.Output)" }
+    $namesF = @(Get-ChildItem -LiteralPath $f.AttrDir -Filter *.xml -File | ForEach-Object { $_.Name })
+    if ($namesF.Count -ne 1) { throw "F: deveria sobrar um unico arquivo; encontrados $($namesF.Count): $($namesF -join ', ')" }
+    if ($namesF[0] -cne 'alpha.xml') { throw "F: o filename deveria ter a caixa nova 'alpha.xml'; obtido '$($namesF[0])'" }
+    $repFObj = Get-Content -LiteralPath $repF -Raw | ConvertFrom-Json
+    if ($repFObj.Summary.RenamedByGuid -ne 1) { throw "F: RenamedByGuid deveria ser 1; obtido $($repFObj.Summary.RenamedByGuid)" }
 
     Write-Output 'OK: Test-XpzSyncGuidRenameSelfTest.ps1'
     exit 0
