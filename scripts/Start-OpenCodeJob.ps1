@@ -108,7 +108,9 @@ $req = Get-Content -LiteralPath $RequestPath -Raw -Encoding utf8 | ConvertFrom-J
 $ocArgs = @('run', [string]$req.prompt, '--format', 'json')
 if (-not [string]::IsNullOrWhiteSpace([string]$req.model)) { $ocArgs += @('--model', [string]$req.model) }
 if (-not [string]::IsNullOrWhiteSpace([string]$req.agent)) { $ocArgs += @('--agent', [string]$req.agent) }
-& ([string]$req.exe) @ocArgs 1> ([string]$req.streamPath) 2> ([string]$req.stderrPath)
+# stdin fechado ($null = EOF puro, sem bytes) para o opencode nao travar lendo o stdin
+# herdado de uma shell headless sem TTY. Depende deste runner ser 'pwsh -File' (nao -Command).
+$null | & ([string]$req.exe) @ocArgs 1> ([string]$req.streamPath) 2> ([string]$req.stderrPath)
 exit $LASTEXITCODE
 '@ | Set-Content -LiteralPath $runnerPath -Encoding utf8
 

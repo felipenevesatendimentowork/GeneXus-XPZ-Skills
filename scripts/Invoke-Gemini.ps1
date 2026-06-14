@@ -70,7 +70,9 @@ $gmArgs = @(
     '--output-format', 'json',
     '--model', [string]$req.model
 )
-& ([string]$req.exe) @gmArgs 1> ([string]$req.stdoutPath) 2> ([string]$req.stderrPath)
+# stdin fechado ($null = EOF puro, sem bytes) para o gemini nao travar lendo o stdin
+# herdado de uma shell headless sem TTY. Depende deste runner ser 'pwsh -File' (nao -Command).
+$null | & ([string]$req.exe) @gmArgs 1> ([string]$req.stdoutPath) 2> ([string]$req.stderrPath)
 exit $LASTEXITCODE
 '@ | Set-Content -LiteralPath $runner -Encoding utf8
 

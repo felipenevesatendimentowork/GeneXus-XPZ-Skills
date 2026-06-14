@@ -318,6 +318,29 @@ validado) e reservar **modelo local pequeno** para o backend **one-shot** futuro
 que envia só o prompt — sem schemas de ferramentas nem `instructions` — então o modelo local
 responde rápido e cabe folgado na VRAM.
 
+## LIMITE CONHECIDO — STDIN FECHADO NOS ADAPTERS ARGUMENT-BASED (HEADLESS)
+
+Os adapters que passam o prompt por **argumento** (`Invoke-OpenCode.ps1`, `Start-OpenCodeJob.ps1`,
+`Invoke-Gemini.ps1`, `Invoke-Copilot.ps1`) **fecham o stdin do CLI** no runner temporário, com
+`$null | & ([string]$req.exe) @args` (`$null` = EOF puro, sem bytes). Sem isso, chamado de uma
+**shell headless sem TTY** (a ferramenta Bash/PowerShell de um agente), o CLI agêntico **trava**
+lendo o stdin herdado (um pipe aberto que nunca dá EOF): medido — o opencode pendurava por minutos;
+com o stdin fechado completa em ~8s.
+
+- **Não replicar nos stdin-based** (`Invoke-Codex`/`Start-CodexJob`, `Invoke-ClaudeCode`/`Start-ClaudeCodeJob`):
+  esses entregam o prompt **por stdin** via `Start-Process -RedirectStandardInput`; fechar quebraria.
+- **Dependências do mecanismo** (registrar para manutenção): o runner é invocado por `pwsh -File`
+  (que **não** lê stdin) — migrar para `pwsh -Command` reintroduziria o hang; e o fechamento usa
+  `$null |` (EOF puro), **não** `'' |`, que mandaria uma linha vazia antes do EOF.
+- **Ressalva de evolução**: se algum CLI ganhar um modo `--stdin`/pipe de entrada no futuro, o stdin
+  fechado quebraria **silenciosamente**; os self-tests de contrato de flags (`Test-GeminiCliSupportSelfTest`,
+  `Test-CopilotCliSupportSelfTest`) acusam uma flag nova no help — revisar quando isso ocorrer.
+- **Guard**: `scripts/Test-LlmDelegateStdinHandlingSelfTest.ps1` (sentinela `OK: Test-LlmDelegateStdinHandlingSelfTest.ps1`)
+  prova o mecanismo (fake-exe que bloqueia em stdin aberto e sai 7 ao receber EOF) e trava a regressão
+  estaticamente (argument-based fecham o stdin; stdin-based usam `-RedirectStandardInput`).
+- **Sondas `--version`/`--help`** dos `*CliSupport`: medidas em headless (`gemini --version` ~7.5s,
+  `copilot --version` ~3.4s — não leem stdin, **não penduram**), portanto **não** alteradas.
+
 ## LIMITE CONHECIDO — CODEX É AGÊNTICO (HERDA O AGENTS.md, PODE EXECUTAR)
 
 O `codex exec` também é **agêntico**: carrega o `AGENTS.md`/config do Codex como instruções e,
