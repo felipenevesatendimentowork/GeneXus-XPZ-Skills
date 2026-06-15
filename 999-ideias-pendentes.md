@@ -174,26 +174,33 @@ Após implementar + rebuild:
 - `references_attribute` é **aditiva** — não quebrar relações existentes.
 - Rodar a rotina pré-push do repo de skills (`13`/`14`) antes de push; paridade doc: `02`, `08`, `09`, `scripts/README-kb-intelligence.md`, `kb-intelligence-guia-metodologico-agente.md` e skills que citam o extrator; entrada no `historico/IdeiasImplementadas_YYYYMM.md` ao mover esta entrada do `999`.
 
-## Plano B — Promover a `pre-push-routine` a skill `xpz-pre-push-routine`
+## Plano B — Promover a `pre-push-routine` a skill `xpz-kb-parallel-pre-push`
 
 **Importância:** média
-**Maturidade:** EM IMPLEMENTAÇÃO (parcial) — núcleo de engenharia feito e commitado localmente (não pushado); falta a pasta da skill, docs e self-tests.
+**Maturidade:** QUASE COMPLETA (lado-repo) — núcleo PUSHADO; Blocos A (pasta da skill), C (self-tests) e D–G (paridade documental) feitos e commitados localmente em `main` nesta sessão (ainda não pushados). Falta só o lado **pasta paralela** (Bloco H externo, outro contexto operacional). Não mover esta entrada ao histórico até o lado externo estar feito.
 
 > **STATUS DE IMPLEMENTAÇÃO (2026-06-14, sessão de execução do Plano B)**
 >
 > Nome final travado pelo dono: **`xpz-kb-parallel-pre-push`** (irmã de `xpz-kb-parallel-setup`), **não** `xpz-pre-push-routine`. Outras decisões travadas: saída JSON de máquina por padrão (sem `-AsJson` nos motores novos); frente única sequenciada. O plano completo (v9) foi endurecido por um ciclo de **Revisão por Pares** (13 consultas multi-modelo: deepseek-v4-pro, glm-5.1, kimi-k2.7-code, minimax-m3, opus 4.8, codex gpt-5.5) mais uma revisão de pares de código.
 >
-> **FEITO (commitado local em `main`, NÃO pushado — 5 commits `578fc9f`..`870e971`):** o núcleo de engenharia, ou seja, a Fase 1 mecânica inteira.
-> - 5 motores generalizados em `scripts/`: `Test-XpzKbDangerousPaths` (K1/K2), `Test-XpzKbLayerDiff` (K3/K4), `Test-XpzNotNotIsAntipattern` (K11), `Test-XpzKbFrenteHygiene` (Fase 2a parcial), `Compare-XpzChecksums` (F1). JSON-default, tokens de camada parametrizados (defaults = nomes-padrão da casa), `git -C` + captura de `$LASTEXITCODE`→`unknown`, StrictMode-safe, campos acionáveis.
+> **FEITO — núcleo de engenharia PUSHADO (`origin/main` `578fc9f`..`2d92177`):** a Fase 1 mecânica inteira.
+> - 6 motores generalizados em `scripts/`: `Test-XpzKbDangerousPaths` (K1/K2), `Test-XpzKbLayerDiff` (K3/K4), `Test-XpzNotNotIsAntipattern` (K11), `Test-XpzKbFrenteHygiene` (Fase 2a parcial), `Compare-XpzChecksums` (F1), `Test-XpzKbIndexGate` (K9, promovido a motor compartilhado em `74816e4`). JSON-default, tokens de camada parametrizados (defaults = nomes-padrão da casa), `git -C` + captura de `$LASTEXITCODE`→`unknown`, StrictMode-safe, campos acionáveis.
 > - `scripts/Invoke-XpzKbParallelPrePushPhase1.ps1`: orquestrador G0–G5 + K1–K4/K8/K9/K11, `pushReadiness` 0/2/1, `git fetch`/`rev-list` com captura de exit (falha → `unknown` que bloqueia, sem `ready` falso silencioso), descoberta de wrapper local por config → convenção → fail-closed.
 > - Contrato estruturado K8/K9 (lê campo JSON, não grep de texto): `Test-XpzSetupAudit.ps1` ganhou `-AsJson` aditivo (K8, textual continua default); **gate de índice promovido a motor compartilhado `scripts/Test-XpzKbIndexGate.ps1` com `-AsJson`** (K9 — corrigiu a assimetria: antes a lógica vivia inline no molde local). Moldes locais (`xpz-kb-parallel-setup/examples/Test-KbSetupAudit` e `Test-KbIndexGate`) repassam `-AsJson`. Wrapper local antigo (sem repasse) → block "setup desatualizado".
 > - Tudo parse-OK + runtime-validado (caminhos normal / falha-de-git→`unknown` / fail-closed).
 >
-> **FALTA (não iniciado):**
-> - **Bloco A — pasta da skill `xpz-kb-parallel-pre-push/`:** `SKILL.md` (espelhar `xpz-sync`), 3 satélites (`fase1-mecanica`, `fase2a-estrutural`, `fase2b-classificador-de-regime`), `agents/openai.yaml`, `examples/` (`kb-parallel-pre-push.config.json.example`, wrapper-local do orquestrador, molde de relatório de rodada). **Sem `SKILL.md` a skill não é descobrível pelo `xpz-skills-setup`.**
-> - **Bloco C — self-tests:** do orquestrador (cenários de fixture: fetch falho→`unknown`, múltiplos wrappers→fail-closed, wrapper stale→block, `BaseRef` inválido, K11 dispara, G4 só XML do acervo) e por motor, com sentinela `OK: <self-test>`, registrados no `09`.
-> - **Blocos D–G — paridade documental:** README trilíngue (lista de skills), `02`, `08`, `09` (entrada de evidência direta por motor), desambiguação no `13` (pré-push do repo de skills vs pré-push de pasta paralela), não-conflito no `14`, CHANGELOG `Unreleased`.
-> - **Bloco H — fechamento:** `kb-parallel-pre-push.config.json` na pasta paralela; renomear as referências remanescentes `xpz-pre-push-routine` → `xpz-kb-parallel-pre-push` (inclusive o título desta entrada); mover este bloco para `historico/IdeiasImplementadas_202606.md` deixando linha-ponteiro; adendo de superação na `decisao-001` do experimento.
+> **FEITO nesta sessão (2026-06-14, commitado local em `main`, NÃO pushado):**
+> - **Bloco A** — pasta `xpz-kb-parallel-pre-push/`: `SKILL.md` enxuto (estrutura de `xpz-sync`, profundidade reduzida) + 3 satélites (`fase1-mecanica`/`fase2a-estrutural`/`fase2b-classificador-de-regime`) + `agents/openai.yaml` + `examples/` (wrapper fino, config com `layerTokens`, catálogo de padrões aceitos por-KB, 2 moldes de relatório). Commit `47f4d65`.
+> - **Bloco C** — 8 self-tests + helper `XpzKbPrePushSelfTestSupport.ps1` (monta repos git de fixture), sentinela em **CAIXA-ALTA** (padrão dominante do `09`), todos verdes; parse global 253/0. Commit `3ae3dd9`.
+> - **Blocos D–G** — paridade documental: README trilíngue, `AGENTS.md` (raiz), `02`, `08`, `09` (2 entradas de evidência direta), `13` (desambiguação no §Escopo), `14` (nota consultiva), CHANGELOG trilíngue, adendo no `xpz-llm-delegate/SKILL.md` (como complemento), cross-ref no `xpz-kb-parallel-setup/SKILL.md`, e `Test-XpzKbIndexGate.ps1` adicionado ao `setup-contract.manifest.json`. Commit `06d4de9`.
+> - Plano endurecido e convergido por **Revisão por Pares** (painel multi-modelo via `xpz-llm-delegate` + 2 subagentes Claude), em duas rodadas (v1→v2→v3): a rodada de convergência só liberou a implementação após o painel reduzir a achados textuais/precisão (sem rejeição de design).
+>
+> **FALTA (lado pasta paralela — outro contexto operacional, deferido com aviso de troca de contexto):**
+> - `kb-parallel-pre-push.config.json` numa pasta paralela real (ex. `Gx_FabricaBrasil`) — gravação **fora deste repo**.
+> - Adendo de superação na `decisao-001` do experimento `C:\Dev\Prod\Gx_FabricaBrasil\pre-push-routine`.
+> - Registro global da skill via `xpz-skills-setup` (ação de runtime, cross-tool).
+> - **Push** dos commits desta sessão (decisão do usuário) e da pré-push do repo (`13`/`14`).
+> - Só após o lado externo estar feito, mover esta entrada para `historico/IdeiasImplementadas_202606.md` deixando linha-ponteiro (não mover antes — evita falsa completude).
 >
 > A entrada-diagnóstico «Maturar a Fase 2b…» **permanece** no 999 (direção de pesquisa do Plano A ainda aberta, independente desta promoção).
 
@@ -203,11 +210,11 @@ Após implementar + rebuild:
 
 ### Objetivo
 
-Levar a `pre-push-routine` (hoje só FabricaBrasil) a uma skill `xpz-pre-push-routine` no padrão das demais (SKILL.md + satélites), generalizada para qualquer pasta paralela de KB.
+Levar a `pre-push-routine` (hoje só FabricaBrasil) a uma skill `xpz-kb-parallel-pre-push` no padrão das demais (SKILL.md + satélites), generalizada para qualquer pasta paralela de KB.
 
 ### Estrutura proposta (padrão da casa)
 
-- `xpz-pre-push-routine/SKILL.md` — frontmatter `name`/`description`, TRIGGERS, GUIDELINE, PATH RESOLUTION; espelhar `xpz-sync/SKILL.md`.
+- `xpz-kb-parallel-pre-push/SKILL.md` — frontmatter `name`/`description`, TRIGGERS, GUIDELINE, PATH RESOLUTION; espelhar `xpz-sync/SKILL.md`.
 - Motor compartilhado migrado para `scripts/` da raiz; **wrappers locais finos por-KB** (nomes definidos no README local), como `xpz-sync`.
 - Satélite de Fase 2b como **classificador de regime** (não runbook que dá selo).
 - 2 exemplos `*.example` (achado #11 do experimento): primeira-passada (estilo experimento-001) e re-validação (estilo experimento-002).
