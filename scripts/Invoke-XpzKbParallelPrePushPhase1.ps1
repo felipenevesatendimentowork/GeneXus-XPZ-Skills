@@ -201,8 +201,9 @@ else { Add-Gate 'G5' 'ok' "$($psFiles.Count) .ps1 locais parseados sem erros" }
 try {
   $k1k2 = & (Join-Path $sharedScripts 'Test-XpzKbDangerousPaths.ps1') -BaseRef $BaseRef -RepoRoot $RepoRoot -TempDirNames $tempDirNames -NativeKbRootPattern $nativeKbRootPattern | ConvertFrom-Json
   if ($k1k2.status -eq 'unknown') {
-    # Motor falhou (ex.: git) e retorna gates vazio -> ler o status top-level,
-    # senao o gate sumiria da consolidacao (fail-open).
+    # Motor falhou (ex.: git) e retorna gates vazio -> ler o status top-level
+    # (anti-fail-open): senao o gate sumiria da consolidacao (isso seria fail-open);
+    # com ele o unknown propaga e consolida em blocked (fail-closed).
     Add-Gate 'K1/K2' 'unknown' (@($k1k2.blockingReasons) -join '; ')
   } else {
     foreach ($g in $k1k2.gates) {
