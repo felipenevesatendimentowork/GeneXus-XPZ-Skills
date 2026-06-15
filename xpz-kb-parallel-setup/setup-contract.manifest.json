@@ -8,6 +8,7 @@
     "scripts/Test-XpzSetupFreshness.ps1",
     "scripts/Set-XpzSetupAuditTimestamp.ps1",
     "scripts/Test-XpzSetupAudit.ps1",
+    "scripts/Test-XpzKbIndexGate.ps1",
     "scripts/Test-XpzWrapperInventory.ps1",
     "scripts/Test-XpzPowerShellRuntime.ps1",
     "scripts/Test-XpzKbMetadataWrapper.ps1",

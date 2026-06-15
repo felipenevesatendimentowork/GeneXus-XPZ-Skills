@@ -8,6 +8,8 @@ O **mecanismo** de delegação (como disparar revisores secundários: opencode, 
 
 Acionamento é **sempre humano**, como toda delegação (ver `xpz-llm-delegate`). Este tier é **opcional**: a rotina do `13` basta para o fluxo normal; o painel é escalonamento quando se quer reforço por diversidade de modelo.
 
+Esta política governa a pré-push do **repositório de skills** (a rotina do `13`). É distinta da skill [`xpz-kb-parallel-pre-push`](xpz-kb-parallel-pre-push/SKILL.md), que valida o estado de uma **pasta paralela de KB** antes do push dessa KB (gates mecânicos próprios, não painel multi-modelo). Aplicar este painel reforçado também àquela rotina é possível em frente futura, mas é **consultivo** — fora do escopo deste documento.
+
 ## A régua
 
 - **Independência:** todos os revisores recebem o **mesmo prompt mínimo verbatim** (`execute a rotina pre push, sem push`), sem enriquecimento — para não contaminar a revisão com o que o agente principal já sabe ou fez.

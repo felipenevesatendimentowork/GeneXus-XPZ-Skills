@@ -63,7 +63,10 @@ guarda o mecanismo de delegação.
 | Sessão dentro de pasta paralela de KB | sensível (conteúdo real de KB, `ObjetosDaKbEmXml`, XML) | externo exige autorização (gate); preferir modelo local; o subagente agêntico **não** tem proteção nativa de leitura na pasta paralela — ver `## CONFIDENCIALIDADE` |
 
 A revisão pré-push (`13-revisao-pre-push.md`) **não** se aplica a pastas paralelas. O caso
-de diversidade de modelo vive na raiz de desenvolvimento, não na pasta paralela.
+de diversidade de modelo vive na raiz de desenvolvimento, não na pasta paralela. (A validação
+pré-push do **estado** de uma pasta paralela de KB — gates mecânicos antes do push dessa KB — é
+a skill [`xpz-kb-parallel-pre-push`](../xpz-kb-parallel-pre-push/SKILL.md): rotina distinta da do
+`13` e que **não** usa este mecanismo de delegação.)
 
 ## ANATOMIA (cada parte faz o quê, e qual eixo governa)
 

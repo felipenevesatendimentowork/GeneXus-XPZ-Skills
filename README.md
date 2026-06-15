@@ -10,7 +10,7 @@
 
 ## Português (BR)
 
-Este repositório existe para sustentar e operacionalizar skills para agentes dedicadas ao ecossistema `XPZ`/XML de GeneXus, em especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, `xpz-llm-delegate` e `xpz-skills-setup`.
+Este repositório existe para sustentar e operacionalizar skills para agentes dedicadas ao ecossistema `XPZ`/XML de GeneXus, em especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-kb-parallel-pre-push`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, `xpz-llm-delegate` e `xpz-skills-setup`.
 
 A documentação consolidada e os scripts desta raiz funcionam como base metodológica e operacional dessas skills, com foco em:
 
@@ -67,6 +67,7 @@ Guia operacional e metodologico da trilha KB Intelligence. Contratos de fases en
 - `xpz-daemon`: instalação e gerenciamento de um monitor persistente que observa pastas de XPZ e dispara sincronização automaticamente ao detectar novos arquivos
 - `xpz-doc-builder`: geração e recomposição de documentação Markdown a partir do acervo XML e de moldes sanitizados
 - `xpz-kb-parallel-setup`: preparação e validação da estrutura inicial da pasta paralela da KB
+- `xpz-kb-parallel-pre-push`: validação pré-push do estado de uma pasta paralela da KB antes do push dessa KB (orquestrador de gates mecânicos G0–G5 + K1–K4/K8/K9/K11); distinta da rotina pré-push do repositório de skills (documento 13)
 - `xpz-msbuild-import-export`: skill experimental para importação e exportação de `XPZ` via `MSBuild`, com execução sem interface gráfica, parâmetros explícitos, rastreabilidade e gates de segurança
 - `xpz-msbuild-build`: skill para validação de build pós-import via `MSBuild`, com execução sem interface gráfica, classificação de resultado e bloqueio de reorg por padrão
 - `xpz-index-triage`: triagem inicial por índice derivado para orientar a leitura mínima dos XMLs oficiais da KB
@@ -246,7 +247,7 @@ Se você quer entender a base rapidamente:
 
 ## Español
 
-Este repositorio reúne documentación consolidada sobre análisis estructural de objetos GeneXus a partir de XMLs extraídos de `XPZ`, con foco en skills para agentes dedicadas al ecosistema `XPZ`/XML de GeneXus, en especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, `xpz-llm-delegate` y `xpz-skills-setup`.
+Este repositorio reúne documentación consolidada sobre análisis estructural de objetos GeneXus a partir de XMLs extraídos de `XPZ`, con foco en skills para agentes dedicadas al ecosistema `XPZ`/XML de GeneXus, en especial `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-kb-parallel-pre-push`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, `xpz-llm-delegate` y `xpz-skills-setup`.
 
 - lectura e interpretación de estructura XML
 - familias estructurales de objetos
@@ -301,6 +302,7 @@ Guía operacional y metodológica de la trilha KB Intelligence. Los contratos de
 - `xpz-daemon`: instalación y gestión de un monitor persistente que observa carpetas de XPZ y dispara sincronización automáticamente al detectar nuevos archivos
 - `xpz-doc-builder`: generación y recomposición de documentación Markdown a partir del acervo XML y de moldes sanitizados
 - `xpz-kb-parallel-setup`: preparación y validación de la estructura inicial de la carpeta paralela de la KB
+- `xpz-kb-parallel-pre-push`: validación pre-push del estado de una carpeta paralela de la KB antes del push de esa KB (orquestador de gates mecánicos G0–G5 + K1–K4/K8/K9/K11); distinta de la rutina pre-push del repositorio de skills (documento 13)
 - `xpz-msbuild-import-export`: skill experimental para importación y exportación de `XPZ` vía `MSBuild`, con ejecución sin interfaz gráfica, parámetros explícitos, trazabilidad y compuertas de seguridad
 - `xpz-msbuild-build`: skill para validación de build pós-import vía `MSBuild`, con ejecución sin interfaz gráfica, clasificación de resultado y bloqueo de reorg por defecto
 - `xpz-index-triage`: triaje inicial por índice derivado para orientar la lectura mínima de los XML oficiales de la KB
@@ -480,7 +482,7 @@ Si quieres entender la base rápidamente:
 
 ## English
 
-This repository contains consolidated documentation about structural analysis of GeneXus objects based on XML extracted from `XPZ`, with emphasis on skills for agents dedicated to the `XPZ`/XML ecosystem of GeneXus, especially `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, `xpz-llm-delegate`, and `xpz-skills-setup`.
+This repository contains consolidated documentation about structural analysis of GeneXus objects based on XML extracted from `XPZ`, with emphasis on skills for agents dedicated to the `XPZ`/XML ecosystem of GeneXus, especially `xpz-reader`, `xpz-builder`, `xpz-sync`, `xpz-doc-builder`, `xpz-daemon`, `xpz-kb-parallel-setup`, `xpz-kb-parallel-pre-push`, `xpz-msbuild-import-export`, `xpz-msbuild-build`, `xpz-index-triage`, `xpz-llm-delegate`, and `xpz-skills-setup`.
 
 - reading and interpreting XML structure
 - structural object families
@@ -535,6 +537,7 @@ Operational and methodological guide for the KB Intelligence workstream. Closed 
 - `xpz-daemon`: installation and management of a persistent monitor that watches XPZ folders and automatically triggers synchronization when new files are detected
 - `xpz-doc-builder`: generation and recomposition of Markdown documentation from the XML archive and sanitized templates
 - `xpz-kb-parallel-setup`: preparation and validation of the initial KB parallel-folder structure
+- `xpz-kb-parallel-pre-push`: pre-push validation of a KB parallel-folder state before pushing that KB (orchestrator of mechanical gates G0–G5 + K1–K4/K8/K9/K11); distinct from the skills-repository pre-push routine (document 13)
 - `xpz-msbuild-import-export`: experimental skill for `XPZ` import and export via `MSBuild`, with headless execution, explicit parameters, traceability, and safety gates
 - `xpz-msbuild-build`: skill for post-import build validation via `MSBuild`, with headless execution, result classification, and reorg blocked by default
 - `xpz-index-triage`: initial triage through a derived index to guide the minimum reading of the KB official XMLs
