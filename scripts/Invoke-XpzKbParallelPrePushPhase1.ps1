@@ -231,7 +231,7 @@ if (-not $k8w.ok) {
   Add-Gate 'K8' 'block' $k8w.message
 } else {
   try {
-    $raw = (& $k8w.path -AsJson 2>&1 | Out-String).Trim()
+    $raw = (& $k8w.path -AsJson 2>$null | Out-String).Trim()
     $j = $raw | ConvertFrom-Json
     $estado = [string]$j.'estado_operacional_sugerido'
     $erroK8 = if ($j.PSObject.Properties.Name -contains 'error') { [string]$j.error } else { $null }
@@ -254,7 +254,7 @@ if (-not $k9w.ok) {
   Add-Gate 'K9' 'block' $k9w.message
 } else {
   try {
-    $raw = (& $k9w.path -AsJson 2>&1 | Out-String).Trim()
+    $raw = (& $k9w.path -AsJson 2>$null | Out-String).Trim()
     $j = $raw | ConvertFrom-Json
     if ([string]$j.status -eq 'OK') {
       Add-Gate 'K9' 'ok' "indice apto (resolvedBy=$($k9w.resolvedBy))"
