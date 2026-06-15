@@ -11,7 +11,7 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
-## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (candidata a skill `xpz-pre-push-routine`)
+## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (Fase 2b da skill `xpz-kb-parallel-pre-push`, hoje classificador documental)
 
 **Importância:** média (o sub-caso **destrutivo** tende a `alta` — falso negativo de regressão por dependente não enumerado; hoje mitigado só pelo build)
 **Maturidade:** ideia (decisões de runbook em aberto por `decisao-001`; alguns sub-achados abaixo já são "pesquisa feita")
