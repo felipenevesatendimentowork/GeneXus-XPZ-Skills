@@ -1,0 +1,26 @@
+{
+  "_notes": [
+    "Config local OPCIONAL da rotina pre-push de pasta paralela de KB, lida por",
+    "scripts/Invoke-XpzKbParallelPrePushPhase1.ps1 na raiz da pasta paralela",
+    "(kb-parallel-pre-push.config.json). Todos os campos sao opcionais.",
+    "",
+    "setupAuditWrapper / indexGateWrapper: nome do wrapper LOCAL (em <RepoRoot>/scripts)",
+    "para os gates K8 e K9. Resolucao: config -> convencao -> fail-closed.",
+    "  - Com config: aponta o arquivo exato; se nao existir, o gate BLOQUEIA.",
+    "  - Sem config: procura pela convencao (Test-*KbSetupAudit.ps1 / Test-*KbIndexGate.ps1);",
+    "    exatamente 1 candidato = ok; 0 ou >=2 = block (declare aqui para desambiguar).",
+    "",
+    "layerTokens: so necessario quando a pasta paralela usa nomes NAO-padrao.",
+    "Os defaults abaixo sao os nomes-padrao da casa; omita o bloco se eles bastarem.",
+    "tempDirNames aceita lista; nativeKbRootPattern e regex .NET."
+  ],
+  "setupAuditWrapper": "Test-MinhaKbSetupAudit.ps1",
+  "indexGateWrapper": "Test-MinhaKbIndexGate.ps1",
+  "layerTokens": {
+    "tempDirNames": ["Temp"],
+    "nativeKbRootPattern": "(?i)(^|[\\\\/])GxModels[\\\\/]",
+    "indexDirName": "KbIntelligence",
+    "acervoDirName": "ObjetosDaKbEmXml",
+    "metadataFileName": "kb-source-metadata.md"
+  }
+}

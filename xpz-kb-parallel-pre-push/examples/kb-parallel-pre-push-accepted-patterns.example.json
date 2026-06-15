@@ -1,0 +1,35 @@
+{
+  "_notes": [
+    "Catalogo POR-KB de padroes de codigo aceitos (intencionais) que NAO devem",
+    "disparar triagem da Fase 2b repetidamente. Cada pasta paralela mantem o seu,",
+    "porque os padroes dependem das convencoes daquela KB.",
+    "",
+    "A skill xpz-kb-parallel-pre-push apenas CONSULTA este catalogo para suprimir",
+    "ruido conhecido. Padrao nao catalogado nao e erro: e candidato a inspecao; se",
+    "for legitimo e recorrente, o usuario decide adiciona-lo aqui.",
+    "",
+    "Cada entrada: id estavel, kind (regex|literal|csharp-block), pattern e por que",
+    "e aceito. regex usa sintaxe .NET."
+  ],
+  "schemaVersion": 1,
+  "acceptedPatterns": [
+    {
+      "id": "proc-volta-do-que-foi",
+      "kind": "regex",
+      "pattern": "procVoltaDo\\w+QueFoi",
+      "reason": "Convencao de navegacao de retorno desta KB; intencional."
+    },
+    {
+      "id": "select-tab-toggle",
+      "kind": "literal",
+      "pattern": "SelectTab(2);SelectTab(1)",
+      "reason": "Toggle de aba para forcar refresh visual; padrao aceito."
+    },
+    {
+      "id": "csharp-bloco-conhecido",
+      "kind": "csharp-block",
+      "pattern": "// XPZ-ACCEPTED: <descricao do bloco csharp inline conhecido>",
+      "reason": "Bloco csharp inline revisado e aprovado pelo mantenedor da KB."
+    }
+  ]
+}
