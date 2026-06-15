@@ -13,6 +13,9 @@
       INVENTORY_GAPS: <nomes ausentes>    - wrappers ausentes (nem padrão nem curto encontrado)
       INVENTORY_SHORT_NAMING: <lista>     - wrappers existem no padrão curto; renomear para padrão
       INVENTORY_CUSTOMIZED: <lista>        - wrappers presentes com divergencia metodologica objetiva
+                                            (ex: requires_version_mismatch; nos wrappers K8/K9
+                                            Test-KbSetupAudit/Test-KbIndexGate, missing_AsJson_passthrough
+                                            quando o molde repassa -AsJson e o wrapper local nao)
       INVENTORY_RECOMMENDED_MISSING: <lista> - wrappers recomendados ausentes por sinais objetivos
       INVENTORY_LEGACY_ORPHANS: <lista>    - scripts legados lado a lado com canonicos atuais
       INVENTORY_UNKNOWN: <motivo>         - não foi possível determinar o estado
@@ -260,6 +263,14 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
                 $customized.Add(('{0}(reason=missing_KbNativePath_for_msbuild_validation)' -f $standardLocalName))
             } elseif ($exampleText -match 'InventoryWorkingDirectory' -and $localText -notmatch 'InventoryWorkingDirectory') {
                 $customized.Add(('{0}(reason=missing_InventoryWorkingDirectory_for_msbuild_validation)' -f $standardLocalName))
+            }
+        }
+
+        if ($baseName -ieq 'Test-KbSetupAudit' -or $baseName -ieq 'Test-KbIndexGate') {
+            $exampleText = [System.IO.File]::ReadAllText($examplePath)
+            $localText = [System.IO.File]::ReadAllText($standardPath)
+            if ($exampleText -match 'AsJson' -and $localText -notmatch 'AsJson') {
+                $customized.Add(('{0}(reason=missing_AsJson_passthrough)' -f $standardLocalName))
             }
         }
     } elseif ($shortExists) {

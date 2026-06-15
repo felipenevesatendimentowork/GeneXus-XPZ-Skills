@@ -222,6 +222,62 @@ param(
 
     Assert-Contains -Text $output -Pattern 'Set-DemoKbSourceMetadataDeployment\.ps1\(reason=missing_InventoryWorkingDirectory_for_msbuild_validation\)' -Message 'wrapper sem InventoryWorkingDirectory deve ser sinalizado'
 
+    # K8/K9: molde repassa -AsJson; wrapper local sem -AsJson deve virar CUSTOMIZADO
+    @'
+#requires -Version 7.4
+param([switch]$AsJson)
+& $enginePath -AsJson:$AsJson
+'@ | Set-Content -LiteralPath (Join-Path $examplesPath 'Test-KbSetupAudit.example.ps1') -Encoding utf8NoBOM
+    @'
+#requires -Version 7.4
+param([switch]$AsJson)
+$forward = @{}
+if ($AsJson) { $forward['AsJson'] = $true }
+& $engine @forward
+'@ | Set-Content -LiteralPath (Join-Path $examplesPath 'Test-KbIndexGate.example.ps1') -Encoding utf8NoBOM
+
+    $setupAuditStandardPath = Join-Path $scriptsPath 'Test-DemoKbSetupAudit.ps1'
+    $indexGateStandardPath = Join-Path $scriptsPath 'Test-DemoKbIndexGate.ps1'
+
+    @'
+#requires -Version 7.4
+param()
+& $enginePath
+'@ | Set-Content -LiteralPath $setupAuditStandardPath -Encoding utf8NoBOM
+
+    @'
+#requires -Version 7.4
+param()
+& $engine
+'@ | Set-Content -LiteralPath $indexGateStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Test-DemoKbSetupAudit\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K8 sem repasse de -AsJson deve ser sinalizado'
+    Assert-Contains -Text $output -Pattern 'Test-DemoKbIndexGate\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K9 sem repasse de -AsJson deve ser sinalizado'
+
+    # Mesmos wrappers, agora repassando -AsJson, nao podem ser sinalizados por esse motivo
+    @'
+#requires -Version 7.4
+param([switch]$AsJson)
+& $enginePath -AsJson:$AsJson
+'@ | Set-Content -LiteralPath $setupAuditStandardPath -Encoding utf8NoBOM
+
+    @'
+#requires -Version 7.4
+param([switch]$AsJson)
+$forward = @{}
+if ($AsJson) { $forward['AsJson'] = $true }
+& $engine @forward
+'@ | Set-Content -LiteralPath $indexGateStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-NotContains -Text $output -Pattern 'Test-DemoKbSetupAudit\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K8 com repasse de -AsJson nao pode ser sinalizado por esse motivo'
+    Assert-NotContains -Text $output -Pattern 'Test-DemoKbIndexGate\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K9 com repasse de -AsJson nao pode ser sinalizado por esse motivo'
+
     Write-Output 'WRAPPER_INVENTORY_SELFTEST_OK'
 } finally {
     if ($tempRoot.StartsWith([System.IO.Path]::GetTempPath(), [System.StringComparison]::OrdinalIgnoreCase) -and
