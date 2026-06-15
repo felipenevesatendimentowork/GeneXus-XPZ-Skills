@@ -196,7 +196,7 @@ Após implementar + rebuild:
 > - Plano endurecido e convergido por **Revisão por Pares** (painel multi-modelo via `xpz-llm-delegate` + 2 subagentes Claude), em duas rodadas (v1→v2→v3): a rodada de convergência só liberou a implementação após o painel reduzir a achados textuais/precisão (sem rejeição de design).
 >
 > **FALTA (lado pasta paralela — outro contexto operacional, deferido com aviso de troca de contexto):**
-> - `kb-parallel-pre-push.config.json` numa pasta paralela real (ex. `Gx_FabricaBrasil`) — gravação **fora deste repo**.
+> - **`kb-parallel-pre-push.config.json` — DISPENSÁVEL na FabricaBrasil (verificado 2026-06-12):** os wrappers locais seguem a convenção (`Test-FabricaBrasilKbSetupAudit.ps1` + `Test-FabricaBrasilKbIndexGate.ps1`, exatamente 1 de cada), então o orquestrador resolve por convenção (`resolvedBy='convention'`) sem config. Só seria necessária numa pasta com **0** (`none`) ou **≥2** (`ambiguous`) candidatos. **Não criar config na FabricaBrasil.**
 > - Adendo de superação na `decisao-001` do experimento `C:\Dev\Prod\Gx_FabricaBrasil\pre-push-routine`.
 > - Registro global da skill via `xpz-skills-setup` (ação de runtime, cross-tool).
 > - **Push** dos commits desta sessão (decisão do usuário) e da pré-push do repo (`13`/`14`).
