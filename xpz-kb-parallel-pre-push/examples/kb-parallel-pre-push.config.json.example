@@ -1,8 +1,10 @@
 {
   "_notes": [
-    "Config local OPCIONAL da rotina pre-push de pasta paralela de KB, lida por",
-    "scripts/Invoke-XpzKbParallelPrePushPhase1.ps1 na raiz da pasta paralela",
-    "(kb-parallel-pre-push.config.json). Todos os campos sao opcionais.",
+    "Config local OPCIONAL da rotina pre-push de pasta paralela de KB. Fica na raiz",
+    "da pasta paralela (kb-parallel-pre-push.config.json) e e lida pelo MOTOR",
+    "COMPARTILHADO scripts/Invoke-XpzKbParallelPrePushPhase1.ps1 da base",
+    "GeneXus-XPZ-Skills (via -RepoRoot apontando para esta pasta paralela); o",
+    "orquestrador NAO mora na pasta paralela. Todos os campos sao opcionais.",
     "",
     "setupAuditWrapper / indexGateWrapper: nome do wrapper LOCAL (em <RepoRoot>/scripts)",
     "para os gates K8 e K9. Resolucao: config -> convencao -> fail-closed.",
