@@ -278,6 +278,27 @@ if ($AsJson) { $forward['AsJson'] = $true }
     Assert-NotContains -Text $output -Pattern 'Test-DemoKbSetupAudit\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K8 com repasse de -AsJson nao pode ser sinalizado por esse motivo'
     Assert-NotContains -Text $output -Pattern 'Test-DemoKbIndexGate\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K9 com repasse de -AsJson nao pode ser sinalizado por esse motivo'
 
+    # Migracao parcial: declara [switch]$AsJson mas NAO repassa ao motor -> deve ser
+    # sinalizado (a checagem detecta o repasse, nao a mera mencao do termo).
+    @'
+#requires -Version 7.4
+param([switch]$AsJson)
+& $enginePath
+'@ | Set-Content -LiteralPath $setupAuditStandardPath -Encoding utf8NoBOM
+
+    @'
+#requires -Version 7.4
+param([switch]$AsJson)
+$forward = @{}
+& $engine @forward
+'@ | Set-Content -LiteralPath $indexGateStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Test-DemoKbSetupAudit\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K8 que declara AsJson mas nao repassa deve ser sinalizado'
+    Assert-Contains -Text $output -Pattern 'Test-DemoKbIndexGate\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K9 que declara AsJson mas nao repassa deve ser sinalizado'
+
     Write-Output 'WRAPPER_INVENTORY_SELFTEST_OK'
 } finally {
     if ($tempRoot.StartsWith([System.IO.Path]::GetTempPath(), [System.StringComparison]::OrdinalIgnoreCase) -and

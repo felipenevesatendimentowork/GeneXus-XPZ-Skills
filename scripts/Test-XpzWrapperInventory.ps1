@@ -269,7 +269,13 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
         if ($baseName -ieq 'Test-KbSetupAudit' -or $baseName -ieq 'Test-KbIndexGate') {
             $exampleText = [System.IO.File]::ReadAllText($examplePath)
             $localText = [System.IO.File]::ReadAllText($standardPath)
-            if ($exampleText -match 'AsJson' -and $localText -notmatch 'AsJson') {
+            # Detecta o REPASSE de -AsJson ao motor, nao a mera mencao do termo: um
+            # wrapper com `[switch]$AsJson` declarado mas sem repasse (migracao parcial)
+            # tem 'AsJson' no texto mas ainda bloqueia K8/K9. Os dois moldes repassam de
+            # formas distintas, ambas cobertas: setup-audit via `-AsJson:$AsJson` (token
+            # `-AsJson`); index-gate via `$forward['AsJson']` (chave entre aspas). O param
+            # `$AsJson` sozinho nao casa nenhum dos dois.
+            if ($exampleText -match 'AsJson' -and $localText -notmatch '(-AsJson|[''"]AsJson)') {
                 $customized.Add(('{0}(reason=missing_AsJson_passthrough)' -f $standardLocalName))
             }
         }
