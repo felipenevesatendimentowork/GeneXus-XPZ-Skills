@@ -529,3 +529,43 @@ Ressalva semantica explicita: a correcao "manter o `Default` incondicional e mov
 ### Rastreabilidade
 
 - Commit: `f798c1a` (`Cataloga o anti-padrao src0239 (Default com condicional) em Transaction`)
+
+## Promoção da rotina pré-push de pasta paralela à skill `xpz-kb-parallel-pre-push`
+
+**Importancia original:** média
+**Status:** concluida em 2026-06-15
+
+### Origem
+
+Registrada em `999-ideias-pendentes.md` como «Plano B», sessão 2026-06-12. A rotina pré-push de pasta paralela de KB existia apenas como experimento incubado e hardcoded na FabricaBrasil (`C:\Dev\Prod\Gx_FabricaBrasil\pre-push-routine`: README + 8 experimentos + `decisao-001`). O objetivo era promovê-la a skill no padrão das demais (`SKILL.md` + satélites), generalizada para qualquer pasta paralela. Nome final travado pelo dono: `xpz-kb-parallel-pre-push` (irmã de `xpz-kb-parallel-setup`). O plano foi endurecido e convergido por um ciclo de «Revisão por Pares» (painel multi-modelo via `xpz-llm-delegate` — deepseek-v4-pro, glm-5.1, kimi-k2.7-code, minimax-m3, opus 4.8, codex gpt-5.5 — mais revisão de pares de código), em duas rodadas (v1→v2→v3).
+
+### Problema concreto
+
+A lógica-fonte da pré-push de pasta paralela vivia só na FabricaBrasil, com nomes hardcoded, sem skill que a generalizasse nem documentação metodológica. Não havia separação entre motor compartilhado e wrapper local por-KB (padrão `xpz-sync`), nem contrato estruturado para os gates que dependem de wrappers locais (K8 auditoria de setup, K9 gate de índice — a lógica de K9 vivia inline no molde local).
+
+### Implementacao
+
+- **Fase 1 (mecânica) — núcleo de engenharia:** 5 motores generalizados em `scripts/` (`Test-XpzKbDangerousPaths` K1/K2, `Test-XpzKbLayerDiff` K3/K4, `Test-XpzNotNotIsAntipattern` K11, `Test-XpzKbFrenteHygiene` Fase 2a parcial, `Compare-XpzChecksums` F1), JSON por padrão, tokens de camada parametrizados, `git -C` com captura de exit (`unknown` bloqueia), StrictMode-safe. Orquestrador `scripts/Invoke-XpzKbParallelPrePushPhase1.ps1` (G0–G5 + K1–K4/K8/K9/K11, `pushReadiness` 0/2/1, descoberta de wrapper local por config → convenção → fail-closed). Contrato estruturado K8/K9: `Test-XpzSetupAudit.ps1` ganhou `-AsJson` aditivo (K8) e o gate de índice foi promovido a motor compartilhado `scripts/Test-XpzKbIndexGate.ps1` com `-AsJson` (K9), corrigindo a assimetria de a lógica viver inline no molde local.
+- **Bloco A** — pasta `xpz-kb-parallel-pre-push/`: `SKILL.md` enxuto (estrutura de `xpz-sync`) + 3 satélites (`fase1-mecanica`/`fase2a-estrutural`/`fase2b-classificador-de-regime`) + `agents/openai.yaml` + `examples/` (wrapper fino, config com `layerTokens`, catálogo de padrões aceitos por-KB, 2 moldes de relatório).
+- **Bloco C** — 8 self-tests + helper `XpzKbPrePushSelfTestSupport.ps1` (monta repos git de fixture), sentinela em CAIXA-ALTA, todos verdes.
+- **Blocos D–G** — paridade documental: README trilíngue, `AGENTS.md` (raiz), `02`, `08`, `09` (2 entradas de evidência), `13` (desambiguação no §Escopo: esta skill é a pré-push de pasta paralela, distinta da rotina pré-push do repo de skills), `14` (nota consultiva), `CHANGELOG.md` trilíngue, adendo no `xpz-llm-delegate/SKILL.md` (como complemento) e cross-ref no `xpz-kb-parallel-setup/SKILL.md`; `Test-XpzKbIndexGate.ps1` adicionado ao `setup-contract.manifest.json`.
+- **Bloco H (lado pasta paralela — outro contexto operacional):** adendo de superação na `decisao-001` do experimento da FabricaBrasil e registro global da skill via `xpz-skills-setup`. A `kb-parallel-pre-push.config.json` foi verificada **dispensável** na FabricaBrasil: os wrappers locais batem a convenção (`Test-FabricaBrasilKbSetupAudit.ps1` + `Test-FabricaBrasilKbIndexGate.ps1`, exatamente 1 de cada), então o orquestrador resolve por convenção sem config — só seria necessária com 0 (`none`) ou ≥2 (`ambiguous`) candidatos.
+
+### Decisao final
+
+A skill não depende da FabricaBrasil — usa-a só como referência (generalizar, não copiar). Saída JSON de máquina por padrão. A Fase 2b é classificador de regime, não runbook com selo: a autoridade sobre regressão destrutiva, troca de tipo ou de chave é o build com `FailIfReorg`, e a estática só agrega no aditivo data-bearing (shortlist de omissão). Por isso a frente não dependeu do Plano A (`references_attribute`). A `decisao-001` foi superada pelo classificador. O plano foi convergido por «Revisão por Pares» antes da implementação; a revisão pré-push reforçada (painel de 6 modelos) convergiu sobre o estado final, com o Codex (gpt-5.5, dissidente) sendo o único a achar 3 gaps de precisão (config inexistente citada como literal; rótulo «fail-open» ambíguo no K1/K2; orquestrador descrito como «na pasta paralela») que os outros 5 não viram — todos corrigidos antes do push. A entrada-diagnóstico «Maturar a Fase 2b…» permanece aberta no `999` como direção de pesquisa independente.
+
+### Rastreabilidade
+
+- Commit: `578fc9f` (`Adiciona os 5 motores generalizados da rotina pre-push de pasta paralela`)
+- Commit: `5857e0e` (`Adiciona modo -AsJson aditivo ao motor Test-XpzSetupAudit (contrato K8)`)
+- Commit: `0cc8092` (`Adiciona o orquestrador Invoke-XpzKbParallelPrePushPhase1 (Fase 1)`)
+- Commit: `74816e4` (`Promove o gate de indice a motor compartilhado Test-XpzKbIndexGate (contrato K9)`)
+- Commit: `870e971` (`Moldes locais de K8/K9 repassam -AsJson (lado local do contrato estruturado)`)
+- Commit: `47f4d65` (`Cria a pasta da skill xpz-kb-parallel-pre-push (Bloco A)`)
+- Commit: `3ae3dd9` (`Adiciona self-tests da rotina pre-push de pasta paralela (Bloco C)`)
+- Commit: `06d4de9` (`Paridade documental da skill xpz-kb-parallel-pre-push (Bloco D-G)`)
+- Commit: `efe3213` (`09: nomeia tokens literais pushReadiness e estado_operacional_sugerido`)
+- Commit: `239e0f9` (`Corrige 2 gaps de precisao achados na pre-push reforcada (Codex)`)
+- Commit: `e9b8f3e` (`Corrige rotulo "fail-open" ambiguo no K1/K2 (3a passada Codex)`)
+- Commit: `207cab4` (`999: marca config do pré-push como dispensável na FabricaBrasil (Bloco H)`)
