@@ -1368,6 +1368,35 @@ Um "gêmeo" do `Test-PrePushSharedScriptSkillCoverage.ps1` para `09`↔dono: qua
 
 O "dono" no ponteiro é texto livre (`Dono: <skill/doc>`), então mapear ponteiro→dono de forma robusta é o ponto duro (alto risco de falso positivo). Implementar quando aparecer a primeira regressão real de `09`↔dono, ou ao consolidar os gates consultivos da pré-push numa próxima rodada.
 
+## Faceta b — gate "motor novo sem entrada no `09`" (ampliar `PUBLIC_TRACEABILITY_MISSING_SCRIPT`)
+
+**Importância:** baixa
+**Maturidade:** pesquisa feita (painel de pares 2026-06-15 mapeou as decisões abertas)
+
+**Origem:** "faceta dependente (b)" da entrada do enxugamento do `09` (migrada ao histórico). Hoje o `Test-PrePushTraceabilityCoverage.ps1` só emite `PUBLIC_TRACEABILITY_MISSING_SCRIPT` quando o diff do script casa um token do `$scriptRiskPattern` (`INVENTORY_*`/`executionEvidence`/etc.); um motor novo que **não** emite esses tokens (ex.: `Set-GeneXusXmlLastUpdate.ps1`) passa batido mesmo ausente do `09`.
+
+### Direção
+
+Para todo `scripts/*.{ps1,py}` tocado no diff cujo basename **não** apareça no texto do `09` → `warn`, **independente** de token de risco (afrouxar a condição `$scriptHasTraceabilityRisk` da regra de basename, reusando o `code=PUBLIC_TRACEABILITY_MISSING_SCRIPT` existente). Consultivo, com teto; self-test no molde do `PUBLIC_TRACEABILITY_VERBOSE_LINE`.
+
+### Decisões abertas (mapeadas pelo painel de pares 2026-06-15)
+
+- **O `09` NÃO é índice nominal completo hoje** (premissa que o painel derrubou). Há ~12-17 `.ps1`/`.py` reais ausentes (`Extract-XpzObject`, `Query-KbIntelligenceIndex`, `Watch-GeneXusMsBuildLog`, `Test-XpzPowerShellRuntime`, `Update-XpzDocSection`, `Show-FileWhitespace`, gates 9-BC/9-IDO/9-PSM/9-WW, `Test-KbIntelligenceQueries.py`…) + ~14 fixtures `kb-intelligence-*.validation*.json`. A faceta b **alarga o contrato** do `09` de "índice de ponteiros das entradas que ele descreve" para "índice nominal completo de `scripts/`": decisão editorial — decidir o que o `09` promete cobrir e **reconciliar os ausentes** (ou documentar a exclusão) ANTES de ligar o gate, e registrar a virada de contrato no `13`/`08`/`02`.
+- **`.json`**: excluir as fixtures de validação do escopo (senão toda frente que adiciona um caso de teste a uma bateria dispara falso positivo estrutural). Limitar a `.ps1`/`.py`, ou só catálogos/contratos `.json`.
+- **`scripts-maintenance/`**: hoje o gate filtra `^scripts/` mas o `09` indexa `scripts-maintenance/` (entrada coletiva da campanha `exportTaskLabel`). Decidir: ampliar para `scripts(-maintenance)?/` ou remover do `09` a expectativa de indexar `scripts-maintenance/`.
+- **`added` vs `added`+`modified`**: Claude recomenda só `added` (tocar um dos ~17 legados ausentes geraria warn); Codex/minimax recomendam `added`+`modified` (tocar um legado ausente é o momento barato de decidir se entra). Tratar `A`/`M`/`R`(destino), nunca `D`.
+- **Match por fronteira de token**, não substring: `Foo.ps1` casa dentro de `Test-Foo.ps1`; usar `[regex]::Escape($base)` ancorado por fronteira. Manter a auto-exclusão do próprio gate (`$isTraceabilityDetector`).
+
+### Distinção das outras travas do `09`
+
+- `PUBLIC_TRACEABILITY_VERBOSE_LINE` (**implementada**): entrada existente que **re-incha** ao formato verboso.
+- Gêmeo `09↔dono` (**candidato 2, acima**): dono muda e o ponteiro **não acompanha** (drift).
+- Faceta b (**esta**): motor **novo nunca entrou** no `09` (lacuna no lado da adição).
+
+### Limiar para implementar
+
+Depois de reconciliar o contrato de cobertura do `09` (decidir e completar/excluir os ~17 ausentes + documentar no `13`/`08`). Só então abrir a frente do gate, com self-test.
+
 ## Correção de acentuação pt-BR degradada nos SKILL.md
 
 **Importância:** alta
