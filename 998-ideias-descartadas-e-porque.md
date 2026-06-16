@@ -1441,9 +1441,9 @@ cobertura desse pipeline.
 
 ---
 
-## Gate de lint para a regra UTF-8 sem BOM (09:103) na pré-push
+## Gate de lint para a regra UTF-8 sem BOM (02-regras-operacionais) na pré-push
 
-**Origem:** bateria de teste de harnesses sobre a frente dos gates pré-push, 2026-06-06. Uma execução GPT-5.5 apontou que self-tests novos usavam `New-Object System.Text.UTF8Encoding($false)` inline em vez de `Get-Utf8NoBomEncoding`, contrariando a regra registrada em `09-inventario-e-rastreabilidade-publica.md`. Cogitou-se mecanizar essa checagem como gate consultivo "regra-de-doc ↔ implementação", no espírito de `Test-PrePushMsBuildProbeDocParity.ps1`.
+**Origem:** bateria de teste de harnesses sobre a frente dos gates pré-push, 2026-06-06. Uma execução GPT-5.5 apontou que self-tests novos usavam `New-Object System.Text.UTF8Encoding($false)` inline em vez de `Get-Utf8NoBomEncoding`, contrariando a regra de reuso registrada em `02-regras-operacionais-e-runtime.md:1075` (com ponteiro no `09-inventario-e-rastreabilidade-publica.md`). Cogitou-se mecanizar essa checagem como gate consultivo "regra-de-doc ↔ implementação", no espírito de `Test-PrePushMsBuildProbeDocParity.ps1`.
 
 **Por que foi descartada:**
 

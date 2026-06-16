@@ -46,7 +46,7 @@
 
 ## Alinhamento entre documentos
 
-- Ao alterar nomenclatura, fluxo ou regra operacional, verificar impacto pelo menos em `README.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `13-revisao-pre-push.md` (quando a frente alterar a rotina pré-push ou gates associados) e nas skills afetadas.
+- Ao alterar nomenclatura, fluxo ou regra operacional, verificar impacto pelo menos em `README.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md` (índice de ponteiros: ao tocar um script, conferir que o ponteiro de 1 linha aponta o dono normativo correto e que o papel resumido ainda confere — o detalhe de contrato vive no dono), `13-revisao-pre-push.md` (quando a frente alterar a rotina pré-push ou gates associados) e nas skills afetadas.
 - Não deixar convenções conflitantes entre a base compartilhada e as skills quando a mudança fizer parte da mesma frente.
 
 ## Revisão pré-push

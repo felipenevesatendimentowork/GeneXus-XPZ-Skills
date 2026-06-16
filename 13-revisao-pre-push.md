@@ -70,7 +70,7 @@ Comparar a documentação afetada com:
 - `README.md`
 - `02-regras-operacionais-e-runtime.md`
 - `08-guia-para-agente-gpt.md`
-- `09-inventario-e-rastreabilidade-publica.md`, quando a frente alterar script compartilhado, contrato metodológico, skill, checklist, nomenclatura operacional, estado, parâmetro, wrapper ou evidência pública rastreável
+- `09-inventario-e-rastreabilidade-publica.md`, quando a frente alterar script compartilhado, contrato metodológico, skill, checklist, nomenclatura operacional, estado, parâmetro, wrapper ou evidência pública rastreável — o `09` é um **índice de ponteiros** (1 linha por script: papel + dono normativo + validação; o detalhe de contrato vive no dono), então a comparação verifica se o ponteiro aponta o dono certo e se o papel resumido ainda confere, não se o detalhe bate
 - exemplos canônicos `*.example.ps1` nas skills afetadas (hoje principalmente `xpz-kb-parallel-setup/examples/`; não há `examples/` na raiz)
 - scripts compartilhados em `scripts/`
 
