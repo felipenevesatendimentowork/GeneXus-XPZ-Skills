@@ -569,3 +569,36 @@ A skill não depende da FabricaBrasil — usa-a só como referência (generaliza
 - Commit: `239e0f9` (`Corrige 2 gaps de precisao achados na pre-push reforcada (Codex)`)
 - Commit: `e9b8f3e` (`Corrige rotulo "fail-open" ambiguo no K1/K2 (3a passada Codex)`)
 - Commit: `207cab4` (`999: marca config do pré-push como dispensável na FabricaBrasil (Bloco H)`)
+
+## Enxugar o inventário de scripts do `09` para ponteiros de 1 linha
+
+**Importancia original:** média
+**Status:** concluída em 2026-06-15
+
+### Origem
+
+Sessão de 2026-06-07 (frente do gate fail-closed de drift de `lastUpdate`): a revisão pré-push detectou que a propagação havia esquecido o `09`; ao investigar, viu-se que a seção de inventário de scripts do `09` duplicava informação já documentada nos donos lógicos (cabeçalho do script, skill dona, `13`, `02`/`08`, `README-kb-intelligence`). Registrada como ideia em `999-ideias-pendentes.md`.
+
+### Problema concreto
+
+O `09-inventario-e-rastreabilidade-publica.md` acumulou ~111 entradas `Evidência direta` descrevendo cada motor de `scripts/` com contrato, parâmetros, exit codes, sentinelas e consumo normativo — um quarto caminho para a mesma informação driftar (o mesmo anti-padrão que o `998` registrou ao descartar um "README agregado em `scripts/`"). Mudar o contrato de um script exigia atualizar 5 lugares, e o `09` ficava para trás.
+
+### Implementacao
+
+- Cada entrada de script do `09` virou um ponteiro de 1 linha (Caminho 1): `scripts/X` (categoria) — papel em 1 frase; Dono: <normativo>; Validação: <self-test.ps1>; Tokens/Exit nus. A prosa de contrato migrou para o dono; os tokens rastreáveis pelo gate `Test-PrePushTraceabilityCoverage.ps1` e as sentinelas de self-test foram preservados nus, então o token-check do gate não foi alterado.
+- Consolidação conservadora: 1 ponteiro por script distinto (bullet multi-script vira N ponteiros); os wrappers de build embutidos (`Invoke-GeneXusKbBuildAll`/`SpecifyGenerate`) ganharam ponteiro dedicado. Seções não-script intocadas (governança, `PrivateMap`, `Inferência forte`, `Regra operacional`/`Regra editorial`, histórico empírico `KB_Teste_*`).
+- Downstream: `AGENTS.md` (alinhamento entre documentos), `08-guia-para-agente-gpt.md` e `13-revisao-pre-push.md` passaram a descrever o `09` como índice de ponteiros (a comparação verifica ponteiro→dono + papel, não o detalhe); `998-ideias-descartadas-e-porque.md:1446` reancorado da regra UTF-8 sem BOM ao dono `02-regras-operacionais-e-runtime.md:1075`; entrada no `CHANGELOG.md`.
+- Trava anti-regressão (candidato 1): novo sinal consultivo `PUBLIC_TRACEABILITY_VERBOSE_LINE` no `Test-PrePushTraceabilityCoverage.ps1` — detecta deterministicamente uma entrada de script que volte ao formato verboso antigo (rótulo `Evidência direta` colado num caminho `scripts/`); `warn`, invariante, com o self-test novo `Test-PrePushTraceabilityCoverageSelfTest.ps1` (o gate não tinha self-test). O candidato 2 (gêmeo `09↔dono`) ficou como ideia no `999`.
+- Formato e regras validados por painel de revisão por pares multi-modelo (Claude Opus nativo + Codex gpt-5.5 + deepseek-v4-pro + minimax-m3), que pegou a duplicata `02:1075` (que parecia órfã), a consolidação ampla-demais (que apagaria ~19 scripts do llm-delegate) e a necessidade de `.ps1` na Validação. Os modelos Mistral Large 3 e Nemotron 3 Ultra foram vetados na mesma frente por baixo aterramento.
+
+### Decisao final
+
+Caminho A (enxugar) sobre o status quo: o `09` permanece índice agregado e perde a duplicação de detalhe que driftava. Tokens nus preservados mantêm o gate verde sem rework; a trava `PUBLIC_TRACEABILITY_VERBOSE_LINE` impede a verbosidade de voltar silenciosamente.
+
+### Rastreabilidade
+
+- Commit: `33bd9aa` (`governanca: veta Mistral Large 3 e Nemotron 3 Ultra na lista de modelos a evitar`)
+- Commit: `d8844c4` (`wip: enxuga o 09 (inventario) — secao motor operacional compartilhado parcial`)
+- Commit: `45dbc2b` (`enxuga o 09: motor compartilhado + skill experimental MSBuild → ponteiros`)
+- Commit: `a259358` (`09 enxuto: downstream (AGENTS/08/13 + 998 + CHANGELOG)`)
+- Trava `PUBLIC_TRACEABILITY_VERBOSE_LINE` + Fase 6 (migração): commits a seguir nesta sessão (sem push, decisão do usuário).

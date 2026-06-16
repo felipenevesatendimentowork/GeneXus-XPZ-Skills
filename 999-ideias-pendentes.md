@@ -1324,36 +1324,6 @@ Estender o schema do SQLite para registrar, em cada relação de referência ent
 
 Resultado: `who-uses Procedure:X` passa a retornar não só "estes N objetos te referenciam" mas "te referenciam aqui — `WPRelatorio` no Event 'Refresh' linha ~47, `PRecalcular` no Source linha ~12, etc.".
 
-## Enxugar o inventário de scripts do `09` para ponteiros (remover duplicação que drifta)
-
-**Importância:** média
-**Maturidade:** pesquisa feita
-
-**Origem:** sessão de 2026-06-07, frente do gate fail-closed de drift de `lastUpdate` (commits `2c8b699`, `8949c76`) e da correção de rastreabilidade no `09` (`5aa96cb`). A revisão pré-push (subagente Opus) detectou que a propagação havia esquecido o `09`; ao investigar a causa, viu-se que a seção de inventário de scripts do `09` duplica informação já documentada nos donos lógicos.
-
-### Problema concreto que motiva a ideia
-
-O `09-inventario-e-rastreabilidade-publica.md` tem propósito legítimo (rastreabilidade da consolidação editorial, governança, nota de que `scripts/` não é normativo, ponteiro para `GeneXus-XPZ-PrivateMap`). Mas, frente a frente, acumulou cerca de 40 entradas `Evidência direta` descrevendo cada motor de `scripts/` com contrato, parâmetros, exit codes, sentinelas e "consumo normativo". Esse detalhe duplica o que já vive em (a) cabeçalho do próprio script, (b) skill dona / `13-revisao-pre-push.md` / `scripts/README-kb-intelligence.md`, às vezes (c) `02`/`08`. É um quarto caminho para a mesma informação driftar — o mesmo anti-padrão que o `998-ideias-descartadas-e-porque.md` registrou ao descartar um "README agregado em `scripts/`". Manifestação concreta: nesta sessão, mudar o contrato do `New-XpzImportPackage` e criar o `Set-GeneXusXmlLastUpdate` exigiu atualizar a mesma informação em 5 lugares; o `09` (a cópia redundante) ficou para trás e só foi pego na pré-push.
-
-Auditoria de cobertura já feita (amostral, 3 categorias): gates de pré-push → `13`; supports/infra (`Utf8NoBomEncodingSupport`, `XpzTextFileEolSupport`, `GeneXusObjectTypeCatalogCore`) → `02`/`08`/`README`/`AGENTS`/`README-kb-intelligence` + cabeçalho; motor de skill (`Test-GeneXusObjectVariableDelta`) → `xpz-builder`. Padrão confirmado: conteúdo derivado, cada entrada já cita seu dono.
-
-### Ideia de melhoria (direção A — enxugar, não reforçar a duplicação)
-
-Reduzir cada entrada de script do `09` a um ponteiro de uma linha — nome + papel em uma frase + dono normativo + self-test — preservando a função de índice agregado e removendo a duplicação de detalhe. As seções não-script do `09` (consolidação, governança, `PrivateMap`, nota de `scripts/` não-normativo) permanecem: são o propósito legítimo. Execução por blocos temáticos (empacotamento → pré-push → KB intelligence → supports), confirmando cada bloco antes do seguinte.
-
-**Regra de ouro:** antes de reduzir cada entrada, confirmar que o detalhe removido aparece no dono citado; na rara entrada com detalhe órfão, mover o detalhe para o dono **antes** de remover do `09`; nunca deletar órfão.
-
-### Facetas dependentes (decidir DEPOIS do enxugamento)
-
-- A seção "Alinhamento entre documentos" do `AGENTS.md` não lista o `09`; incluí-lo só faz sentido após enxugar (manter um ponteiro é barato).
-- O gate `Test-PrePushTraceabilityCoverage.ps1` só detecta script ausente do `09` quando o diff casa o `$scriptRiskPattern` estreito (deixou o `Set-GeneXusXmlLastUpdate` passar); ampliar para "motor novo sem entrada no `09`" é candidato, com cuidado para não gerar falsos positivos em supports/helpers/self-tests.
-
-### Decisões em aberto
-
-- Formato exato do ponteiro; se supports puros mantêm ponteiro ou saem (deixando só o cabeçalho).
-- Se, pós-enxugamento, atualizar a regra de alinhamento do `AGENTS` e/ou ampliar o gate.
-- Relação com a entrada do `998` (mesma filosofia anti-duplicação) e com o `07-open-points-e-checklist.md` como índice agregado canônico.
-
 ### Por que **não** substitui a frente vetorial em 999
 
 A frente "LlamaIndex / LangChain + vector store como alternativa ao indice SQLite atual" e esta entrada respondem perguntas diferentes:
@@ -1374,6 +1344,29 @@ São complementares. Implementar uma não dispensa a outra. Custos de implementa
 ### Limiar para implementar
 
 Implementar quando houver: (a) caso real recente de migração em lote (10+ callers) que tenha custado caro por leitura manual de XML após o `who-uses` apontar os nomes; e (b) decisão fechada sobre granularidade do fingerprint (qual nível de localização vale o custo de armazenar e manter).
+
+## Enxugar o inventário de scripts do `09` para ponteiros (remover duplicação que drifta) — IMPLEMENTADO E MIGRADO
+
+> Implementado e migrado para `historico/IdeiasImplementadas_202606.md` em 2026-06-15 (commits `d8844c4`/`45dbc2b`/`a259358`; veto de modelos em `33bd9aa`; trava `PUBLIC_TRACEABILITY_VERBOSE_LINE` no gate de rastreabilidade). As ~111 entradas de script do `09` viraram ponteiros de 1 linha (Caminho 1: tokens/sentinelas/exits nus, prosa de contrato no dono), com downstream em `AGENTS`/`08`/`13`/`998`/`CHANGELOG`; pré-push mecânica verde e fase semântica limpa; **não pushado** (decisão do usuário). O candidato 2 da trava (gêmeo `09↔dono`) ficou como ideia própria abaixo.
+
+## Trava anti-regressão do `09` enxuto — gêmeo `09↔dono` (candidato 2)
+
+**Importância:** baixa
+**Maturidade:** ideia
+
+**Origem:** fechamento do enxugamento do `09` (2026-06-15). O candidato 1 (sinal `PUBLIC_TRACEABILITY_VERBOSE_LINE`, que detecta entrada de script voltando ao formato verboso) foi implementado junto da frente. Sobra o candidato 2, mais complexo.
+
+### Problema
+
+O ponteiro curto realocou o risco de drift para `09`↔dono: o token-check do gate passa (tokens nus preservados), mas a referência pode ficar semanticamente errada quando o **dono** muda e o ponteiro do `09` não (ou vice-versa). O `Test-PrePushTraceabilityCoverage.ps1` hoje não cobre essa assimetria.
+
+### Direção
+
+Um "gêmeo" do `Test-PrePushSharedScriptSkillCoverage.ps1` para `09`↔dono: quando o diff altera um dono normativo (skill / `02` / `08` / `13` / catálogo) sem tocar o ponteiro correspondente no `09` (ou vice-versa), avisar como candidata a conferir. `warn`, não bloqueante.
+
+### Dificuldade / limiar
+
+O "dono" no ponteiro é texto livre (`Dono: <skill/doc>`), então mapear ponteiro→dono de forma robusta é o ponto duro (alto risco de falso positivo). Implementar quando aparecer a primeira regressão real de `09`↔dono, ou ao consolidar os gates consultivos da pré-push numa próxima rodada.
 
 ## Correção de acentuação pt-BR degradada nos SKILL.md
 
