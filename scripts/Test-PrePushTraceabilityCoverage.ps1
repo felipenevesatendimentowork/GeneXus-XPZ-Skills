@@ -133,6 +133,22 @@ if ($prePushDocChanged -and -not ($normalizedChangedFiles -contains '08-guia-par
     Add-Finding -Target $findings -Code 'PREPUSH_DOC_NOT_MIRRORED_IN_08' -Path '08-guia-para-agente-gpt.md' -Message '13-revisao-pre-push.md alterado no intervalo, mas 08-guia-para-agente-gpt.md nao; avaliar se o resumo para agentes GPT ficou defasado.'
 }
 
+# Trava anti-regressao do 09 enxuto (indice de ponteiros): entrada de script que voltou ao
+# formato verboso antigo (rotulo "Evidencia direta" colado num caminho scripts/...). Pos-
+# enxugamento o ponteiro de script nao leva rotulo (- `scripts/X` (categoria) -- ...); o
+# reaparecimento desse formato sinaliza prosa de contrato voltando a duplicar o dono logico.
+# Invariante (nao diff-scoped), warn, com teto. Bullets de governanca que citam um script tem
+# texto entre o rotulo e o caminho (": o script `scripts/...`"), entao nao casam o padrao.
+$verboseEntryRegex = [regex]'(?m)^- `Evid[eê]ncia direta`:[ \t]*`scripts(-maintenance)?/'
+$verboseLineCap = 25
+$verboseReported = 0
+foreach ($verboseMatch in $verboseEntryRegex.Matches($publicTraceabilityText)) {
+    if ($verboseReported -ge $verboseLineCap) { break }
+    $verboseLineNumber = (($publicTraceabilityText.Substring(0, $verboseMatch.Index)) -split "`n").Count
+    Add-Finding -Target $findings -Code 'PUBLIC_TRACEABILITY_VERBOSE_LINE' -Path '09-inventario-e-rastreabilidade-publica.md' -Message ("Linha ~{0} do 09 esta no formato verboso de entrada de script (rotulo 'Evidencia direta' colado num caminho scripts/); o 09 e indice de ponteiros - reduzir a 1 linha (papel + dono + validacao), o detalhe de contrato vive no dono." -f $verboseLineNumber)
+    $verboseReported++
+}
+
 $scriptRiskPattern = '(INVENTORY_[A-Z_]+|DRIFT_[A-Z_]+|executionEvidence|watcherContext|pathEnrichment|diagnosticDegraded|compactSignals|PUSH_READINESS|pushReadiness|estado_operacional_sugerido|atualizacao_metodologica_pendente)'
 $changedScriptPaths = @($normalizedChangedFiles | Where-Object { $_ -match '^scripts/.+\.(ps1|py|json)$' })
 foreach ($scriptPath in $changedScriptPaths) {

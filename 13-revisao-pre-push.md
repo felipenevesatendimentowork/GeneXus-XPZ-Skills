@@ -180,7 +180,7 @@ Ver `10-base-operacional-msbuild-headless.md` e gate `Test-PrePushMsBuildProbeDo
 | --- | --- |
 | `scripts/Invoke-PrePushMechanicalChecks.ps1` | Orquestrador mecânico (git, parse, avisos) |
 | `scripts/Test-PyScriptsParse.ps1` | Parse AST de `scripts/*.py` sem gerar bytecode |
-| `scripts/Test-PrePushTraceabilityCoverage.ps1` | Rastreabilidade editorial + paridade motor/doc (consultivo) |
+| `scripts/Test-PrePushTraceabilityCoverage.ps1` | Rastreabilidade editorial + paridade motor/doc; trava `PUBLIC_TRACEABILITY_VERBOSE_LINE` do índice de ponteiros do `09` (consultivo) |
 | `scripts/Test-PrePushMsBuildProbeDocParity.ps1` | Paridade MSBuild probe (quando aplicável) |
 | `scripts/Test-GeneXusUnexpectedCharacter.ps1` | Caracteres Unicode inesperados em .md/.ps1 (consultivo) |
 | `scripts/Test-PrePushNewTokenPropagation.ps1` | Propagação de termo novo introduzido no diff por transição co-localizada (consultivo) |
