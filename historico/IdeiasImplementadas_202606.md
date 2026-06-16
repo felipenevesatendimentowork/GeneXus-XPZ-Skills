@@ -601,4 +601,6 @@ Caminho A (enxugar) sobre o status quo: o `09` permanece índice agregado e perd
 - Commit: `d8844c4` (`wip: enxuga o 09 (inventario) — secao motor operacional compartilhado parcial`)
 - Commit: `45dbc2b` (`enxuga o 09: motor compartilhado + skill experimental MSBuild → ponteiros`)
 - Commit: `a259358` (`09 enxuto: downstream (AGENTS/08/13 + 998 + CHANGELOG)`)
-- Trava `PUBLIC_TRACEABILITY_VERBOSE_LINE` + Fase 6 (migração): commits a seguir nesta sessão (sem push, decisão do usuário).
+- Commit: `ae58629` (`Trava anti-regressao do 09 enxuto: sinal PUBLIC_TRACEABILITY_VERBOSE_LINE`)
+- Commit: `55391a0` (`historico: migra o enxugamento do 09 do 999 e conserta particao do fingerprint`)
+- Commit: `720f1f6` (`999: registra a faceta b (gate "motor novo sem entrada no 09") com decisoes abertas`)
