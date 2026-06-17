@@ -604,3 +604,30 @@ Caminho A (enxugar) sobre o status quo: o `09` permanece índice agregado e perd
 - Commit: `ae58629` (`Trava anti-regressao do 09 enxuto: sinal PUBLIC_TRACEABILITY_VERBOSE_LINE`)
 - Commit: `55391a0` (`historico: migra o enxugamento do 09 do 999 e conserta particao do fingerprint`)
 - Commit: `720f1f6` (`999: registra a faceta b (gate "motor novo sem entrada no 09") com decisoes abertas`)
+
+## Formalizar o ciclo «Revisão por Pares» (validação de plano por painel multi-modelo)
+
+**Importancia original:** média
+**Status:** implementada em 2026-06-17
+
+### Origem
+
+Registrada no `999-ideias-pendentes.md` em 2026-06-14 (sessão do Plano B). O nome «Revisão por Pares» foi escolhido pelo usuário, ancorado no conceito acadêmico de *peer review*. A formalização foi pedida e executada em 2026-06-17, ela própria conduzida pelo ciclo que formaliza (dogfooding: painel multi-modelo v1→v4 sobre o plano, com Codex pegando gaps de paridade que os demais não pegaram e Claude Code corrigindo o alvo de migração defasado por edição paralela).
+
+### O que foi implementado
+
+- Novo `15-revisao-por-pares.md`: metodologia genérica de revisão por pares (manuscrito = leitura do problema + solução + fontes + decisões em aberto → painel independente de modelos distintos que leem as fontes → *revise-and-resubmit* → convergência do painel inteiro sobre a versão final → execução liberável após nó humano). Tornado **fonte normativa** da régua de convergência, mapeada regra-a-regra (versões de manuscrito, não commits; "pronto" = execução liberável, não push). Inclui papéis (agente monta/opina, humano decide), composição (famílias distintas, política do README), confidencialidade (autor classifica o manuscrito + gate por revisor), livro-razão opcional em `Temp\revisao-por-pares\<ts-ou-guid>\` e prompt mínimo.
+- Estrutura **C pura**: o `14-revisao-pre-push-reforcada.md` virou a **aplicação pré-push** do `15` — a seção "A régua" e os papéis deixaram de ser atribuídos ao `14` e passaram a remeter ao `15`, mantendo só o específico de pré-push (prompt verbatim, *stale*-por-commit, push-ready, lista de modelos). Reconciliadas as paráfrases da régua em `09:93` e `08:121` (apontam ao `15`); `13:7`/`AGENTS:58` ficaram (ponteiros corretos ao tier pré-push).
+- Skill `xpz-llm-delegate`: cross-ref ampliado (revisão por pares → `15` genérico + `14` pré-push), gatilho novo nos `TRIGGERS`, e o motor `scripts/Build-LlmDelegateCapabilityManifest.ps1` (sonda backends instalados + enumera modelos opencode/Codex via config — Claude/Copilot/Gemini sem enumeração nativa —, reusa os `Resolve-*ModelLocality`; manifesto **sanitizado** machine-level `%LOCALAPPDATA%\xpz-llm-delegate\capabilities.json` + snapshot por-KB opcional em `Temp/`; dica de oferta, nunca verdade do gate) com self-test `scripts/Test-LlmDelegateCapabilityManifestSelfTest.ps1`.
+- `xpz-kb-parallel-setup`: oferta gravar o snapshot no momento (opcional, não-bloqueante) da política de delegação; motor incluído no `setup-contract.manifest.json` (dispara re-auditoria de contrato).
+- Paridade: `00-indice-da-base-genexus-xpz-xml.md`, `09-inventario-e-rastreabilidade-publica.md` (entradas novas + reconciliação), `08-guia-para-agente-gpt.md`, `AGENTS.md`, `README.md` (trilíngue), `CHANGELOG.md` (trilíngue).
+
+### Decisão final
+
+Estrutura C pura (15 = metodologia genérica/normativa; 14 = aplicação pré-push) convergida por painel multi-modelo diverso (Claude Code, Codex gpt-5.5, deepseek-v4-pro, glm-5.1, minimax-m3, kimi-k2.7-code) em quatro versões. O manifesto de capacidade é **dica de oferta sanitizada, nunca verdade do gate** (o `Resolve-LlmDelegateAuthorization.ps1` reavalia destino e sensibilidade sempre); capacidade ≠ autorização (arquivos separados); snapshot por-KB em `Temp/` (gitignored, cache re-derivável). Resíduos deixados abertos como futuros no `999`: harness de disparo do painel, backends one-shot (`llm`/`mods`) e personas de revisão.
+
+### Rastreabilidade
+
+- Commit: `0267a5b` (`Revisão por Pares: cria o 15 (metodologia genérica) e aponta 14 + xpz-llm-delegate a ele`)
+- Commit: `d191ca7` (`Revisão por Pares: motor de capacidade + oferta de snapshot no setup`)
+- Commit: `b9def3e` (`Revisão por Pares: paridade downstream (00/08/09/AGENTS/README/CHANGELOG)`)

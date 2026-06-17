@@ -11,6 +11,52 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## URGENTE — `.ContainsKey` sobre `OrderedDictionary` quebra o pós-processamento do BuildAll sob StrictMode
+
+**Importância:** alta (não corrompe o build, mas mascara um resultado limpo como falha e pode confundir a classificação do diagnóstico)
+**Maturidade:** pronta para implementar (causa raiz confirmada no código; correção de uma linha identificada)
+
+**Origem:** caso real em 2026-06-17, KB `FabricaBrasil18`, environment `NETPostgreSQL` (.NET Core). `scripts/Invoke-GeneXusKbBuildAll.ps1` concluiu o BuildAll **limpo** (`executionEvidence.msBuildExitCode=0`, `__BUILDALL_DONE__=true`, "Build All Task Sucesso", 0 erros, 0 reorg), mas o pós-processamento do wrapper lançou exceção e degradou o diagnóstico JSON. Evidência salva (read-only) em `C:\Dev\Prod\Gx_FabricaBrasil\Temp\build\build-all.log` (`"msBuildExitCode": 0` + `postProcessingError` abaixo).
+
+### Sintoma
+
+- `status` saiu como `compilou limpo com falha no pos-processamento`; `postProcessingFailed=true`.
+- Mensagem exata em `postProcessingError`:
+  `Method invocation failed because [System.Collections.Specialized.OrderedDictionary] does not contain a method named 'ContainsKey'.`
+- O build em si está correto — só a montagem do diagnóstico quebra. Por isso o impacto é de **diagnóstico mascarado**, não de regressão de compilação.
+
+### Causa raiz (confirmada no código)
+
+- `scripts/GeneXusKbDeployBinSupport.ps1:482` chama `$freshness.binCheck.ContainsKey('sentinelFreshSinceBuild')`.
+- `$freshness.binCheck` é um `[ordered]@{}` — criado em `Test-GeneXusKbDeployBinFreshnessCore` em `scripts/GeneXusKbDeployBinSupport.ps1:336` (e repassado por `Invoke-GeneXusKbDeployBinPostBuildClassification` em `:476`).
+- O arquivo roda sob `Set-StrictMode -Version Latest` (`scripts/GeneXusKbDeployBinSupport.ps1:14`). `OrderedDictionary`/`[ordered]@{}` **não** expõe método `.ContainsKey(...)` — só `.Contains(key)`. Sob StrictMode a invocação inexistente é erro de runtime (pitfall já registrado no `AGENTS.md` global do usuário).
+- O ramo `if ($freshness.status -eq 'fresh')` (`:481`) é justamente o caminho da publicação .NET Core fresca que este build percorreu, disparando a exceção. A exceção é capturada pelo `catch` de pós-processamento de `Invoke-GeneXusKbBuildAll.ps1` (`:1962`), que preenche `postProcessingError` e rebaixa o status.
+
+### Correção recomendada (não aplicada — aguarda decisão do mantenedor)
+
+Trocar `.ContainsKey(...)` por `.Contains(...)` na linha `scripts/GeneXusKbDeployBinSupport.ps1:482`:
+
+```powershell
+# de:
+if ($freshness.binCheck.ContainsKey('sentinelFreshSinceBuild') -and
+# para:
+if ($freshness.binCheck.Contains('sentinelFreshSinceBuild') -and
+```
+
+Alternativas equivalentes: `$freshness.binCheck.Keys -contains 'sentinelFreshSinceBuild'`, ou trocar o `[ordered]@{}` por hashtable `@{}` se a ordem de `binCheck` for irrelevante (hashtable tem `.ContainsKey`). A troca por `.Contains(...)` é a de menor superfície e preserva a ordem.
+
+**Varredura recomendada antes do fix:** auditar os demais `.ContainsKey` do repositório que possam incidir sobre `[ordered]@{}`/`OrderedDictionary` (a maioria das ocorrências em `scripts/` é sobre hashtable `@{}` ou `$PSBoundParameters`, que têm `.ContainsKey` e são seguras; este caso é específico de um `[ordered]@{}`).
+
+### Critério de aceite
+
+BuildAll limpo de uma KB .NET Core (caminho `deployBinFreshness=fresh`) deve produzir `status=compilou limpo` (ou equivalente sem `postProcessingFailed`), com `postProcessingError=null`, e o warning consultivo de `GxNetCoreStartup.dll` (quando aplicável) deve aparecer sem lançar exceção.
+
+### Relacionado
+
+- `scripts/GeneXusKbDeployBinSupport.ps1` (dono do bug, `:482`; `[ordered]@{}` em `:336`/`:476`; StrictMode em `:14`)
+- `scripts/Invoke-GeneXusKbBuildAll.ps1` (`:1845`–`:1873` consome a classificação deploy-bin; `catch` de pós-processamento em `:1962`)
+- Skill `xpz-msbuild-build` (consumidora do diagnóstico do BuildAll)
+
 ## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (Fase 2b da skill `xpz-kb-parallel-pre-push`, hoje classificador documental)
 
 **Importância:** média (o sub-caso **destrutivo** tende a `alta` — falso negativo de regressão por dependente não enumerado; hoje mitigado só pelo build)
@@ -178,55 +224,9 @@ Após implementar + rebuild:
 
 > Implementado e migrado para `historico/IdeiasImplementadas_202606.md` em 2026-06-15. Lado-repo: skill `xpz-kb-parallel-pre-push` (Fase 1 mecânica + Blocos A/C/D–G), PUSHADO. Lado pasta paralela (Bloco H): adendo de superação na `decisao-001` do experimento da FabricaBrasil + registro global via `xpz-skills-setup`; a `kb-parallel-pre-push.config.json` é dispensável na FabricaBrasil (wrappers locais resolvidos por convenção). A entrada-diagnóstico «Maturar a Fase 2b…» permanece **aberta** acima como direção de pesquisa independente.
 
-## Formalizar o ciclo «Revisão por Pares» (validação de plano por painel multi-modelo)
+## Formalizar o ciclo «Revisão por Pares» (validação de plano por painel multi-modelo) — IMPLEMENTADO E MIGRADO
 
-**Importância:** média
-**Maturidade:** pesquisa feita (exercido ao vivo e comprovado na sessão de 2026-06-14; falta formalizar como artefato reutilizável)
-
-**Origem:** sessão 2026-06-14, durante a execução do Plano B (promoção da skill `xpz-kb-parallel-pre-push`). O usuário pediu para registrar o ciclo como ideia a implementar. O nome «Revisão por Pares» foi escolhido pelo usuário, ancorado no conceito acadêmico de *peer review* (pesquisado na sessão).
-
-### O que é
-
-Um ciclo de validação de **plano/design** (não de diff pronto, não de pré-push) em que o agente principal («autor») submete a sua **leitura do problema + a solução proposta** (um «manuscrito») a um **painel de revisores independentes multi-modelo**, via `xpz-llm-delegate`. Cada par:
-
-- pensa por si e devolve a **sua** versão (concordar / revisar / rejeitar) com justificativa e recomendações priorizadas;
-- **consulta as fontes por conta própria** (repo de skills + pasta paralela/experimento, sob `-Cd`/cwd) para confirmar, refinar ou **refutar** o que o autor afirma — o manuscrito não é tratado como verdade, é insumo de avaliação;
-- o autor **reavalia a cada resposta e carrega a versão melhorada adiante** (*revise-and-resubmit*), de modo que o plano evolui em cadeia (v1 → v2 → … até o estado final).
-
-### Régua de convergência
-
-Execução/push só liberada quando o **painel inteiro** converge «sem gap» sobre o **estado final** (mesma régua do `14-revisao-pre-push-reforcada.md`). Um par que antes aprovou deve rever a versão **atualizada** — o plano que ele aprovou já não é o plano. Variante para código: revisar **um exemplar** antes de replicar o padrão em N arquivos.
-
-### Por que vale (evidência empírica desta sessão)
-
-Em 13 consultas (deepseek-v4-pro, glm-5.1, kimi-k2.7-code, minimax-m3 no opencode + opus 4.8 + codex gpt-5.5), o ciclo pegou o que passadas únicas não pegariam:
-
-- bug real do `git … 2>$null` sem checar `$LASTEXITCODE` (silent-pass → `ready` falso), que teria sido replicado em vários motores;
-- *overstatement* do contrato K8 (o motor de auditoria emitia texto, não JSON estruturado);
-- assimetria K8↔K9 (o gate de índice devia ser motor compartilhado — apontado pelo dono, confirmado pelo painel);
-- escolha de nome, formato de config (JSON de máquina > seção de README), parametrização de tokens de camada, sutileza cabeça-detalhe no F1.
-
-Diversidade de modelo importou: modelos distintos pegaram pontos cegos que repetições do mesmo modelo deixavam passar (inclusive modelos marcados como «fracos» no README contribuíram com achados válidos quando puderam ler as fontes).
-
-### O que «implementar» significa
-
-Formalizar o ciclo num artefato reutilizável, decidindo entre (ou combinando):
-
-- um **documento de metodologia** (ex.: `15-revisao-por-pares.md`), análogo ao `13`/`14`, descrevendo manuscrito → painel independente lendo as fontes → revise-and-resubmit → convergência;
-- um **harness reutilizável** (workflow/script) que dispara o painel multi-modelo sobre um manuscrito e coleta vereditos de forma estruturada (job assíncrono + watcher + `result.json`, como foi feito ad-hoc nesta sessão);
-- uma **skill** dedicada, se o acionamento merecer empacotamento próprio.
-
-### Relação com o que já existe
-
-- `14-revisao-pre-push-reforcada.md`: painel multi-modelo + régua de convergência **para pré-push**. A «Revisão por Pares» generaliza isso para **validação de plano/design antes/durante a implementação**, não só pré-push.
-- `xpz-llm-delegate`: já fornece o mecanismo (adapters opencode/Codex/Claude Code/Copilot/Gemini, gate de confidencialidade por KB, job assíncrono + watcher). A formalização reusa esse mecanismo, não o reinventa.
-
-### Decisões em aberto
-
-- Documento de metodologia, harness executável, ou ambos? E onde mora (raiz `15-*` vs dentro de `xpz-llm-delegate`)?
-- Quantos/quais revisores por padrão, e como calibrar leve vs reforçado pelo tamanho/risco da frente.
-- Como registrar o «manuscrito» e o livro-razão de vereditos de forma auditável (artefato em `Temp/`? handoff?).
-- Confidencialidade: quando o manuscrito referencia pasta paralela de KB real, o gate de `xpz-llm-delegate` se aplica (foi autorizado ad-hoc pelo dono nesta sessão); a formalização deve tornar explícito o ponto de autorização.
+> Implementado e migrado para `historico/IdeiasImplementadas_202606.md` em 2026-06-17. Estrutura **C pura**: `15-revisao-por-pares.md` (metodologia genérica, fonte normativa da régua) + `14` como aplicação pré-push + motor `scripts/Build-LlmDelegateCapabilityManifest.ps1` e gatilho de revisão por pares na `xpz-llm-delegate`. Decisões em aberto resolvidas (C pura; manifesto sanitizado dica-de-oferta-nunca-verdade-do-gate; livro-razão opcional em `Temp/`; ponto de autorização = autor classifica + gate por revisor). Resíduos seguem **abertos** como futuros: harness de disparo do painel, backends one-shot (`llm`/`mods`) e personas de revisão.
 
 ## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
 
