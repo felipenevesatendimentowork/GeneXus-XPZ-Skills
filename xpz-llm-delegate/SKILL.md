@@ -26,10 +26,11 @@ quanto, com regras mais estreitas, em sessão dentro de uma **pasta paralela de 
 Ela não manipula XPZ/XML; o prefixo `xpz-` é marcador de família, como em
 `xpz-skills-setup`.
 
-Um caso de uso documentado deste mecanismo é o **painel multi-modelo de revisão
-pré-push reforçada** — ver [`14-revisao-pre-push-reforcada.md`](../14-revisao-pre-push-reforcada.md)
-na raiz do repositório, que guarda a política (régua de convergência); esta skill
-guarda o mecanismo de delegação.
+Este mecanismo sustenta a **revisão por pares** — submeter um manuscrito a um painel de
+revisores de modelos distintos, que pensam por si e leem as fontes. A **metodologia genérica**
+e a régua de convergência são normativas em [`15-revisao-por-pares.md`](../15-revisao-por-pares.md);
+o caso **pré-push** dela é o painel de [`14-revisao-pre-push-reforcada.md`](../14-revisao-pre-push-reforcada.md).
+Os documentos guardam a metodologia/política; esta skill guarda o mecanismo de delegação.
 
 ---
 
@@ -208,6 +209,7 @@ Use esta skill para:
 - Delegar uma tarefa menor a um LLM secundário, a pedido do usuário ou com a concordância
   dele a uma sugestão
 - Pedir segunda opinião de um modelo distinto (ex.: diversidade de modelo na revisão pré-push)
+- Conduzir uma **revisão por pares** de um plano/design — montar um painel multi-modelo e ofertar a composição conforme os modelos/backends disponíveis na máquina (gatilhos: "revisão por pares", "peer review", "painel de modelos", "validar plano multi-modelo"); ver [`15-revisao-por-pares.md`](../15-revisao-por-pares.md)
 - Disparar uma tarefa longa sem bloquear (job assíncrono com janela de acompanhamento)
 - Delegar a um sub-agente Codex (`codex exec`) — síncrono ou assíncrono
 - Delegar a um sub-agente Claude Code (`claude -p`, Opus 4.8) — síncrono ou assíncrono
