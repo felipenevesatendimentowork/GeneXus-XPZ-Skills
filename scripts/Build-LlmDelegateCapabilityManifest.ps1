@@ -130,33 +130,36 @@ function Get-CodexProfileIds {
 
 function Get-CodexModelEntries {
     param([string]$ConfigPath)
-    $entries = @()
+    $entries = [System.Collections.Generic.List[object]]::new()
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    function Add-FromResolver {
-        param([string[]]$ResolverArgs, [string]$SourceKind)
+    # Cada invocacao do resolver: $null = default (deriva o model de topo da config);
+    # caso contrario, um profile declarado. Chamada DIRETA (sem splat de array, que nao
+    # vincula parametro nomeado de forma confiavel) e sem funcao aninhada (que quebraria
+    # o `+=` por escopo); a List muta por referencia via .Add().
+    $profilesToProbe = @($null) + @(Get-CodexProfileIds -ConfigPath $ConfigPath)
+
+    foreach ($profileId in $profilesToProbe) {
         try {
-            $resJson = & $codexResolver @ResolverArgs
-            if (-not $resJson) { return }
+            if ([string]::IsNullOrWhiteSpace([string]$profileId)) {
+                $resJson = & $codexResolver -ConfigPath $ConfigPath
+            }
+            else {
+                $resJson = & $codexResolver -Profile $profileId -ConfigPath $ConfigPath
+            }
+            if (-not $resJson) { continue }
             $res = $resJson | ConvertFrom-Json
             $canonical = [string](Get-Prop $res 'canonicalModel')
-            if ([string]::IsNullOrWhiteSpace($canonical)) { return }
-            if (-not $seen.Add($canonical)) { return }
+            if ([string]::IsNullOrWhiteSpace($canonical)) { continue }
+            if (-not $seen.Add($canonical)) { continue }
             $locality = [string](Get-Prop $res 'locality')
-            $entries += [pscustomobject]@{
+            $entries.Add([pscustomobject]@{
                 canonicalModel = $canonical
                 locality       = $locality
                 reasonCode     = ConvertTo-ReasonCode $locality
-                sourceKind     = $SourceKind
-            }
+                sourceKind     = 'config'
+            })
         } catch { }
-    }
-
-    # Default da config (sem -Model: deriva do model de topo).
-    Add-FromResolver -ResolverArgs @('-ConfigPath', $ConfigPath) -SourceKind 'config'
-    # Cada profile declarado.
-    foreach ($id in (Get-CodexProfileIds -ConfigPath $ConfigPath)) {
-        Add-FromResolver -ResolverArgs @('-Profile', $id, '-ConfigPath', $ConfigPath) -SourceKind 'config'
     }
     return $entries
 }

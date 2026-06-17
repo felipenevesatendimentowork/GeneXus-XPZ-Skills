@@ -52,7 +52,19 @@ try {
 }
 "@ | Set-Content -LiteralPath $openCfg -Encoding utf8
 
-    $codexCfg = Join-Path $tempRoot 'config-inexistente.toml'   # ausente de proposito
+    # config.toml real do Codex: model de topo (openai builtin -> external) + um profile
+    # OSS local (loopback -> local). Exercita a enumeracao Codex (regressao do bug de escopo).
+    $codexCfg = Join-Path $tempRoot 'config.toml'
+    @"
+model = "gpt-5.5"
+
+[profiles.local-oss]
+model = "qwen2.5-coder:7b"
+model_provider = "ollama"
+
+[model_providers.ollama]
+base_url = "http://localhost:11434/v1"
+"@ | Set-Content -LiteralPath $codexCfg -Encoding utf8
     $outPath = Join-Path $tempRoot 'capabilities.json'
     $snapPath = Join-Path $tempRoot 'snap.json'
 
@@ -91,8 +103,17 @@ try {
     Assert-True ($null -ne $ext) 'Modelo externo nao enumerado.'
     Assert-True ($ext.locality -eq 'external') "Modelo externo deveria ser external; veio '$($ext.locality)'."
 
+    # (A2) Enumeracao + localidade do Codex (regressao do bug de escopo em Add-FromResolver:
+    # `$entries += ...` numa funcao aninhada nao atualizava o array do pai -> codex sempre vazio).
+    $cx = $manifest.backends | Where-Object { $_.backend -eq 'codex' }
+    Assert-True ($cx.enumeration -eq 'config') 'codex deveria ter enumeration=config.'
+    Assert-True (@($cx.models).Count -ge 1) 'codex deveria enumerar ao menos 1 modelo a partir do config.toml (regressao do bug de escopo).'
+    $cxTop = $cx.models | Where-Object { $_.canonicalModel -eq 'openai/gpt-5.5' }
+    Assert-True ($null -ne $cxTop) 'codex deveria enumerar o modelo de topo openai/gpt-5.5.'
+    Assert-True ($cxTop.locality -eq 'external') "modelo de topo do codex deveria ser external; veio '$($cxTop.locality)'."
+
     # (B) Sanitizacao por desenho
-    foreach ($forbidden in @($secretApiKey, $externalHost, 'apiKey', 'baseURL', 'Authorization', '11434', $openCfg)) {
+    foreach ($forbidden in @($secretApiKey, $externalHost, 'apiKey', 'baseURL', 'Authorization', '11434', $openCfg, $codexCfg)) {
         Assert-True (-not ($manifestText -like "*$forbidden*")) "Manifesto vazou conteudo sensivel proibido: '$forbidden'."
     }
 
