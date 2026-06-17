@@ -163,6 +163,7 @@ A skill `xpz-llm-delegate` usa um arquivo de politica por-KB na raiz da pasta pa
 - Ausencia do arquivo ⇒ comportamento `ask` no gate (`Resolve-LlmDelegateAuthorization.ps1`); adiar nunca abre brecha.
 - Se o usuário aceitar, gravar `llm-delegation-policy.json` (nome canonico) com `schemaVersion`, `defaultExternal` e entradas finas por `provider/modelo` conforme a escolha; nunca presumir `allow-external` por conta própria.
 - Se a pasta ja tiver o arquivo com o nome legado `opencode-delegation-policy.json`, ele continua valendo; oferecer (sem cobrar) renomear para `llm-delegation-policy.json`. Com os dois presentes, o `scripts/Resolve-LlmDelegationPolicyPath.ps1` usa o canonico e sinaliza `status=both`.
+- No mesmo momento (tambem opcional e nao-bloqueante), oferecer gravar um **snapshot de capacidade** dos LLMs disponiveis na maquina com `scripts/Build-LlmDelegateCapabilityManifest.ps1 -SnapshotPath <raiz-paralela>\Temp\llm-delegate-capabilities.snapshot.json`, para alimentar a oferta de **revisao por pares** (ver [`15-revisao-por-pares.md`](../15-revisao-por-pares.md)) sem re-sondar a cada uso. **Capacidade != autorizacao:** arquivo separado da politica, fica em `Temp/` (ja ignorado pelo git), e cache re-derivavel e **dica de oferta, nunca verdade do gate** — o `Resolve-LlmDelegateAuthorization.ps1` reavalia destino e sensibilidade sempre. Na revisao, comparar `snapshotAt`/`sourceGeneratedAt` e perguntar ao usuario se quer atualizar a sondagem ou seguir com o anotado; sem re-sondagem automatica.
 
 ## PATH RESOLUTION
 
