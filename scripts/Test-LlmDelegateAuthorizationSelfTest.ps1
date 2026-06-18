@@ -104,6 +104,7 @@ try {
     Assert-Verdict -Model 'claude-opus-4-8' -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Claude Code externo sem politica -> ask'
     Assert-Verdict -Model ''                 -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'ask'   -Note 'Claude Code sem -Model: unknown -> ask (fail-safe, nao erro de binding)'
     Assert-Verdict -Model ''                 -Backend claude-code -Sensitivity 'public'       -Expected 'allow' -Note 'Claude Code sem -Model: payload publico -> allow'
+    Assert-Verdict -Model ''                 -Backend claude-code -Sensitivity 'kb-sensitive' -Expected 'ask'   -WithPolicy -Note 'Claude Code sem -Model + politica presente: ask sem excecao (regressao do crash name-vazio no lookup de politica)'
 
     # Backends copilot/gemini: tambem casam por chave de DESTINO, nao por adapter generico.
     Assert-Verdict -Model 'gpt-5-mini' -Backend copilot -Sensitivity 'public'       -Expected 'allow' -WithPolicy -Note 'Copilot publico -> allow'

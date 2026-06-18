@@ -94,7 +94,9 @@ $ErrorActionPreference = 'Stop'
 
 function Get-Prop {
     param($Obj, [string]$Name)
-    if ($null -ne $Obj -and $Obj.PSObject.Properties[$Name]) {
+    # Guarda contra $Name vazio: PSObject.Properties[''] lanca "value of argument 'name'
+    # is not valid". Nome vazio nunca casa propriedade -> devolver $null.
+    if ($null -ne $Obj -and -not [string]::IsNullOrEmpty($Name) -and $Obj.PSObject.Properties[$Name]) {
         return $Obj.PSObject.Properties[$Name].Value
     }
     return $null
@@ -181,6 +183,16 @@ if ($locality -eq 'local') {
     New-AuthResult -Locality $locality -BaseUrl $baseUrl -Verdict 'allow' `
         -PolicyDecision 'n/a' -PolicySource 'n/a' `
         -Reason 'payload sensivel, mas modelo local (loopback); o dado nao sai da maquina'
+    return
+}
+
+# 3b) Destino nao resolvivel (modelo omitido e canonicalModel nulo, ex.: claude-code sem
+#     -Model): nao da para casar politica por chave vazia (lookup com '' estoura). Fail-closed
+#     conforme a doc (.PARAMETER Model): payload kb-sensitive -> ask. (public ja retornou acima.)
+if ([string]::IsNullOrWhiteSpace($matchKey)) {
+    New-AuthResult -Locality $locality -BaseUrl $baseUrl -Verdict 'ask' `
+        -PolicyDecision $null -PolicySource 'destino-nao-resolvivel' `
+        -Reason 'modelo omitido e destino nao resolvivel (locality unknown); fail-closed: exige autorizacao explicita'
     return
 }
 
