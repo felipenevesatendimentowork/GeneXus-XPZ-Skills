@@ -65,6 +65,7 @@ de um novo usuário.
   passos 6–7: nada gravado sem confirmação explícita) — não substituir esse passo
   por oferta genérica do tipo "na próxima mensagem posso auditar", que confunde
   quem espera um relatório fechado nesta execução
+- **Opcional (não-bloqueante): calibração de revisores preferidos.** No setup de máquina, oferecer (sem cobrar) calibrar a lista de **revisores preferidos** para a revisão por pares, executando `Set-LlmDelegatePreferredReviewers.ps1` da skill `xpz-llm-delegate` (dona do arquivo) — esta skill apenas **oferece rodar** o script, não é dona do contrato. É **machine-level** (preferência da máquina), distinto da oferta de **snapshot por-KB** da `xpz-kb-parallel-setup`. Nunca grava sem confirmação.
 
 ## CAMINHOS DE SKILLS POR FERRAMENTA
 
