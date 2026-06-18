@@ -50,9 +50,11 @@ Regra prática para o agente consumidor:
    `Resolve-LlmDelegatePreferredReviewers.ps1`.
 3. Se não houver lista, perguntar ao usuário quais ferramentas/modelos ele tem disponíveis ou
    prefere, usando nomes reconhecíveis: `Claude Code`, `opencode/Ollama Cloud`, `Codex`,
-   `Copilot`, `Gemini`, ou subagente nativo da ferramenta atual. Não presumir assinatura de
-   Gemini, Copilot, Codex cloud ou qualquer serviço externo sem confirmação ou preferência
-   registrada.
+   `Copilot`, `Gemini`, ou subagente nativo da ferramenta atual. A pergunta deve calibrar
+   preferência humana, não enumerar tudo que está instalado como menu prescritivo. Backend
+   detectado sem preferência registrada deve aparecer como "detectado; confirme se quer usar",
+   nunca como recomendação implícita. Não presumir assinatura de Gemini, Copilot, Codex cloud
+   ou qualquer serviço externo sem confirmação ou preferência registrada.
 4. Incluir subagente nativo quando fizer sentido: ele pode participar, mas conta como a família
    do orquestrador e não substitui uma família externa para cumprir o piso de diversidade.
 5. Rodar o gate de autorização por destino e o piso de diversidade antes de consultar revisores.
@@ -316,6 +318,21 @@ Sondagem de capacidade (para a oferta de revisão por pares — ver [`15-revisao
 
 **Três artefatos distintos** (não confundir): **política por-KB** (`llm-delegation-policy.json`, autorização durável, raiz da pasta paralela) ≠ **capacidade** (`capabilities.json`, probe do instalado, machine-level) ≠ **preferência** (`preferred-reviewers.json`, curadoria do usuário, machine-level). A curadoria é **ofertada, nunca gravada automaticamente**, em três momentos: (a) no 1º uso de revisão por pares sem lista — *just-in-time* e antes de oferecer painel; (b) opt-in na `xpz-skills-setup` (setup de máquina); (c) recalibração sob demanda ou por defasagem (`updatedAt`). Sem lista, o agente não deve presumir assinatura de Gemini/Copilot/Codex cloud nem ignorar `Claude Code`/`opencode`; pergunta ao usuário quais revisores estão disponíveis/preferidos e então roda o gate por destino.
 
+**Quatro eixos na seleção de revisores** (não confundir):
+
+| Eixo | Pergunta | Quem responde |
+|---|---|---|
+| **Capacidade detectada** | O backend está instalado? Quais modelos aparecem? | `capabilities.json` e sondas locais |
+| **Assinatura/login** | O usuário tem conta funcional nesse serviço? | Só o humano ou uma preferência já registrada |
+| **Preferência** | O usuário quer usar esse revisor? | `preferred-reviewers.json` ou confirmação explícita |
+| **Autorização por KB** | O payload pode ir para esse destino? | `llm-delegation-policy.json` + gate |
+
+Nenhum eixo substitui outro. Um backend instalado sem assinatura/login funcional não é revisor
+disponível. Um `allow-external` na política autoriza envio de dados para aquele destino, mas
+não escolhe revisor nem prova preferência humana. Um `ask` indica autorização pendente, não
+convite obrigatório ao painel. A preferência é humana e nunca deve ser inferida só de
+capacidade detectada ou autorização por KB.
+
 `PATH RESOLUTION`: este `SKILL.md` fica numa subpasta sob a raiz; os scripts ficam em
 `../scripts/` relativos a esta pasta. Resolver caminhos a partir da raiz do repositório.
 
@@ -330,10 +347,11 @@ Sondagem de capacidade (para a oferta de revisão por pares — ver [`15-revisao
 3a. Em **revisão por pares**, antes de escolher backends, resolver `preferred-reviewers.json`.
     Se não houver lista (`hasPreferences=false`), perguntar ao usuário quais ferramentas/modelos
     ele tem disponíveis ou prefere (`Claude Code`, `opencode/Ollama Cloud`, `Codex`, `Copilot`,
-    `Gemini`, subagente nativo) e oferecer calibrar a lista. Não presumir assinatura de serviço
-    externo nem substituir essa pergunta por enumeração técnica de providers. Subagente nativo
-    pode entrar no painel, mas conta como a família do orquestrador e não substitui uma família
-    externa para cumprir o piso.
+    `Gemini`, subagente nativo) e oferecer calibrar a lista. A pergunta é de preferência e
+    assinatura/login, não de inventário: não substituir por enumeração técnica de providers nem
+    por menu de tudo que está instalado. Backend detectado sem preferência deve ser apresentado
+    como "detectado; confirme se quer usar". Subagente nativo pode entrar no painel, mas conta
+    como a família do orquestrador e não substitui uma família externa para cumprir o piso.
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
    sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (em pasta paralela, passar
    `-ParallelKbRoot <raiz>` para descobrir a política pelo nome canônico com fallback ao legado, ou
