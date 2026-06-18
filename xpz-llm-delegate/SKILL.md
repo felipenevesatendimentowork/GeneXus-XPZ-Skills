@@ -1,6 +1,6 @@
 ---
 name: xpz-llm-delegate
-description: Permite ao agente principal delegar tarefas menores ou pedir segunda opinião a um LLM secundário via opencode, Codex, Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
+description: Permite ao agente principal delegar tarefas menores, pedir segunda opinião ou conduzir revisão por pares/peer review de plano/design por painel multi-modelo via opencode, Codex, Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
 ---
 
 # xpz-llm-delegate
