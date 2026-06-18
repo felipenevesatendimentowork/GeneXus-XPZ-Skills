@@ -342,6 +342,26 @@ Quando houver contexto conversacional explícito (por exemplo, o usuário já di
 `Claude Code` e `opencode/Ollama Cloud`, ou que não tem Gemini), esse contexto prevalece sobre
 inventário genérico.
 
+### Formato obrigatório sem `preferred-reviewers.json`
+
+Quando `Resolve-LlmDelegatePreferredReviewers.ps1` devolver `hasPreferences=false`, a resposta
+ao usuário deve seguir este formato enxuto antes de qualquer envio:
+
+1. Declarar que não há lista de revisores preferidos configurada.
+2. Declarar a classe do payload (`public` ou `kb-sensitive`).
+3. Perguntar: "Quais ferramentas/modelos você tem e quer usar como revisores?"
+4. Citar exemplos de ferramentas em linguagem humana (`Claude Code`, `opencode/Ollama Cloud`,
+   `Codex`, `Copilot`, `Gemini`, subagente nativo), mas **filtrar** qualquer ferramenta que o
+   usuário já tenha descartado na conversa corrente.
+5. Declarar que inventário detectado e veredito de autorização são diagnóstico, não preferência:
+   o gate será rodado por destino depois da escolha.
+
+É proibido incluir recomendação de composição nesse ponto, em especial frases como "uma opção
+objetiva seria", "o caminho mais simples seria" ou "eu sugiro X + Y", quando houver revisor externo
+sem preferência registrada. Se for útil citar inventário, rotular como diagnóstico separado e sem
+promover itens detectados a opção recomendada. Não usar `allow-external` ou `ask` como argumento
+para escolher revisor; autorização decide envio, não preferência.
+
 ## MANUSCRITO/PROMPT PARA REVISORES
 
 Ao montar o manuscrito/prompt de revisão por pares, não embutir como fatos conclusões que a
@@ -370,8 +390,9 @@ ou refutar, não para ratificar conclusão já embalada como verdade.
     assinatura/login, não de inventário: não substituir por enumeração técnica de providers nem
     por menu de tudo que está instalado. Backend detectado sem preferência deve ser apresentado
     como "detectado; confirme se quer usar"; não sugerir composição padrão com externo sem
-    preferência confirmada. Subagente nativo pode entrar no painel, mas conta como a família do
-    orquestrador e não substitui uma família externa para cumprir o piso.
+    preferência confirmada. Seguir o formato obrigatório da seção acima. Subagente nativo pode
+    entrar no painel, mas conta como a família do orquestrador e não substitui uma família externa
+    para cumprir o piso.
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
    sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (em pasta paralela, passar
    `-ParallelKbRoot <raiz>` para descobrir a política pelo nome canônico com fallback ao legado, ou
