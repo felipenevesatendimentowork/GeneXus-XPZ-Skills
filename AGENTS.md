@@ -10,6 +10,8 @@
 - Quando o usuário pedir `revisão por pares`, `peer review`, `painel multi-modelo` ou `validar plano multi-modelo`, tratar isso como termo operacional reservado desta raiz, não como sinônimo de parecer crítico solo.
 - Antes de responder a esse pedido, ler `xpz-llm-delegate/SKILL.md` e `15-revisao-por-pares.md`; se o pedido for pré-push reforçado, ler também `14-revisao-pre-push-reforcada.md` e `13-revisao-pre-push.md`.
 - É proibido rotular como `revisão por pares` uma resposta gerada por um único modelo, sem painel efetivamente consultado. Se não houver painel válido com pelo menos 2 famílias distintas efetivamente consultadas, dizer explicitamente que **não** foi feita revisão por pares e rotular o resultado como `parecer solo` ou `segunda opinião (N)`, conforme o caso.
+- Antes de usar o rótulo `revisão por pares`, apresentar um **recibo mínimo**: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade e veredito de cada revisor. Sem esse recibo, não usar o rótulo.
+- Resposta quase imediata é evidência de invalidez: se a resposta sair em menos de 30 segundos desde o pedido, ela é incompatível com revisão por pares real nesta metodologia e deve ser rotulada como `parecer solo`, salvo se o agente demonstrar que está apenas reportando um painel já concluído anteriormente e identificável.
 - Neste repositório, não invoque a skill via ferramenta `Skill`: consulte a documentação da `xpz-llm-delegate` e use o mecanismo descrito nela apenas sob acionamento humano, respeitando autorização, confidencialidade e piso de diversidade.
 
 ## Interpretação de prompts de terceiros

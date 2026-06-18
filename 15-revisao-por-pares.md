@@ -48,6 +48,10 @@ O manuscrito é submetido a um **painel de pares**. Cada par:
 
 **Proibição (o guardrail):** um agente **não** pode (1) **decidir e agir** no lugar do humano — auto-triar e aplicar correção, declarar convergência, executar —, nem (2) **fingir** que uma única opinião (um só revisor) é a revisão por pares. A decisão de triagem/convergência/execução é nó humano.
 
+**Recibo mínimo obrigatório.** Antes de usar o rótulo `revisão por pares`, o orquestrador informa: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade e veredito de cada revisor. O recibo é evidência auditável, não substitui o trabalho. Se o recibo estiver ausente, incompleto ou incompatível com ≥2 famílias efetivamente consultadas, o resultado deve ser rotulado como `parecer solo` ou `segunda opinião (N)`.
+
+**Tempo mínimo como evidência negativa.** Uma resposta quase imediata é incompatível com esta metodologia: ler a documentação, montar painel, consultar ≥2 famílias e colher vereditos leva tempo material. Como regra operacional, resposta emitida em menos de 30 segundos desde o pedido não deve ser rotulada como `revisão por pares`, salvo quando o agente estiver apenas reportando um painel já concluído anteriormente e identificável pelo recibo/livro-razão. O limite não prova que respostas mais longas sejam válidas; apenas torna inválido o rótulo quando o fluxo real seria fisicamente impossível.
+
 ## Composição do painel
 
 Princípio: **famílias distintas da do autor** e cegos independentes. Vale a política de modelos do [`README.md`](README.md) ("modelos de linguagem"), **por papel**: modelos de forte aderência a instruções são preferidos no núcleo; modelos menos fortes são admissíveis como **vozes adicionais** — nunca revisor **decisivo sozinho** (a objeção de cada voz ainda passa por **triagem humana**) —, pois, lendo as fontes, pegam pontos cegos; **veto duro** só para Mistral Large 3 e Nemotron 3 Ultra (baixo aterramento comprovado). Descobrir os modelos e backends disponíveis na máquina conforme a skill [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md), em vez de re-sondar a cada uso. Se houver uma **lista de revisores preferidos** (`preferred-reviewers.json`, ver `xpz-llm-delegate`), a oferta a usa para compor o painel; no 1º uso sem lista, oferece **calibrá-la** (nunca grava sozinha). A preferência é sugestão **subordinada** a esta política de papel e ao gate — nunca o substitui. O princípio e a política do `README` prevalecem sobre qualquer lista fixa de modelos.
@@ -60,9 +64,11 @@ Princípio: **famílias distintas da do autor** e cegos independentes. Vale a po
 
 Antes de enviar, o **autor classifica o manuscrito** como `public` (texto do repositório de skills, molde sanitizado, diff público) ou `kb-sensitive` (conteúdo de pasta paralela de KB real). Para **cada** revisor, roda `Resolve-LlmDelegateAuthorization.ps1` (ver [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md)) — conteúdo sensível só vai a modelo externo com autorização; o gate reavalia destino e sensibilidade deterministicamente e **não** depende de inventário de capacidade. Revisores agênticos rodam com `-Cd` no **menor diretório** necessário. Validação de plano/design **na raiz de desenvolvimento das skills** é tipicamente `public` — é o caso nobre da diversidade de modelo.
 
-## Livro-razão (opcional)
+## Recibo e livro-razão
 
-Para rastrear o ciclo de forma auditável, registrar o manuscrito (v1…vN), os prompts enviados, os vereditos por revisor/versão e o resumo da convergência em `Temp\revisao-por-pares\<timestamp-ou-guid>\`. É **opcional** — usado no reforçado/alto risco, dispensado no uso leve. Efêmero e **gitignored** (em pasta paralela, o `Temp/` já é ignorado pelo setup).
+O **recibo mínimo** é obrigatório para usar o rótulo `revisão por pares` na resposta ao humano: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade e veredito de cada revisor.
+
+Para rastrear o ciclo de forma auditável, registrar o manuscrito (v1…vN), os prompts enviados, os vereditos por revisor/versão e o resumo da convergência em `Temp\revisao-por-pares\<timestamp-ou-guid>\`. Esse **livro-razão em arquivo** continua opcional — usado no reforçado/alto risco, dispensado no uso leve. Efêmero e **gitignored** (em pasta paralela, o `Temp/` já é ignorado pelo setup).
 
 ## Prompt mínimo
 
