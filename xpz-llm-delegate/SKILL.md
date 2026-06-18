@@ -42,8 +42,9 @@ Os documentos guardam a metodologia/política; esta skill guarda o mecanismo de 
   (classificação de risco de objeto, segurança de import, juízo de família/tipo,
   veredito de gate). Isso fica sempre com o agente principal — ver `## O QUE NÃO DELEGAR`.
 - **Validar a saída do subagente.** Toda saída de tarefa delegada é insumo, não verdade.
-  O agente forte revisa antes de usar. Modelos fracos não são confiáveis para conteúdo
-  GeneXus (ver `README.md`, regra de modelos de linguagem).
+  O agente forte revisa antes de usar. Modelos fracos não são confiáveis como **piloto
+  solo** de conteúdo GeneXus (ver `README.md`, regra de modelos de linguagem); como **voz**
+  num painel de revisão por pares são admissíveis (nunca decisivos sozinhos).
 - **Confidencialidade por gate determinístico.** Antes de enviar qualquer payload a um
   modelo, classificar o payload (`kb-sensitive` ou `public`) e passar por
   `Resolve-LlmDelegateAuthorization.ps1`. Conteúdo de KB só vai a modelo externo com
