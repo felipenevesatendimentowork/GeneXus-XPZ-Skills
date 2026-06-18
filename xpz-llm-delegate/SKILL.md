@@ -53,8 +53,10 @@ Regra prática para o agente consumidor:
    `Copilot`, `Gemini`, ou subagente nativo da ferramenta atual. A pergunta deve calibrar
    preferência humana, não enumerar tudo que está instalado como menu prescritivo. Backend
    detectado sem preferência registrada deve aparecer como "detectado; confirme se quer usar",
-   nunca como recomendação implícita. Não presumir assinatura de Gemini, Copilot, Codex cloud
-   ou qualquer serviço externo sem confirmação ou preferência registrada.
+   nunca como recomendação implícita. Não sugerir "caminho mais simples" com serviço externo
+   sem preferência confirmada. Se a conversa já registrar ferramentas preferidas do usuário,
+   use esse contexto antes de citar alternativas genéricas. Não presumir assinatura de Gemini,
+   Copilot, Codex cloud ou qualquer serviço externo sem confirmação ou preferência registrada.
 4. Incluir subagente nativo quando fizer sentido: ele pode participar, mas conta como a família
    do orquestrador e não substitui uma família externa para cumprir o piso de diversidade.
 5. Rodar o gate de autorização por destino e o piso de diversidade antes de consultar revisores.
@@ -333,6 +335,23 @@ não escolhe revisor nem prova preferência humana. Um `ask` indica autorizaçã
 convite obrigatório ao painel. A preferência é humana e nunca deve ser inferida só de
 capacidade detectada ou autorização por KB.
 
+Sem `preferred-reviewers.json`, o agente não deve recomendar composição padrão com Gemini,
+Copilot, Codex cloud ou qualquer externo só porque o backend foi detectado ou o gate devolveu
+`allow`/`ask`. A pergunta correta é de calibração: quais ferramentas o usuário tem e quer usar.
+Quando houver contexto conversacional explícito (por exemplo, o usuário já disse que tem
+`Claude Code` e `opencode/Ollama Cloud`, ou que não tem Gemini), esse contexto prevalece sobre
+inventário genérico.
+
+## MANUSCRITO/PROMPT PARA REVISORES
+
+Ao montar o manuscrito/prompt de revisão por pares, não embutir como fatos conclusões que a
+revisão deve validar. Descrever evidências observadas e hipóteses separadamente. Exemplos de
+redação a evitar quando ainda são a matéria da revisão: "identificador universal", "sequencial
+autogerado" ou "padrão da KB" sem fonte normativa ou validação anterior. Preferir formulações
+auditáveis, como "o XML observado tem `AUTONUMBER=True`", "há N usos encontrados" e "a hipótese
+do plano é que a descrição curta deva comunicar X". O revisor recebe o manuscrito para confirmar
+ou refutar, não para ratificar conclusão já embalada como verdade.
+
 `PATH RESOLUTION`: este `SKILL.md` fica numa subpasta sob a raiz; os scripts ficam em
 `../scripts/` relativos a esta pasta. Resolver caminhos a partir da raiz do repositório.
 
@@ -350,8 +369,9 @@ capacidade detectada ou autorização por KB.
     `Gemini`, subagente nativo) e oferecer calibrar a lista. A pergunta é de preferência e
     assinatura/login, não de inventário: não substituir por enumeração técnica de providers nem
     por menu de tudo que está instalado. Backend detectado sem preferência deve ser apresentado
-    como "detectado; confirme se quer usar". Subagente nativo pode entrar no painel, mas conta
-    como a família do orquestrador e não substitui uma família externa para cumprir o piso.
+    como "detectado; confirme se quer usar"; não sugerir composição padrão com externo sem
+    preferência confirmada. Subagente nativo pode entrar no painel, mas conta como a família do
+    orquestrador e não substitui uma família externa para cumprir o piso.
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
    sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (em pasta paralela, passar
    `-ParallelKbRoot <raiz>` para descobrir a política pelo nome canônico com fallback ao legado, ou
