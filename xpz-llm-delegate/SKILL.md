@@ -1,6 +1,6 @@
 ---
 name: xpz-llm-delegate
-description: Permite ao agente principal delegar tarefas menores, pedir segunda opinião ou conduzir revisão por pares/peer review de plano/design por painel multi-modelo via opencode, Codex, Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI, com classificação local/externo determinística e gate de confidencialidade por KB; acionamento sempre humano (a pedido do usuário ou com sua concordância explícita)
+description: Permite ao agente principal delegar tarefas menores, pedir segunda opinião ou conduzir revisão por pares/peer review de plano/design por painel multi-modelo via opencode, Codex, Claude Code (Opus 4.8), GitHub Copilot CLI ou Gemini CLI; ao receber "revisão por pares", carregar esta skill, perguntar revisores preferidos se não houver preferred-reviewers.json, não presumir assinatura externa e nunca rotular parecer solo como revisão por pares; acionamento sempre humano
 ---
 
 # xpz-llm-delegate
@@ -31,6 +31,38 @@ revisores de modelos distintos, que pensam por si e leem as fontes. A **metodolo
 e a régua de convergência são normativas em [`15-revisao-por-pares.md`](../15-revisao-por-pares.md);
 o caso **pré-push** dela é o painel de [`14-revisao-pre-push-reforcada.md`](../14-revisao-pre-push-reforcada.md).
 Os documentos guardam a metodologia/política; esta skill guarda o mecanismo de delegação.
+
+---
+
+## CONTRATO DE ENTRADA — REVISÃO POR PARES
+
+Quando o usuário pedir `revisão por pares`, `peer review`, `painel multi-modelo` ou
+`validar plano multi-modelo`, esta skill deve ser carregada e aplicada antes de responder.
+Não trate esses termos como sinônimo de parecer crítico solo.
+
+Regra prática para o agente consumidor:
+
+1. Ler este `SKILL.md` e, quando disponível no repositório de origem/instalação, a
+   metodologia [`15-revisao-por-pares.md`](../15-revisao-por-pares.md). Mesmo sem o `15`,
+   os passos 2-6 abaixo são o contrato mínimo para não rotular parecer solo como revisão
+   por pares.
+2. Resolver a lista de revisores preferidos (`preferred-reviewers.json`) com
+   `Resolve-LlmDelegatePreferredReviewers.ps1`.
+3. Se não houver lista, perguntar ao usuário quais ferramentas/modelos ele tem disponíveis ou
+   prefere, usando nomes reconhecíveis: `Claude Code`, `opencode/Ollama Cloud`, `Codex`,
+   `Copilot`, `Gemini`, ou subagente nativo da ferramenta atual. Não presumir assinatura de
+   Gemini, Copilot, Codex cloud ou qualquer serviço externo sem confirmação ou preferência
+   registrada.
+4. Incluir subagente nativo quando fizer sentido: ele pode participar, mas conta como a família
+   do orquestrador e não substitui uma família externa para cumprir o piso de diversidade.
+5. Rodar o gate de autorização por destino e o piso de diversidade antes de consultar revisores.
+6. Só usar o rótulo `revisão por pares` se houver painel válido (≥2 famílias efetivamente
+   consultadas) e recibo mínimo: arquivos lidos, manuscrito/prompt, revisores, famílias,
+   resultado do piso e vereditos. Sem isso, rotular como `parecer solo` ou `segunda opinião (N)`.
+
+Resposta em menos de 30 segundos desde o pedido é evidência de que revisão por pares real não
+aconteceu, salvo quando o agente estiver apenas reportando painel anterior identificável por
+recibo/livro-razão.
 
 ---
 
