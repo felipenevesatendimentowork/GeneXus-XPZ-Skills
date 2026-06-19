@@ -315,6 +315,13 @@ Latência por provedor: modelos externos OAuth (`openai/*`, Codex externo; `anth
 Opus 4.8 do Claude Code; `github-copilot/*`; `google/*`) podem passar de 180s — ajustar `-TimeoutSec`; `ollama-cloud/*` e
 `opencode-go/*` costumam responder mais rápido.
 
+Em painéis com múltiplos revisores `ollama-cloud/*`, limitar o paralelismo desse provider a
+**3 chamadas simultâneas** e enfileirar os demais. Em teste real, disparar 4 modelos
+`ollama-cloud/*` ao mesmo tempo produziu ausência de parecer utilizável em um deles; rodado
+sozinho, o mesmo modelo respondeu normalmente. Portanto, falha sem texto nesse cenário deve ser
+tratada primeiro como possível saturação de concorrência do provider, não como evidência de baixa
+qualidade do modelo.
+
 Núcleo backend-agnóstico:
 - `Resolve-OpenCodeModelLocality.ps1`, `Resolve-CodexModelLocality.ps1`, `Resolve-ClaudeCodeModelLocality.ps1`, `Resolve-CopilotModelLocality.ps1`, `Resolve-GeminiModelLocality.ps1`, `Resolve-LlmDelegationPolicyPath.ps1` (resolve o caminho do arquivo de política: nome canônico `llm-delegation-policy.json` com fallback ao legado `opencode-delegation-policy.json`; `status` `new|legacy|both|none`) e `Resolve-LlmDelegateAuthorization.ps1` (ver `## ANATOMIA` e `## CONFIDENCIALIDADE`).
 
