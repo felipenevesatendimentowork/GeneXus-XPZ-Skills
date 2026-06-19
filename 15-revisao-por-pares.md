@@ -48,7 +48,7 @@ O manuscrito é submetido a um **painel de pares**. Cada par:
 
 **Proibição (o guardrail):** um agente **não** pode (1) **decidir e agir** no lugar do humano — auto-triar e aplicar correção, declarar convergência, executar —, nem (2) **fingir** que uma única opinião (um só revisor) é a revisão por pares. A decisão de triagem/convergência/execução é nó humano.
 
-**Recibo mínimo obrigatório.** Antes de usar o rótulo `revisão por pares`, o orquestrador informa: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade e veredito de cada revisor. O recibo é evidência auditável, não substitui o trabalho. Se o recibo estiver ausente, incompleto ou incompatível com ≥2 famílias efetivamente consultadas, o resultado deve ser rotulado como `parecer solo` ou `segunda opinião (N)`.
+**Recibo mínimo obrigatório.** Antes de usar o rótulo `revisão por pares`, o orquestrador informa: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade, veredito de cada revisor e o adendo de fechamento de `Resolve-LlmDelegatePeerReviewCloseout.ps1` quando a rodada passou por `xpz-llm-delegate`. O recibo é evidência auditável, não substitui o trabalho. Se o recibo estiver ausente, incompleto, incompatível com ≥2 famílias efetivamente consultadas ou com `closeoutReady=false`, o resultado deve ser rotulado como `parecer solo`, `segunda opinião (N)` ou rodada ainda não encerrada, conforme o caso.
 
 **Tempo mínimo como evidência negativa.** Uma resposta quase imediata é incompatível com esta metodologia: ler a documentação, montar painel, consultar ≥2 famílias e colher vereditos leva tempo material. Como regra operacional, resposta emitida em menos de 30 segundos desde o pedido não deve ser rotulada como `revisão por pares`, salvo quando o agente estiver apenas reportando um painel já concluído anteriormente e identificável pelo recibo/livro-razão. O limite não prova que respostas mais longas sejam válidas; apenas torna inválido o rótulo quando o fluxo real seria fisicamente impossível.
 
@@ -68,7 +68,7 @@ Antes de enviar, o **autor classifica o manuscrito** como `public` (texto do rep
 
 ## Recibo e livro-razão
 
-O **recibo mínimo** é obrigatório para usar o rótulo `revisão por pares` na resposta ao humano: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade e veredito de cada revisor.
+O **recibo mínimo** é obrigatório para usar o rótulo `revisão por pares` na resposta ao humano: arquivos metodológicos lidos, manuscrito/prompt enviado, revisores efetivamente consultados, família de cada revisor, resultado do piso de diversidade, veredito de cada revisor e, quando a montagem usar `xpz-llm-delegate`, o `receiptAddendum` do closeout mecânico. Se `Resolve-LlmDelegatePeerReviewCloseout.ps1` devolver `closeoutReady=false`, o orquestrador apresenta o `requiredUserPrompt` e não encerra a rodada como concluída.
 
 Para rastrear o ciclo de forma auditável, registrar o manuscrito (v1…vN), os prompts enviados, os vereditos por revisor/versão e o resumo da convergência em `Temp\revisao-por-pares\<timestamp-ou-guid>\`. Esse **livro-razão em arquivo** continua opcional — usado no reforçado/alto risco, dispensado no uso leve. Efêmero e **gitignored** (em pasta paralela, o `Temp/` já é ignorado pelo setup).
 
