@@ -46,8 +46,13 @@ Regra prática para o agente consumidor:
    metodologia [`15-revisao-por-pares.md`](../15-revisao-por-pares.md). Mesmo sem o `15`,
    os passos 2-7 abaixo são o contrato mínimo para não rotular parecer solo como revisão
    por pares.
-2. Resolver a lista de revisores preferidos (`preferred-reviewers.json`) com
-   `Resolve-LlmDelegatePreferredReviewers.ps1`.
+2. Resolver a lista de revisores preferidos rodando `Resolve-LlmDelegatePreferredReviewers.ps1`.
+   O `preferred-reviewers.json` é **machine-level**: vive em
+   `%LOCALAPPDATA%\xpz-llm-delegate\preferred-reviewers.json`, **fora do repositório**. **Não**
+   procurá-lo no repo (`Glob`/`find`/`ls`/`Grep`) — a busca no repositório sempre dá vazio, e
+   concluir `hasPreferences=false` a partir disso é anti-padrão; a **única** fonte de verdade é o
+   `hasPreferences` devolvido pelo resolvedor. O mesmo vale para o `capabilities.json` (mesmo
+   diretório machine-level).
 3. Se não houver lista, perguntar ao usuário quais ferramentas/modelos ele tem disponíveis ou
    prefere, usando nomes reconhecíveis: `Claude Code`, `opencode/Ollama Cloud`, `Codex`,
    `Copilot`, `Gemini`, ou subagente nativo da ferramenta atual. A pergunta deve calibrar
