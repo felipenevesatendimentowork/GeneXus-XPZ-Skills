@@ -327,7 +327,12 @@ Em painéis com múltiplos revisores `ollama-cloud/*`, limitar o paralelismo des
 `ollama-cloud/*` ao mesmo tempo produziu ausência de parecer utilizável em um deles; rodado
 sozinho, o mesmo modelo respondeu normalmente. Portanto, falha sem texto nesse cenário deve ser
 tratada primeiro como possível saturação de concorrência do provider, não como evidência de baixa
-qualidade do modelo.
+qualidade do modelo. Antes de fechar um revisor preferido como `error` por falha sem texto colhida
+**em lote concorrente**, **redispará-lo uma única vez isolado** (single-flight, fora da concorrência,
+após a fila de 3 + enfileirar): se responder, vale o parecer; se falhar de novo sozinho, aí sim
+`error`/`noResponse`. Não marcar `error` no primeiro BLOCK sem texto vindo do paralelo, nem virar
+laço de redisparo. Escopo: só falha sem texto em lote concorrente — não `gateDeny`/`gateAsk`/timeout
+legítimo.
 
 Núcleo backend-agnóstico:
 - `Resolve-OpenCodeModelLocality.ps1`, `Resolve-CodexModelLocality.ps1`, `Resolve-ClaudeCodeModelLocality.ps1`, `Resolve-CopilotModelLocality.ps1`, `Resolve-GeminiModelLocality.ps1`, `Resolve-LlmDelegationPolicyPath.ps1` (resolve o caminho do arquivo de política: nome canônico `llm-delegation-policy.json` com fallback ao legado `opencode-delegation-policy.json`; `status` `new|legacy|both|none`) e `Resolve-LlmDelegateAuthorization.ps1` (ver `## ANATOMIA` e `## CONFIDENCIALIDADE`).
@@ -365,7 +370,11 @@ salvo decisão humana explícita de reduzir o painel; `ask` deve ser apresentado
 quando necessário; `deny`, indisponibilidade, timeout, erro técnico ou interrupção por primeiro
 gap não autorizam omitir os demais em silêncio — cada preferido recebe estado no recibo
 (`responded`, `noResponse`, `timeout`, `error`, `gateAsk`, `gateDeny`, `unavailable`,
-`skippedByHumanDecision`, `stoppedOnGap`). Preferência continua subordinada à política de papel e
+`skippedByHumanDecision`, `stoppedOnGap`). **`responded` exige parecer utilizável**: um retorno
+off-task/sem-parecer/vazio (o revisor não opinou sobre o manuscrito) é **`noResponse`**, não
+`responded` — senão o recibo infla o aproveitamento e um off-task pode satisfazer **falsamente** o
+piso de "≥2 famílias efetivamente consultadas" (ver [`15-revisao-por-pares.md`](../15-revisao-por-pares.md),
+recibo). Preferência continua subordinada à política de papel e
 ao gate.
 
 Sem `preferred-reviewers.json`, o agente não deve recomendar composição padrão com Gemini,
@@ -424,6 +433,14 @@ autogerado" ou "padrão da KB" sem fonte normativa ou validação anterior. Pref
 auditáveis, como "o XML observado tem `AUTONUMBER=True`", "há N usos encontrados" e "a hipótese
 do plano é que a descrição curta deva comunicar X". O revisor recebe o manuscrito para confirmar
 ou refutar, não para ratificar conclusão já embalada como verdade.
+
+**Blinde o papel do revisor.** O prompt vai a backends **agênticos** (opencode, Codex, Claude Code)
+que podem ler o manuscrito como ordem para **executar** o plano ou **conduzir eles mesmos** uma
+revisão por pares — risco agudo quando o manuscrito é autorreferente (a própria metodologia).
+Instrua de forma imperativa que o destinatário é **um revisor**: deve **emitir o próprio parecer**
+(concorda/revisa/rejeita, com justificativa e gaps priorizados) e **não** executar, montar painel,
+delegar nem assumir o papel do orquestrador. Um retorno que assume a tarefa em vez de opinar
+registra-se como `noResponse`, nunca `responded`.
 
 `PATH RESOLUTION`: este `SKILL.md` fica numa subpasta sob a raiz; os scripts ficam em
 `../scripts/` relativos a esta pasta. Resolver caminhos a partir da raiz do repositório.
