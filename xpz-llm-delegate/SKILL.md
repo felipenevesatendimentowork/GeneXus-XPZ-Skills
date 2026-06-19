@@ -65,7 +65,9 @@ Regra prática para o agente consumidor:
 5. Rodar o gate de autorização por destino e o piso de diversidade antes de consultar revisores.
 6. Antes do recibo final, rodar `Resolve-LlmDelegatePeerReviewCloseout.ps1`. Se a rodada
    começou sem `preferred-reviewers.json` e o usuário escolheu revisores manualmente, o
-   closeout deve bloquear enquanto a oferta de salvar essa seleção não tiver sido feita.
+   closeout deve bloquear enquanto a oferta de salvar essa seleção não tiver sido feita. Se
+   `preferred-reviewers.json` já existia, o closeout deve receber o estado final de cada
+   revisor preferido da rodada; preferido não pode virar pool opcional silencioso.
 7. Só usar o rótulo `revisão por pares` se houver painel válido (≥2 famílias efetivamente
    consultadas) e recibo mínimo: arquivos lidos, manuscrito/prompt, revisores, famílias,
    resultado do piso e vereditos. Sem isso, rotular como `parecer solo` ou `segunda opinião (N)`.
@@ -330,7 +332,7 @@ Sondagem de capacidade (para a oferta de revisão por pares — ver [`15-revisao
 - `Set-LlmDelegatePreferredReviewers.ps1 -ReviewersJson <json> [-OutputPath <json>]` — persiste a **curadoria** de revisores preferidos do usuário em `%LOCALAPPDATA%\xpz-llm-delegate\preferred-reviewers.json` (machine-level), **schema de 2 eixos** por revisor: `targetModelKey` (chave de destino → política/autorização) + `invokeArgs` sanitizado (`model`/`profile`/`oss`/`localProvider`; **nunca** token/baseURL/header/path). **Descarta com aviso** modelo de veto duro (Mistral Large 3, Nemotron 3 Ultra). O menu de escolha o agente monta com `opencode models` (catálogo opencode) + `capabilities.json`/defaults dos demais, mas deve perguntar em termos reconhecíveis de ferramenta e assinatura disponível (`Claude Code`, `opencode/Ollama Cloud`, `Codex`, `Copilot`, `Gemini`, subagente nativo); o script só persiste a seleção.
 - `Resolve-LlmDelegatePreferredReviewers.ps1 [-PreferredPath <json>] [-CapabilitiesPath <json>]` — lê a curadoria e a cruza com `capabilities.json` (`availableInManifest`, best-effort), devolvendo a **composição sugerida** do painel. Sem arquivo → `hasPreferences=false` (oferta cai no comportamento atual). **Invariante: preferência ≠ autorização** — não consome o manifesto como verdade do gate; o `Resolve-LlmDelegateAuthorization.ps1` reavalia **por revisor** no envio. Self-test `Test-LlmDelegatePreferredReviewersSelfTest.ps1`.
 - `Resolve-LlmDelegatePanelDiversity.ps1 -CandidatesJson <json> [-Floor <n>] [-AuthorFamily <fam>]` — avalia (consultivo) o **piso de diversidade** do painel (≥2 famílias distintas = provider de destino) a partir dos candidatos + vereditos do gate; devolve `panelReady` / `needsBatchAuthorization` (com `askToAuthorize`) / `insufficientDiversity` (com `fallbackLabel` "segunda opinião (N)"). Impede o painel colapsar para uma voz em silêncio. **Não** decide autorização (o gate é soberano). Inclua **todos** os revisores como candidatos — inclusive **subagentes nativos**, representados pela **família do orquestrador** (ex.: `anthropic/claude-opus-4-8` quando o orquestrador é Claude) —, senão o piso não cobre a montagem por subagente nativo (um painel só de nativos = 1 família). Self-test `Test-LlmDelegatePanelDiversitySelfTest.ps1`.
-- `Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers <bool> -ManualReviewerSelection <bool> [-PreferredReviewersOfferState not_made|offered|accepted|declined|deferred|not_applicable] [-SelectedReviewersJson <json>] [-DiversityState <state>] [-RoundId <id>]` — verifica o **fechamento** da revisão por pares: se não havia `preferred-reviewers.json` e houve escolha manual de revisores, bloqueia o recibo final enquanto a oferta de salvar essa seleção não tiver sido feita. Devolve `closeoutReady`, `blockingReasons`, `requiredUserPrompt` e `receiptAddendum`. **Não** grava preferência, não decide autorização e não recalcula diversidade; a gravação continua em `Set-LlmDelegatePreferredReviewers.ps1`, a autorização no gate e o piso em `Resolve-LlmDelegatePanelDiversity.ps1`. Self-test `Test-LlmDelegatePeerReviewCloseoutSelfTest.ps1`.
+- `Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers <bool> -ManualReviewerSelection <bool> [-PreferredReviewersOfferState not_made|offered|accepted|declined|deferred|not_applicable] [-SelectedReviewersJson <json>] [-PreferredReviewerStatesJson <json>] [-DiversityState <state>] [-RoundId <id>]` — verifica o **fechamento** da revisão por pares: se não havia `preferred-reviewers.json` e houve escolha manual de revisores, bloqueia o recibo final enquanto a oferta de salvar essa seleção não tiver sido feita; se havia `preferred-reviewers.json`, bloqueia quando falta estado auditável para os revisores preferidos da rodada ou quando há estado incompleto (`gateAllow`, `dispatched`, `enqueued`). Devolve `closeoutReady`, `blockingReasons`, `preferredReviewerStates`, `requiredUserPrompt` e `receiptAddendum`. **Não** grava preferência, não decide autorização e não recalcula diversidade; a gravação continua em `Set-LlmDelegatePreferredReviewers.ps1`, a autorização no gate e o piso em `Resolve-LlmDelegatePanelDiversity.ps1`. Self-test `Test-LlmDelegatePeerReviewCloseoutSelfTest.ps1`.
 
 **Três artefatos distintos** (não confundir): **política por-KB** (`llm-delegation-policy.json`, autorização durável, raiz da pasta paralela) ≠ **capacidade** (`capabilities.json`, probe do instalado, machine-level) ≠ **preferência** (`preferred-reviewers.json`, curadoria do usuário, machine-level). A curadoria é **ofertada, nunca gravada automaticamente**, em quatro momentos: (a) no 1º uso de revisão por pares sem lista — pergunta *just-in-time* antes de oferecer painel e, depois que o usuário escolher revisores para a rodada, oferta separada para salvar essa seleção; (b) opt-in na `xpz-skills-setup` (setup de máquina); (c) recalibração sob demanda ou por defasagem (`updatedAt`); (d) quando uma seleção manual recorrente divergir da lista existente e o usuário pedir ou confirmar recalibração. Sem lista, o agente não deve presumir assinatura de Gemini/Copilot/Codex cloud nem ignorar `Claude Code`/`opencode`; pergunta ao usuário quais revisores estão disponíveis/preferidos e então roda o gate por destino.
 
@@ -348,6 +350,18 @@ disponível. Um `allow-external` na política autoriza envio de dados para aquel
 não escolhe revisor nem prova preferência humana. Um `ask` indica autorização pendente, não
 convite obrigatório ao painel. A preferência é humana e nunca deve ser inferida só de
 capacidade detectada ou autorização por KB.
+
+Quando `preferred-reviewers.json` existe, ele alimenta a lista preferida de **candidatos** do
+painel; não é mera lista opcional para o agente escolher o mínimo, nem autorização para envio.
+O orquestrador deve rodar gate por revisor preferido e passar a lista completa de candidatos
+preferidos + vereditos para `Resolve-LlmDelegatePanelDiversity.ps1`, não um subconjunto
+auto-selecionado. Revisor preferido com `allow` deve ser despachado quando a rodada o alcança,
+salvo decisão humana explícita de reduzir o painel; `ask` deve ser apresentado ao humano em lote
+quando necessário; `deny`, indisponibilidade, timeout, erro técnico ou interrupção por primeiro
+gap não autorizam omitir os demais em silêncio — cada preferido recebe estado no recibo
+(`responded`, `noResponse`, `timeout`, `error`, `gateAsk`, `gateDeny`, `unavailable`,
+`skippedByHumanDecision`, `stoppedOnGap`). Preferência continua subordinada à política de papel e
+ao gate.
 
 Sem `preferred-reviewers.json`, o agente não deve recomendar composição padrão com Gemini,
 Copilot, Codex cloud ou qualquer externo só porque o backend foi detectado ou o gate devolveu
@@ -433,6 +447,9 @@ ou refutar, não para ratificar conclusão já embalada como verdade.
     rodar `Resolve-LlmDelegatePeerReviewCloseout.ps1` com o estado real da rodada. Se
     `closeoutReady=false`, apresentar `requiredUserPrompt` ao usuário e não encerrar a rodada
     como revisão por pares até a oferta ser feita ou registrada como aceita, recusada ou adiada.
+    Quando `preferred-reviewers.json` já existia, passar `-PreferredReviewerStatesJson` com o
+    estado final de cada preferido da rodada; não usar o piso mínimo (≥2 famílias) como critério
+    para omitir preferidos despacháveis sem estado auditável.
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
    sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (em pasta paralela, passar
    `-ParallelKbRoot <raiz>` para descobrir a política pelo nome canônico com fallback ao legado, ou
