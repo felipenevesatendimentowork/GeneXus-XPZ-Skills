@@ -57,6 +57,9 @@ Regra prática para o agente consumidor:
    sem preferência confirmada. Se a conversa já registrar ferramentas preferidas do usuário,
    use esse contexto antes de citar alternativas genéricas. Não presumir assinatura de Gemini,
    Copilot, Codex cloud ou qualquer serviço externo sem confirmação ou preferência registrada.
+   Depois que o usuário escolher revisores para a rodada sem lista preferida, oferecer salvar
+   **essa seleção já feita** como curadoria machine-level em `preferred-reviewers.json`; não
+   confundir essa oferta com autorização por KB.
 4. Incluir subagente nativo quando fizer sentido: ele pode participar, mas conta como a família
    do orquestrador e não substitui uma família externa para cumprir o piso de diversidade.
 5. Rodar o gate de autorização por destino e o piso de diversidade antes de consultar revisores.
@@ -318,7 +321,7 @@ Sondagem de capacidade (para a oferta de revisão por pares — ver [`15-revisao
 - `Resolve-LlmDelegatePreferredReviewers.ps1 [-PreferredPath <json>] [-CapabilitiesPath <json>]` — lê a curadoria e a cruza com `capabilities.json` (`availableInManifest`, best-effort), devolvendo a **composição sugerida** do painel. Sem arquivo → `hasPreferences=false` (oferta cai no comportamento atual). **Invariante: preferência ≠ autorização** — não consome o manifesto como verdade do gate; o `Resolve-LlmDelegateAuthorization.ps1` reavalia **por revisor** no envio. Self-test `Test-LlmDelegatePreferredReviewersSelfTest.ps1`.
 - `Resolve-LlmDelegatePanelDiversity.ps1 -CandidatesJson <json> [-Floor <n>] [-AuthorFamily <fam>]` — avalia (consultivo) o **piso de diversidade** do painel (≥2 famílias distintas = provider de destino) a partir dos candidatos + vereditos do gate; devolve `panelReady` / `needsBatchAuthorization` (com `askToAuthorize`) / `insufficientDiversity` (com `fallbackLabel` "segunda opinião (N)"). Impede o painel colapsar para uma voz em silêncio. **Não** decide autorização (o gate é soberano). Inclua **todos** os revisores como candidatos — inclusive **subagentes nativos**, representados pela **família do orquestrador** (ex.: `anthropic/claude-opus-4-8` quando o orquestrador é Claude) —, senão o piso não cobre a montagem por subagente nativo (um painel só de nativos = 1 família). Self-test `Test-LlmDelegatePanelDiversitySelfTest.ps1`.
 
-**Três artefatos distintos** (não confundir): **política por-KB** (`llm-delegation-policy.json`, autorização durável, raiz da pasta paralela) ≠ **capacidade** (`capabilities.json`, probe do instalado, machine-level) ≠ **preferência** (`preferred-reviewers.json`, curadoria do usuário, machine-level). A curadoria é **ofertada, nunca gravada automaticamente**, em três momentos: (a) no 1º uso de revisão por pares sem lista — *just-in-time* e antes de oferecer painel; (b) opt-in na `xpz-skills-setup` (setup de máquina); (c) recalibração sob demanda ou por defasagem (`updatedAt`). Sem lista, o agente não deve presumir assinatura de Gemini/Copilot/Codex cloud nem ignorar `Claude Code`/`opencode`; pergunta ao usuário quais revisores estão disponíveis/preferidos e então roda o gate por destino.
+**Três artefatos distintos** (não confundir): **política por-KB** (`llm-delegation-policy.json`, autorização durável, raiz da pasta paralela) ≠ **capacidade** (`capabilities.json`, probe do instalado, machine-level) ≠ **preferência** (`preferred-reviewers.json`, curadoria do usuário, machine-level). A curadoria é **ofertada, nunca gravada automaticamente**, em quatro momentos: (a) no 1º uso de revisão por pares sem lista — pergunta *just-in-time* antes de oferecer painel e, depois que o usuário escolher revisores para a rodada, oferta separada para salvar essa seleção; (b) opt-in na `xpz-skills-setup` (setup de máquina); (c) recalibração sob demanda ou por defasagem (`updatedAt`); (d) quando uma seleção manual recorrente divergir da lista existente e o usuário pedir ou confirmar recalibração. Sem lista, o agente não deve presumir assinatura de Gemini/Copilot/Codex cloud nem ignorar `Claude Code`/`opencode`; pergunta ao usuário quais revisores estão disponíveis/preferidos e então roda o gate por destino.
 
 **Quatro eixos na seleção de revisores** (não confundir):
 
@@ -362,6 +365,26 @@ sem preferência registrada. Se for útil citar inventário, rotular como diagn�
 promover itens detectados a opção recomendada. Não usar `allow-external` ou `ask` como argumento
 para escolher revisor; autorização decide envio, não preferência.
 
+### Persistência após escolha de revisores
+
+Quando não houver `preferred-reviewers.json` e o usuário escolher revisores para a rodada, o
+agente deve tratar duas persistências como decisões independentes:
+
+1. **Autorização por KB/projeto**: se o payload for `kb-sensitive`, perguntar se o conteúdo pode
+   ser enviado aos destinos externos em `ask`. Se o usuário quiser persistir essa autorização,
+   gravar `llm-delegation-policy.json` na raiz da pasta paralela da KB/projeto.
+2. **Curadoria de revisores preferidos**: oferecer salvar **a seleção que o usuário já fez** como
+   preferência machine-level em `%LOCALAPPDATA%\xpz-llm-delegate\preferred-reviewers.json`, via
+   `Set-LlmDelegatePreferredReviewers.ps1`. Essa oferta não bloqueia a rodada: se o usuário recusar
+   ou não responder, seguir com a seleção ad-hoc já autorizada para a rodada.
+
+Preferência ≠ autorização. Persistir `llm-delegation-policy.json` autoriza envio para destinos,
+mas não escolhe revisores nem prova preferência humana. Persistir `preferred-reviewers.json`
+facilita a oferta de painel futuro, mas não substitui o gate por KB/projeto. Se já existir
+`preferred-reviewers.json` e o usuário fizer uma escolha manual diferente para uma rodada, tratar
+como override ad-hoc: não sobrescrever a lista automaticamente; só oferecer recalibrar se o usuário
+pedir, se a divergência parecer recorrente ou se ele confirmar explicitamente.
+
 ## MANUSCRITO/PROMPT PARA REVISORES
 
 Ao montar o manuscrito/prompt de revisão por pares, não embutir como fatos conclusões que a
@@ -386,13 +409,15 @@ ou refutar, não para ratificar conclusão já embalada como verdade.
 3a. Em **revisão por pares**, antes de escolher backends, resolver `preferred-reviewers.json`.
     Se não houver lista (`hasPreferences=false`), perguntar ao usuário quais ferramentas/modelos
     ele tem disponíveis ou prefere (`Claude Code`, `opencode/Ollama Cloud`, `Codex`, `Copilot`,
-    `Gemini`, subagente nativo) e oferecer calibrar a lista. A pergunta é de preferência e
-    assinatura/login, não de inventário: não substituir por enumeração técnica de providers nem
-    por menu de tudo que está instalado. Backend detectado sem preferência deve ser apresentado
-    como "detectado; confirme se quer usar"; não sugerir composição padrão com externo sem
-    preferência confirmada. Seguir o formato obrigatório da seção acima. Subagente nativo pode
-    entrar no painel, mas conta como a família do orquestrador e não substitui uma família externa
-    para cumprir o piso.
+    `Gemini`, subagente nativo). A pergunta é de preferência e assinatura/login, não de
+    inventário: não substituir por enumeração técnica de providers nem por menu de tudo que está
+    instalado. Backend detectado sem preferência deve ser apresentado como "detectado; confirme se
+    quer usar"; não sugerir composição padrão com externo sem preferência confirmada. Seguir o
+    formato obrigatório da seção acima. Depois que o usuário escolher revisores para a rodada,
+    oferecer salvar **essa seleção já feita** em `preferred-reviewers.json`, separadamente da
+    autorização por KB; não bloquear a rodada se o usuário não quiser salvar curadoria. Subagente
+    nativo pode entrar no painel, mas conta como a família do orquestrador e não substitui uma
+    família externa para cumprir o piso.
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
    sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (em pasta paralela, passar
    `-ParallelKbRoot <raiz>` para descobrir a política pelo nome canônico com fallback ao legado, ou
