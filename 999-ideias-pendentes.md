@@ -40,7 +40,25 @@ Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na
 - **Mínimo (doc):** acrescentar à fase semântica do `13` (§3/§5) e ao checklist da "regra em camadas", e ao `AGENTS.md` raiz (Revisão pré-push), a pergunta explícita: *"esta frente altera contrato de consumo de motor compartilhado? se sim, a skill que audita os consumidores ganhou o check de drift no mesmo PR?"*.
 - **Forte (gate consultivo, opcional):** um gate no orquestrador análogo ao `Test-PrePushSharedScriptSkillCoverage.ps1` (que já lista `SKILL.md`/`quality-checklist.md` que citam script alterado e não foram tocados), mas focado em **skill que AUDITA consumidores**: quando o diff toca um motor compartilhado com contrato de saída e existe skill de auditoria de consumidores conhecida não-tocada, avisar.
 
-**Remédio concreto (frente separada, não é esta entrada):** o conserto da auditoria em si — `INVENTORY_CUSTOMIZED(reason=consumes_legacy_text_stdout)` para o par `Update-*KbFromXpz.ps1` × `Sync-GeneXusXpzToXml.ps1` (wrapper que trata stdout como texto / `Get-ResultValue` sobre string em vez de `ConvertFrom-Json`, ou não roteia o texto humano do motor pelo stderr), + `SKILL.md` (8.a.ii/8.h) + self-test + paridade. A **regra de método acima** é o que evita a CLASSE; este remédio resolve o caso atual. Relaciona-se à frente derivada já registrada (atualizar wrappers locais `Update-*KbFromXpz.ps1`).
+**Remédio concreto:** o conserto da auditoria em si tem **entrada própria abaixo** ("Auditoria da `xpz-kb-parallel-setup` deve detectar drift de contrato de consumo"). A **regra de método acima** é o que evita a CLASSE; aquela entrada resolve o caso atual.
+
+## Auditoria da `xpz-kb-parallel-setup` deve detectar drift de contrato de consumo (wrapper local consome forma de saída defasada do motor)
+
+- **Importância** — média-alta. O gate de setup existe para policiar wrappers locais defasados, mas hoje **não enxerga** o quebra-contrato de saída do motor: um `Update-*KbFromXpz.ps1` que ainda consome o stdout textual antigo passa como `INVENTORY_OK`/não-customizado. A defasagem fica invisível ao gate; cada pasta paralela só descobre por acidente (ou nem descobre — o wrapper "ainda roda", só para de expor as listas nominais, ou quebra ao ler `$result.Campo` de uma string).
+- **Maturidade** — pronta para implementar (precedente direto no repo; ver abaixo). Etapa 1 = heurística de texto; etapa 2 (mais ambiciosa) = amarrar ao `SchemaVersion`/`Kind`.
+
+**Origem:** apontado por agente mantenedor de pasta paralela após o push da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (`e11ffbc`/`ef8530b`, ver [[project_sync_json_contract]]). Verificado contra o código: as únicas razões de `INVENTORY_CUSTOMIZED` hoje em `scripts/Test-XpzWrapperInventory.ps1` são `requires_version_mismatch` e `missing_AsJson_passthrough` (linhas ≈244-279) — **nenhuma** confere se o wrapper consome a forma de saída **atual** do motor que ele invoca.
+
+**O que fazer (A/B/D do relato):**
+- **B (núcleo):** adicionar à `Test-XpzWrapperInventory.ps1` um sinal dedicado — ex.: `INVENTORY_CUSTOMIZED(reason=consumes_legacy_text_stdout)` — para o par `Update-*KbFromXpz.ps1` × `Sync-GeneXusXpzToXml.ps1`: wrapper local que ainda trata o stdout do motor como **texto** (`Format-List`, ou `Get-ResultValue`/`$result.Campo` sobre string) em vez de `ConvertFrom-Json` do JSON v1, **ou** que não roteia o texto humano pelo stderr. Heurística de texto local vs molde, **exatamente como o precedente** `missing_AsJson_passthrough` já faz (≈272-279 do script). Ação concreta na mensagem: "atualizar para consumir o contrato JSON v1 do motor; ler nomes de `CreatedNames`/`UpdatedNames`/`UnchangedNames`".
+- **D (doc):** `xpz-kb-parallel-setup/SKILL.md` — incluir na classificação 8.a.ii e na tabela 8.h a dimensão "consome o contrato de saída **atual** do motor"; o molde `examples/Update-KbFromXpz.example.ps1` já consome JSON (serve de referência). + self-test (`Test-XpzWrapperInventorySelfTest.ps1`).
+- **C (etapa 2, ambiciosa):** amarrar o `SchemaVersion`/`Kind` que o motor carimba no output a uma noção de **versão-de-contrato** que a auditoria confronte, para bumps futuros serem detectáveis sem inspeção textual ad hoc.
+
+**Critérios de aceitação (do relato):** rodar a auditoria numa pasta paralela cujo `Update-*KbFromXpz.ps1` ainda consome o contrato textual → **sinaliza** a defasagem e aponta a ação (não passa limpo); o mesmo wrapper já migrado para JSON v1 passa sem o sinal; `SKILL.md` + self-test cobrem o check; paridade documental (inventário/rastreabilidade) pela rotina pré-push; seguir a regra em camadas (SKILL.md + satélites).
+
+**Precedente a copiar:** `INVENTORY_CUSTOMIZED(reason=missing_AsJson_passthrough)` em `Test-XpzWrapperInventory.ps1` — mesma mecânica (texto local vs molde para uma divergência de contrato). Ver [[project_xpz_kb_parallel_pre_push]] (onde esse precedente foi criado).
+
+**Relacionadas:** a regra de método pré-push acima (evita a CLASSE; `f8b529b`); a frente derivada "atualizar wrappers locais `Update-*KbFromXpz.ps1`" (corrige os clones; esta entrada faz o **gate** pegá-los).
 
 ## URGENTE — `.ContainsKey` sobre `OrderedDictionary` quebra o pós-processamento do BuildAll sob StrictMode
 
