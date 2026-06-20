@@ -256,7 +256,7 @@ $roundLabel = 'desta rodada'
 if (-not [string]::IsNullOrWhiteSpace($RoundId)) { $roundLabel = "da rodada '$RoundId'" }
 $requiredPrompt = $null
 if ($blockingReasons -contains 'vnext-pending-resubmission') {
-    $requiredPrompt = "Antes de encerrar a revisão por pares: há uma vN+1 autorada e ainda não re-submetida ($roundLabel). Pela opção 1 (D2), ofereça a 2ª rodada ao painel e, após re-submeter, re-rode este closeout com -VNextState resubmitted; se o humano cientemente declinar a re-submissão, re-rode com -VNextState resubmissionDeclinedByHuman + -ResubmissionDeclinedBy e -ResubmissionDeclineReason."
+    $requiredPrompt = "Antes de encerrar a revisão por pares: há uma vN+1 autorada e ainda não re-submetida ($roundLabel). Pela opção 1 (D2), ofereça a 2ª rodada ao painel e, após re-submeter, re-rode este closeout com -VNextState resubmitted; se o humano cientemente declinar a re-submissão, re-rode com -VNextState resubmissionDeclinedByHuman + -ResubmissionDeclinedBy, -ResubmissionDeclineReason e -RoundId."
 } elseif ($blockingReasons -contains 'vnext-resubmission-decline-unaudited') {
     $requiredPrompt = "Antes de encerrar a revisão por pares: o declínio de re-submissão da vN+1 ($roundLabel) exige registro auditável — informe -ResubmissionDeclinedBy (quem decidiu), -ResubmissionDeclineReason (por quê) e -RoundId (qual rodada)."
 } elseif ($requiresOffer -and ($blockingReasons -contains 'preferred-reviewers-offer-missing' -or $blockingReasons -contains 'preferred-reviewers-offer-state-invalid-for-manual-selection')) {
