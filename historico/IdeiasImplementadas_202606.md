@@ -631,3 +631,31 @@ Estrutura C pura (15 = metodologia genérica/normativa; 14 = aplicação pré-pu
 - Commit: `0267a5b` (`Revisão por Pares: cria o 15 (metodologia genérica) e aponta 14 + xpz-llm-delegate a ele`)
 - Commit: `d191ca7` (`Revisão por Pares: motor de capacidade + oferta de snapshot no setup`)
 - Commit: `b9def3e` (`Revisão por Pares: paridade downstream (00/08/09/AGENTS/README/CHANGELOG)`)
+
+## Auditoria detecta drift de contrato de consumo de motor (`consumes_legacy_text_stdout`) + regra de lockstep pré-push
+
+**Importancia original:** média-alta
+**Status:** concluída (etapa 1) em 2026-06-20
+
+### Origem
+
+Duas entradas do `999-ideias-pendentes.md` (introduzidas nos commits `7442e19` e `f8b529b`), apontadas por agente mantenedor de pasta paralela após o push da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (`e11ffbc`/`ef8530b`). O plano foi convergido por **revisão por pares** (painel multi-modelo via `xpz-llm-delegate`: Claude nativo, Codex gpt-5.5, deepseek-v4-pro, kimi-k2.7-code, glm-5.2, minimax-m2.7 — 6 revisores / 4 famílias) com closeout auditado (RoundId `drift-consumo-contrato-2026-06-20-r1`; v2 = endurecimento, re-submissão declinada pelo humano com registro no recibo).
+
+### Problema concreto
+
+A frente do contrato JSON do sync fez breaking change no stdout do motor (texto `Format-List` → JSON `Kind=xpz-sync-result`/`SchemaVersion=1`), mas a skill que **audita** os wrappers locais consumidores (`xpz-kb-parallel-setup`, via `scripts/Test-XpzWrapperInventory.ps1`) **não** ganhou check correspondente. Um `Update-*KbFromXpz.ps1` que ainda consome o stdout textual antigo passava como `INVENTORY_OK`/não-customizado — defasagem invisível ao gate de setup. Em paralelo, faltava a regra de método que evita a CLASSE do erro (todo motor compartilhado consumido por wrapper local).
+
+### Implementacao
+
+- **B (núcleo):** `scripts/Test-XpzWrapperInventory.ps1` ganhou um bloco dedicado (escopado a `baseName -ieq 'Update-KbFromXpz'`, separado do bloco K8/K9) que emite `INVENTORY_CUSTOMIZED(reason=consumes_legacy_text_stdout)` quando o molde `Update-KbFromXpz.example.ps1` consome `ConvertFrom-Json` e o wrapper local não — mesma mecânica heurística texto-vs-molde do precedente `missing_AsJson_passthrough`. Limite documentado no próprio código: heurística textual conservadora, não detecta migração parcial nem parsers alternativos (`System.Text.Json`).
+- **D (doc + teste):** `xpz-kb-parallel-setup/SKILL.md` — dimensão "consome o contrato de saída ATUAL do motor" na classificação 8.a.ii e o motivo novo na tabela 8.h e na regra de `INVENTORY_CUSTOMIZED` por motivo (linhas do catálogo). Self-test `scripts/Test-XpzWrapperInventorySelfTest.ps1` estendido (wrapper textual → sinalizado; wrapper migrado para JSON v1 → não sinalizado).
+- **Regra de método (lockstep, commit isolado):** `13-revisao-pre-push.md` (§3 Comparação documental) e `AGENTS.md` raiz (Revisão pré-push) passam a perguntar, na fase semântica, se uma frente que altera de forma *breaking* o contrato de consumo de um motor compartilhado deu à skill que audita os consumidores o check de drift no mesmo PR.
+- **Paridade:** `09-inventario-e-rastreabilidade-publica.md` (linhas-ponteiro do motor e do self-test), `CHANGELOG.md` (trilíngue, registrando o efeito de alteração de assinatura de `setup-contract.manifest.json`). `02`/`08`/`README` verificados e descartados (não mantêm catálogo de motivos nem citam o inventário). `setup-contract.manifest.json` não editado (assinatura derivada do conteúdo).
+
+### Decisao final
+
+Discriminador único `ConvertFrom-Json` (não os tokens `$result.Campo`/`Get-ResultValue`/`Format-List`, que existem no molde correto e dariam falso positivo), fiel ao precedente. O sub-check de roteamento por stderr foi deixado para o follow-up de versão-de-contrato. A regra-doc de lockstep ficou na mesma frente, em commit isolado (compromisso do dissidente glm no Q2, que defendia frente irmã). **Adiado como follow-up no `999` (etapa 2 = C + gate consultivo):** amarrar `SchemaVersion`/`Kind` a uma versão-de-contrato confrontável e um gate consultivo análogo a `Test-PrePushSharedScriptSkillCoverage.ps1` focado em skill auditora. Limite registrado explicitamente: o check atual é **cego a drift de versão dentro do JSON** (um wrapper que parseia v1 com `ConvertFrom-Json` passa mesmo com o motor em `SchemaVersion=2`); gatilho de revisão = próximo bump de contrato.
+
+### Rastreabilidade
+
+- Commits de fechamento desta frente: ver `CHANGELOG.md` (`Unreleased`, trilíngue) e `git log` da frente «drift de contrato de consumo» (closing commits desta sessão; visíveis via `git blame` no arquivo mensal, conforme `historico/AGENTS.md`).
