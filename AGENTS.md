@@ -63,6 +63,7 @@
 
 - Fonte **autoritativa** da rotina: [13-revisao-pre-push.md](13-revisao-pre-push.md) (passo mecânico, fase semântica, paridade motor↔doc, veredicto).
 - Resumo obrigatório antes de push: executar `scripts/Invoke-PrePushMechanicalChecks.ps1` (`-AsJson` para agentes), depois a busca semântica integral descrita no `13` — **não** basta grep de termos em `.md`; validar implementação dos motores citados.
+- **Lockstep de motor compartilhado:** se a frente alterar de forma *breaking* o **contrato de consumo** de um motor compartilhado (stdout, shape do retorno, semântica de exit) consumido por wrappers locais (ex.: `Update-*KbFromXpz.ps1` em pastas paralelas), conferir na fase semântica se a skill que **audita os consumidores** (ex.: `xpz-kb-parallel-setup` via `scripts/Test-XpzWrapperInventory.ps1`) ganhou o **check de detecção de drift no mesmo PR** — paridade documental da skill não basta; ver `13` §3.
 - Escopo: análise e relatório ao usuário; correções só após aprovação explícita **depois** do relatório pré-push.
 - **Gate semântico incondicional:** a fase semântica produz relatório e para. Nenhuma edição de arquivo, commit ou push acontece entre o relatório e a aprovação explícita do usuário — sem exceção, independentemente do tamanho ou obviedade do gap.
 - **Tier reforçado (opcional):** revisão por painel multi-modelo diverso e régua de convergência (push-ready só quando o painel inteiro responde "sem gap" sobre o estado final) em [14-revisao-pre-push-reforcada.md](14-revisao-pre-push-reforcada.md).
