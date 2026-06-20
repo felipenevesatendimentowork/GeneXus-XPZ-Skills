@@ -25,6 +25,23 @@ Derivada da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (ver `CHANGELO
 
 Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na frente Revisão por Pares formalizada.
 
+## Rotina pré-push: contrato de CONSUMO de motor compartilhado alterado *breaking* → conferir a skill que AUDITA os consumidores (lockstep), não só paridade documental
+
+- **Importância** — média-alta (gap de método; deixou um breaking change invisível ao gate de setup, e é classe de erro recorrente — todo motor compartilhado consumido por wrapper local).
+- **Maturidade** — pronta para implementar (a regra doc é clara; a forma mecânica é decisão de design em aberto).
+
+**A regra (a adicionar):** quando uma frente altera de forma *breaking* o **contrato de saída/consumo** de um motor compartilhado (forma do que o consumidor lê: formato do stdout, shape do objeto de retorno, semântica de exit) consumido por **wrappers locais** (ex.: clones `Update-*KbFromXpz.ps1` nas pastas paralelas) ou outros consumidores, a fase semântica do `13` (§3 comparação documental / §5 paridade motor↔doc) deve **conferir explicitamente** que a skill que **audita/policia esses consumidores** (ex.: `xpz-kb-parallel-setup`, via `scripts/Test-XpzWrapperInventory.ps1` e os sinais `INVENTORY_*`) ganhou o **check de detecção de drift correspondente na MESMA frente** — não basta a doc da skill estar alinhada. Parquear a migração do consumidor só no `CHANGELOG`/`999` é insuficiente: o gate que existe para pegar consumidor defasado **continua cego**.
+
+**Caso motivador (verificado):** a frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (`e11ffbc`/`ef8530b`, ver [[project_sync_json_contract]]) fez breaking change no stdout (texto `Format-List` → JSON `Kind=xpz-sync-result`/`SchemaVersion=1`), atualizou motor+molde+doc(3 idiomas)+self-test, mas **não** ajustou o `Test-XpzWrapperInventory.ps1`. Resultado: um `Update-*KbFromXpz.ps1` que ainda lê `$result.Campo` de uma string (contrato textual velho) passa como **não-customizado** → invisível ao gate de setup. A pré-push **reforçada** (6 revisores + orquestrador) **não pegou**: todos conferiram paridade documental e o `SKILL.md` da `xpz-kb-parallel-setup` ("delega o contrato ao xpz-sync, sem gap"), mas **ninguém inspecionou a lógica da auditoria** nem perguntou "o gate que policia wrappers defasados **detecta** este breaking change?".
+
+**Precedente que já existe no repo (usar como molde):** `Test-XpzWrapperInventory.ps1` já detecta `INVENTORY_CUSTOMIZED(reason=missing_AsJson_passthrough)` — wrapper local que não repassa `-AsJson` como o molde faz (comparação heurística do texto local vs molde). Logo o check "consome a forma de saída atual do motor" é **extensão natural do mesmo mecanismo**. Ver [[project_xpz_kb_parallel_pre_push]].
+
+**Como mecanizar (escolher na implementação):**
+- **Mínimo (doc):** acrescentar à fase semântica do `13` (§3/§5) e ao checklist da "regra em camadas", e ao `AGENTS.md` raiz (Revisão pré-push), a pergunta explícita: *"esta frente altera contrato de consumo de motor compartilhado? se sim, a skill que audita os consumidores ganhou o check de drift no mesmo PR?"*.
+- **Forte (gate consultivo, opcional):** um gate no orquestrador análogo ao `Test-PrePushSharedScriptSkillCoverage.ps1` (que já lista `SKILL.md`/`quality-checklist.md` que citam script alterado e não foram tocados), mas focado em **skill que AUDITA consumidores**: quando o diff toca um motor compartilhado com contrato de saída e existe skill de auditoria de consumidores conhecida não-tocada, avisar.
+
+**Remédio concreto (frente separada, não é esta entrada):** o conserto da auditoria em si — `INVENTORY_CUSTOMIZED(reason=consumes_legacy_text_stdout)` para o par `Update-*KbFromXpz.ps1` × `Sync-GeneXusXpzToXml.ps1` (wrapper que trata stdout como texto / `Get-ResultValue` sobre string em vez de `ConvertFrom-Json`, ou não roteia o texto humano do motor pelo stderr), + `SKILL.md` (8.a.ii/8.h) + self-test + paridade. A **regra de método acima** é o que evita a CLASSE; este remédio resolve o caso atual. Relaciona-se à frente derivada já registrada (atualizar wrappers locais `Update-*KbFromXpz.ps1`).
+
 ## URGENTE — `.ContainsKey` sobre `OrderedDictionary` quebra o pós-processamento do BuildAll sob StrictMode
 
 **Importância:** alta (não corrompe o build, mas mascara um resultado limpo como falha e pode confundir a classificação do diagnóstico)
