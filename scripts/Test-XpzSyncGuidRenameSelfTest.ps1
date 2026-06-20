@@ -104,6 +104,7 @@ function Assert-StdoutIsPureJson {
         throw "${Case}: stdout deveria ser JSON parseavel; falhou: $($_.Exception.Message). StdOut: $raw"
     }
     if ($obj.Kind -ne 'xpz-sync-result') { throw "${Case}: stdout JSON.Kind deveria ser 'xpz-sync-result'; obtido '$($obj.Kind)'" }
+    if ($obj.SchemaVersion -ne 1) { throw "${Case}: stdout JSON.SchemaVersion deveria ser 1; obtido '$($obj.SchemaVersion)'" }
     return $obj
 }
 

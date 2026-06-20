@@ -232,7 +232,7 @@ Se você quer entender a base rapidamente:
 
 - o script `scripts/Sync-GeneXusXpzToXml.ps1` faz parte da infraestrutura operacional desta base e não deve ser removido do repositório público
 - esse script pode ser usado por projetos de produção que mantenham acervos versionados de XMLs extraidos de `XPZ`
-- esse script emite o resultado como **linha JSON de máquina no stdout** (`Kind=xpz-sync-result`; texto humano no stderr) com listas nominais dos objetos materializados (`CreatedNames`/`UpdatedNames`/`UnchangedNames`/...); o relatório completo continua disponível via `-ReportPath`. Consumidores que liam a saída textual anterior precisam passar a ler o JSON (mudança de contrato registrada no `CHANGELOG`)
+- esse script emite o resultado como **linha JSON de máquina no stdout** (`Kind=xpz-sync-result`, `SchemaVersion=1`; texto humano no stderr) com listas nominais dos objetos materializados (`CreatedNames`/`UpdatedNames`/`UnchangedNames`/...); o relatório completo continua disponível via `-ReportPath`. Consumidores que liam a saída textual anterior precisam passar a ler o JSON (mudança de contrato registrada no `CHANGELOG`)
 - a pasta `scripts/` existe como apoio operacional, analitico e editorial compartilhavel, mas não é fonte normativa da documentação consolidada da raiz
 - a pasta `scripts-maintenance/` concentra ferramentas de manutencao desta base, como campanhas empiricas para atualizar catalogos e documentação; esses scripts não são runtime publico das skills em pastas paralelas de KB
 - os scripts públicos desta raiz devem operar por parâmetros explícitos de entrada e saída, sem depender de caminhos absolutos privados
@@ -471,7 +471,7 @@ Si quieres entender la base rápidamente:
 
 - el script `scripts/Sync-GeneXusXpzToXml.ps1` forma parte de la infraestructura operativa de esta base y no debe ser removido del repositorio público
 - ese script puede ser usado por proyectos de producción que mantengan acervos versionados de XML extraídos de `XPZ`
-- ese script emite el resultado como **línea JSON de máquina en stdout** (`Kind=xpz-sync-result`; texto humano en stderr) con listas nominales de los objetos materializados (`CreatedNames`/`UpdatedNames`/`UnchangedNames`/...); el reporte completo sigue disponible vía `-ReportPath`. Los consumidores que leían la salida textual anterior deben pasar a leer el JSON (cambio de contrato registrado en el `CHANGELOG`)
+- ese script emite el resultado como **línea JSON de máquina en stdout** (`Kind=xpz-sync-result`, `SchemaVersion=1`; texto humano en stderr) con listas nominales de los objetos materializados (`CreatedNames`/`UpdatedNames`/`UnchangedNames`/...); el reporte completo sigue disponible vía `-ReportPath`. Los consumidores que leían la salida textual anterior deben pasar a leer el JSON (cambio de contrato registrado en el `CHANGELOG`)
 - la carpeta `scripts/` existe como apoyo operativo, analítico y editorial compartible, pero no es fuente normativa de la documentación consolidada de la raíz
 - la carpeta `scripts-maintenance/` concentra herramientas de mantenimiento de esta base, como campañas empíricas para actualizar catálogos y documentación; esos scripts no son runtime público de las skills en carpetas paralelas de KB
 - los scripts públicos de esta raíz deben operar por parámetros explícitos de entrada y salida, sin depender de rutas absolutas privadas
@@ -710,7 +710,7 @@ If you want to understand the repository quickly:
 
 - the script `scripts/Sync-GeneXusXpzToXml.ps1` is part of the operational infrastructure of this base and must not be removed from the public repository
 - that script can be used by production projects that keep versioned XML archives extracted from `XPZ`
-- that script emits its result as a **single machine-JSON line on stdout** (`Kind=xpz-sync-result`; human text on stderr) with nominal lists of the materialized objects (`CreatedNames`/`UpdatedNames`/`UnchangedNames`/...); the full report is still available via `-ReportPath`. Consumers that read the previous textual output must switch to reading the JSON (contract change recorded in the `CHANGELOG`)
+- that script emits its result as a **single machine-JSON line on stdout** (`Kind=xpz-sync-result`, `SchemaVersion=1`; human text on stderr) with nominal lists of the materialized objects (`CreatedNames`/`UpdatedNames`/`UnchangedNames`/...); the full report is still available via `-ReportPath`. Consumers that read the previous textual output must switch to reading the JSON (contract change recorded in the `CHANGELOG`)
 - the `scripts/` folder exists as shared operational, analytical, and editorial support, but it is not the normative source of the consolidated root documentation
 - the `scripts-maintenance/` folder holds maintenance tools for this base, such as empirical campaigns for updating catalogs and documentation; these scripts are not public skill runtime for parallel KB folders
 - the public scripts in this root must operate through explicit input and output parameters, without depending on private absolute paths
