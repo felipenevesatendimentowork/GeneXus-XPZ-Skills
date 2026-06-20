@@ -380,6 +380,41 @@ o ponto é **não proceder por inércia** sem o nó humano, não proibir externo
 de local **não** por `Get-Command` como caminho principal (ver `### Protocolo de descoberta e
 bootstrap de capacidade`).
 
+**Apresentação do override e camadas permitido≠prudente (reforço do Achado B).** Quando a
+composição é toda-externa e **não há revisor local**, o **default declarado** é parar/incluir
+local; seguir só com externo é **override consciente**, válido **apenas por autorização textual
+explícita** do humano — **ausência de veto não é autorização**. É **proibido** apresentar "seguir
+só externo" como opção **neutra co-igual** à de incluir local. O gate de autorização responde
+**"é permitido enviar?"**, nunca **"é prudente/recomendado?"**: `allow` autoriza, mas **nunca é,
+por si, recomendação**, e a cautela do Achado B é **camada separada que `allow` não dispensa**;
+`gate=deny` invalida o override (gate soberano) e `gate=allow` **não substitui** o aviso de risco
+abaixo. O default é de **apresentação**, não bloqueio absoluto: o humano pode pré-autorizar
+externo numa frente anterior, mas a pré-autorização cobre só o **modo** (o override do Achado B),
+**não dispensa** o aviso de risco por destino abaixo (eixos ortogonais) e só vale se precedida de
+aviso equivalente. **Não enquadrar** custo/latência do painel inteiro como argumento para
+reduzi-lo a subconjunto, salvo pedido explícito do humano (o piso de famílias é mínimo de
+validade, não alvo).
+
+**Aviso de risco proporcional antes de envio externo `kb-sensitive`.** Quando o payload é
+`kb-sensitive` (definição canônica acima — não redefinir) **e** o destino é externo, antes de
+enviar, **na mesma mensagem** do pedido de autorização, o agente **enumera (não rotula)**:
+(i) **o quê concretamente sai** — conteúdo enumerado (ex.: "estrutura de transações + ~430
+atributos do schema da KB <nome>"), nunca só "kb-sensitive"; (ii) **número + lista nominal** de
+destinos, cada destino externo sendo uma **divulgação independente**; (iii) **irreversibilidade
+material**: "sem recall sob controle do agente; pode haver retenção/log/treino conforme o
+destino" (sem afirmar política específica não verificada). Payload grande: resumir por
+**categoria + escopo + amostra** sem perder concretude. Os três pontos cabem na mesma mensagem,
+em partes claras, mas **não** comprimidos como "risco + ok?" nem com a resposta sugerida;
+**depois o agente para e aguarda**. Consentimento é **por destino**: cada destino externo novo —
+inclusive a mesma combinação numa nova invocação ou sessão — dispara novo aviso; **não há
+carry-over**. Se parte do payload já saiu, declarar abertamente o que vazou e tratar como novo
+aviso. Registro no recibo: `riskNotice{what, destinations[], irreversibility}` e, no override,
+`overrideOfAchadoB` (`consciousOverride` quando o humano autoriza externo sem local;
+`notApplicable` quando há revisor local em uso), `humanAuthorizer` + `authorizationTextRef`
+(a fala que autorizou, não só `by=human`) e `localReviewerStatus`
+(`noneAvailable`/`unavailable`/`declined`/`inadequate`). **`consciousOverride` exige
+`localReviewerStatus` resolvido** — incompatível com verificação omitida.
+
 Quando `preferred-reviewers.json` existe, ele alimenta a lista preferida de **candidatos** do
 painel; não é mera lista opcional para o agente escolher o mínimo, nem autorização para envio.
 O orquestrador deve rodar gate por revisor preferido e passar a lista completa de candidatos

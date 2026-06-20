@@ -279,6 +279,8 @@ Após implementar + rebuild:
 
 **Painel consultado (plano):** Codex (gpt-5.5) + deepseek-v4-pro + kimi-k2.7-code + glm-5.2 + minimax-m3 + síntese Anthropic. RoundId `plan-panel-scope-2026-06-20`; `vNextState=pendingResubmission`.
 
+**Parcialmente implementado (2026-06-20):** a proibição de **enquadrar custo/latência do painel** para reduzi-lo a subconjunto (a faceta de viés de enquadramento) foi gravada como regra no `xpz-llm-delegate/SKILL.md` (reforço do Achado B); o restante do mecanismo de escolha de escopo (apresentar opções e deixar o usuário decidir, default = lista inteira, recibo de escopo) segue **aberto**.
+
 **Relacionado:** `14-revisao-pre-push-reforcada.md`, `15-revisao-por-pares.md`, `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1`; exceção «relay auditável» acima (otimização distinta da mesma régua); correção do commit `f35bbe5` que motivou.
 
 ## Detecção de truncamento fora do opencode (paridade dos adapters stdin/JSONL)
