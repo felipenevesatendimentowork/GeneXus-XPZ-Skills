@@ -185,6 +185,13 @@ $r20 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmissionDec
 Assert-True ($r20.closeoutReady -eq $false) 'Caso 20: declinio sem motivo deveria bloquear.'
 Assert-True (@($r20.blockingReasons) -contains 'vnext-resubmission-decline-unaudited') 'Caso 20: razao decline-unaudited ausente (motivo).'
 
+# (21) Declinio com campos preenchidos mas com whitespace nas bordas -> libera (Trim) e ecoa
+#      o valor sem as bordas; whitespace-puro contaria como vazio (IsNullOrWhiteSpace).
+$r21 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmissionDeclinedByHuman' '  Antonio  ' '  motivo ok  ' 'v9'
+Assert-True ($r21.closeoutReady -eq $true) 'Caso 21: declinio com bordas de whitespace deveria liberar apos Trim.'
+Assert-True ($r21.resubmissionDeclinedBy -eq 'Antonio') 'Caso 21: objeto deveria ecoar o valor com Trim.'
+Assert-True ([string]$r21.receiptAddendum -match 'declinadoPor=Antonio;') 'Caso 21: recibo deveria ecoar o valor com Trim.'
+
 <#
 Casos antigos mantidos por cobertura historica:
   - sem preferencias previas + escolha manual + oferta omitida -> bloqueia;

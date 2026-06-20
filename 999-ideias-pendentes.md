@@ -275,6 +275,17 @@ Após implementar + rebuild:
 
 **Relacionado:** `xpz-llm-delegate/SKILL.md` (seção «Detecção de truncamento (Achado D)», cobertura por adapter); `scripts/Invoke-Codex.ps1`, `scripts/Invoke-ClaudeCode.ps1`, `scripts/Invoke-Gemini.ps1`, `scripts/Invoke-Copilot.ps1`, `scripts/CopilotCliSupport.ps1`; frente dos 4 achados da revisão por pares.
 
+## Normalizar a caixa do -VNextState no eco do closeout
+
+**Importância:** muito baixa (cosmético; a lógica do gate já está correta)
+**Maturidade:** ideia
+
+**Origem:** frente dos 4 achados, revisão do diff (minimax), 2026-06-20. O `ValidateSet` do `-VNextState` em `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1` é **case-insensitive** (default do PowerShell), então `-VNextState NOTPRODUCED` é aceito. O **gate funciona em qualquer caixa** (o `-eq` do PowerShell também é case-insensitive, então os bloqueios disparam corretamente); o único efeito é o campo `vNextState` no objeto/`receiptAddendum` ecoar a caixa que o chamador passou, em vez da forma canônica.
+
+**O que esta frente faria:** normalizar `$VNextState` para a forma canônica (`notProduced`/`pendingResubmission`/`resubmitted`/`resubmissionDeclinedByHuman`) antes de ecoar/emitir, para um consumidor downstream que faça comparação case-sensitive do JSON não tropeçar. Risco prático hoje ~nulo (o ecossistema é PowerShell, case-insensitive).
+
+**Relacionado:** `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1`; frente dos 4 achados da revisão por pares.
+
 ## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
 
 **Importância:** média
