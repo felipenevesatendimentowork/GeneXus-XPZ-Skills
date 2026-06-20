@@ -68,12 +68,43 @@ function New-CaseDir {
 }
 
 function Invoke-Sync {
-    param([string]$Pkg, [string]$Acervo, [switch]$VerifyOnly, [string]$ReportPath)
+    param([string]$Pkg, [string]$Acervo, [switch]$VerifyOnly, [string]$ReportPath, [string[]]$ExpectedItems)
     $psArgs = @('-NoProfile', '-File', $scriptPath, '-InputPath', $Pkg, '-DestinationRoot', $Acervo, '-FullSnapshot')
     if ($VerifyOnly) { $psArgs += '-VerifyOnly' }
     if ($ReportPath) { $psArgs += @('-ReportPath', $ReportPath, '-KeepReport') }
-    $out = & pwsh @psArgs 2>&1
-    return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = ($out | Out-String) }
+    if ($ExpectedItems) { $psArgs += @('-ExpectedItems', ($ExpectedItems -join ',')) }
+    # stdout e stderr capturados SEPARADAMENTE: o contrato exige stdout = JSON puro de uma
+    # linha, com todo texto humano no stderr. 2>$errFile isola os dois streams do filho.
+    $errFile = [System.IO.Path]::GetTempFileName()
+    try {
+        $stdout = & pwsh @psArgs 2>$errFile
+        $exit = $LASTEXITCODE
+        $stderr = Get-Content -LiteralPath $errFile -Raw
+    } finally {
+        Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue
+    }
+    $stdoutText = ($stdout | Out-String)
+    return [pscustomobject]@{
+        ExitCode = $exit
+        StdOut = $stdoutText
+        StdErr = $stderr
+        Output = ($stdoutText + [Environment]::NewLine + $stderr)
+    }
+}
+
+function Assert-StdoutIsPureJson {
+    param([string]$Case, [object]$Result)
+    $raw = $Result.StdOut.Trim()
+    # Stdout deve ser EXCLUSIVAMENTE o JSON do resumo: uma unica linha, parseavel, sem
+    # texto humano vazado. (Write-Host vazaria; por isso o motor usa [Console]::Error.)
+    if ($raw -match "`n") { throw "${Case}: stdout deveria ser uma unica linha JSON (-Compress); contem quebras. StdOut: $raw" }
+    try {
+        $obj = $raw | ConvertFrom-Json
+    } catch {
+        throw "${Case}: stdout deveria ser JSON parseavel; falhou: $($_.Exception.Message). StdOut: $raw"
+    }
+    if ($obj.Kind -ne 'xpz-sync-result') { throw "${Case}: stdout JSON.Kind deveria ser 'xpz-sync-result'; obtido '$($obj.Kind)'" }
+    return $obj
 }
 
 try {
@@ -93,6 +124,15 @@ try {
     $repAObj = Get-Content -LiteralPath $repA -Raw | ConvertFrom-Json
     if ($repAObj.Summary.RenamedByGuid -ne 1) { throw "A: RenamedByGuid deveria ser 1; obtido $($repAObj.Summary.RenamedByGuid)" }
     if ($repAObj.Summary.FullSnapshotExtra -ne 0) { throw "A: FullSnapshotExtra deveria ser 0; obtido $($repAObj.Summary.FullSnapshotExtra)" }
+    # Contrato de stdout: JSON puro de uma linha, sem texto humano vazado.
+    $aObj = Assert-StdoutIsPureJson -Case 'A' -Result $rA
+    if (@($aObj.RenamedByGuidItems).Count -ne 1) { throw "A: RenamedByGuidItems deveria ter 1 item; obtido $(@($aObj.RenamedByGuidItems).Count)" }
+    if ($aObj.RenamedByGuidItems[0].Action -ne 'renamed') { throw "A: Action deveria ser 'renamed'; obtido '$($aObj.RenamedByGuidItems[0].Action)'" }
+    if ($aObj.RenamedByGuidItems[0].OldName -ne 'DistribuidoraNome' -or $aObj.RenamedByGuidItems[0].NewName -ne 'DistribuidoraNomeTeste') { throw "A: RenamedByGuidItems deveria expor Old->New; obtido '$($aObj.RenamedByGuidItems[0].OldName)'->'$($aObj.RenamedByGuidItems[0].NewName)'" }
+    # Invariante len(*Names) == contador (UpdatedNames, pois o rename reescreve o conteudo).
+    if (@($aObj.UpdatedNames).Count -ne $aObj.Updated) { throw "A: len(UpdatedNames) ($(@($aObj.UpdatedNames).Count)) != Updated ($($aObj.Updated))" }
+    # ExpectedItems nao foi passado: as listas de esperados devem ser null (nao [] nem ausentes).
+    if ($null -ne $aObj.ExpectedReturnedNames) { throw "A: sem -ExpectedItems, ExpectedReturnedNames deveria ser null" }
 
     # --- B: conferencia (-VerifyOnly) classifica sem mover ---
     $b = New-CaseDir -Name 'verify'
@@ -107,6 +147,15 @@ try {
     $repBObj = Get-Content -LiteralPath $repB -Raw | ConvertFrom-Json
     if ($repBObj.Summary.RenameResidualsDetected -ne 1) { throw "B: RenameResidualsDetected deveria ser 1; obtido $($repBObj.Summary.RenameResidualsDetected)" }
     if ($repBObj.Summary.RenamedByGuid -ne 0) { throw "B: RenamedByGuid deveria ser 0 em VerifyOnly; obtido $($repBObj.Summary.RenamedByGuid)" }
+    # Contrato: o JSON e emitido ANTES do throw de verificacao, entao o stdout tem JSON
+    # parseavel mesmo com exit nao-zero. Em VerifyOnly as listas de writes sao vazias por
+    # construcao -> serializam [] (array vazio), nunca null nem escalar.
+    $bObj = Assert-StdoutIsPureJson -Case 'B' -Result $rB
+    if (@($bObj.CreatedNames).Count -ne 0) { throw "B: VerifyOnly -> CreatedNames deveria ser [] vazio; obtido $(@($bObj.CreatedNames).Count)" }
+    if (@($bObj.UnchangedNames).Count -ne 0) { throw "B: VerifyOnly -> UnchangedNames deveria ser [] vazio" }
+    if (@($bObj.RenamedByGuidItems).Count -ne 0) { throw "B: VerifyOnly -> RenamedByGuidItems deveria ser [] vazio (detected nao entra)" }
+    # O resumo humano (Format-List, multi-linha) deve estar no STDERR, nunca no stdout.
+    if ($rB.StdErr -notmatch 'MaterializationInterpretation') { throw "B: o resumo humano deveria sair no stderr; nao encontrado" }
 
     # --- C: zero renames (acervo ja sincronizado) ---
     $c = New-CaseDir -Name 'zero'
@@ -133,6 +182,10 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $d.AttrDir 'New.xml'))) { throw "D: o arquivo novo deveria ser preservado" }
     $repDObj = Get-Content -LiteralPath $repD -Raw | ConvertFrom-Json
     if ($repDObj.Summary.RenamedByGuid -ne 1) { throw "D: RenamedByGuid deveria contar o orfao removido; obtido $($repDObj.Summary.RenamedByGuid)" }
+    # Cobertura do Action 'orphan-removed' no item estruturado (nao so no contador).
+    $dObj = Assert-StdoutIsPureJson -Case 'D' -Result $rD
+    if (@($dObj.RenamedByGuidItems).Count -ne 1) { throw "D: RenamedByGuidItems deveria ter 1 item; obtido $(@($dObj.RenamedByGuidItems).Count)" }
+    if ($dObj.RenamedByGuidItems[0].Action -ne 'orphan-removed') { throw "D: Action deveria ser 'orphan-removed'; obtido '$($dObj.RenamedByGuidItems[0].Action)'" }
 
     # --- E: colisao de GUID (nome novo ja pertence a outro objeto) ---
     $e = New-CaseDir -Name 'collision'
@@ -160,6 +213,26 @@ try {
     if ($namesF[0] -cne 'alpha.xml') { throw "F: o filename deveria ter a caixa nova 'alpha.xml'; obtido '$($namesF[0])'" }
     $repFObj = Get-Content -LiteralPath $repF -Raw | ConvertFrom-Json
     if ($repFObj.Summary.RenamedByGuid -ne 1) { throw "F: RenamedByGuid deveria ser 1; obtido $($repFObj.Summary.RenamedByGuid)" }
+
+    # --- G: criacao + -ExpectedItems (listas nominais e Expected*Names achatado) ---
+    $g = New-CaseDir -Name 'expected'
+    $pkgG = Join-Path $g.Root 'pacote.xml'
+    New-Package -Path $pkgG -Guid $guid1 -Name 'Gamma' -LastUpdate '2026-01-01T00:00:00.0000000Z'
+    $repG = Join-Path $g.Root 'report.json'
+    $rG = Invoke-Sync -Pkg $pkgG -Acervo $g.Acervo -ReportPath $repG -ExpectedItems @('Attribute:Gamma', 'Attribute:Delta')
+    if ($rG.ExitCode -ne 0) { throw "G: criacao deveria sair com exit 0; obtido $($rG.ExitCode). Saida: $($rG.Output)" }
+    $gObj = Assert-StdoutIsPureJson -Case 'G' -Result $rG
+    # Invariante len(*Names) == contador.
+    if (@($gObj.CreatedNames).Count -ne $gObj.Created) { throw "G: len(CreatedNames) ($(@($gObj.CreatedNames).Count)) != Created ($($gObj.Created))" }
+    if ($gObj.CreatedNames -notcontains 'Attribute:Gamma') { throw "G: CreatedNames deveria conter 'Attribute:Gamma'; obtido [$($gObj.CreatedNames -join ', ')]" }
+    # Listas sem itens serializam [] (array), nao null nem escalar.
+    if ($null -eq $gObj.UpdatedNames -or @($gObj.UpdatedNames).Count -ne 0) { throw "G: UpdatedNames deveria ser [] vazio (nao null)" }
+    # Expected*Names achatado: a fonte das tres partes do handoff.
+    if ($gObj.ExpectedReturnedNames -notcontains 'Attribute:Gamma') { throw "G: ExpectedReturnedNames deveria conter 'Attribute:Gamma'; obtido [$($gObj.ExpectedReturnedNames -join ', ')]" }
+    if ($gObj.ExpectedMissingNames -notcontains 'Attribute:Delta') { throw "G: ExpectedMissingNames deveria conter 'Attribute:Delta'; obtido [$($gObj.ExpectedMissingNames -join ', ')]" }
+    # Confronto com o $report no arquivo: as mesmas listas existem em Summary.
+    $repGObj = Get-Content -LiteralPath $repG -Raw | ConvertFrom-Json
+    if ($repGObj.Summary.CreatedNames -notcontains 'Attribute:Gamma') { throw "G: report.Summary.CreatedNames deveria conter 'Attribute:Gamma'" }
 
     Write-Output 'OK: Test-XpzSyncGuidRenameSelfTest.ps1'
     exit 0

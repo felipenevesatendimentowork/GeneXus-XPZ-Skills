@@ -734,9 +734,11 @@ try {
 
     if ($KbMetadataPath) {
         $metadataResult = Update-XpzKbSourceMetadataFromSync -XmlDocument $packageXml -SourceXpzPath $InputPath -MetadataPath $KbMetadataPath
-        Write-Host "KbMetadataPath atualizado: $KbMetadataPath ($($metadataResult.WriteMode))" -ForegroundColor Cyan
+        [Console]::Error.WriteLine("KbMetadataPath atualizado: $KbMetadataPath ($($metadataResult.WriteMode))")
         if ($metadataResult.Warnings.Count -gt 0) {
-            Write-Warning ($metadataResult.Warnings[0])
+            # stderr (nao Write-Warning): o stream de warning tambem vaza para o stdout
+            # capturado de um processo filho, contaminando o contrato JSON.
+            [Console]::Error.WriteLine("AVISO: " + $metadataResult.Warnings[0])
         }
         foreach ($warning in $metadataResult.Warnings) {
             if (-not [string]::IsNullOrWhiteSpace($warning)) {
@@ -787,6 +789,31 @@ try {
     $skippedOlderLastUpdateCount = @($writeResults | Where-Object { $_.Status -eq "skipped-older-lastUpdate" }).Count
     $normalizedFileNamesCount = @($writeResults | Where-Object { $_.WasNormalized }).Count
 
+    # Listas nominais (dado de maquina): "Tipo:Nome" por status, ordenadas e estaveis.
+    # Construidas como array e expostas como propriedade de pscustomobject: ConvertTo-Json
+    # serializa array vazio como [] e array unitario como ["x"] (nao colapsa nem vira null).
+    $createdNames = @($writeResults | Where-Object { $_.Status -eq "created" } | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+    $updatedNames = @($writeResults | Where-Object { $_.Status -eq "updated" } | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+    $unchangedNames = @($writeResults | Where-Object { $_.Status -eq "unchanged" } | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+    $skippedOlderLastUpdateNames = @($writeResults | Where-Object { $_.Status -eq "skipped-older-lastUpdate" } | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+    $renamedByGuidItems = @($renameResults |
+        Where-Object { $_.Action -eq "renamed" -or $_.Action -eq "orphan-removed" } |
+        Sort-Object FolderType, NewName |
+        ForEach-Object { [pscustomobject]@{ Guid = $_.Guid; FolderType = $_.FolderType; OldName = $_.OldName; NewName = $_.NewName; Action = $_.Action } })
+
+    # ExpectedComparison achatado em listas nominais (a fonte das tres partes do handoff
+    # da skill xpz-sync). null quando -ExpectedItems nao foi informado, para distinguir
+    # "nao pedido" de "pedido, porem vazio".
+    if ($null -ne $expectedComparison) {
+        $expectedReturnedNames = @($expectedComparison.ExpectedReturned | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+        $expectedMissingNames = @($expectedComparison.ExpectedMissing | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+        $additionalOfficialNames = @($expectedComparison.AdditionalOfficial | ForEach-Object { "$($_.FolderType):$($_.LogicalName)" } | Sort-Object)
+    } else {
+        $expectedReturnedNames = $null
+        $expectedMissingNames = $null
+        $additionalOfficialNames = $null
+    }
+
     $materializationInterpretation = if ($VerifyOnly) {
         "verify-only"
     } elseif ($items.Count -eq 0) {
@@ -802,6 +829,8 @@ try {
     }
 
     $summary = [pscustomobject]@{
+        SchemaVersion = 1
+        Kind = "xpz-sync-result"
         InputPath = (Resolve-Path -LiteralPath $InputPath).Path
         PackageXmlPath = $package.XmlPath
         VerifyOnly = [bool]$VerifyOnly
@@ -829,6 +858,14 @@ try {
         ExpectedReturnedCount = if ($null -ne $expectedComparison) { $expectedComparison.ExpectedReturned.Count } else { $null }
         ExpectedMissingCount = if ($null -ne $expectedComparison) { $expectedComparison.ExpectedMissing.Count } else { $null }
         AdditionalOfficialCount = if ($null -ne $expectedComparison) { $expectedComparison.AdditionalOfficial.Count } else { $null }
+        CreatedNames = $createdNames
+        UpdatedNames = $updatedNames
+        UnchangedNames = $unchangedNames
+        SkippedOlderLastUpdateNames = $skippedOlderLastUpdateNames
+        RenamedByGuidItems = $renamedByGuidItems
+        ExpectedReturnedNames = $expectedReturnedNames
+        ExpectedMissingNames = $expectedMissingNames
+        AdditionalOfficialNames = $additionalOfficialNames
     }
 
     $overrideReminder = $null
@@ -860,12 +897,25 @@ try {
         Write-Report -Path $ReportPath -Payload $report
     }
 
-    $summary | Format-List | Out-String | Write-Output
+    # Warnings tambem no objeto de stdout (alem de $report.Warnings), para o agente que
+    # so le o stdout. Add-Member apos o bloco de override reminder para captura-las todas.
+    $summary | Add-Member -NotePropertyName Warnings -NotePropertyValue @($warnings) -Force
+
+    # CONTRATO DE STDOUT: exclusivamente o JSON de maquina do resumo (-Compress = uma linha,
+    # robusto na fronteira de processo). Todo texto humano vai para o STDERR, nunca para o
+    # stdout: Write-Host vaza para o stdout capturado de um processo filho (pwsh -File),
+    # contaminando o JSON. Ver xpz-sync/SKILL.md (contrato de saida).
+    $summary | ConvertTo-Json -Depth 8 -Compress | Write-Output
+
+    $humanSummary = $summary |
+        Select-Object -Property * -ExcludeProperty CreatedNames, UpdatedNames, UnchangedNames, SkippedOlderLastUpdateNames, RenamedByGuidItems, ExpectedReturnedNames, ExpectedMissingNames, AdditionalOfficialNames, Warnings |
+        Format-List | Out-String
+    [Console]::Error.WriteLine($humanSummary)
 
     $expectedSummary = Format-ExpectedItemsSummary -ExpectedComparison $expectedComparison
     if (-not [string]::IsNullOrWhiteSpace($expectedSummary)) {
-        Write-Output ""
-        Write-Output $expectedSummary
+        [Console]::Error.WriteLine("")
+        [Console]::Error.WriteLine($expectedSummary)
     }
 
     if ($verification.Missing.Count -gt 0 -or $verification.Mismatch.Count -gt 0) {

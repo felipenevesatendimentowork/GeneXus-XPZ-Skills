@@ -11,6 +11,13 @@ Cada entrada usa dois campos curtos logo abaixo do titulo:
 
 Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos até que sejam revistas em sessão dedicada.
 
+## Atualizar wrappers locais `Update-*KbFromXpz.ps1` em pastas paralelas para o contrato JSON do sync
+
+- **Importância** — média (gap real com workaround). O `Sync-GeneXusXpzToXml.ps1` passou a emitir JSON de máquina no stdout (texto humano no stderr); os wrappers locais clonados em pastas paralelas — "hardcoded em praticamente todas" — ainda foram escritos para a saída textual antiga. Até atualizá-los, o consumo nominal programático do resultado fica comprometido nessas pastas (o `-ReportPath` segue como contorno).
+- **Maturidade** — pronta para implementar. O molde `xpz-kb-parallel-setup/examples/Update-KbFromXpz.example.ps1` já foi corrigido nesta frente e serve de referência: consumir o JSON via `ConvertFrom-Json`, rotear todo diagnóstico humano para stderr (`Write-Host`/`Write-Warning`/`Write-Information` vazam para o stdout capturado de processo filho), `.Count`→`[int]` em `FullSnapshotMissing/Extra`, e re-emitir só a linha JSON no stdout.
+
+Derivada da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (ver `CHANGELOG`). A propagação aos clones deve passar pela skill `xpz-kb-parallel-setup`. Sub-ideia relacionada: um **checador de conformidade portátil** ("o wrapper local emite JSON conformante no stdout?") com casa natural na `xpz-kb-parallel-pre-push`, para um agente confirmar a conformidade do clone local após a migração. Caveat de gate: trabalhar dentro de uma pasta paralela aciona `xpz-kb-parallel-setup`.
+
 ## URGENTE — `.ContainsKey` sobre `OrderedDictionary` quebra o pós-processamento do BuildAll sob StrictMode
 
 **Importância:** alta (não corrompe o build, mas mascara um resultado limpo como falha e pode confundir a classificação do diagnóstico)

@@ -101,6 +101,16 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Diagnostico humano vai para o STDERR, nunca para o stdout. Quando este wrapper roda como
+# processo filho (pwsh -File) e o chamador captura o stdout para `ConvertFrom-Json`, os
+# streams Host/Warning/Information do filho VAZAM para esse stdout (medido empiricamente);
+# so [Console]::Error (fd 2) fica de fora. Contrato: stdout = exclusivamente a linha JSON
+# do motor (re-emitida ao final); todo o resto (resumos, avisos) sai por aqui.
+function Write-HumanLine {
+    param([string]$Message = '')
+    [Console]::Error.WriteLine($Message)
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $enginePath = Join-Path $SharedSkillsRoot "scripts\Sync-GeneXusXpzToXml.ps1"
 $destinationRoot = Join-Path $repoRoot "ObjetosDaKbEmXml"
@@ -120,7 +130,7 @@ $reminderScriptPath = Join-Path $SharedSkillsRoot 'scripts\Test-XpzCatalogOverri
 if (Test-Path -LiteralPath $reminderScriptPath -PathType Leaf) {
     $reminderResult = & $reminderScriptPath -ParallelKbRoot $repoRoot -AsJson | ConvertFrom-Json
     if ($reminderResult.reminderRequired -and -not [string]::IsNullOrWhiteSpace($reminderResult.message)) {
-        Write-Warning $reminderResult.message
+        Write-HumanLine ("AVISO: " + $reminderResult.message)
     }
 }
 
@@ -158,8 +168,8 @@ function Invoke-IndexRefresh {
         $rebuildParams.FailOnValidationFailure = $true
     }
 
-    Write-Host ""
-    Write-Host "Refreshing KbIntelligence index after XPZ/XML materialization..." -ForegroundColor Cyan
+    Write-HumanLine ""
+    Write-HumanLine "Refreshing KbIntelligence index after XPZ/XML materialization..."
 
     $prefix = 'Index refresh failed after XPZ/XML materialization. A materializacao XPZ/XML foi concluida; apenas o indice KbIntelligence nao foi gerado.'
 
@@ -191,24 +201,24 @@ function Show-LocalGitSummary {
     )
 
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        Write-Warning "git nao encontrado; resumo local de alteracoes foi ignorado."
+        Write-HumanLine "AVISO: git nao encontrado; resumo local de alteracoes foi ignorado."
         return
     }
 
     if (-not (Test-Path -LiteralPath (Join-Path $RepositoryRoot ".git"))) {
-        Write-Warning "repositorio Git nao encontrado em $RepositoryRoot; resumo local foi ignorado."
+        Write-HumanLine "AVISO: repositorio Git nao encontrado em $RepositoryRoot; resumo local foi ignorado."
         return
     }
 
     $statusLines = @(git -C $RepositoryRoot status --short -- $PathFilter 2>$null)
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "nao foi possivel obter git status para $PathFilter."
+        Write-HumanLine "AVISO: nao foi possivel obter git status para $PathFilter."
         return
     }
 
     if ($statusLines.Count -eq 0) {
-        Write-Host ""
-        Write-Host "Git summary (`"$PathFilter`"): sem alteracoes locais pendentes." -ForegroundColor Green
+        Write-HumanLine ""
+        Write-HumanLine "Git summary (`"$PathFilter`"): sem alteracoes locais pendentes."
         return
     }
 
@@ -218,16 +228,16 @@ function Show-LocalGitSummary {
     $renamedCount   = @($statusLines | Where-Object { $_ -match '^(R | R|RR)' }).Count
     $untrackedCount = @($statusLines | Where-Object { $_ -match '^\?\?' }).Count
 
-    Write-Host ""
-    Write-Host "Git summary (`"$PathFilter`"):" -ForegroundColor Cyan
-    Write-Host ("  Modified : {0}" -f $modifiedCount)
-    Write-Host ("  Added    : {0}" -f $addedCount)
-    Write-Host ("  Deleted  : {0}" -f $deletedCount)
-    Write-Host ("  Renamed  : {0}" -f $renamedCount)
-    Write-Host ("  Untracked: {0}" -f $untrackedCount)
-    Write-Host ""
-    Write-Host "Changed paths:" -ForegroundColor Cyan
-    $statusLines | ForEach-Object { Write-Host ("  {0}" -f $_) }
+    Write-HumanLine ""
+    Write-HumanLine ("Git summary (`"{0}`"):" -f $PathFilter)
+    Write-HumanLine ("  Modified : {0}" -f $modifiedCount)
+    Write-HumanLine ("  Added    : {0}" -f $addedCount)
+    Write-HumanLine ("  Deleted  : {0}" -f $deletedCount)
+    Write-HumanLine ("  Renamed  : {0}" -f $renamedCount)
+    Write-HumanLine ("  Untracked: {0}" -f $untrackedCount)
+    Write-HumanLine ""
+    Write-HumanLine "Changed paths:"
+    $statusLines | ForEach-Object { Write-HumanLine ("  {0}" -f $_) }
 }
 
 function Get-ResultValue {
@@ -291,7 +301,7 @@ function Remove-RenamedObjectResidue {
                 BaseName = $file.BaseName
             })
         } catch {
-            Write-Warning ("falha ao inspecionar {0}: {1}" -f $file.FullName, $_.Exception.Message)
+            Write-HumanLine ("AVISO: falha ao inspecionar {0}: {1}" -f $file.FullName, $_.Exception.Message)
         }
     }
 
@@ -312,7 +322,7 @@ function Remove-RenamedObjectResidue {
         foreach ($item in $toRemove) {
             Remove-Item -LiteralPath $item.FullName -Force
             $removedFiles.Add($item.FullName)
-            Write-Host ("Removed renamed-object residue: {0} (guid {1}); kept {2}" -f $item.FullName, $item.Guid, $keep.FullName) -ForegroundColor Yellow
+            Write-HumanLine ("Removed renamed-object residue: {0} (guid {1}); kept {2}" -f $item.FullName, $item.Guid, $keep.FullName)
         }
     }
 
@@ -357,7 +367,19 @@ if ($ExpectedItems.Count -gt 0) {
     $params.ExpectedItems = @($ExpectedItems)
 }
 
-$result = & $enginePath @params
+# O motor emite no stdout uma unica linha JSON (-Compress). Invocado in-process via &,
+# $rawResult e essa string; parseamos para objeto para a logica abaixo. Se o motor falhar
+# antes de emitir o JSON, ele lanca (ErrorActionPreference=Stop aborta aqui) e o JSON-em-falha
+# so e recuperavel pelo agente que captura stdout+exitcode, nao por este wrapper.
+$rawResult = & $enginePath @params
+$result = $null
+if ($null -ne $rawResult) {
+    try {
+        $result = $rawResult | ConvertFrom-Json
+    } catch {
+        throw "Falha ao parsear o JSON de saida do motor Sync-GeneXusXpzToXml.ps1: $($_.Exception.Message). Saida bruta: $rawResult"
+    }
+}
 
 $removedRenameResidue = @()
 if (-not $VerifyOnly) {
@@ -373,22 +395,31 @@ if ($shouldShowGitSummary -and $null -ne $result) {
     $created = [int](Get-ResultValue -Result $result -PropertyName "Created" -DefaultValue 0)
     $updated = [int](Get-ResultValue -Result $result -PropertyName "Updated" -DefaultValue 0)
     $normalizedFileNames = [int](Get-ResultValue -Result $result -PropertyName "NormalizedFileNames" -DefaultValue 0)
-    $fullSnapshotMissing = @(Get-ResultValue -Result $result -PropertyName "FullSnapshotMissing" -DefaultValue @())
-    $fullSnapshotExtra = @(Get-ResultValue -Result $result -PropertyName "FullSnapshotExtra" -DefaultValue @())
+    # FullSnapshotMissing/Extra sao CONTADORES (int) ou null no summary, nao arrays: ler como
+    # [int] e comparar > 0. Envolver em @(...).Count daria @(0).Count == 1 -> sempre verdadeiro.
+    $fullSnapshotMissing = [int](Get-ResultValue -Result $result -PropertyName "FullSnapshotMissing" -DefaultValue 0)
+    $fullSnapshotExtra = [int](Get-ResultValue -Result $result -PropertyName "FullSnapshotExtra" -DefaultValue 0)
+    # Uma rodada so com renames tambem e mudanca material (RenamedByGuid aplica; em VerifyOnly
+    # RenameResidualsDetected sinaliza acervo desatualizado).
+    $renamedByGuid = [int](Get-ResultValue -Result $result -PropertyName "RenamedByGuid" -DefaultValue 0)
+    $renameResidualsDetected = [int](Get-ResultValue -Result $result -PropertyName "RenameResidualsDetected" -DefaultValue 0)
 
     $hasMaterialChange = ($created -gt 0) -or ($updated -gt 0) -or
-        ($normalizedFileNames -gt 0) -or ($fullSnapshotMissing.Count -gt 0) -or
-        ($fullSnapshotExtra.Count -gt 0) -or ($removedRenameResidue.Count -gt 0)
+        ($normalizedFileNames -gt 0) -or ($fullSnapshotMissing -gt 0) -or
+        ($fullSnapshotExtra -gt 0) -or ($renamedByGuid -gt 0) -or
+        ($renameResidualsDetected -gt 0) -or ($removedRenameResidue.Count -gt 0)
     if (-not $hasMaterialChange) {
         $shouldShowGitSummary = $false
     }
 }
 
-$result
+# stdout: exclusivamente a linha JSON do motor, re-emitida byte-a-byte (sem re-serializar,
+# para nao introduzir drift de formatacao/ordem). Todo diagnostico humano sai por stderr.
+$rawResult
 
 if ($removedRenameResidue.Count -gt 0) {
-    Write-Host ""
-    Write-Host ("RemovedRenameResidue      : {0}" -f $removedRenameResidue.Count) -ForegroundColor Yellow
+    Write-HumanLine ""
+    Write-HumanLine ("RemovedRenameResidue      : {0}" -f $removedRenameResidue.Count)
 }
 
 if ($shouldShowGitSummary) {
