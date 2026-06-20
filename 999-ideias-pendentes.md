@@ -18,6 +18,13 @@ Entradas legadas sem avaliação carregam `FALTA AVALIAR` em ambos os campos at�
 
 Derivada da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (ver `CHANGELOG`). A propagação aos clones deve passar pela skill `xpz-kb-parallel-setup`. Sub-ideia relacionada: um **checador de conformidade portátil** ("o wrapper local emite JSON conformante no stdout?") com casa natural na `xpz-kb-parallel-pre-push`, para um agente confirmar a conformidade do clone local após a migração. Caveat de gate: trabalhar dentro de uma pasta paralela aciona `xpz-kb-parallel-setup`.
 
+## Trava contra o agente reduzir o painel de revisão por pares por conta própria (oferecer ≠ decidir)
+
+- **Importância** — média (gap de governança real). A régua (`15-revisao-por-pares.md`/`14-revisao-pre-push-reforcada.md`/`xpz-llm-delegate`) diz "não descartar revisor preferido em silêncio" e que reduzir o painel exige **decisão humana explícita**, mas **não há trava** que impeça o agente de declarar suficiência no **piso** (≥2 famílias) e **recomendar convergência/push** por conta própria. Incidente real (2026-06-20, pré-push reforçada da frente do contrato JSON do sync): o agente rodou só 2 revisores, declarou "piso atingido" e recomendou o push; o usuário corrigiu — o agente pode **oferecer** painel menor, nunca **decidir** reduzi-lo. Parar no piso e recomendar push é justamente o que o guardrail do `14`/`15` proíbe.
+- **Maturidade** — ideia (decisões de design em aberto). Direção: regra **positiva** no `15` (composição/régua) e `14` — por padrão o agente despacha a **lista preferida inteira**; painel menor só como **pergunta**, e parar no piso + recomendar convergência/push fica proibido sem decisão humana de reduzir. Avaliar suporte mecânico (ex.: o closeout/`Resolve-LlmDelegatePanelDiversity` sinalizar "preferidos despacháveis não despachados" como bloqueio de recibo, análogo ao que o closeout já faz para estados auditáveis incompletos). A própria correção deve passar por revisão por pares.
+
+Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na frente Revisão por Pares formalizada.
+
 ## URGENTE — `.ContainsKey` sobre `OrderedDictionary` quebra o pós-processamento do BuildAll sob StrictMode
 
 **Importância:** alta (não corrompe o build, mas mascara um resultado limpo como falha e pode confundir a classificação do diagnóstico)
