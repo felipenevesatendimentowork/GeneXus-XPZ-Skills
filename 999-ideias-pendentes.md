@@ -2199,3 +2199,14 @@ Painel dividido (2026-06-13): deepseek-v4-pro, glm-5.1 e minimax-m3 inclinaram a
 
 - `scripts/Copy-GeneXusAcervoToFront.ps1`, `scripts/Test-GeneXusFrontAcervoDrift.ps1`, `scripts/New-GeneXusXpzFront.ps1`
 - `xpz-builder/SKILL.md` (gate 9-FD), `xpz-builder/quality-checklist.md`
+
+## Revisar a memória pessoal do agente por conhecimento que pertence às skills XPZ
+
+**Importância:** média (conhecimento útil preso na memória de um harness/máquina não melhora as skills, que rodam em N harnesses e N máquinas)
+**Maturidade:** ideia (varredura e triagem por fazer; alguns itens são claros, outros são mistos local/skill)
+
+**Origem:** 2026-06-19. Este é um repositório de skills feitas para rodar em N harnesses (Claude Code, Codex, Cursor, OpenCode) e N máquinas; a memória pessoal de um agente **não viaja com a skill**. Conhecimento de skill registrado só na memória fica invisível aos demais consumidores e desencontra a fonte de verdade.
+
+**A fazer (sessão dedicada):** varrer a memória pessoal do agente e migrar para a `SKILL.md`/doc/script da skill correspondente todo conhecimento **comportamental / de invocação / de limitação de adapter / de quirk operacional**, deixando na memória apenas o **genuinamente local** (hardware da máquina, preferências do usuário, estado/rastreabilidade de frentes em curso). Triar item a item — alguns são mistos (ex.: hardware local + limitação de adapter na mesma anotação). Regra de fronteira já registrada na memória do agente (`feedback_skill_knowledge_nao_vai_pra_memoria`).
+
+**Nota:** o subconjunto da **`xpz-llm-delegate`** (adapters opencode, composição de painel) está sendo tratado na própria sessão de 2026-06-19 — não esperar esta frente para ele.
