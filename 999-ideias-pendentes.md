@@ -260,6 +260,27 @@ Após implementar + rebuild:
 
 **Relacionado:** `15-revisao-por-pares.md` (régua `:40`); `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1` (onde o estado de re-submissão da vN+1 será mecanizado no Achado A); frente dos 4 achados da revisão por pares.
 
+## Escolha de escopo do painel na revisão por pares (o agente não encolhe o painel sozinho)
+
+**Importância:** média (gap real de metodologia; causou incidente em 2026-06-20 — gap de paridade trilíngue do CHANGELOG quase foi ao push)
+**Maturidade:** plano refinado por painel de 6 modelos / 3 famílias (todos «aprovado com ressalvas»); vN+1 consolidada pendente de re-submissão
+
+**Origem:** incidente 2026-06-20. Em pré-push reforçada com `preferred-reviewers.json` de 6 revisores, o agente despachou 2 (piso de 2 famílias), viu «0 gaps até aqui» e PAROU por decisão própria. O usuário mandou consultar os 4 restantes; o único gap real só apareceu no 6º revisor. Parar no piso teria mandado o gap ao push. Causa raiz (catch do minimax): terminação por **convergência intermediária** — 3ª regra implícita que nem o `14`/`15` vedavam.
+
+**O que a frente faria (doc + motor; NÃO é doc-only):**
+1. Vedar textualmente a terminação por convergência intermediária: painel só termina em (a) 1º gap *após* o piso atingido, (b) fim do escopo escolhido, (c) falha de comunicação.
+2. Usuário decide o escopo: com lista preferida, o agente apresenta composição + opções (inteira / subconjunto / ad-hoc) + custo estimado; recomenda, não decide. Pergunta **depois** dos gates mecânico+semântico e após resolver `ask`/`allow`.
+3. Default não-bloqueante = lista inteira (silêncio → inteira, registrado `scopeSource`); nunca cair ao piso.
+4. Subconjunto deve manter ≥2 famílias; abaixo disso rebaixa o rótulo para «segunda opinião (N)». Ad-hoc não conta para diversidade nem dispensa o gate de autorização por destino.
+5. Dono normativo no `15` (composição do painel); aplicação pré-push no `14`.
+6. Recibo/motor `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1`: campos `scopeDecision`/`scopeSource`/`deviationReason` + enum de estado por preferido (`responded`|`skippedByUserScope`|`skippedByGapStop`|`notReached`|`failedCommunication`|`unavailable`).
+7. `defaultScope` opcional em `preferred-reviewers.json` (`full`|`minimumValid`|`manual`) com guarda anti-erosão.
+8. Paridade `02`/`08`/`09`/`README`/`xpz-llm-delegate/SKILL.md` + CHANGELOG trilíngue.
+
+**Painel consultado (plano):** Codex (gpt-5.5) + deepseek-v4-pro + kimi-k2.7-code + glm-5.2 + minimax-m3 + síntese Anthropic. RoundId `plan-panel-scope-2026-06-20`; `vNextState=pendingResubmission`.
+
+**Relacionado:** `14-revisao-pre-push-reforcada.md`, `15-revisao-por-pares.md`, `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1`; exceção «relay auditável» acima (otimização distinta da mesma régua); correção do commit `f35bbe5` que motivou.
+
 ## Detecção de truncamento fora do opencode (paridade dos adapters stdin/JSONL)
 
 **Importância:** baixa-média (rede de segurança; o vazamento crítico já está fechado)
