@@ -299,6 +299,49 @@ $forward = @{}
     Assert-Contains -Text $output -Pattern 'Test-DemoKbSetupAudit\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K8 que declara AsJson mas nao repassa deve ser sinalizado'
     Assert-Contains -Text $output -Pattern 'Test-DemoKbIndexGate\.ps1\(reason=missing_AsJson_passthrough\)' -Message 'wrapper K9 que declara AsJson mas nao repassa deve ser sinalizado'
 
+    # Update-KbFromXpz x Sync-GeneXusXpzToXml: drift de contrato de CONSUMO. O molde consome o
+    # stdout do motor como JSON v1 (ConvertFrom-Json); wrapper local que ainda trata como TEXTO
+    # (sem ConvertFrom-Json) deve ser sinalizado consumes_legacy_text_stdout.
+    @'
+#requires -Version 7.4
+param([string]$InputPath)
+$raw = & $enginePath -InputPath $InputPath
+$result = $raw | ConvertFrom-Json
+[Console]::Error.WriteLine("Created: $($result.Created)")
+$raw
+'@ | Set-Content -LiteralPath (Join-Path $examplesPath 'Update-KbFromXpz.example.ps1') -Encoding utf8NoBOM
+
+    $updateStandardPath = Join-Path $scriptsPath 'Update-DemoKbFromXpz.ps1'
+
+    # FALHA: wrapper textual antigo (Format-List, sem ConvertFrom-Json)
+    @'
+#requires -Version 7.4
+param([string]$InputPath)
+$result = & $enginePath -InputPath $InputPath
+$result | Format-List
+'@ | Set-Content -LiteralPath $updateStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Update-DemoKbFromXpz\.ps1\(reason=consumes_legacy_text_stdout\)' -Message 'wrapper Update-*KbFromXpz textual (sem ConvertFrom-Json) deve ser sinalizado'
+
+    # PASSA: wrapper migrado para o contrato JSON v1 (consome ConvertFrom-Json) nao pode ser
+    # sinalizado por esse motivo
+    @'
+#requires -Version 7.4
+param([string]$InputPath)
+$raw = & $enginePath -InputPath $InputPath
+$result = $raw | ConvertFrom-Json
+[Console]::Error.WriteLine("Created: $($result.Created)")
+$raw
+'@ | Set-Content -LiteralPath $updateStandardPath -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-NotContains -Text $output -Pattern 'Update-DemoKbFromXpz\.ps1\(reason=consumes_legacy_text_stdout\)' -Message 'wrapper Update-*KbFromXpz migrado para JSON v1 nao pode ser sinalizado por esse motivo'
+
     Write-Output 'WRAPPER_INVENTORY_SELFTEST_OK'
 } finally {
     if ($tempRoot.StartsWith([System.IO.Path]::GetTempPath(), [System.StringComparison]::OrdinalIgnoreCase) -and

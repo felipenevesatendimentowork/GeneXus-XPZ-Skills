@@ -279,6 +279,24 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
                 $customized.Add(('{0}(reason=missing_AsJson_passthrough)' -f $standardLocalName))
             }
         }
+
+        if ($baseName -ieq 'Update-KbFromXpz') {
+            $exampleText = [System.IO.File]::ReadAllText($examplePath)
+            $localText = [System.IO.File]::ReadAllText($standardPath)
+            # Drift de contrato de CONSUMO do motor: o molde canonico consome o stdout do
+            # Sync-GeneXusXpzToXml.ps1 como contrato JSON v1 (ConvertFrom-Json). Um wrapper
+            # local que ainda trata esse stdout como TEXTO (sem ConvertFrom-Json) consome a
+            # forma de saida defasada e, sem este check, passaria como nao-customizado. Mesma
+            # mecanica heuristica (texto local vs molde) do precedente missing_AsJson_passthrough:
+            # marca quando o molde consome JSON e o local nao. LIMITE CONHECIDO (heuristica
+            # textual conservadora, nao prova de conformidade): nao detecta migracao parcial
+            # (ConvertFrom-Json presente num ramo mas stdout consumido como texto em outro) nem
+            # parsers alternativos (System.Text.Json, Invoke-RestMethod). Esses casos sao materia
+            # do follow-up de versao-de-contrato (Kind/SchemaVersion) no 999-ideias-pendentes.md.
+            if ($exampleText -match 'ConvertFrom-Json' -and $localText -notmatch 'ConvertFrom-Json') {
+                $customized.Add(('{0}(reason=consumes_legacy_text_stdout)' -f $standardLocalName))
+            }
+        }
     } elseif ($shortExists) {
         $shortNaming.Add($standardLocalName)
     } elseif ($optionalBaseNames.Contains($baseName)) {
