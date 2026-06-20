@@ -75,3 +75,51 @@ function Get-OpenCodeAllText {
     param([object[]]$TextParts)
     return (@(@($TextParts) | Where-Object { $null -ne $_ } | ForEach-Object { [string]$_.text }) -join "`n`n")
 }
+
+function Get-OpenCodeCompletionSignal {
+    # Sinal de conclusao do stream, a partir do ULTIMO evento step_finish e seu part.reason.
+    # Achado D: leitura agentica que estoura passos encerra um step com reason != 'stop' (ou
+    # sem step_finish algum), e o adapter devolvia o preambulo como se fosse a resposta final.
+    # Retorna [pscustomobject]{ hasStepFinish; reason }:
+    #   hasStepFinish=$false           -> nenhum step_finish no stream (conclusao ausente)
+    #   hasStepFinish=$true; reason=''  -> step_finish presente mas sem campo reason (tratar como ausente)
+    #   hasStepFinish=$true; reason='stop'|'length'|'tool-calls'|... -> reason explicito
+    param([object[]]$Events)
+    $steps = @(@($Events) | Where-Object { (Get-OcProp $_ 'type') -eq 'step_finish' })
+    if ($steps.Count -eq 0) {
+        return [pscustomobject]@{ hasStepFinish = $false; reason = '' }
+    }
+    $last = $steps[$steps.Count - 1]
+    $reason = [string](Get-OcProp (Get-OcProp $last 'part') 'reason')
+    return [pscustomobject]@{ hasStepFinish = $true; reason = $reason }
+}
+
+function Get-OpenCodeCompletionVerdict {
+    # Precedencia FIXADA do Achado D (NAO trata erro explicito de stream; isso e tratado a parte,
+    # com prioridade, por Get-OpenCodeStreamErrorMessage no chamador):
+    #   (1) step_finish com reason != 'stop' (inclui 'length','tool-calls') -> truncated
+    #   (2) sem step_finish OU reason vazio (sinal de conclusao ausente)     -> no-completion
+    #   (3) texto final vazio, apos conclusao limpa (reason='stop')          -> empty
+    #   senao                                                                -> ok
+    # Cada caso e disjunto -> uma mensagem deterministica por cenario (fixtures do self-test).
+    # 'reason' nulo/ausente e tratado como cadeia vazia (cai em (2)); NUNCA lanca sob StrictMode.
+    #
+    # Vocabulario de reason: SO 'stop' e sucesso. QUALQUER outro valor ('length', 'tool-calls',
+    # 'content_filter', 'unknown', 'max_tokens', ...) cai em (1) truncated POR DESIGN — inclusive
+    # 'tool-calls' com preambulo textual ja presente, que e justamente o vazamento do Achado D
+    # (o turno viraria tool call e o preambulo nao e a resposta final). NAO "consertar" essa
+    # precedencia. Risco a vigiar: se o opencode renomear 'stop' upstream (ex.: 'done'), toda
+    # chamada legitima viraria truncated -> revisar aqui e em xpz-llm-delegate/SKILL.md (LIMITE
+    # CONHECIDO opencode), onde fica registrada a versao do opencode contra a qual foi mapeado.
+    param([bool]$HasStepFinish, [string]$Reason, [string]$FinalText)
+    if ($HasStepFinish -and -not [string]::IsNullOrEmpty($Reason) -and $Reason -ne 'stop') {
+        return [pscustomobject]@{ status = 'truncated'; reason = $Reason; message = "BLOCK: resposta truncada (reason=$Reason). Use -Raw para inspecionar." }
+    }
+    if (-not $HasStepFinish -or [string]::IsNullOrEmpty($Reason)) {
+        return [pscustomobject]@{ status = 'no-completion'; reason = ''; message = 'BLOCK: resposta sem sinal de conclusao (step_finish/reason ausente). Use -Raw para inspecionar.' }
+    }
+    if ([string]::IsNullOrWhiteSpace($FinalText)) {
+        return [pscustomobject]@{ status = 'empty'; reason = $Reason; message = 'BLOCK: nenhum evento de texto na resposta. Use -Raw para inspecionar.' }
+    }
+    return [pscustomobject]@{ status = 'ok'; reason = $Reason; message = '' }
+}

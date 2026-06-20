@@ -106,11 +106,19 @@ try {
     if ($errMsg) { throw "BLOCK: opencode retornou erro no stream: $errMsg" }
 
     $parts = @(Get-OpenCodeTextParts -Events $events)
-    if ($parts.Count -eq 0) { throw "BLOCK: nenhum evento de texto na resposta. Use -Raw para inspecionar." }
+    $finalText = Get-OpenCodeFinalText -TextParts $parts
+
+    # Achado D: NAO devolver preambulo como resposta. Apos o erro explicito (acima, prioritario),
+    # aplicar a precedencia de conclusao SEMPRE sobre a resposta final (Get-OpenCodeFinalText),
+    # nunca sobre a narracao do -AllText: reason!=stop -> truncado; step_finish/reason ausente ->
+    # sem-conclusao; texto final vazio -> empty. So depois de 'ok' escolhemos o retorno.
+    $signal = Get-OpenCodeCompletionSignal -Events $events
+    $verdict = Get-OpenCodeCompletionVerdict -HasStepFinish $signal.hasStepFinish -Reason $signal.reason -FinalText $finalText
+    if ($verdict.status -ne 'ok') { throw $verdict.message }
 
     # -AllText: toda a narracao; default: resposta final (última mensagem concatenada)
     if ($AllText) { return (Get-OpenCodeAllText -TextParts $parts) }
-    return (Get-OpenCodeFinalText -TextParts $parts)
+    return $finalText
 }
 finally {
     Remove-Item -LiteralPath $out.FullName, $err.FullName, $req.FullName, $runner -Force -ErrorAction SilentlyContinue

@@ -37,6 +37,22 @@
     `responded`, `noResponse`, `timeout`, `error`, `gateAsk`, `gateDeny`, `unavailable`,
     `skippedByHumanDecision` e `stoppedOnGap` liberam, desde que o piso de diversidade ja tenha
     sido tratado pelo motor proprio.
+
+    Eixo de estado da vN+1 (Achado A): apos o painel, o agente AUTORA uma versao consolidada
+    (vN+1) que ainda NAO foi revisada. -VNextState declara onde a vN+1 esta:
+      notProduced                 -> nao houve sintese consolidada -> neutro
+      pendingResubmission         -> vN+1 autorada e NAO re-submetida -> BLOQUEIA (oferecer 2a rodada)
+      resubmitted                 -> vN+1 re-submetida ao painel -> neutro
+      resubmissionDeclinedByHuman -> humano cientemente NAO re-submete -> exige registro
+                                     auditavel (-ResubmissionDeclinedBy + -ResubmissionDeclineReason
+                                     + -RoundId, que escopa o declinio a rodada);
+                                     sem quem/motivo/RoundId -> BLOQUEIA (vnext-resubmission-decline-unaudited)
+    Este script e STATELESS: o estado chega por parametro e e reavaliado do zero a cada chamada.
+    A trilha auditavel (append-only por RoundId) e a monotonicidade entre chamadas sao do
+    ORQUESTRADOR + recibo/livro-razao, NAO deste script. A unica forma de mover de
+    pendingResubmission para um estado terminal e nova invocacao com o VNextState terminal.
+    Limite honesto: o eixo e a prova de SILENCIO (converte um "pulei a re-submissao" em
+    afirmacao auditavel e falsificavel), nao a prova de FABRICACAO.
 .PARAMETER HadPreferredReviewers
     Indica se Resolve-LlmDelegatePreferredReviewers.ps1 devolveu hasPreferences=true no inicio
     da montagem do painel.
@@ -45,7 +61,9 @@
 .PARAMETER PreferredReviewersOfferState
     Estado da oferta de salvar a selecao em preferred-reviewers.json.
 .PARAMETER RoundId
-    Identificador opcional da rodada, usado apenas para recibo e auditoria.
+    Identificador da rodada, usado para recibo e auditoria. Opcional em geral, mas
+    OBRIGATORIO quando -VNextState resubmissionDeclinedByHuman (escopa o declinio a rodada;
+    ausente nesse caso bloqueia o fechamento).
 .PARAMETER SelectedReviewersJson
     JSON opcional com os revisores escolhidos. Usado para ecoar a selecao no prompt.
 .PARAMETER PreferredReviewerStatesJson
@@ -55,23 +73,59 @@
 .PARAMETER DiversityState
     Estado opcional ja calculado por Resolve-LlmDelegatePanelDiversity.ps1. Este script nao
     recalcula diversidade; apenas ecoa o valor no recibo.
+.PARAMETER VNextState
+    Estado da versao consolidada (vN+1) autorada apos o painel:
+    notProduced | pendingResubmission | resubmitted | resubmissionDeclinedByHuman.
+    Default notProduced. Sempre ecoado no receiptAddendum (Achado A).
+.PARAMETER ResubmissionDeclinedBy
+    Quem (humano) decidiu nao re-submeter a vN+1. Exigido apenas quando
+    -VNextState resubmissionDeclinedByHuman; ausente/vazio nesse caso bloqueia o fechamento.
+    Ignorado nos demais estados.
+.PARAMETER ResubmissionDeclineReason
+    Por que a re-submissao foi declinada. Exigido apenas quando
+    -VNextState resubmissionDeclinedByHuman; ausente/vazio nesse caso bloqueia o fechamento.
+    Ignorado nos demais estados.
 .EXAMPLE
-    .\Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers:$false -ManualReviewerSelection:$true -PreferredReviewersOfferState not_made
+    .\Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers false -ManualReviewerSelection true -PreferredReviewersOfferState not_made
+
+    Nota: -HadPreferredReviewers/-ManualReviewerSelection recebem a string 'true'/'false'
+    (NAO o literal $true/$false). Via `pwsh -File` chamado de Bash, $true/$false nus expandem
+    para vazio antes do pwsh; por isso o contrato e string validada por ValidateSet.
+.EXAMPLE
+    .\Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers true -ManualReviewerSelection false -RoundId v3 -VNextState pendingResubmission
+
+    vN+1 autorada e ainda nao re-submetida: closeoutReady=false, blockingReason
+    vnext-pending-resubmission, e requiredUserPrompt oferece a 2a rodada.
+.EXAMPLE
+    .\Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers true -ManualReviewerSelection false -RoundId v3 -VNextState resubmissionDeclinedByHuman -ResubmissionDeclinedBy "Antonio" -ResubmissionDeclineReason "diff trivial; risco baixo"
+
+    Declinio auditado: closeoutReady=true e o recibo ecoa quem/motivo/RoundId.
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)] [bool] $HadPreferredReviewers,
-    [Parameter(Mandatory)] [bool] $ManualReviewerSelection,
+    [Parameter(Mandatory)] [ValidateSet('true', 'false')] [string] $HadPreferredReviewers,
+    [Parameter(Mandatory)] [ValidateSet('true', 'false')] [string] $ManualReviewerSelection,
     [ValidateSet('not_made', 'offered', 'accepted', 'declined', 'deferred', 'not_applicable')]
     [string] $PreferredReviewersOfferState = 'not_applicable',
     [string] $RoundId,
     [string] $SelectedReviewersJson = '[]',
     [string] $PreferredReviewerStatesJson = '[]',
-    [string] $DiversityState
+    [string] $DiversityState,
+    [ValidateSet('notProduced', 'pendingResubmission', 'resubmitted', 'resubmissionDeclinedByHuman')]
+    [string] $VNextState = 'notProduced',
+    [string] $ResubmissionDeclinedBy,
+    [string] $ResubmissionDeclineReason
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# HadPreferredReviewers/ManualReviewerSelection chegam como string ('true'/'false'): via
+# `pwsh -File` chamado de Bash, os tokens nus $true/$false do shell expandem para vazio antes
+# do pwsh (quirk real; dois agentes tropecaram). ValidateSet barra valores invalidos e a
+# conversao e textual — NUNCA [bool]$x, que tornaria [bool]'false' = $true. Ver Achado C.
+$hadPreferred = ($HadPreferredReviewers -eq 'true')
+$manualSelection = ($ManualReviewerSelection -eq 'true')
 
 function Get-Prop {
     param($Obj, [string]$Name)
@@ -105,7 +159,7 @@ try {
     throw "BLOCK: -PreferredReviewerStatesJson nao e JSON valido: $($_.Exception.Message)"
 }
 
-$requiresOffer = (-not $HadPreferredReviewers) -and $ManualReviewerSelection
+$requiresOffer = (-not $hadPreferred) -and $manualSelection
 $blockingReasons = [System.Collections.Generic.List[string]]::new()
 
 if ($requiresOffer -and $PreferredReviewersOfferState -eq 'not_made') {
@@ -116,7 +170,7 @@ if ($requiresOffer -and $PreferredReviewersOfferState -eq 'not_applicable') {
     $blockingReasons.Add('preferred-reviewers-offer-state-invalid-for-manual-selection')
 }
 
-if (-not $requiresOffer -and $PreferredReviewersOfferState -ne 'not_applicable' -and -not $ManualReviewerSelection) {
+if (-not $requiresOffer -and $PreferredReviewersOfferState -ne 'not_applicable' -and -not $manualSelection) {
     $blockingReasons.Add('preferred-reviewers-offer-state-unexpected-without-manual-selection')
 }
 
@@ -165,16 +219,47 @@ foreach ($st in $preferredReviewerStates) {
         })
 }
 
-if ($HadPreferredReviewers -and $preferredStateRows.Count -eq 0) {
+if ($hadPreferred -and $preferredStateRows.Count -eq 0) {
     $blockingReasons.Add('preferred-reviewer-states-missing')
+}
+
+# Eixo de estado da vN+1 (Achado A2). Este closeout e STATELESS: VNextState chega como
+# parametro de entrada e e reavaliado do zero a cada chamada; nao ha registro mutavel entre
+# invocacoes. A trilha auditavel (append-only por RoundId) e responsabilidade do ORQUESTRADOR
+# + recibo/livro-razao, NAO deste script (a monotonicidade entre chamadas exigiria estado
+# persistente e contradiria o desenho). A unica forma de mover de pendingResubmission para um
+# estado terminal e nova invocacao deste closeout com o VNextState terminal; qualquer outra
+# forma de alterar o estado afirmado no recibo e bypass de gate. Limite honesto: este eixo e
+# a prova de silencio (converte um "pulei a re-submissao" em afirmacao auditavel e
+# falsificavel), nao a prova de fabricacao (o script nao le a conversa para provar a mentira).
+$vNextDeclinedBy = ''
+if ($null -ne $ResubmissionDeclinedBy) { $vNextDeclinedBy = $ResubmissionDeclinedBy.Trim() }
+$vNextDeclineReason = ''
+if ($null -ne $ResubmissionDeclineReason) { $vNextDeclineReason = $ResubmissionDeclineReason.Trim() }
+
+if ($VNextState -eq 'pendingResubmission') {
+    $blockingReasons.Add('vnext-pending-resubmission')
+}
+if ($VNextState -eq 'resubmissionDeclinedByHuman') {
+    # RoundId tambem e exigido: a regua e stale-por-versao, entao um declinio precisa estar
+    # escopado a rodada (sem RoundId o declinio "vazaria" para versoes futuras). Alinha com 15.
+    if ([string]::IsNullOrWhiteSpace($vNextDeclinedBy) -or [string]::IsNullOrWhiteSpace($vNextDeclineReason) -or [string]::IsNullOrWhiteSpace($RoundId)) {
+        $blockingReasons.Add('vnext-resubmission-decline-unaudited')
+    }
 }
 
 $labels = @($selectedReviewers | ForEach-Object { Get-ReviewerLabel $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 $selectedText = if ($labels.Count -gt 0) { ($labels -join ', ') } else { 'os revisores escolhidos nesta rodada' }
 
 $preferredPath = '%LOCALAPPDATA%\xpz-llm-delegate\preferred-reviewers.json'
+$roundLabel = 'desta rodada'
+if (-not [string]::IsNullOrWhiteSpace($RoundId)) { $roundLabel = "da rodada '$RoundId'" }
 $requiredPrompt = $null
-if ($requiresOffer -and ($blockingReasons -contains 'preferred-reviewers-offer-missing' -or $blockingReasons -contains 'preferred-reviewers-offer-state-invalid-for-manual-selection')) {
+if ($blockingReasons -contains 'vnext-pending-resubmission') {
+    $requiredPrompt = "Antes de encerrar a revisão por pares: há uma vN+1 autorada e ainda não re-submetida ($roundLabel). Pela opção 1 (D2), ofereça a 2ª rodada ao painel e, após re-submeter, re-rode este closeout com -VNextState resubmitted; se o humano cientemente declinar a re-submissão, re-rode com -VNextState resubmissionDeclinedByHuman + -ResubmissionDeclinedBy e -ResubmissionDeclineReason."
+} elseif ($blockingReasons -contains 'vnext-resubmission-decline-unaudited') {
+    $requiredPrompt = "Antes de encerrar a revisão por pares: o declínio de re-submissão da vN+1 ($roundLabel) exige registro auditável — informe -ResubmissionDeclinedBy (quem decidiu), -ResubmissionDeclineReason (por quê) e -RoundId (qual rodada)."
+} elseif ($requiresOffer -and ($blockingReasons -contains 'preferred-reviewers-offer-missing' -or $blockingReasons -contains 'preferred-reviewers-offer-state-invalid-for-manual-selection')) {
     $requiredPrompt = "Antes de encerrar a revisão por pares: você quer salvar $selectedText como revisores preferidos desta máquina em ${preferredPath}? Se responder sim, vou usar Set-LlmDelegatePreferredReviewers.ps1; se preferir não salvar ou adiar, sigo sem bloquear esta rodada."
 } elseif ($blockingReasons.Count -gt 0) {
     $requiredPrompt = 'Antes de encerrar a revisão por pares: registre no recibo o estado final de cada revisor preferido da rodada, sem omitir preferidos não consultados. Se algum ficou fora, informe o motivo auditável.'
@@ -184,24 +269,36 @@ $closeoutReady = ($blockingReasons.Count -eq 0)
 $curationReceipt = if ($requiresOffer) {
     "Curadoria de revisores preferidos: oferta=$PreferredReviewersOfferState; destino=$preferredPath."
 } else {
-    "Curadoria de revisores preferidos: not_applicable; motivo=" + ($(if ($HadPreferredReviewers) { 'preferred-reviewers.json ja existia' } else { 'sem selecao manual de revisores' }))
+    "Curadoria de revisores preferidos: not_applicable; motivo=" + ($(if ($hadPreferred) { 'preferred-reviewers.json ja existia' } else { 'sem selecao manual de revisores' }))
 }
-$stateReceipt = if ($HadPreferredReviewers) {
+$stateReceipt = if ($hadPreferred) {
     "Estados dos revisores preferidos: registrados=$($preferredStateRows.Count)."
 } else {
     'Estados dos revisores preferidos: not_applicable.'
 }
-$receiptAddendum = "$curationReceipt $stateReceipt"
+# vNextState e SEMPRE ecoado (inclusive notProduced): o campo nao pode ficar silenciosamente
+# ausente do recibo (Achado A; corrige o risco do default). No declinio, ecoa quem/por que/RoundId.
+$vNextReceipt = "Estado da vN+1: vNextState=$VNextState."
+if ($VNextState -eq 'resubmissionDeclinedByHuman') {
+    $declineWho = if ([string]::IsNullOrWhiteSpace($vNextDeclinedBy)) { '(nao informado)' } else { $vNextDeclinedBy }
+    $declineWhy = if ([string]::IsNullOrWhiteSpace($vNextDeclineReason)) { '(nao informado)' } else { $vNextDeclineReason }
+    $declineRound = if ([string]::IsNullOrWhiteSpace($RoundId)) { '(sem RoundId)' } else { $RoundId }
+    $vNextReceipt = "Estado da vN+1: vNextState=$VNextState; declinadoPor=$declineWho; motivo=$declineWhy; RoundId=$declineRound."
+}
+$receiptAddendum = "$curationReceipt $stateReceipt $vNextReceipt"
 
 [pscustomobject]@{
     closeoutReady                = $closeoutReady
     blockingReasons             = @($blockingReasons)
     requiresPreferredOffer       = $requiresOffer
-    hadPreferredReviewers        = $HadPreferredReviewers
-    manualReviewerSelection      = $ManualReviewerSelection
+    hadPreferredReviewers        = $hadPreferred
+    manualReviewerSelection      = $manualSelection
     preferredReviewersOfferState = $PreferredReviewersOfferState
     roundId                      = $RoundId
     diversityState               = $DiversityState
+    vNextState                   = $VNextState
+    resubmissionDeclinedBy       = $vNextDeclinedBy
+    resubmissionDeclineReason    = $vNextDeclineReason
     selectedReviewers            = @($labels)
     preferredReviewerStates      = @($preferredStateRows)
     requiredUserPrompt           = $requiredPrompt

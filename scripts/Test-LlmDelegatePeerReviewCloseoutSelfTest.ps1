@@ -25,14 +25,27 @@ function Invoke-Closeout {
         [bool] $ManualReviewerSelection,
         [string] $OfferState,
         [string] $SelectedReviewersJson = '[]',
-        [string] $PreferredReviewerStatesJson = '[]'
+        [string] $PreferredReviewerStatesJson = '[]',
+        [string] $VNextState = 'notProduced',
+        [string] $ResubmissionDeclinedBy = '',
+        [string] $ResubmissionDeclineReason = '',
+        [string] $RoundId = ''
     )
+    # Contrato C: o script recebe 'true'/'false' como string (ValidateSet), nao o literal
+    # $true/$false — que via `pwsh -File` chamado de Bash expandiria para vazio. O helper
+    # mantem [bool] por conveniencia dos casos e converte para string ao invocar.
+    $hadStr = if ($HadPreferredReviewers) { 'true' } else { 'false' }
+    $manualStr = if ($ManualReviewerSelection) { 'true' } else { 'false' }
     return (& $target `
-            -HadPreferredReviewers:$HadPreferredReviewers `
-            -ManualReviewerSelection:$ManualReviewerSelection `
+            -HadPreferredReviewers $hadStr `
+            -ManualReviewerSelection $manualStr `
             -PreferredReviewersOfferState $OfferState `
             -SelectedReviewersJson $SelectedReviewersJson `
-            -PreferredReviewerStatesJson $PreferredReviewerStatesJson | ConvertFrom-Json)
+            -PreferredReviewerStatesJson $PreferredReviewerStatesJson `
+            -VNextState $VNextState `
+            -ResubmissionDeclinedBy $ResubmissionDeclinedBy `
+            -ResubmissionDeclineReason $ResubmissionDeclineReason `
+            -RoundId $RoundId | ConvertFrom-Json)
 }
 
 # (1) Caso do bug: sem preferencias previas, escolha manual, oferta omitida -> bloqueia.
@@ -104,11 +117,81 @@ try {
 }
 Assert-True $failedStates 'Caso 10: JSON invalido deveria falhar citando PreferredReviewerStatesJson.'
 
+# (11) Contrato C: valor invalido para -HadPreferredReviewers e barrado por ValidateSet
+#      (string 'true'/'false'; nunca [bool] nem token nu $true/$false via Bash).
+$failedSet = $false
+try {
+    [void](& $target -HadPreferredReviewers 'sim' -ManualReviewerSelection 'true' -PreferredReviewersOfferState not_made | ConvertFrom-Json)
+} catch {
+    $failedSet = $true
+}
+Assert-True $failedSet 'Caso 11: valor invalido em -HadPreferredReviewers deveria ser barrado por ValidateSet.'
+
+# (12) Contrato C: strings 'false'/'true' produzem o mesmo resultado do caso do bug (1).
+$r12 = (& $target -HadPreferredReviewers 'false' -ManualReviewerSelection 'true' -PreferredReviewersOfferState not_made -SelectedReviewersJson '[{"backend":"opencode","targetModelKey":"ollama-cloud/deepseek-v4-pro"}]' | ConvertFrom-Json)
+Assert-True ($r12.closeoutReady -eq $false) 'Caso 12: string false/true deveria bloquear como o caso 1.'
+Assert-True ($r12.hadPreferredReviewers -eq $false) 'Caso 12: hadPreferredReviewers deveria ecoar booleano $false.'
+Assert-True ($r12.manualReviewerSelection -eq $true) 'Caso 12: manualReviewerSelection deveria ecoar booleano $true.'
+
+# --- Eixo de estado da vN+1 (Achado A2) ---
+
+# (13) vN+1 autorada e nao re-submetida -> bloqueia + prompt oferece 2a rodada + ecoa estado.
+$r13 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'pendingResubmission' '' '' 'v3'
+Assert-True ($r13.closeoutReady -eq $false) 'Caso 13: pendingResubmission deveria bloquear.'
+Assert-True (@($r13.blockingReasons) -contains 'vnext-pending-resubmission') 'Caso 13: razao vnext-pending-resubmission ausente.'
+Assert-True (-not [string]::IsNullOrWhiteSpace([string]$r13.requiredUserPrompt)) 'Caso 13: prompt de 2a rodada ausente.'
+Assert-True ([string]$r13.receiptAddendum -match 'vNextState=pendingResubmission') 'Caso 13: recibo deveria ecoar vNextState.'
+
+# (14) Declinio sem quem/motivo -> bloqueia (decline-unaudited).
+$r14 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmissionDeclinedByHuman' '' '' 'v3'
+Assert-True ($r14.closeoutReady -eq $false) 'Caso 14: declinio sem quem/motivo deveria bloquear.'
+Assert-True (@($r14.blockingReasons) -contains 'vnext-resubmission-decline-unaudited') 'Caso 14: razao vnext-resubmission-decline-unaudited ausente.'
+
+# (15) Declinio auditado (quem+motivo+RoundId) -> libera e ecoa quem/motivo/RoundId no recibo.
+$r15 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmissionDeclinedByHuman' 'Antonio' 'diff trivial; risco baixo' 'v9'
+Assert-True ($r15.closeoutReady -eq $true) 'Caso 15: declinio auditado deveria liberar.'
+Assert-True ([string]$r15.receiptAddendum -match 'declinadoPor=Antonio') 'Caso 15: recibo deveria ecoar quem declinou.'
+Assert-True ([string]$r15.receiptAddendum -match 'RoundId=v9') 'Caso 15: recibo deveria ecoar o RoundId do declinio.'
+Assert-True ($r15.vNextState -eq 'resubmissionDeclinedByHuman') 'Caso 15: vNextState deveria ser ecoado no objeto.'
+Assert-True ($r15.resubmissionDeclinedBy -eq 'Antonio') 'Caso 15: objeto deveria ecoar resubmissionDeclinedBy.'
+Assert-True ([string]$r15.resubmissionDeclineReason -match 'trivial') 'Caso 15: objeto deveria ecoar resubmissionDeclineReason.'
+
+# (16) vN+1 re-submetida -> neutro, libera.
+$r16 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmitted'
+Assert-True ($r16.closeoutReady -eq $true) 'Caso 16: resubmitted deveria liberar.'
+Assert-True (@($r16.blockingReasons).Count -eq 0) 'Caso 16: resubmitted nao deveria gerar bloqueio.'
+
+# (17) notProduced (default) -> neutro e SEMPRE ecoado no recibo (corrige o risco do silencio).
+$r17 = Invoke-Closeout $false $false 'not_applicable'
+Assert-True ($r17.closeoutReady -eq $true) 'Caso 17: notProduced deveria liberar.'
+Assert-True ($r17.vNextState -eq 'notProduced') 'Caso 17: vNextState default deveria ser notProduced.'
+Assert-True ([string]$r17.receiptAddendum -match 'vNextState=notProduced') 'Caso 17: recibo deveria ecoar vNextState mesmo no default.'
+
+# (18) Precedencia: vN+1 pendente E oferta de curadoria omitida -> ambos bloqueiam, mas o
+#      requiredUserPrompt e o da vN+1 (precedencia), nao o da curadoria.
+$r18 = Invoke-Closeout $false $true 'not_made' '[{"backend":"opencode","targetModelKey":"ollama-cloud/minimax-m3"}]' '[]' 'pendingResubmission' '' '' 'v3'
+Assert-True ($r18.closeoutReady -eq $false) 'Caso 18: bloqueio combinado deveria manter closeoutReady=false.'
+Assert-True (@($r18.blockingReasons) -contains 'vnext-pending-resubmission') 'Caso 18: razao vnext-pending-resubmission ausente.'
+Assert-True (@($r18.blockingReasons) -contains 'preferred-reviewers-offer-missing') 'Caso 18: razao de curadoria ausente.'
+Assert-True ([string]$r18.requiredUserPrompt -match 'não re-submetida') 'Caso 18: prompt deveria priorizar a vN+1, nao a curadoria.'
+
+# (19) Declinio com quem+motivo mas SEM RoundId -> bloqueia (RoundId escopa o declinio).
+$r19 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmissionDeclinedByHuman' 'Antonio' 'motivo qualquer' ''
+Assert-True ($r19.closeoutReady -eq $false) 'Caso 19: declinio sem RoundId deveria bloquear.'
+Assert-True (@($r19.blockingReasons) -contains 'vnext-resubmission-decline-unaudited') 'Caso 19: razao decline-unaudited ausente (RoundId).'
+
+# (20) Declinio com quem+RoundId mas SEM motivo -> bloqueia (um campo so nao basta).
+$r20 = Invoke-Closeout $false $false 'not_applicable' '[]' '[]' 'resubmissionDeclinedByHuman' 'Antonio' '' 'v9'
+Assert-True ($r20.closeoutReady -eq $false) 'Caso 20: declinio sem motivo deveria bloquear.'
+Assert-True (@($r20.blockingReasons) -contains 'vnext-resubmission-decline-unaudited') 'Caso 20: razao decline-unaudited ausente (motivo).'
+
 <#
 Casos antigos mantidos por cobertura historica:
   - sem preferencias previas + escolha manual + oferta omitida -> bloqueia;
   - oferta apresentada/recusada/adiada -> libera a rodada ad-hoc;
   - estados de preferidos existentes agora sao obrigatorios no fechamento.
+Casos da vN+1 (Achado A2): pendingResubmission/decline-unaudited bloqueiam;
+declinio auditado e resubmitted/notProduced liberam; vNextState sempre ecoado.
 #>
 
 Write-Output 'OK: Test-LlmDelegatePeerReviewCloseoutSelfTest.ps1'

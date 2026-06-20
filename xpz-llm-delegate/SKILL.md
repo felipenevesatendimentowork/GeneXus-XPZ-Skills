@@ -72,10 +72,14 @@ Regra prática para o agente consumidor:
    começou sem `preferred-reviewers.json` e o usuário escolheu revisores manualmente, o
    closeout deve bloquear enquanto a oferta de salvar essa seleção não tiver sido feita. Se
    `preferred-reviewers.json` já existia, o closeout deve receber o estado final de cada
-   revisor preferido da rodada; preferido não pode virar pool opcional silencioso.
+   revisor preferido da rodada; preferido não pode virar pool opcional silencioso. Ao **autorar**
+   a versão consolidada (vN+1), passar `-VNextState pendingResubmission` — o closeout bloqueia
+   até `resubmitted` ou declínio auditado (`resubmissionDeclinedByHuman` + `-ResubmissionDeclinedBy`
+   + `-ResubmissionDeclineReason` + `-RoundId`).
 7. Só usar o rótulo `revisão por pares` se houver painel válido (≥2 famílias efetivamente
    consultadas) e recibo mínimo: arquivos lidos, manuscrito/prompt, revisores, famílias,
-   resultado do piso e vereditos. Sem isso, rotular como `parecer solo` ou `segunda opinião (N)`.
+   resultado do piso, vereditos e o estado da vN+1 (`vNextState`). Sem isso, rotular como
+   `parecer solo` ou `segunda opinião (N)`.
 
 Resposta em menos de 30 segundos desde o pedido é evidência de que revisão por pares real não
 aconteceu, salvo quando o agente estiver apenas reportando painel anterior identificável por
@@ -287,7 +291,7 @@ Do NOT use esta skill para:
 Backend opencode:
 - `Invoke-OpenCode.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-Raw] [-AllText] [-TimeoutSec <s>]` — síncrono (prompt → texto). Bloqueia até a resposta. `-AllText` devolve toda a narração (preâmbulos + resposta) em vez de só a resposta final. Usa o `opencode.exe` real e runner temporário para preservar prompt multilinha como argumento único.
 - `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. Também usa runner temporário para evitar fragmentação de prompt pelo `Start-Process`.
-- `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`).
+- `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`, `finishReason`). O `status` pode ser `completed`, `truncado`, `sem-conclusao`, `sem-texto` ou `error` (Achado D: classificação por `reason` do último `step_finish`; ver «Detecção de truncamento»).
 
 No backend opencode, `-Model` deve usar o identificador aceito pelo CLI no formato
 `provider/modelo`. Para Ollama Cloud, use `ollama-cloud/deepseek-v4-pro`; o nome curto
@@ -342,7 +346,7 @@ Sondagem de capacidade (para a oferta de revisão por pares — ver [`15-revisao
 - `Set-LlmDelegatePreferredReviewers.ps1 -ReviewersJson <json> [-OutputPath <json>]` — persiste a **curadoria** de revisores preferidos do usuário em `%LOCALAPPDATA%\xpz-llm-delegate\preferred-reviewers.json` (machine-level), **schema de 2 eixos** por revisor: `targetModelKey` (chave de destino → política/autorização) + `invokeArgs` sanitizado (`model`/`profile`/`oss`/`localProvider`; **nunca** token/baseURL/header/path). **Descarta com aviso** modelo de veto duro (Mistral Large 3, Nemotron 3 Ultra). O menu de escolha o agente monta com `opencode models` (catálogo opencode) + `capabilities.json`/defaults dos demais, mas deve perguntar em termos reconhecíveis de ferramenta e assinatura disponível (`Claude Code`, `opencode/Ollama Cloud`, `Codex`, `Copilot`, `Gemini`, subagente nativo); o script só persiste a seleção.
 - `Resolve-LlmDelegatePreferredReviewers.ps1 [-PreferredPath <json>] [-CapabilitiesPath <json>]` — lê a curadoria e a cruza com `capabilities.json` (`availableInManifest`, best-effort), devolvendo a **composição sugerida** do painel. Sem arquivo → `hasPreferences=false` (oferta cai no comportamento atual). **Invariante: preferência ≠ autorização** — não consome o manifesto como verdade do gate; o `Resolve-LlmDelegateAuthorization.ps1` reavalia **por revisor** no envio. Self-test `Test-LlmDelegatePreferredReviewersSelfTest.ps1`.
 - `Resolve-LlmDelegatePanelDiversity.ps1 -CandidatesJson <json> [-Floor <n>] [-AuthorFamily <fam>]` — avalia (consultivo) o **piso de diversidade** do painel (≥2 famílias distintas = provider de destino) a partir dos candidatos + vereditos do gate; devolve `panelReady` / `needsBatchAuthorization` (com `askToAuthorize`) / `insufficientDiversity` (com `fallbackLabel` "segunda opinião (N)"). Impede o painel colapsar para uma voz em silêncio. **Não** decide autorização (o gate é soberano). Inclua **todos** os revisores como candidatos — inclusive **subagentes nativos**, representados pela **família do orquestrador** (ex.: `anthropic/claude-opus-4-8` quando o orquestrador é Claude) —, senão o piso não cobre a montagem por subagente nativo (um painel só de nativos = 1 família). Self-test `Test-LlmDelegatePanelDiversitySelfTest.ps1`.
-- `Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers <bool> -ManualReviewerSelection <bool> [-PreferredReviewersOfferState not_made|offered|accepted|declined|deferred|not_applicable] [-SelectedReviewersJson <json>] [-PreferredReviewerStatesJson <json>] [-DiversityState <state>] [-RoundId <id>]` — verifica o **fechamento** da revisão por pares: se não havia `preferred-reviewers.json` e houve escolha manual de revisores, bloqueia o recibo final enquanto a oferta de salvar essa seleção não tiver sido feita; se havia `preferred-reviewers.json`, bloqueia quando falta estado auditável para os revisores preferidos da rodada ou quando há estado incompleto (`gateAllow`, `dispatched`, `enqueued`). Devolve `closeoutReady`, `blockingReasons`, `preferredReviewerStates`, `requiredUserPrompt` e `receiptAddendum`. **Não** grava preferência, não decide autorização e não recalcula diversidade; a gravação continua em `Set-LlmDelegatePreferredReviewers.ps1`, a autorização no gate e o piso em `Resolve-LlmDelegatePanelDiversity.ps1`. Self-test `Test-LlmDelegatePeerReviewCloseoutSelfTest.ps1`.
+- `Resolve-LlmDelegatePeerReviewCloseout.ps1 -HadPreferredReviewers <true|false> -ManualReviewerSelection <true|false> [-PreferredReviewersOfferState not_made|offered|accepted|declined|deferred|not_applicable] [-SelectedReviewersJson <json>] [-PreferredReviewerStatesJson <json>] [-DiversityState <state>] [-RoundId <id>] [-VNextState notProduced|pendingResubmission|resubmitted|resubmissionDeclinedByHuman] [-ResubmissionDeclinedBy <quem>] [-ResubmissionDeclineReason <motivo>]` — verifica o **fechamento** da revisão por pares: se não havia `preferred-reviewers.json` e houve escolha manual de revisores, bloqueia o recibo final enquanto a oferta de salvar essa seleção não tiver sido feita; se havia `preferred-reviewers.json`, bloqueia quando falta estado auditável para os revisores preferidos da rodada ou quando há estado incompleto (`gateAllow`, `dispatched`, `enqueued`). **Eixo de estado da vN+1 (Achado A):** `-VNextState pendingResubmission` (vN+1 autorada e não re-submetida) **bloqueia** (`vnext-pending-resubmission`); `resubmissionDeclinedByHuman` **bloqueia** se faltar `-ResubmissionDeclinedBy` ou `-ResubmissionDeclineReason` (`vnext-resubmission-decline-unaudited`); `resubmitted`/`notProduced` são neutros; o `vNextState` é **sempre ecoado** no `receiptAddendum` (inclusive `notProduced`). O script é **stateless** — a monotonicidade/append-only entre chamadas é do orquestrador + recibo, não do script (à prova de silêncio, não de fabricação). Devolve `closeoutReady`, `blockingReasons`, `preferredReviewerStates`, `vNextState`, `requiredUserPrompt` e `receiptAddendum`. **Não** grava preferência, não decide autorização e não recalcula diversidade; a gravação continua em `Set-LlmDelegatePreferredReviewers.ps1`, a autorização no gate e o piso em `Resolve-LlmDelegatePanelDiversity.ps1`. `-HadPreferredReviewers`/`-ManualReviewerSelection` recebem a **string** `true`/`false` (validada por `ValidateSet`), **não** o literal `$true`/`$false`: via `pwsh -File` chamado de Bash, tokens nus `$true`/`$false` expandem para vazio antes do `pwsh`. Self-test `Test-LlmDelegatePeerReviewCloseoutSelfTest.ps1`.
 
 **Três artefatos distintos** (não confundir): **política por-KB** (`llm-delegation-policy.json`, autorização durável, raiz da pasta paralela) ≠ **capacidade** (`capabilities.json`, probe do instalado, machine-level) ≠ **preferência** (`preferred-reviewers.json`, curadoria do usuário, machine-level). A curadoria é **ofertada, nunca gravada automaticamente**, em quatro momentos: (a) no 1º uso de revisão por pares sem lista — pergunta *just-in-time* antes de oferecer painel e, depois que o usuário escolher revisores para a rodada, oferta separada para salvar essa seleção; (b) opt-in na `xpz-skills-setup` (setup de máquina); (c) recalibração sob demanda ou por defasagem (`updatedAt`); (d) quando uma seleção manual recorrente divergir da lista existente e o usuário pedir ou confirmar recalibração. Sem lista, o agente não deve presumir assinatura de Gemini/Copilot/Codex cloud nem ignorar `Claude Code`/`opencode`; pergunta ao usuário quais revisores estão disponíveis/preferidos e então roda o gate por destino.
 
@@ -359,7 +363,20 @@ Nenhum eixo substitui outro. Um backend instalado sem assinatura/login funcional
 disponível. Um `allow-external` na política autoriza envio de dados para aquele destino, mas
 não escolhe revisor nem prova preferência humana. Um `ask` indica autorização pendente, não
 convite obrigatório ao painel. A preferência é humana e nunca deve ser inferida só de
-capacidade detectada ou autorização por KB.
+capacidade detectada ou autorização por KB. **Onde cada eixo é mantido (não colapsar num campo
+só):** capacidade vem do `capabilities.json`/sondas; assinatura/preferência só do humano ou do
+`preferred-reviewers.json`; autorização do gate (`Resolve-LlmDelegateAuthorization.ps1`) por
+destino. Nenhum componente decide pelo outro.
+
+**Composição toda-externa em contexto kb-sensitive (Achado B).** A lista preferida é
+machine-level e **contexto-agnóstica**: em sessão dentro de pasta paralela de KB (payload
+`kb-sensitive`), uma composição preferida **toda-externa** manda conteúdo sensível para fora a
+cada revisor. O gate (`Resolve-LlmDelegateAuthorization.ps1`) continua soberano por destino,
+mas, **antes** de despachar, o orquestrador deve **avisar** que a composição é toda-externa e
+**perguntar** ao humano se quer incluir um revisor **local**. Se **não houver** revisor local
+disponível, **parar** e reportar — não forçar envio externo por falta de alternativa. Descoberta
+de local **não** por `Get-Command` como caminho principal (ver `### Protocolo de descoberta e
+bootstrap de capacidade`).
 
 Quando `preferred-reviewers.json` existe, ele alimenta a lista preferida de **candidatos** do
 painel; não é mera lista opcional para o agente escolher o mínimo, nem autorização para envio.
@@ -403,6 +420,31 @@ objetiva seria", "o caminho mais simples seria" ou "eu sugiro X + Y", quando hou
 sem preferência registrada. Se for útil citar inventário, rotular como diagnóstico separado e sem
 promover itens detectados a opção recomendada. Não usar `allow-external` ou `ask` como argumento
 para escolher revisor; autorização decide envio, não preferência.
+
+### Protocolo de descoberta e bootstrap de capacidade
+
+Para descobrir os revisores disponíveis, a ordem é: **(1)** `capabilities.json` (manifesto
+sanitizado machine-level) → **(2)** `Resolve-*ModelLocality` por backend → **(3)** `opencode models`
+(catálogo opencode). `Get-Command` e sondas de presença (`--version`/`--help`) são **só
+diagnóstico auxiliar de último recurso**, nunca prova de assinatura/preferência (não as use como
+caminho principal).
+
+**Frescor do `capabilities.json`** é pelo campo **`generatedAt`** (carimbo real do manifesto —
+**não** `updatedAt`, que pertence ao `preferred-reviewers.json`). Os três artefatos têm carimbos
+distintos: `capabilities.json` = `generatedAt`; snapshot por-KB = `snapshotAt`/`sourceGeneratedAt`;
+`preferred-reviewers.json` = `updatedAt`. Manifesto defasado **não** é verdade do gate — é dica
+best-effort; ofereça regerar (`Build-LlmDelegateCapabilityManifest.ps1`, opt-in) e use sondas
+vivas para desempatar.
+
+**Bootstrap quando `capabilities.json` não existe (máquina virgem)** — não falhar duro, não criar
+stub silencioso, não fabricar assinatura: (1) `Resolve-LlmDelegatePreferredReviewers.ps1` devolve
+`hasPreferences=false` → perguntar ao usuário (formato acima); (2) resolver capacidade por **sondas
+vivas só-para-a-rodada** (`opencode models` + `Resolve-*ModelLocality` do backend escolhido); (3)
+**oferecer** gerar o manifesto opt-in — nunca gravá-lo automaticamente. **Fim da cadeia:** se
+nenhuma fonte resolver capacidade, **perguntar ao humano/parar** — não inventar composição.
+**Fallback de silêncio humano:** se `hasPreferences=false` e o humano **não responde** à pergunta
+de calibração, **não** prosseguir para revisor **externo** por heurística; parar (ou só local) e
+**registrar o bypass** no recibo/livro-razão. Sem resposta ≠ autorização implícita.
 
 ### Persistência após escolha de revisores
 
@@ -472,6 +514,12 @@ registra-se como `noResponse`, nunca `responded`.
     Quando `preferred-reviewers.json` já existia, passar `-PreferredReviewerStatesJson` com o
     estado final de cada preferido da rodada; não usar o piso mínimo (≥2 famílias) como critério
     para omitir preferidos despacháveis sem estado auditável.
+    **Eixo da vN+1 (Achado A):** no momento em que você **autora** a versão consolidada (vN+1),
+    passe `-VNextState pendingResubmission` — o closeout **bloqueia** o fechamento até a vN+1 ser
+    `resubmitted` (re-submetida ao painel) ou o humano declinar de forma auditável
+    (`-VNextState resubmissionDeclinedByHuman -ResubmissionDeclinedBy <quem> -ResubmissionDeclineReason <motivo>`).
+    A transição só acontece por **nova invocação** do closeout com o novo `-VNextState`; o `vNextState`
+    entra no recibo mínimo (ver [`15-revisao-por-pares.md`](../15-revisao-por-pares.md)).
 4. Escolher o backend e o modelo. Rodar `Resolve-LlmDelegateAuthorization.ps1` com modelo +
    sensibilidade + `-Backend opencode|codex|claude-code|copilot|gemini` (em pasta paralela, passar
    `-ParallelKbRoot <raiz>` para descobrir a política pelo nome canônico com fallback ao legado, ou
@@ -513,6 +561,34 @@ do opencode**. Conclusão operacional: usar o backend opencode com modelos **clo
 validado) e reservar **modelo local pequeno** para o backend **one-shot** futuro (`llm`/`mods`),
 que envia só o prompt — sem schemas de ferramentas nem `instructions` — então o modelo local
 responde rápido e cabe folgado na VRAM.
+
+**Detecção de truncamento (Achado D).** Tanto o caminho síncrono (`Invoke-OpenCode.ps1` via
+`OpenCodeStreamSupport.ps1`) quanto o assíncrono (`Watch-OpenCodeJob.ps1`) classificam a conclusão
+pelo `reason` do **último** evento `step_finish` (`Get-OpenCodeCompletionSignal` /
+`Get-OpenCodeCompletionVerdict`): **só `reason='stop'` é sucesso**; qualquer outro valor
+(`length`, `tool-calls`, `content_filter`, `unknown`, `max_tokens`, …) ou a **ausência** de
+`step_finish`/`reason` vira bloqueio (`truncado` / `sem-conclusao`), em vez de devolver o
+preâmbulo como se fosse a resposta. O erro explícito do stream continua tendo prioridade. Esse
+mapeamento de vocabulário foi validado contra o opencode em uso nesta máquina (2026-06); se uma
+versão futura do opencode **renomear** `stop` (ex.: `done`/`finished`), toda chamada legítima
+viraria `truncado` — nesse caso, revisar `Get-OpenCodeCompletionVerdict` e este registro. Use
+`-Raw` (síncrono) ou o campo `finishReason` do `result.json` (assíncrono) para diagnóstico.
+
+**Cobertura por adapter (varredura confirmatória, escopo declarado).** A detecção por `reason`
+acima é **opencode-only** — é fenômeno do **streaming agêntico** do opencode. Os demais adapters
+**não** têm sinal de finish-reason equivalente. Uma **varredura confirmatória** (inspeção
+**estática do código-fonte** dos adapters em 2026-06-20 — contrato de extração, **não** teste de
+truncamento ao vivo) mostrou: **Codex** (`output-last-message`, arquivo dedicado), **Claude Code**
+(stdout final), **Gemini** (`$json.response`) entregam a **mensagem final canônica** por **campo
+terminal nomeado**; **Copilot** isola a final por **last-wins de stream** (último `assistant.message`
+vence) + `result.exitCode`, mecanismo **diferente** mas com a mesma proteção prática. Critério
+positivo: o adapter entrega a mensagem final canônica, **não** o stream/preâmbulo. **Resultado:**
+o vazamento do Achado D (preâmbulo virar parecer) **não se reproduz** nos quatro não-opencode;
+resta um **limite conhecido residual** — truncamento por **limite de tokens** **não é detectado**
+fora do opencode (nenhum tem equivalente a `reason=length`). Esse limite (paridade de detecção de
+truncamento nos adapters stdin/JSONL), o **risco residual do last-wins do Copilot** (se o agente
+reescrever a resposta e a "última" `assistant.message` não for a final canônica) e um **plano de
+teste empírico** ficam registrados em `999-ideias-pendentes.md` como frente futura.
 
 ## LIMITE CONHECIDO — STDIN FECHADO NOS ADAPTERS ARGUMENT-BASED (HEADLESS)
 

@@ -45,10 +45,12 @@ $errPath    = "$base.stderr.txt"
 $resultPath = "$base.result.json"
 
 # Acumuladores de resultado
-$script:textParts  = [System.Collections.Generic.List[object]]::new()
-$script:lastError  = $null
-$script:totalCost  = [double]0
-$script:lastTokens = 0
+$script:textParts        = [System.Collections.Generic.List[object]]::new()
+$script:lastError        = $null
+$script:totalCost        = [double]0
+$script:lastTokens       = 0
+$script:sawStepFinish    = $false
+$script:lastFinishReason = ''
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -119,7 +121,13 @@ function Show-Event {
             $tok = Get-Prop $part 'tokens'
             $tot = Get-Prop $tok 'total'
             if ($null -ne $tot) { $script:lastTokens = [int]$tot }
-            Write-Line ("passo concluido | custo parcial USD {0:N5} | tokens {1}" -f $script:totalCost, $script:lastTokens) 'DarkCyan'
+            # Achado D: capturar o sinal de conclusao do ULTIMO step_finish. Sempre sobrescrever
+            # (inclusive com vazio): se o ultimo step_finish vier SEM reason, o estado correto e ''
+            # (no-completion), nunca herdar o reason de um step_finish anterior. [string]$null = ''
+            # (sem excecao sob StrictMode). Espelha "ultimo step_finish governa" de Get-OpenCodeCompletionSignal.
+            $script:sawStepFinish = $true
+            $script:lastFinishReason = [string](Get-Prop $part 'reason')
+            Write-Line ("passo concluido | custo parcial USD {0:N5} | tokens {1} | reason {2}" -f $script:totalCost, $script:lastTokens, $script:lastFinishReason) 'DarkCyan'
         }
         'error' {
             $emsg = Get-Prop (Get-Prop (Get-Prop $Json 'error') 'data') 'message'
@@ -204,17 +212,25 @@ try {
     if (Test-Path -LiteralPath $errPath -PathType Leaf) {
         $errText = (Get-Content -LiteralPath $errPath -Raw -ErrorAction SilentlyContinue)
     }
-    $status = if ($script:lastError) { 'error' } elseif ([string]::IsNullOrWhiteSpace($final)) { 'sem-texto' } else { 'completed' }
+    # Achado D: classificar a conclusao por reason (precedencia compartilhada com o sincrono via
+    # OpenCodeStreamSupport). lastError tem prioridade; depois truncado/sem-conclusao/sem-texto.
+    $verdict = Get-OpenCodeCompletionVerdict -HasStepFinish $script:sawStepFinish -Reason $script:lastFinishReason -FinalText $final
+    $status = if ($script:lastError) { 'error' }
+    elseif ($verdict.status -eq 'truncated') { 'truncado' }
+    elseif ($verdict.status -eq 'no-completion') { 'sem-conclusao' }
+    elseif ($verdict.status -eq 'empty') { 'sem-texto' }
+    else { 'completed' }
 
     $result = [ordered]@{
-        jobId      = $JobId
-        status     = $status
-        finalText  = $final
-        error      = $script:lastError
-        totalCost  = $script:totalCost
-        tokens     = $script:lastTokens
-        stderr     = $errText
-        finishedAt = (Get-Date).ToString('o')
+        jobId        = $JobId
+        status       = $status
+        finalText    = $final
+        error        = $script:lastError
+        totalCost    = $script:totalCost
+        tokens       = $script:lastTokens
+        finishReason = $script:lastFinishReason
+        stderr       = $errText
+        finishedAt   = (Get-Date).ToString('o')
     }
     $result | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $resultPath -Encoding utf8
 

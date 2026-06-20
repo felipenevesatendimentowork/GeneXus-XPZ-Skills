@@ -228,6 +228,53 @@ Após implementar + rebuild:
 
 > Implementado e migrado para `historico/IdeiasImplementadas_202606.md` em 2026-06-17. Estrutura **C pura**: `15-revisao-por-pares.md` (metodologia genérica, fonte normativa da régua) + `14` como aplicação pré-push + motor `scripts/Build-LlmDelegateCapabilityManifest.ps1` e gatilho de revisão por pares na `xpz-llm-delegate`. Decisões em aberto resolvidas (C pura; manifesto sanitizado dica-de-oferta-nunca-verdade-do-gate; livro-razão opcional em `Temp/`; ponto de autorização = autor classifica + gate por revisor). Resíduos seguem **abertos** como futuros: harness de disparo do painel, backends one-shot (`llm`/`mods`) e personas de revisão.
 
+## Exceção "relay auditável" na oferta de 2ª rodada de revisão por pares (otimização do D2)
+
+**Importância:** baixa (é otimização de custo; o caminho seguro já está adotado e cobre a correção)
+**Maturidade:** ideia (a decisão de design foi adiar; a mecânica do marcador auditável fica em aberto)
+
+**Origem:** frente dos 4 achados da revisão por pares, decisão D2, 2026-06-19. Ao sintetizar os pareceres do painel, o agente produz uma versão consolidada do manuscrito (vN+1). A régua atual (`15-revisao-por-pares.md:40`) trata qualquer vN+1 ainda não revisada como **convergência falsa** — exige re-submissão ao painel. O D2 perguntou qual o gatilho da oferta proativa de 2ª rodada no momento da síntese.
+
+**Decisão tomada (opção 1, adotada agora):** *qualquer vN+1 autorada ⇒ oferecer 2ª rodada*. Painel: opção 1 (claude-opus + Codex) venceu opção 2 (minimax + autor); Codex desempatou. Motivo: não afrouxa o `15:40` e não reintroduz julgamento auto-interessado do agente no ponto vulnerável (declarar convergência).
+
+**O que esta frente futura faria (a otimização adiada):** introduzir uma exceção em que uma vN+1 de **mero relay** (só agrupa/numera/marca convergência, sem acrescentar nada) **dispensa** a re-submissão, separando-a de uma **consolidação autoral** (que acrescenta afirmação que nenhum revisor escreveu, reordena divergências ou resolve conflito entre ressalvas). Requisitos para ser segura, **não** atendidos hoje:
+
+- **emendar `15-revisao-por-pares.md:40`** para reconhecer a categoria `relay` (hoje a régua não tem exceção);
+- **marcador auditável no recibo** (`vN+1Type=relay|authoredConsolidation`), nunca auto-certificado em silêncio;
+- **checklist objetivo** (proposta do minimax) — a vN+1 exige 2ª rodada se QUALQUER for "sim": (1) inclui afirmação que nenhum revisor escreveu textualmente? (2) prioriza/ordena divergências de um modo que não estava no painel? (3) resolve um conflito entre ressalvas? (senão: só estrutura/agrupa = relay → dispensa);
+- evidência comparável de que a vN+1 não introduziu afirmação, ordenação, resolução de conflito nem prioridade nova.
+
+**Risco a vigiar se for implementada:** a linha relay-vs-consolidação é fácil de o próprio agente racionalizar a seu favor para pular a rodada custosa — exatamente o autoengano que o método quer evitar. Só vale a pena com o marcador auditável e a emenda da norma juntos.
+
+**Rascunho da emenda ao `15:40`** (para a entrada ser auto-suficiente; texto-semente, a refinar quando a frente abrir):
+
+> *Exceção (relay auditável):* uma vN+1 classificada como `relay` — que **apenas** agrupa, numera ou marca convergência, **sem** introduzir afirmação que nenhum revisor escreveu, reordenação de divergências, resolução de conflito entre ressalvas ou priorização ausente do painel — **dispensa** a re-submissão, desde que o recibo registre `vN+1Type=relay` e a classificação seja auditável pelo checklist abaixo. Qualquer vN+1 que falhe uma das perguntas é `authoredConsolidation` e **exige** re-submissão. Na dúvida, `authoredConsolidation`.
+
+**Checklist objetivo** (a vN+1 exige 2ª rodada se QUALQUER for "sim"): (1) inclui afirmação que nenhum revisor escreveu textualmente? (2) prioriza/ordena divergências de um modo que não estava no painel? (3) resolve um conflito entre ressalvas (escolhe um caminho)? — senão, só estrutura/agrupa = `relay` → dispensa.
+
+**Exemplo do marcador no recibo:**
+
+```json
+{ "vN+1Type": "relay", "roundId": "<id>", "checklist": { "newClaim": false, "reordered": false, "resolvedConflict": false }, "classifiedBy": "human" }
+```
+
+**Relacionado:** `15-revisao-por-pares.md` (régua `:40`); `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1` (onde o estado de re-submissão da vN+1 será mecanizado no Achado A); frente dos 4 achados da revisão por pares.
+
+## Detecção de truncamento fora do opencode (paridade dos adapters stdin/JSONL)
+
+**Importância:** baixa-média (rede de segurança; o vazamento crítico já está fechado)
+**Maturidade:** pesquisa feita (varredura estática concluída; falta teste empírico + eventual código)
+
+**Origem:** frente dos 4 achados da revisão por pares, Achado D / G1-R, 2026-06-20. O D-fix da Fase 1 detecta truncamento (`reason` do `step_finish`) **só no opencode**. A varredura confirmatória dos demais adapters (inspeção **estática** do código em 2026-06-20) concluiu: o **vazamento-do-D** (preâmbulo virar parecer) **não se reproduz** em Codex/Claude Code/Gemini/Copilot — todos entregam a mensagem final canônica (campo terminal nomeado; Copilot por last-wins de stream). **Mas** nenhum dos quatro detecta **truncamento por limite de tokens** (não há equivalente a `reason=length`).
+
+**O que esta frente futura faria:**
+
+- **Plano de teste empírico** (a varredura foi estática, não ao vivo): injetar resposta longa que force corte por limite em cada adapter não-opencode e verificar se a extração devolve parcial como se fosse completo; definir critério pass/fail e registrar versões das ferramentas.
+- **Risco residual do last-wins do Copilot:** se o agente reescrever a resposta e a "última" `assistant.message` não for a final canônica, a extração pode errar. Confirmar empiricamente e, se real, ancorar a extração num sinal mais forte.
+- **Eventual paridade de detecção:** se algum adapter expuser sinal de término, aplicar verdito análogo ao `Get-OpenCodeCompletionVerdict`; senão, declarar contrato explícito "sem sinal de completude disponível; risco aceito/mitigado por X".
+
+**Relacionado:** `xpz-llm-delegate/SKILL.md` (seção «Detecção de truncamento (Achado D)», cobertura por adapter); `scripts/Invoke-Codex.ps1`, `scripts/Invoke-ClaudeCode.ps1`, `scripts/Invoke-Gemini.ps1`, `scripts/Invoke-Copilot.ps1`, `scripts/CopilotCliSupport.ps1`; frente dos 4 achados da revisão por pares.
+
 ## Unificar build sob fundação desacoplada (janela vira visualizador plugado)
 
 **Importância:** média
