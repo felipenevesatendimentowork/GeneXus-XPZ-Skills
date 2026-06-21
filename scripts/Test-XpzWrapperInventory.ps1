@@ -15,7 +15,14 @@
       INVENTORY_CUSTOMIZED: <lista>        - wrappers presentes com divergencia metodologica objetiva
                                             (ex: requires_version_mismatch; nos wrappers K8/K9
                                             Test-KbSetupAudit/Test-KbIndexGate, missing_AsJson_passthrough
-                                            quando o molde repassa -AsJson e o wrapper local nao)
+                                            quando o molde repassa -AsJson e o wrapper local nao;
+                                            forwards_unknown_engine_param quando o wrapper repassa a um
+                                            motor compartilhado advanced um parametro nao-declarado;
+                                            shared_engine_unresolved quando o caminho de motor inferido
+                                            nao existe na base canonica)
+      INVENTORY_ENGINE_DIAGNOSTIC: <lista> - diagnostico brando (motor canonico ausente/parse-broken,
+                                            engine_unresolved_or_unparseable); NAO bloqueia o estado de
+                                            setup (rotulo fora dos tokens de pendencia do agregador)
       INVENTORY_RECOMMENDED_MISSING: <lista> - wrappers recomendados ausentes por sinais objetivos
       INVENTORY_LEGACY_ORPHANS: <lista>    - scripts legados lado a lado com canonicos atuais
       INVENTORY_UNKNOWN: <motivo>         - não foi possível determinar o estado
@@ -31,6 +38,7 @@
     String: "INVENTORY_OK", "INVENTORY_GAPS: <nomes ausentes>",
     "INVENTORY_SHORT_NAMING: <nomes esperados>",
     "INVENTORY_CUSTOMIZED: <nomes e motivos>",
+    "INVENTORY_ENGINE_DIAGNOSTIC: <nomes e motivos>",
     "INVENTORY_LEGACY_ORPHANS: <canonico(legacy=antigo)>",
     "INVENTORY_RECOMMENDED_MISSING: <nomes recomendados>", ou
     "INVENTORY_UNKNOWN: <motivo>"

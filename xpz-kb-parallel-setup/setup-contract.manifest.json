@@ -11,6 +11,7 @@
     "scripts/Test-XpzKbIndexGate.ps1",
     "scripts/Build-LlmDelegateCapabilityManifest.ps1",
     "scripts/Test-XpzWrapperInventory.ps1",
+    "scripts/XpzWrapperEngineParamSupport.ps1",
     "scripts/Test-XpzPowerShellRuntime.ps1",
     "scripts/Test-XpzKbMetadataWrapper.ps1",
     "scripts/GeneXusKbDeploymentEnvironmentSupport.ps1",
