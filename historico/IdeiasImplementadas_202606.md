@@ -22,7 +22,7 @@ Caso real em 2026-06-17 (KB `FabricaBrasil18`, environment `.NET Core`): BuildAl
 
 - **Fix A:** `.ContainsKey('sentinelFreshSinceBuild')` -> `.Contains('sentinelFreshSinceBuild')` em `GeneXusKbDeployBinSupport.ps1:482`.
 - **Fix B:** `[hashtable]$BinCheck` -> `[System.Collections.IDictionary]$BinCheck` em `:250` (aceita `OrderedDictionary` por referencia, preserva ordem). Call site unico — sem regressao.
-- Self-test novo `scripts/Test-GeneXusDeployBinClassificationSelfTest.ps1` (token `GENEXUS_DEPLOY_BIN_CLASSIFICATION_SELFTEST_OK`): KB temporaria `dotnet-core-self-host`, timestamps fixados via `LastWriteTimeUtc`, asserçoes sobre `deployBinCheck.binCheck` (publicacao + sentinela) e `warnings`. Falha sem Fix A (lança) e sem Fix B (campos de publicacao ausentes).
+- Self-test novo `scripts/Test-GeneXusDeployBinClassificationSelfTest.ps1` (token `GENEXUS_DEPLOY_BIN_CLASSIFICATION_SELFTEST_OK`): KB temporaria `dotnet-core-self-host`, timestamps fixados via `LastWriteTime`, asserçoes sobre `deployBinCheck.binCheck` (publicacao + sentinela) e `warnings`. Falha sem Fix A (lança) e sem Fix B (campos de publicacao ausentes).
 - Varredura repo-wide: `:482` e o unico `.ContainsKey` sobre `[ordered]`; `.ContainsValue`=0; `.Remove`/`.Add` existem em `OrderedDictionary` (seguros; ex.: `GeneXusMsBuildWatcherSupport.ps1:174`).
 - Paridade: `CHANGELOG.md` (Unreleased), `09-inventario-e-rastreabilidade-publica.md:189` (self-test + token). `xpz-msbuild-build/SKILL.md`, `02`/`08` e o catalogo de exit codes conferidos sem necessidade de edicao (o catalogo ja prometia os campos; o fix alinha a saida ao contrato).
 
