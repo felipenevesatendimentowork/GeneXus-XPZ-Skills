@@ -64,6 +64,19 @@ Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na
 
 Skills consumidoras: `xpz-builder`, `xpz-msbuild-import-export`. Motor: `scripts/New-XpzImportPackage.ps1` / `.py`. Origem: tarefa secundária opcional levantada no prompt de um agente de pasta paralela (2026-06-21), fora do escopo da frente do `.ContainsKey`/OrderedDictionary; registrada aqui para outra sessão cuidar.
 
+## Inverter o gate de placeholder de commit no histórico: de denylist de frases para checagem de forma de hash
+
+- **Importância** — baixa (gate **consultivo**, `severity=warn`, `exit 0` sempre — não bloqueia push; mas é **falso-negativo silencioso de rastreabilidade**: deixa entrada de histórico ser commitada com o campo `Commit:` não preenchido sem avisar). Caso real 2026-06-21 (frente `.ContainsKey`/OrderedDictionary): a entrada migrada para `historico/IdeiasImplementadas_202606.md` foi commitada com `- Commit: a registrar no commit desta frente.` e o gate **passou**; o gap só foi pego pela **fase semântica** da pré-push (grep dirigido por frases de placeholder), não pelo gate mecânico — depois corrigido (commit `e5a2ccb` preencheu `bd2abb8`).
+- **Maturidade** — pronta para implementar (direção técnica resolvida; falta executar + self-test).
+
+**Raiz (no código):** `scripts/Test-PrePushHistoryCommitPlaceholder.ps1`, função `Test-IsPlaceholderValue` (`:119`). Hoje um valor de `Commit:`/`PR:` só é considerado placeholder se: (a) vazio/espaços; (b) casar `^<[^>]*>$` (marcador entre angulos); ou (c) casar a **denylist de frases** `$placeholderWordRegex` (`:90`): `este commit|este pr|este pull request|todo|tbd|tba|a preencher|preencher depois`. Qualquer redação livre de "preencho depois" **fora** dessa lista escapa — e em PT há muitas variantes (`a registrar`, `a confirmar`, `pendente`, `do commit desta frente`, `depois`, etc.). É denylist de vocabulário, não verificação de que um `Commit:` válido **tem forma de hash** — gato-e-rato com a linguagem.
+
+**Fix proposto (inverter para allowlist de forma):** considerar **preenchido** apenas o valor que casa a forma de um hash de commit entre crases — ex.: `` `[0-9a-f]{7,40}` `` opcionalmente seguido de `` (`mensagem`) `` —; **qualquer outro** valor (texto livre, vazio, `<...>`, sinônimo novo) vira `warn`, independentemente da redação. Isso elimina o gato-e-rato. Tratar `PR:` por forma análoga (número de PR e/ou URL). Preservar a **exceção legítima** ("hash será preenchido no commit seguinte") pela própria natureza **consultiva** do gate (continua `warn`/`exit 0`; o agente confronta a candidata na fase semântica e confirma "a preencher" ou corrige) — **não** tornar bloqueante.
+
+**Cuidados:** calibrar o regex de hash aceito contra os formatos **reais já usados** em `historico/IdeiasImplementadas_*.md` (varrer antes, para não gerar falso-positivo em entradas legadas corretamente preenchidas — algumas citam `` `hash` `` + `(mensagem)`, conferir variações). Manter `severity=warn` (consultivo); o objetivo é reduzir falso-negativo, não passar a reprovar.
+
+**Validação:** self-test próprio (casos: `` `bd2abb8` `` → pass; `a registrar...`/`a confirmar`/`pendente`/vazio/`<...>` → warn; forma de `PR:` válida/inválida). Arquivos: `scripts/Test-PrePushHistoryCommitPlaceholder.ps1` (+ novo self-test). O orquestrador `scripts/Invoke-PrePushMechanicalChecks.ps1` já consome o gate (chave `historyCommitPlaceholder`); refletir no inventário `09-inventario-e-rastreabilidade-publica.md` e, se a descrição do passo mecânico mudar, no `13-revisao-pre-push.md`. Origem: nota da fase semântica da pré-push 2026-06-21; registrada para outra sessão.
+
 ## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (Fase 2b da skill `xpz-kb-parallel-pre-push`, hoje classificador documental)
 
 **Importância:** média (o sub-caso **destrutivo** tende a `alta` — falso negativo de regressão por dependente não enumerado; hoje mitigado só pelo build)
