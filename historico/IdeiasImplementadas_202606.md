@@ -33,7 +33,7 @@ A+B na mesma frente (o self-test so e significativo travando os dois). Tipo `[Sy
 ### Rastreabilidade
 
 - Arquivos: `scripts/GeneXusKbDeployBinSupport.ps1` (`:250`, `:482`), `scripts/Test-GeneXusDeployBinClassificationSelfTest.ps1` (novo), `CHANGELOG.md`, `09-inventario-e-rastreabilidade-publica.md`.
-- Commit: a registrar no commit desta frente.
+- Commit: `bd2abb8` (`Corrige .ContainsKey sobre OrderedDictionary no pós-processamento do deploy-bin`).
 - Revisao por pares: 5 versoes / 4 vozes / 3 familias (livro-razao em `Temp/revisao-por-pares/contains-key-fix/`).
 
 ## Unificar `Get-Utf8NoBomEncoding` repo-wide
