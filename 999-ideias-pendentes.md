@@ -25,6 +25,11 @@ Derivada da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (ver `CHANGELO
 
 Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na frente Revisão por Pares formalizada.
 
+## Migrar `Invoke-Gemini`/`Invoke-Copilot` para stdin e/ou guard de tamanho de prompt
+
+- **Importância** — baixa (workaround trivial existe). Os adapters argument-based `Invoke-Gemini.ps1` e `Invoke-Copilot.ps1` ainda passam o prompt por **argv**, sujeitos ao **limite ~32KB de linha de comando do Windows** (`Argument list too long`) e ao sintoma não-determinístico `StandardOutputEncoding` em host com stdout não-redirecionado. Workaround atual: invocá-los pela ferramenta Bash (stdout em pipe) com prompt enxuto.
+- **Maturidade** — ideia (decisões em aberto + dependência externa). Bloqueado por **não haver assinatura** de Gemini/Copilot nesta máquina para validar empiricamente se aceitam o prompt por stdin (como o opencode aceita). Direções: (a) quando houver assinatura, testar `gemini -p`/`copilot -p` lendo stdin e, se aceitarem, migrá-los ao padrão **stdin-based** espelhando o opencode (`Invoke-OpenCode`/`Start-OpenCodeJob`, frente concluída — ver `CHANGELOG`); (b) enquanto isso, avaliar um **guard de tamanho** que rejeite com erro claro quando o prompt exceder o limite por argv, em vez do `Argument list too long` cru. Derivada da frente de endurecimento dos adapters opencode (escopo (i): só opencode).
+
 ## Follow-up: versão-de-contrato confrontável + gate consultivo de lockstep (etapa 2 da auditoria de drift de consumo)
 
 - **Importância** — média (a etapa 1 já fecha o caso atual; isto endurece contra bumps futuros e mecaniza a regra de método).

@@ -4,11 +4,12 @@
     Dispara um job assincrono (nao-bloqueante) do opencode e abre o watcher.
 .DESCRIPTION
     Backend opencode da skill xpz-llm-delegate. Cria um job identificado por GUID em
-    <TempDir> e dispara um runner PowerShell desanexado que chama `opencode run`, com o
-    stream JSON crescendo em <GUID>.stream.jsonl. O runner preserva prompt multilinha
-    como argumento nativo unico. Retorna imediatamente jobId+pid (não bloqueia o chamador).
+    <TempDir> e dispara `opencode run` desanexado, com o prompt entregue por STDIN (arquivo) e o
+    stream JSON crescendo em <GUID>.stream.jsonl. Entregar o prompt por stdin (fora do argv)
+    resolve o limite ~32KB de linha de comando do Windows e usa redirecao EXPLICITA a arquivo
+    (Start-Process -RedirectStandard*). Retorna imediatamente jobId+pid (não bloqueia o chamador).
     Por padrão abre Watch-OpenCodeJob.ps1 numa janela visivel para acompanhar ao vivo; use
-    -NoWatcher para suprimir.
+    -NoWatcher para suprimir. Espelha o padrao stdin-based de Start-CodexJob.ps1.
 
     Para perguntas curtas (resposta na hora) use Invoke-OpenCode.ps1. Este script e para
     tarefas longas (ex: 3-6 min) que você quer disparar e acompanhar sem bloquear.
@@ -21,14 +22,19 @@
         <GUID>.request.json   o que foi pedido (model, prompt, agent)
         <GUID>.stream.jsonl   saida do opencode, cresce incrementalmente
         <GUID>.stderr.txt     erros do processo
-        <GUID>.runner.ps1     runner temporario do job
+        <GUID>.stdin.txt      o prompt enviado via stdin
         <GUID>.result.json    resposta final + custo (gravado pelo watcher no fim)
 .PARAMETER Message
-    Prompt a enviar (posicional, obrigatório).
+    Prompt a enviar (posicional). Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Util para prompts
+    grandes (acima do limite ~32KB de linha de comando) e para evitar substituicao de comando.
 .PARAMETER Model
     Modelo provider/modelo. Opcional: omitido usa o default da config do opencode.
 .PARAMETER Agent
     Nome do agente do opencode. Opcional.
+.PARAMETER OpenCodeExe
+    Forca um caminho de opencode.exe (contorna a descoberta automatica).
 .PARAMETER NoWatcher
     Não abrir a janela do watcher (apenas dispara o job).
 .PARAMETER TempDir
@@ -38,11 +44,13 @@
 .EXAMPLE
     .\Start-OpenCodeJob.ps1 "tarefa longa" -NoWatcher   # dispara sem janela
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model,
     [string] $Agent,
+    [string] $OpenCodeExe,
     [switch] $NoWatcher,
     [string] $TempDir = (Join-Path ([System.IO.Path]::GetTempPath()) 'opencode-jobs'),
     [int]    $KeepDays = 3
@@ -51,12 +59,27 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# 1) Resolve o .exe real por tras do shim npm
-$exe = Get-ChildItem -Path "$env:APPDATA\npm\node_modules\opencode-ai" `
-    -Recurse -Filter 'opencode.exe' -ErrorAction SilentlyContinue |
-    Where-Object FullName -like '*windows-x64\bin\opencode.exe' |
-    Select-Object -First 1 -ExpandProperty FullName
-if (-not $exe) { throw "BLOCK: opencode.exe nao encontrado sob $env:APPDATA\npm" }
+# Prompt: inline (-Message) ou de arquivo (-MessagePath). Le como UTF-8.
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
+}
+
+# 1) Resolve o opencode.exe: override explicito (-OpenCodeExe) ou descoberta sob %APPDATA%\npm
+if ($OpenCodeExe) {
+    if (-not (Test-Path -LiteralPath $OpenCodeExe -PathType Leaf)) {
+        throw "BLOCK: -OpenCodeExe nao encontrado: $OpenCodeExe"
+    }
+    $exe = $OpenCodeExe
+} else {
+    $exe = Get-ChildItem -Path "$env:APPDATA\npm\node_modules\opencode-ai" `
+        -Recurse -Filter 'opencode.exe' -ErrorAction SilentlyContinue |
+        Where-Object FullName -like '*windows-x64\bin\opencode.exe' |
+        Select-Object -First 1 -ExpandProperty FullName
+    if (-not $exe) { throw "BLOCK: opencode.exe nao encontrado sob $env:APPDATA\npm" }
+}
 
 # 2) Pasta de jobs
 if (-not (Test-Path -LiteralPath $TempDir -PathType Container)) {
@@ -78,7 +101,7 @@ $base       = Join-Path $TempDir $jobId
 $reqPath    = "$base.request.json"
 $streamPath = "$base.stream.jsonl"
 $errPath    = "$base.stderr.txt"
-$runnerPath = "$base.runner.ps1"
+$stdinPath  = "$base.stdin.txt"
 $resultPath = "$base.result.json"
 
 # 4) request.json
@@ -92,30 +115,25 @@ $request = [ordered]@{
     startedAt  = (Get-Date).ToString('o')
     streamPath = $streamPath
     stderrPath = $errPath
-    runnerPath = $runnerPath
+    stdinPath  = $stdinPath
     resultPath = $resultPath
     exe        = $exe
 }
 $request | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reqPath -Encoding utf8
 
-# 5) Runner: le request.json e chama opencode com array nativo de argumentos. Evita que
-#    Start-Process fragmente prompt multilinha em muitos argumentos.
-@'
-param([Parameter(Mandatory)][string]$RequestPath)
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-$req = Get-Content -LiteralPath $RequestPath -Raw -Encoding utf8 | ConvertFrom-Json
-$ocArgs = @('run', [string]$req.prompt, '--format', 'json')
-if (-not [string]::IsNullOrWhiteSpace([string]$req.model)) { $ocArgs += @('--model', [string]$req.model) }
-if (-not [string]::IsNullOrWhiteSpace([string]$req.agent)) { $ocArgs += @('--agent', [string]$req.agent) }
-# stdin fechado ($null = EOF puro, sem bytes) para o opencode nao travar lendo o stdin
-# herdado de uma shell headless sem TTY. Depende deste runner ser 'pwsh -File' (nao -Command).
-$null | & ([string]$req.exe) @ocArgs 1> ([string]$req.streamPath) 2> ([string]$req.stderrPath)
-exit $LASTEXITCODE
-'@ | Set-Content -LiteralPath $runnerPath -Encoding utf8
+# 5) stdin = o prompt (UTF-8 sem BOM). O opencode le o prompt do stdin quando o argumento
+#    posicional de 'run' e omitido; o fim do arquivo da EOF (anti-hang headless preservado).
+Set-Content -LiteralPath $stdinPath -Value $Message -Encoding utf8 -NoNewline
 
-# 6) Dispara o runner desanexado (janela oculta, não espera)
-$proc = Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile', '-File', $runnerPath, '-RequestPath', $reqPath) -WindowStyle Hidden -PassThru
+# 6) Dispara o opencode desanexado (janela oculta, não espera): prompt por stdin, stream a arquivo.
+#    Sem runner intermediario — Start-Process chama o opencode.exe direto com redirecao explicita,
+#    como Start-CodexJob.ps1.
+$ocArgs = @('run', '--format', 'json')
+if (-not [string]::IsNullOrWhiteSpace($Model)) { $ocArgs += @('--model', $Model) }
+if (-not [string]::IsNullOrWhiteSpace($Agent)) { $ocArgs += @('--agent', $Agent) }
+
+$proc = Start-Process -FilePath $exe -ArgumentList $ocArgs -WindowStyle Hidden -PassThru `
+    -RedirectStandardInput $stdinPath -RedirectStandardOutput $streamPath -RedirectStandardError $errPath
 $procId = $proc.Id
 
 # 7) Abre o watcher numa janela visivel (a menos que -NoWatcher)

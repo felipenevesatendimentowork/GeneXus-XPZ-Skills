@@ -3,9 +3,17 @@
 .SYNOPSIS
     Chama o opencode (one-shot, sincrono) e devolve a resposta em texto.
 .DESCRIPTION
-    Backend opencode da skill xpz-llm-delegate. Resolve o opencode.exe real (atras do
-    shim npm) e executa via runner temporario para preservar prompt multilinha como um
-    unico argumento nativo. Bloqueia ate a resposta (ou ate -TimeoutSec).
+    Backend opencode da skill xpz-llm-delegate. Resolve o opencode.exe real (atras do shim npm)
+    e o executa com o prompt entregue por STDIN (arquivo), FORA do argv. Entregar o prompt por
+    stdin (e nao como argumento posicional de 'run') resolve o limite ~32KB de linha de comando do
+    Windows para prompts grandes e usa redirecao EXPLICITA de stdout/stderr a arquivo
+    (Start-Process -RedirectStandard*), evitando o erro nao-deterministico "StandardOutputEncoding
+    is only supported when standard output is redirected" do padrao antigo (& exe 1> arquivo dentro
+    de um runner temporario). Bloqueia ate a resposta (ou ate -TimeoutSec).
+
+    O opencode le o prompt do stdin quando o argumento posicional de 'run' e omitido (verificado
+    empiricamente no opencode em uso nesta maquina, 2026-06). Espelha o padrao stdin-based de
+    Invoke-Codex.ps1.
 
     Esta e a invocacao sincrona canonica. Para tarefas longas que você quer disparar sem
     bloquear, use Start-OpenCodeJob.ps1.
@@ -14,12 +22,19 @@
     payload sensivel (conteúdo de pasta paralela de KB) a um modelo, o chamador deve passar
     pelo gate Resolve-LlmDelegateAuthorization.ps1, conforme a skill xpz-llm-delegate.
 .PARAMETER Message
-    Prompt a enviar ao agente (posicional, obrigatório).
+    Prompt a enviar ao agente (posicional). Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Util para prompts
+    grandes (acima do limite ~32KB de linha de comando) e para evitar substituicao de comando
+    ("$(cat ...)") na linha de comando do chamador.
 .PARAMETER Model
     Modelo no formato provider/modelo (ex: openai/gpt-5.4). Opcional: omitido usa o default
     da config do opencode (~/.config/opencode/opencode.json).
 .PARAMETER Agent
     Nome do agente do opencode a usar. Opcional.
+.PARAMETER OpenCodeExe
+    Forca um caminho de opencode.exe (contorna a descoberta automatica). Usado tambem pelos
+    self-tests para injetar um fake-exe.
 .PARAMETER Raw
     Devolve o stream JSON cru (um evento por linha) em vez do texto final.
 .PARAMETER AllText
@@ -31,13 +46,17 @@
 .EXAMPLE
     .\Invoke-OpenCode.ps1 "resuma este log" -Model openai/gpt-5.4
 .EXAMPLE
+    .\Invoke-OpenCode.ps1 -MessagePath .\prompt-grande.txt -Model ollama-cloud/deepseek-v4-pro
+.EXAMPLE
     .\Invoke-OpenCode.ps1 "oi" -Raw      # stream JSON cru (tool-calls, custo, tokens)
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model,
     [string] $Agent,
+    [string] $OpenCodeExe,
     [switch] $Raw,
     [switch] $AllText,
     [int]    $TimeoutSec = 180
@@ -52,51 +71,52 @@ try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catc
 # Funções compartilhadas de parsing do stream do opencode (dot-source)
 . (Join-Path $PSScriptRoot 'OpenCodeStreamSupport.ps1')
 
-# 1) Resolve o .exe real por tras do shim .ps1/.cmd do npm
-$exe = Get-ChildItem -Path "$env:APPDATA\npm\node_modules\opencode-ai" `
-    -Recurse -Filter 'opencode.exe' -ErrorAction SilentlyContinue |
-    Where-Object FullName -like '*windows-x64\bin\opencode.exe' |
-    Select-Object -First 1 -ExpandProperty FullName
-if (-not $exe) { throw "BLOCK: opencode.exe nao encontrado sob $env:APPDATA\npm" }
-
-# 2) Arquivos temporarios e runner. O prompt fica em JSON, nao na command line do runner.
-$out = New-TemporaryFile
-$err = New-TemporaryFile
-$req = New-TemporaryFile
-$runner = [System.IO.Path]::ChangeExtension((New-TemporaryFile).FullName, '.ps1')
-$request = [ordered]@{
-    exe = $exe
-    prompt = $Message
-    model = $Model
-    agent = $Agent
-    stdoutPath = $out.FullName
-    stderrPath = $err.FullName
+# Prompt: inline (-Message) ou de arquivo (-MessagePath). Le como UTF-8.
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
 }
-$request | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $req.FullName -Encoding utf8
-@'
-param([Parameter(Mandatory)][string]$RequestPath)
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-$req = Get-Content -LiteralPath $RequestPath -Raw -Encoding utf8 | ConvertFrom-Json
-$ocArgs = @('run', [string]$req.prompt, '--format', 'json')
-if (-not [string]::IsNullOrWhiteSpace([string]$req.model)) { $ocArgs += @('--model', [string]$req.model) }
-if (-not [string]::IsNullOrWhiteSpace([string]$req.agent)) { $ocArgs += @('--agent', [string]$req.agent) }
-# stdin fechado ($null = EOF puro, sem bytes) para o opencode nao travar lendo o stdin
-# herdado de uma shell headless sem TTY. Depende deste runner ser 'pwsh -File' (nao -Command).
-$null | & ([string]$req.exe) @ocArgs 1> ([string]$req.stdoutPath) 2> ([string]$req.stderrPath)
-exit $LASTEXITCODE
-'@ | Set-Content -LiteralPath $runner -Encoding utf8
+
+# 1) Resolve o opencode.exe: override explicito (-OpenCodeExe) ou descoberta sob %APPDATA%\npm
+if ($OpenCodeExe) {
+    if (-not (Test-Path -LiteralPath $OpenCodeExe -PathType Leaf)) {
+        throw "BLOCK: -OpenCodeExe nao encontrado: $OpenCodeExe"
+    }
+    $exe = $OpenCodeExe
+} else {
+    $exe = Get-ChildItem -Path "$env:APPDATA\npm\node_modules\opencode-ai" `
+        -Recurse -Filter 'opencode.exe' -ErrorAction SilentlyContinue |
+        Where-Object FullName -like '*windows-x64\bin\opencode.exe' |
+        Select-Object -First 1 -ExpandProperty FullName
+    if (-not $exe) { throw "BLOCK: opencode.exe nao encontrado sob $env:APPDATA\npm" }
+}
+
+# 2) Prompt via STDIN (arquivo), fora do argv. O opencode le o stdin quando o argumento
+#    posicional de 'run' e omitido; -RedirectStandardInput entrega o arquivo e da EOF ao final
+#    (anti-hang headless preservado: o CLI nao fica preso lendo um stdin herdado sem fim).
+$ocArgs = @('run', '--format', 'json')
+if (-not [string]::IsNullOrWhiteSpace($Model)) { $ocArgs += @('--model', $Model) }
+if (-not [string]::IsNullOrWhiteSpace($Agent)) { $ocArgs += @('--agent', $Agent) }
+
+$in  = (New-TemporaryFile).FullName
+Set-Content -LiteralPath $in -Value $Message -Encoding utf8 -NoNewline
+$out = (New-TemporaryFile).FullName
+$err = (New-TemporaryFile).FullName
 
 try {
-    $p = Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile', '-File', $runner, '-RequestPath', $req.FullName) -NoNewWindow -PassThru
+    $p = Start-Process -FilePath $exe -ArgumentList $ocArgs -NoNewWindow -PassThru `
+        -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err
     if (-not $p.WaitForExit($TimeoutSec * 1000)) {
-        $p.Kill(); throw "BLOCK: opencode excedeu ${TimeoutSec}s e foi encerrado."
+        try { $p.Kill($true) } catch { }
+        throw "BLOCK: opencode excedeu ${TimeoutSec}s e foi encerrado."
     }
     if ($p.ExitCode -ne 0) {
-        throw "BLOCK: opencode saiu com codigo $($p.ExitCode).`nstderr:`n$(Get-Content -LiteralPath $err.FullName -Raw -ErrorAction SilentlyContinue)"
+        throw "BLOCK: opencode saiu com codigo $($p.ExitCode).`nstderr:`n$(Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue)"
     }
 
-    $lines = Get-Content -LiteralPath $out.FullName -Encoding utf8
+    $lines = Get-Content -LiteralPath $out -Encoding utf8
     if ($Raw) { return $lines }
 
     $events = ConvertFrom-OpenCodeStreamLines -Lines $lines
@@ -121,5 +141,5 @@ try {
     return $finalText
 }
 finally {
-    Remove-Item -LiteralPath $out.FullName, $err.FullName, $req.FullName, $runner -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $out, $err, $in -Force -ErrorAction SilentlyContinue
 }

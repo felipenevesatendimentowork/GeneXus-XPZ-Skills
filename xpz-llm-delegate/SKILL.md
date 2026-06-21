@@ -627,28 +627,63 @@ truncamento nos adapters stdin/JSONL), o **risco residual do last-wins do Copilo
 reescrever a resposta e a "última" `assistant.message` não for a final canônica) e um **plano de
 teste empírico** ficam registrados em `999-ideias-pendentes.md` como frente futura.
 
-## LIMITE CONHECIDO — STDIN FECHADO NOS ADAPTERS ARGUMENT-BASED (HEADLESS)
+## LIMITE CONHECIDO — ANTI-HANG DE STDIN HEADLESS (DOIS REGIMES)
 
-Os adapters que passam o prompt por **argumento** (`Invoke-OpenCode.ps1`, `Start-OpenCodeJob.ps1`,
-`Invoke-Gemini.ps1`, `Invoke-Copilot.ps1`) **fecham o stdin do CLI** no runner temporário, com
-`$null | & ([string]$req.exe) @args` (`$null` = EOF puro, sem bytes). Sem isso, chamado de uma
-**shell headless sem TTY** (a ferramenta Bash/PowerShell de um agente), o CLI agêntico **trava**
-lendo o stdin herdado (um pipe aberto que nunca dá EOF): medido — o opencode pendurava por minutos;
-com o stdin fechado completa em ~8s.
+Chamado de uma **shell headless sem TTY** (a ferramenta Bash/PowerShell de um agente), um CLI
+agêntico **trava** lendo o stdin herdado (um pipe aberto que nunca dá EOF): medido — o opencode
+pendurava por minutos. Todos os adapters dão **EOF** ao CLI, por um de dois regimes:
 
-- **Não replicar nos stdin-based** (`Invoke-Codex`/`Start-CodexJob`, `Invoke-ClaudeCode`/`Start-ClaudeCodeJob`):
-  esses entregam o prompt **por stdin** via `Start-Process -RedirectStandardInput`; fechar quebraria.
-- **Dependências do mecanismo** (registrar para manutenção): o runner é invocado por `pwsh -File`
-  (que **não** lê stdin) — migrar para `pwsh -Command` reintroduziria o hang; e o fechamento usa
-  `$null |` (EOF puro), **não** `'' |`, que mandaria uma linha vazia antes do EOF.
-- **Ressalva de evolução**: se algum CLI ganhar um modo `--stdin`/pipe de entrada no futuro, o stdin
-  fechado quebraria **silenciosamente**; os self-tests de contrato de flags (`Test-GeminiCliSupportSelfTest`,
-  `Test-CopilotCliSupportSelfTest`) acusam uma flag nova no help — revisar quando isso ocorrer.
+- **stdin-based** (`Invoke-OpenCode`/`Start-OpenCodeJob`, `Invoke-Codex`/`Start-CodexJob`,
+  `Invoke-ClaudeCode`/`Start-ClaudeCodeJob`): entregam o prompt **por stdin** via
+  `Start-Process -RedirectStandardInput <arquivo>`; o **fim do arquivo dá o EOF**. O prompt fica
+  **fora do argv** (ver a seção do limite ~32KB). O opencode lê o prompt do stdin quando o
+  argumento posicional de `run` é **omitido** (verificado no opencode em uso nesta máquina, 2026-06).
+- **argument-based** (`Invoke-Gemini`, `Invoke-Copilot`): passam o prompt como **argumento** e
+  **fecham o stdin** no runner com `$null | & ([string]$req.exe) @args` (`$null` = EOF puro, sem
+  bytes, **não** `'' |`, que mandaria uma linha vazia antes do EOF). O runner é invocado por
+  `pwsh -File` (que **não** lê stdin); migrar para `pwsh -Command` reintroduziria o hang.
+
+- **Ressalva de evolução**: para os **argument-based**, se o CLI ganhar um modo `--stdin`/pipe de
+  entrada, o stdin fechado quebraria **silenciosamente**; os self-tests de contrato de flags
+  (`Test-GeminiCliSupportSelfTest`, `Test-CopilotCliSupportSelfTest`) acusam flag nova no help —
+  revisar quando ocorrer. Para os **stdin-based**, a dependência inversa: se o CLI deixar de aceitar
+  o prompt por stdin (ex.: voltar a exigir o posicional), o adapter precisaria retornar ao argv —
+  vigiar no upgrade do opencode (a forma `run` sem posicional + stdin está fixada no comentário do
+  adapter).
 - **Guard**: `scripts/Test-LlmDelegateStdinHandlingSelfTest.ps1` (sentinela `OK: Test-LlmDelegateStdinHandlingSelfTest.ps1`)
-  prova o mecanismo (fake-exe que bloqueia em stdin aberto e sai 7 ao receber EOF) e trava a regressão
-  estaticamente (argument-based fecham o stdin; stdin-based usam `-RedirectStandardInput`).
-- **Sondas `--version`/`--help`** dos `*CliSupport`: medidas em headless (`gemini --version` ~7.5s,
-  `copilot --version` ~3.4s — não leem stdin, **não penduram**), portanto **não** alteradas.
+  prova o EOF (fake-exe que bloqueia em stdin aberto e sai 7 ao receber EOF), trava a regressão
+  estaticamente (stdin-based usam `-RedirectStandardInput` e **não** fecham com `$null | &`;
+  argument-based fecham com `$null | &`) e prova o opencode stdin-based com prompt > 32KB via
+  fake-exe injetado (`-OpenCodeExe`).
+- **Sondas `--version`/`--help`** dos `*CliSupport`: medidas em headless (não leem stdin, **não
+  penduram**), portanto **não** alteradas.
+
+## LIMITE CONHECIDO — `StandardOutputEncoding` E LINHA DE COMANDO (~32KB)
+
+**Sintoma observado** (relato, não-determinístico): pela ferramenta PowerShell de um agente, "em
+algumas sessões", uma chamada de adapter **argument-based** falhava com exit 1 e
+`Program '<cli>.exe' failed to run: StandardOutputEncoding is only supported when standard output
+is redirected`. Pela ferramenta Bash (stdout = pipe) funcionava.
+
+- **Causa não confirmada.** A hipótese é o host do chamador ter stdout **não-redirecionado**
+  (console-handle) e/ou o prompt grande por argv; **não** reproduzido de forma determinística
+  (medições mostraram `[Console]::IsOutputRedirected=True` nas sessões testadas, em que o erro
+  **não** ocorre). Tratar como **sintoma observado**, não diagnóstico fechado.
+- **Workaround** para os adapters **argument-based** (`Invoke-Gemini`, `Invoke-Copilot`): invocá-los
+  pela ferramenta **Bash** (ou shell com stdout em **pipe**) e manter o prompt **enxuto**.
+- **opencode resolvido por desenho.** `Invoke-OpenCode`/`Start-OpenCodeJob` deixaram de usar o padrão
+  `& exe 1> arquivo` (runner) e passaram a **redireção explícita** via
+  `Start-Process -RedirectStandardOutput/-Error` (que nunca dispara esse erro) + prompt por stdin —
+  então o opencode é **host-agnóstico** quanto a esse sintoma, qualquer que seja a causa.
+
+**Limite de ~32KB de linha de comando do Windows** (reproduzível): passar o prompt como
+**argumento** estoura `Argument list too long` acima de ~32767 caracteres.
+- **argument-based** (`Invoke-Gemini`, `Invoke-Copilot`): prompt grande inline é frágil — manter
+  enxuto. (Follow-up: migrar a stdin / guard de tamanho — `999-ideias-pendentes.md`.)
+- **stdin-based** (opencode, Codex, ClaudeCode): o prompt vai por **stdin/arquivo**, não pelo argv —
+  sem o limite. Para o opencode, use `-MessagePath <arquivo>` (ou `-Message`): além de evitar o
+  limite, dispensa `"$(cat ...)"` na linha de comando do chamador (sem substituição de comando = sem
+  prompt de autorização desnecessário no harness).
 
 ## LIMITE CONHECIDO — CODEX É AGÊNTICO (HERDA O AGENTS.md, PODE EXECUTAR)
 
