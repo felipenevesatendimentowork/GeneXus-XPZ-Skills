@@ -106,10 +106,15 @@ $out = (New-TemporaryFile).FullName
 $err = (New-TemporaryFile).FullName
 
 try {
+    $startedAt = Get-Date
     $p = Start-Process -FilePath $exe -ArgumentList $ocArgs -NoNewWindow -PassThru `
         -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err
     if (-not $p.WaitForExit($TimeoutSec * 1000)) {
         try { $p.Kill($true) } catch { }
+        $usageLimit = Get-OpenCodeUsageLimitError -SinceTime $startedAt
+        if ($usageLimit) {
+            throw "BLOCK: opencode atingiu o limite de uso do provider (HTTP 429) e ficou retentando em silencio ate ${TimeoutSec}s: $usageLimit. NAO e timeout tecnico nem indisponibilidade do provider; aguardar o reset do ciclo de uso (ex.: ollama-cloud weekly usage limit)."
+        }
         throw "BLOCK: opencode excedeu ${TimeoutSec}s e foi encerrado."
     }
     if ($p.ExitCode -ne 0) {

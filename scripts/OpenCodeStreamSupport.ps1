@@ -4,7 +4,8 @@
     Funções compartilhadas de parsing do stream JSON do opencode (skill xpz-llm-delegate).
 .DESCRIPTION
     Módulo dot-source consumido por Invoke-OpenCode.ps1 e Watch-OpenCodeJob.ps1 para evitar
-    duplicar a lógica de extracao. Sem efeitos colaterais; não invoca opencode.
+    duplicar a lógica de extracao. Não invoca opencode (o parsing é puro; a única leitura externa
+    é Get-OpenCodeUsageLimitError, que apenas LÊ o log do opencode para diagnosticar HTTP 429).
 
     Eventos do `opencode run --format json`: um objeto JSON por linha, com `type`
     (`step_start`, `text`, `tool_use`, `step_finish`, `error`) e `part`. Cada evento `text`
@@ -122,4 +123,35 @@ function Get-OpenCodeCompletionVerdict {
         return [pscustomobject]@{ status = 'empty'; reason = $Reason; message = 'BLOCK: nenhum evento de texto na resposta. Use -Raw para inspecionar.' }
     }
     return [pscustomobject]@{ status = 'ok'; reason = $Reason; message = '' }
+}
+
+function Get-OpenCodeUsageLimitError {
+    # O opencode retenta o HTTP 429 (limite de uso do provider) em SILENCIO: stdout/stderr ficam
+    # vazios e a chamada so estoura por -TimeoutSec, mascarando a causa como "timeout". O 429 e
+    # gravado apenas no log proprio do opencode (~/.local/share/opencode/log/<ts>.log; respeita
+    # XDG_DATA_HOME). Varre os logs escritos na janela do processo (mtime >= SinceTime - 5s) e
+    # devolve a mensagem do limite, ou $null se nao houver 429 no periodo. SO LEITURA do log;
+    # nao invoca opencode. -LogDir (override; default = dir real) habilita o self-test por fixture.
+    param(
+        [Parameter(Mandatory)][datetime]$SinceTime,
+        [string]$LogDir
+    )
+    if ([string]::IsNullOrWhiteSpace($LogDir)) {
+        $base = if ($env:XDG_DATA_HOME) { $env:XDG_DATA_HOME } else { Join-Path $env:USERPROFILE '.local/share' }
+        $LogDir = Join-Path $base 'opencode/log'
+    }
+    if (-not (Test-Path -LiteralPath $LogDir -PathType Container)) { return $null }
+    $cutoff = $SinceTime.AddSeconds(-5)
+    $logs = @(Get-ChildItem -LiteralPath $LogDir -Filter '*.log' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime -ge $cutoff } | Sort-Object LastWriteTime -Descending)
+    foreach ($log in $logs) {
+        $text = Get-Content -LiteralPath $log.FullName -Raw -ErrorAction SilentlyContinue
+        if ([string]::IsNullOrEmpty($text)) { continue }
+        if ($text -match '"statusCode":\s*429') {
+            $m = [regex]::Match($text, 'reached your[^"\\]*usage limit[^"\\]*')
+            if ($m.Success) { return $m.Value.Trim() }
+            return 'HTTP 429 - limite de uso do provider'
+        }
+    }
+    return $null
 }
