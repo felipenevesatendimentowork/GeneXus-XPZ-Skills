@@ -52,6 +52,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Helper do check generico forwards_unknown_engine_param (resolve motor compartilhado por
+# valor + AST; sem executar motor nem exigir KB). EnginesRoot = scripts/ do auditor ($PSScriptRoot).
+. (Join-Path $PSScriptRoot 'XpzWrapperEngineParamSupport.ps1')
+
 $scriptsPath = Join-Path $KbParallelRoot 'scripts'
 
 function Get-RequiresVersion {
@@ -203,6 +207,7 @@ $shortNaming = [System.Collections.Generic.List[string]]::new()
 $customized  = [System.Collections.Generic.List[string]]::new()
 $recommendedMissing = [System.Collections.Generic.List[string]]::new()
 $legacyOrphans = [System.Collections.Generic.List[string]]::new()
+$engineDiagnostics = [System.Collections.Generic.List[string]]::new()
 $optionalBaseNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 [void]$optionalBaseNames.Add('New-KbImportPackage')
 [void]$optionalBaseNames.Add('New-KbFront')
@@ -297,6 +302,19 @@ foreach ($exampleFile in Get-ChildItem -LiteralPath $SkillsExamplesPath -Filter 
                 $customized.Add(('{0}(reason=consumes_legacy_text_stdout)' -f $standardLocalName))
             }
         }
+
+        # Check generico: parametro repassado a motor compartilhado advanced que o motor nao
+        # declara (forwards_unknown_engine_param), caminho de motor inexistente
+        # (shared_engine_unresolved) -> desvios-de-wrapper, viram INVENTORY_CUSTOMIZED (capturado
+        # pelo agregador). Motor canonico irresoluvel/parse-broken -> INVENTORY_ENGINE_DIAGNOSTIC
+        # (infra do repo de skills; nao bloqueia estado de pasta paralela).
+        $engineParamFinding = Get-XpzWrapperEngineParamFinding -WrapperPath $standardPath -EnginesRoot $PSScriptRoot
+        foreach ($sig in $engineParamFinding.Signals) {
+            $customized.Add(('{0}(reason={1}: {2})' -f $standardLocalName, $sig.Reason, $sig.Detail))
+        }
+        foreach ($diag in $engineParamFinding.EngineDiagnostics) {
+            $engineDiagnostics.Add(('{0}(reason={1}: {2})' -f $standardLocalName, $diag.Reason, $diag.Detail))
+        }
     } elseif ($shortExists) {
         $shortNaming.Add($standardLocalName)
     } elseif ($optionalBaseNames.Contains($baseName)) {
@@ -346,6 +364,11 @@ if ($absent.Count -gt 0) {
 }
 if ($recommendedMissing.Count -gt 0) {
     $statusParts.Add("INVENTORY_RECOMMENDED_MISSING: $($recommendedMissing -join ', ')")
+}
+if ($engineDiagnostics.Count -gt 0) {
+    # Canal brando: rotulo deliberadamente FORA dos 4 tokens do regex de pendencia do
+    # agregador (Test-XpzSetupAudit.ps1) -> nao bloqueia o estado de pasta paralela.
+    $statusParts.Add("INVENTORY_ENGINE_DIAGNOSTIC: $($engineDiagnostics -join ', ')")
 }
 
 if ($statusParts.Count -eq 0) {

@@ -342,6 +342,26 @@ $raw
 
     Assert-NotContains -Text $output -Pattern 'Update-DemoKbFromXpz\.ps1\(reason=consumes_legacy_text_stdout\)' -Message 'wrapper Update-*KbFromXpz migrado para JSON v1 nao pode ser sinalizado por esse motivo'
 
+    # forwards_unknown_engine_param end-to-end: wrapper local que repassa parametro inexistente
+    # a motor compartilhado advanced REAL (Test-GeneXusSourceSanity.ps1) deve sair dentro da
+    # linha INVENTORY_CUSTOMIZED (capturada pelo agregador).
+    @'
+#requires -Version 7.4
+Write-Output "sanity"
+'@ | Set-Content -LiteralPath (Join-Path $examplesPath 'Test-KbSourceSanity.example.ps1') -Encoding utf8NoBOM
+
+    @'
+#requires -Version 7.4
+param([string]$InputPath)
+$enginePath = Join-Path $SharedSkillsRoot 'scripts\Test-GeneXusSourceSanity.ps1'
+& $enginePath -InputPath $InputPath -BogusXyz $z
+'@ | Set-Content -LiteralPath (Join-Path $scriptsPath 'Test-DemoKbSourceSanity.ps1') -Encoding utf8NoBOM
+
+    $output = (& $inventoryScriptPath -KbParallelRoot $kbRoot -SkillsExamplesPath $examplesPath 2>&1 |
+        ForEach-Object { $_.ToString() }) -join ' '
+
+    Assert-Contains -Text $output -Pattern 'Test-DemoKbSourceSanity\.ps1\(reason=forwards_unknown_engine_param: -BogusXyz -> Test-GeneXusSourceSanity\.ps1\)' -Message 'parametro inexistente repassado a motor advanced deve ser sinalizado pelo inventario dentro de INVENTORY_CUSTOMIZED'
+
     Write-Output 'WRAPPER_INVENTORY_SELFTEST_OK'
 } finally {
     if ($tempRoot.StartsWith([System.IO.Path]::GetTempPath(), [System.StringComparison]::OrdinalIgnoreCase) -and
