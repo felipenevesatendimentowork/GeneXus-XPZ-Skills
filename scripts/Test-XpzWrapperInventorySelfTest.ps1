@@ -8,7 +8,9 @@
     que divergencia de #requires -Version classifica wrapper como CUSTOMIZADO, sem
     tratar Test-*KbPowerShellRuntime.ps1 como falso positivo. Também valida os sinais
     consultivos de wrappers recomendados ausentes e os sinais bloqueantes de scripts
-    legados orfaos.
+    legados orfaos, e os motivos de INVENTORY_CUSTOMIZED: missing_AsJson_passthrough
+    (K8/K9), consumes_legacy_text_stdout (Update-*KbFromXpz) e forwards_unknown_engine_param
+    (repasse a motor compartilhado advanced de parametro nao-declarado; caso end-to-end).
 #>
 
 [CmdletBinding()]
