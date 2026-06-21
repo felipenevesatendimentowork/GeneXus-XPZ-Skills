@@ -97,6 +97,14 @@ try {
     if (-not $binCheck.Contains('objectDllCount')) {
         throw "ASSERT_FAILED: binCheck reportado nao contem 'objectDllCount' (regressao do fix [System.Collections.IDictionary])"
     }
+    # Os outros dois campos que o catalogo de exit 49 promete (jsonHints): presenca da chave
+    # trava a regressao da copia, mesmo com valor $null (sem .config no fixture).
+    if (-not $binCheck.Contains('objectDllMaxWriteTime')) {
+        throw "ASSERT_FAILED: binCheck reportado nao contem 'objectDllMaxWriteTime' (regressao do fix [System.Collections.IDictionary])"
+    }
+    if (-not $binCheck.Contains('configMaxWriteTime')) {
+        throw "ASSERT_FAILED: binCheck reportado nao contem 'configMaxWriteTime' (regressao do fix [System.Collections.IDictionary])"
+    }
     if ($binCheck['publicationFreshSinceBuild'] -ne $true) {
         throw "ASSERT_FAILED: publicationFreshSinceBuild esperado true, atual=$($binCheck['publicationFreshSinceBuild'])"
     }

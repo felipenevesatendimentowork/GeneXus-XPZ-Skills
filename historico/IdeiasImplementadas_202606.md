@@ -28,7 +28,7 @@ Caso real em 2026-06-17 (KB `FabricaBrasil18`, environment `.NET Core`): BuildAl
 
 ### Decisao final
 
-A+B na mesma frente (o self-test so e significativo travando os dois). Tipo `[System.Collections.IDictionary]` preferido a `@{}` em `:336` por preservar a ordem das chaves do diagnostico (decisao editorial, nao contrato travado por teste).
+A+B na mesma frente (o self-test so e significativo travando os dois). No Fix B, trocou-se o **tipo do parametro** em `:250` para `[System.Collections.IDictionary]` em vez de trocar o `[ordered]@{}` de `:336` por `@{}` (alternativa que resolveria igual, mas mudaria a ordem das chaves do diagnostico); `:336` permanece `[ordered]@{}`. A ordem das chaves e decisao editorial, nao contrato travado por teste.
 
 ### Rastreabilidade
 
