@@ -289,8 +289,8 @@ Do NOT use esta skill para:
 ## SCRIPTS (em `scripts/`, na raiz do repositório)
 
 Backend opencode:
-- `Invoke-OpenCode.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-Raw] [-AllText] [-TimeoutSec <s>]` — síncrono (prompt → texto). Bloqueia até a resposta. `-AllText` devolve toda a narração (preâmbulos + resposta) em vez de só a resposta final. Usa o `opencode.exe` real e runner temporário para preservar prompt multilinha como argumento único.
-- `Start-OpenCodeJob.ps1 <prompt> [-Model <p/m>] [-Agent <n>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. Também usa runner temporário para evitar fragmentação de prompt pelo `Start-Process`.
+- `Invoke-OpenCode.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <p/m>] [-Agent <n>] [-OpenCodeExe <path>] [-Raw] [-AllText] [-TimeoutSec <s>]` — síncrono (prompt → texto). Bloqueia até a resposta. `-AllText` devolve toda a narração (preâmbulos + resposta) em vez de só a resposta final. Entrega o prompt por **stdin** (arquivo via `Start-Process -RedirectStandardInput`), fora do argv; `-MessagePath` lê o prompt de um arquivo (exclusivo com `-Message`); `-OpenCodeExe` força o `opencode.exe`.
+- `Start-OpenCodeJob.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <p/m>] [-Agent <n>] [-OpenCodeExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. Entrega o prompt por **stdin** (`<GUID>.stdin.txt`), **sem runner** (espelha Start-CodexJob).
 - `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`, `finishReason`). O `status` pode ser `completed`, `truncado`, `sem-conclusao`, `sem-texto` ou `error` (Achado D: classificação por `reason` do último `step_finish`; ver «Detecção de truncamento»).
 
 No backend opencode, `-Model` deve usar o identificador aceito pelo CLI no formato
