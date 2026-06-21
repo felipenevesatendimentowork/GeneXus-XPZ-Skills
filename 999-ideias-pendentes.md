@@ -64,52 +64,6 @@ Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na
 
 Skills consumidoras: `xpz-builder`, `xpz-msbuild-import-export`. Motor: `scripts/New-XpzImportPackage.ps1` / `.py`. Origem: tarefa secundária opcional levantada no prompt de um agente de pasta paralela (2026-06-21), fora do escopo da frente do `.ContainsKey`/OrderedDictionary; registrada aqui para outra sessão cuidar.
 
-## URGENTE — `.ContainsKey` sobre `OrderedDictionary` quebra o pós-processamento do BuildAll sob StrictMode
-
-**Importância:** alta (não corrompe o build, mas mascara um resultado limpo como falha e pode confundir a classificação do diagnóstico)
-**Maturidade:** pronta para implementar (causa raiz confirmada no código; correção de uma linha identificada)
-
-**Origem:** caso real em 2026-06-17, KB `FabricaBrasil18`, environment `NETPostgreSQL` (.NET Core). `scripts/Invoke-GeneXusKbBuildAll.ps1` concluiu o BuildAll **limpo** (`executionEvidence.msBuildExitCode=0`, `__BUILDALL_DONE__=true`, "Build All Task Sucesso", 0 erros, 0 reorg), mas o pós-processamento do wrapper lançou exceção e degradou o diagnóstico JSON. Evidência salva (read-only) em `C:\Dev\Prod\Gx_FabricaBrasil\Temp\build\build-all.log` (`"msBuildExitCode": 0` + `postProcessingError` abaixo).
-
-### Sintoma
-
-- `status` saiu como `compilou limpo com falha no pos-processamento`; `postProcessingFailed=true`.
-- Mensagem exata em `postProcessingError`:
-  `Method invocation failed because [System.Collections.Specialized.OrderedDictionary] does not contain a method named 'ContainsKey'.`
-- O build em si está correto — só a montagem do diagnóstico quebra. Por isso o impacto é de **diagnóstico mascarado**, não de regressão de compilação.
-
-### Causa raiz (confirmada no código)
-
-- `scripts/GeneXusKbDeployBinSupport.ps1:482` chama `$freshness.binCheck.ContainsKey('sentinelFreshSinceBuild')`.
-- `$freshness.binCheck` é um `[ordered]@{}` — criado em `Test-GeneXusKbDeployBinFreshnessCore` em `scripts/GeneXusKbDeployBinSupport.ps1:336` (e repassado por `Invoke-GeneXusKbDeployBinPostBuildClassification` em `:476`).
-- O arquivo roda sob `Set-StrictMode -Version Latest` (`scripts/GeneXusKbDeployBinSupport.ps1:14`). `OrderedDictionary`/`[ordered]@{}` **não** expõe método `.ContainsKey(...)` — só `.Contains(key)`. Sob StrictMode a invocação inexistente é erro de runtime (pitfall já registrado no `AGENTS.md` global do usuário).
-- O ramo `if ($freshness.status -eq 'fresh')` (`:481`) é justamente o caminho da publicação .NET Core fresca que este build percorreu, disparando a exceção. A exceção é capturada pelo `catch` de pós-processamento de `Invoke-GeneXusKbBuildAll.ps1` (`:1962`), que preenche `postProcessingError` e rebaixa o status.
-
-### Correção recomendada (não aplicada — aguarda decisão do mantenedor)
-
-Trocar `.ContainsKey(...)` por `.Contains(...)` na linha `scripts/GeneXusKbDeployBinSupport.ps1:482`:
-
-```powershell
-# de:
-if ($freshness.binCheck.ContainsKey('sentinelFreshSinceBuild') -and
-# para:
-if ($freshness.binCheck.Contains('sentinelFreshSinceBuild') -and
-```
-
-Alternativas equivalentes: `$freshness.binCheck.Keys -contains 'sentinelFreshSinceBuild'`, ou trocar o `[ordered]@{}` por hashtable `@{}` se a ordem de `binCheck` for irrelevante (hashtable tem `.ContainsKey`). A troca por `.Contains(...)` é a de menor superfície e preserva a ordem.
-
-**Varredura recomendada antes do fix:** auditar os demais `.ContainsKey` do repositório que possam incidir sobre `[ordered]@{}`/`OrderedDictionary` (a maioria das ocorrências em `scripts/` é sobre hashtable `@{}` ou `$PSBoundParameters`, que têm `.ContainsKey` e são seguras; este caso é específico de um `[ordered]@{}`).
-
-### Critério de aceite
-
-BuildAll limpo de uma KB .NET Core (caminho `deployBinFreshness=fresh`) deve produzir `status=compilou limpo` (ou equivalente sem `postProcessingFailed`), com `postProcessingError=null`, e o warning consultivo de `GxNetCoreStartup.dll` (quando aplicável) deve aparecer sem lançar exceção.
-
-### Relacionado
-
-- `scripts/GeneXusKbDeployBinSupport.ps1` (dono do bug, `:482`; `[ordered]@{}` em `:336`/`:476`; StrictMode em `:14`)
-- `scripts/Invoke-GeneXusKbBuildAll.ps1` (`:1845`–`:1873` consome a classificação deploy-bin; `catch` de pós-processamento em `:1962`)
-- Skill `xpz-msbuild-build` (consumidora do diagnóstico do BuildAll)
-
 ## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (Fase 2b da skill `xpz-kb-parallel-pre-push`, hoje classificador documental)
 
 **Importância:** média (o sub-caso **destrutivo** tende a `alta` — falso negativo de regressão por dependente não enumerado; hoje mitigado só pelo build)

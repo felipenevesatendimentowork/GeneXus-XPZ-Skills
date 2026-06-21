@@ -247,7 +247,7 @@ function Get-GeneXusKbDeployBinPublicationEvidence {
 
 function Add-GeneXusKbDeployBinPublicationFieldsToBinCheck {
     param(
-        [hashtable]$BinCheck,
+        [System.Collections.IDictionary]$BinCheck,
         [pscustomobject]$Publication
     )
 
@@ -479,7 +479,7 @@ function Invoke-GeneXusKbDeployBinPostBuildClassification {
     }
 
     if ($freshness.status -eq 'fresh') {
-        if ($freshness.binCheck.ContainsKey('sentinelFreshSinceBuild') -and
+        if ($freshness.binCheck.Contains('sentinelFreshSinceBuild') -and
             $freshness.binCheck['sentinelFound'] -eq $true -and
             $freshness.binCheck['sentinelFreshSinceBuild'] -eq $false) {
             $output.warnings = @(

@@ -2,6 +2,40 @@
 
 Registro de ideias que sairam de `999-ideias-pendentes.md` por terem sido implementadas ou incorporadas ao contrato metodologico vigente.
 
+## `.ContainsKey` sobre `OrderedDictionary` quebrava o pos-processamento do BuildAll/SpecifyGenerate sob StrictMode
+
+**Importancia original:** alta (nao corrompia o build, mas mascarava um resultado limpo como falha e empobrecia o diagnostico)
+**Status:** concluida em 2026-06-21
+
+### Origem
+
+Caso real em 2026-06-17 (KB `FabricaBrasil18`, environment `.NET Core`): BuildAll concluiu limpo (`msBuildExitCode=0`, `__BUILDALL_DONE__=true`), mas o pos-processamento lançou excecao e degradou o JSON para `status=compilou limpo com falha no pos-processamento` com `postProcessingError`. Entrada registrada como URGENTE no `999`.
+
+### Problema concreto
+
+- `scripts/GeneXusKbDeployBinSupport.ps1:482` chamava `.ContainsKey('sentinelFreshSinceBuild')` sobre `$freshness.binCheck`, um `[ordered]@{}` (`:336`, repassado em `:476`). Sob `Set-StrictMode -Version Latest` (`:14`), `OrderedDictionary` nao expoe `.ContainsKey` (so `.Contains`) — erro de runtime no ramo `status='fresh'` (publicacao .NET Core fresca).
+- A excecao **nao** era tratada pelo catch interno `:1962` (esse fecha o try de eventos pos-build/hashes); a chamada deploy-bin esta em `Invoke-GeneXusKbBuildAll.ps1:2016`, dentro do try externo de `:695`, e a excecao caia no catch externo `:2206`, que define `status='compilou limpo com falha no pos-processamento'` (`:2208`) + `postProcessingFailed` (`:2234`). Ponteiros do `999` original (catch `:1962`, consumo `:1845-1873`) estavam imprecisos.
+- **Segundo consumidor:** `Invoke-GeneXusKbSpecifyGenerate.ps1:1533` chama a mesma funcao (mesmos params, `-OperationLabel 'SpecifyGenerate'`); catch analogo em `:1716`.
+- **Bug latente irmao (Fix B), achado na revisao:** `Add-GeneXusKbDeployBinPublicationFieldsToBinCheck` declarava `[hashtable]$BinCheck` (`:250`), mas o unico call site (`:357`) passa o `[ordered]@{}` — passar `OrderedDictionary` a parametro `[hashtable]` **cria copia**, entao os 11 campos de publicacao (`:254-264`) nunca chegavam ao `binCheck` reportado. O `msbuild-exit-codes.catalog.json` (exit 49) ja prometia `publicationFreshSinceBuild`/`objectDllMaxWriteTime`/`configMaxWriteTime` em `jsonHints` — campos suprimidos pelo bug.
+
+### Implementacao
+
+- **Fix A:** `.ContainsKey('sentinelFreshSinceBuild')` -> `.Contains('sentinelFreshSinceBuild')` em `GeneXusKbDeployBinSupport.ps1:482`.
+- **Fix B:** `[hashtable]$BinCheck` -> `[System.Collections.IDictionary]$BinCheck` em `:250` (aceita `OrderedDictionary` por referencia, preserva ordem). Call site unico — sem regressao.
+- Self-test novo `scripts/Test-GeneXusDeployBinClassificationSelfTest.ps1` (token `GENEXUS_DEPLOY_BIN_CLASSIFICATION_SELFTEST_OK`): KB temporaria `dotnet-core-self-host`, timestamps fixados via `LastWriteTimeUtc`, asserçoes sobre `deployBinCheck.binCheck` (publicacao + sentinela) e `warnings`. Falha sem Fix A (lança) e sem Fix B (campos de publicacao ausentes).
+- Varredura repo-wide: `:482` e o unico `.ContainsKey` sobre `[ordered]`; `.ContainsValue`=0; `.Remove`/`.Add` existem em `OrderedDictionary` (seguros; ex.: `GeneXusMsBuildWatcherSupport.ps1:174`).
+- Paridade: `CHANGELOG.md` (Unreleased), `09-inventario-e-rastreabilidade-publica.md:189` (self-test + token). `xpz-msbuild-build/SKILL.md`, `02`/`08` e o catalogo de exit codes conferidos sem necessidade de edicao (o catalogo ja prometia os campos; o fix alinha a saida ao contrato).
+
+### Decisao final
+
+A+B na mesma frente (o self-test so e significativo travando os dois). Tipo `[System.Collections.IDictionary]` preferido a `@{}` em `:336` por preservar a ordem das chaves do diagnostico (decisao editorial, nao contrato travado por teste).
+
+### Rastreabilidade
+
+- Arquivos: `scripts/GeneXusKbDeployBinSupport.ps1` (`:250`, `:482`), `scripts/Test-GeneXusDeployBinClassificationSelfTest.ps1` (novo), `CHANGELOG.md`, `09-inventario-e-rastreabilidade-publica.md`.
+- Commit: a registrar no commit desta frente.
+- Revisao por pares: 5 versoes / 4 vozes / 3 familias (livro-razao em `Temp/revisao-por-pares/contains-key-fix/`).
+
 ## Unificar `Get-Utf8NoBomEncoding` repo-wide
 
 **Importancia original:** baixa
