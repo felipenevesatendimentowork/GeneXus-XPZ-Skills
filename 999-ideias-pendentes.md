@@ -304,20 +304,20 @@ Após implementar + rebuild:
 **Importância:** baixa (é otimização de custo; o caminho seguro já está adotado e cobre a correção)
 **Maturidade:** ideia (a decisão de design foi adiar; a mecânica do marcador auditável fica em aberto)
 
-**Origem:** frente dos 4 achados da revisão por pares, decisão D2, 2026-06-19. Ao sintetizar os pareceres do painel, o agente produz uma versão consolidada do manuscrito (vN+1). A régua atual (`15-revisao-por-pares.md:40`) trata qualquer vN+1 ainda não revisada como **convergência falsa** — exige re-submissão ao painel. O D2 perguntou qual o gatilho da oferta proativa de 2ª rodada no momento da síntese.
+**Origem:** frente dos 4 achados da revisão por pares, decisão D2, 2026-06-19. Ao sintetizar os pareceres do painel, o agente produz uma versão consolidada do manuscrito (vN+1). A régua atual (`15-revisao-por-pares.md:41`) trata qualquer vN+1 ainda não revisada como **convergência falsa** — exige re-submissão ao painel. O D2 perguntou qual o gatilho da oferta proativa de 2ª rodada no momento da síntese.
 
-**Decisão tomada (opção 1, adotada agora):** *qualquer vN+1 autorada ⇒ oferecer 2ª rodada*. Painel: opção 1 (claude-opus + Codex) venceu opção 2 (minimax + autor); Codex desempatou. Motivo: não afrouxa o `15:40` e não reintroduz julgamento auto-interessado do agente no ponto vulnerável (declarar convergência).
+**Decisão tomada (opção 1, adotada agora):** *qualquer vN+1 autorada ⇒ oferecer 2ª rodada*. Painel: opção 1 (claude-opus + Codex) venceu opção 2 (minimax + autor); Codex desempatou. Motivo: não afrouxa o `15:41` e não reintroduz julgamento auto-interessado do agente no ponto vulnerável (declarar convergência).
 
 **O que esta frente futura faria (a otimização adiada):** introduzir uma exceção em que uma vN+1 de **mero relay** (só agrupa/numera/marca convergência, sem acrescentar nada) **dispensa** a re-submissão, separando-a de uma **consolidação autoral** (que acrescenta afirmação que nenhum revisor escreveu, reordena divergências ou resolve conflito entre ressalvas). Requisitos para ser segura, **não** atendidos hoje:
 
-- **emendar `15-revisao-por-pares.md:40`** para reconhecer a categoria `relay` (hoje a régua não tem exceção);
+- **emendar `15-revisao-por-pares.md:41`** para reconhecer a categoria `relay` (hoje a régua não tem exceção);
 - **marcador auditável no recibo** (`vN+1Type=relay|authoredConsolidation`), nunca auto-certificado em silêncio;
 - **checklist objetivo** (proposta do minimax) — a vN+1 exige 2ª rodada se QUALQUER for "sim": (1) inclui afirmação que nenhum revisor escreveu textualmente? (2) prioriza/ordena divergências de um modo que não estava no painel? (3) resolve um conflito entre ressalvas? (senão: só estrutura/agrupa = relay → dispensa);
 - evidência comparável de que a vN+1 não introduziu afirmação, ordenação, resolução de conflito nem prioridade nova.
 
 **Risco a vigiar se for implementada:** a linha relay-vs-consolidação é fácil de o próprio agente racionalizar a seu favor para pular a rodada custosa — exatamente o autoengano que o método quer evitar. Só vale a pena com o marcador auditável e a emenda da norma juntos.
 
-**Rascunho da emenda ao `15:40`** (para a entrada ser auto-suficiente; texto-semente, a refinar quando a frente abrir):
+**Rascunho da emenda ao `15:41`** (para a entrada ser auto-suficiente; texto-semente, a refinar quando a frente abrir):
 
 > *Exceção (relay auditável):* uma vN+1 classificada como `relay` — que **apenas** agrupa, numera ou marca convergência, **sem** introduzir afirmação que nenhum revisor escreveu, reordenação de divergências, resolução de conflito entre ressalvas ou priorização ausente do painel — **dispensa** a re-submissão, desde que o recibo registre `vN+1Type=relay` e a classificação seja auditável pelo checklist abaixo. Qualquer vN+1 que falhe uma das perguntas é `authoredConsolidation` e **exige** re-submissão. Na dúvida, `authoredConsolidation`.
 
@@ -372,7 +372,7 @@ Após implementar + rebuild:
 
 ## Implementar `Invoke-LlmDelegatePanelDispatch.ps1` (frente A) — CONCLUÍDA E PUSHADA (origin/main `2e88905`)
 
-**Migrada para `historico/IdeiasImplementadas_202606.md`** (2026-06-22). Harness MECÂNICO de disparo+coleta do painel de revisão por pares (o «harness de disparo» previsto em `15-revisao-por-pares.md:94`), conforme o design convergido v11; implementação convergida por revisão por pares (v1→v2). Resíduos relacionados seguem abertos no 999: «contrato de saída estruturado dos adapters» (consumidor do single-flight automático) e «agente reviewer sem execução/escrita» (confinamento do opencode).
+**Migrada para `historico/IdeiasImplementadas_202606.md`** (2026-06-22). Harness MECÂNICO de disparo+coleta do painel de revisão por pares (o «harness de disparo» previsto em `15-revisao-por-pares.md:108`), conforme o design convergido v11; implementação convergida por revisão por pares (v1→v2). Resíduos relacionados seguem abertos no 999: «contrato de saída estruturado dos adapters» (consumidor do single-flight automático) e «agente reviewer sem execução/escrita» (confinamento do opencode).
 
 ## Normalizar a caixa do -VNextState no eco do closeout
 

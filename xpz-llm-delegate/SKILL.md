@@ -513,7 +513,7 @@ pedir, se a divergência parecer recorrente ou se ele confirmar explicitamente.
 
 ### Harness de disparo do painel (`Invoke-LlmDelegatePanelDispatch.ps1`)
 
-É o «harness de disparo» previsto em [`15-revisao-por-pares.md`](../15-revisao-por-pares.md) (`:94`): mecaniza o
+É o «harness de disparo» previsto em [`15-revisao-por-pares.md`](../15-revisao-por-pares.md) (`## Futuros`): mecaniza o
 despacho+coleta que antes era ad-hoc. A fronteira **orquestrador ↔ harness** é estrita:
 
 ```
@@ -530,7 +530,7 @@ re-despacho single-flight do ollama que falhou │    gateAsk,gateDeny}
 ```
 
 - **Modelo efetivo:** opencode = `invokeArgs.model` ou o `targetModelKey` de **entrada** (o resolvedor opencode exige `-Model`; o gate recebe o mesmo valor); codex = `invokeArgs.model` ou, se ausente, gate **sem** `-Model` → último segmento do `targetModelKey` retornado; claude-code/copilot/gemini = `invokeArgs.model` **obrigatório** (ausente → `state=error` fail-closed). `targetModelKey` nulo onde exigido (opencode/codex) → `state=error`.
-- **`responded` é MECÂNICO** (texto não-vazio), **não** «parecer válido»: o harness não inspeciona o conteúdo. A reclassificação `responded`→`noResponse` (revisor off-task) é **post-hoc do orquestrador** antes do closeout (`15:53`) — um off-task não soma para o piso.
+- **`responded` é MECÂNICO** (texto não-vazio), **não** «parecer válido»: o harness não inspeciona o conteúdo. A reclassificação `responded`→`noResponse` (revisor off-task) é **post-hoc do orquestrador** antes do closeout (`15-revisao-por-pares.md`, `## Recibo e livro-razão`) — um off-task não soma para o piso.
 - **Contenção = trava fail-closed PER-BACKEND (Posição B, decisão de segurança):** as chaves de contenção do backend que as aceita — claude-code `{permissionMode,tools,maxTurns}`, opencode `{agent}`, gemini `{approvalMode != plan}` — são **recusadas** (`securityBlockedArgs`) e **não** repassadas ao adapter; o despacho segue com os **defaults seguros** do adapter. O harness **nunca** expõe nem relaxa contenção. `approvalMode=plan` (gemini, o default) → `droppedArgs` silencioso; codex/copilot não têm parâmetro de contenção (chave estranha → `droppedArgs`).
 - **opencode só-`public` no v1:** opencode em `kb-sensitive` → `unavailable` (sem gate/despacho); o confinamento do agente custom fica para a frente 999 «agente reviewer sem execução/escrita». O adapter opencode **não** tem `-Cd` (por isso nunca o recebe); os demais (codex/claude-code/gemini/copilot) recebem `-Cd` por precedência (explícito → `ParallelKbRoot` em `kb-sensitive` → cwd em `public`) com **fail-closed** quando `kb-sensitive` e faltam ambos.
 - **single-flight DIFERIDO (decisão II-b):** uma falha concorrente de `ollama-cloud/*` vira `error` + ledger cru + `concurrencySaturationWarning` por stderr; a recuperação automática depende do **contrato de saída tipado dos adapters** (frente 999) — o orquestrador pode redisparar isolado manualmente.
