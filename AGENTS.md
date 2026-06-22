@@ -57,7 +57,18 @@
 ## Alinhamento entre documentos
 
 - Ao alterar nomenclatura, fluxo ou regra operacional, verificar impacto pelo menos em `README.md`, `02-regras-operacionais-e-runtime.md`, `08-guia-para-agente-gpt.md`, `09-inventario-e-rastreabilidade-publica.md` (índice de ponteiros: ao tocar um script, conferir que o ponteiro de 1 linha aponta o dono normativo correto e que o papel resumido ainda confere — o detalhe de contrato vive no dono), `13-revisao-pre-push.md` (quando a frente alterar a rotina pré-push ou gates associados) e nas skills afetadas.
+- Ao alterar a **forma de invocação dos adapters de delegação** (ex.: parâmetro `-MessagePath`, passagem de `argv`, variação de ferramenta), verificar paridade na seção `## Forma canônica de invocação dos adapters` do `xpz-llm-delegate/SKILL.md` e na seção `## Invocação dos adapters de delegação` abaixo.
 - Não deixar convenções conflitantes entre a base compartilhada e as skills quando a mudança fizer parte da mesma frente.
+
+## Invocação dos adapters de delegação
+
+Convenção canônica (aplica a **todos** os agentes que atuam neste repo — Claude Code, Codex, Cursor, OpenCode):
+
+- **Comando atômico**, prompt sempre por **`-MessagePath <arquivo>`**, sem aspas embutidas para o prompt.
+- **Via Bash (primária):** `pwsh -NoProfile -File scripts/<Adapter>.ps1 -MessagePath <arquivo> [outros]` — casa a entrada `Bash(pwsh -NoProfile -File scripts/*)`.
+- **Via PowerShell (fallback):** `& "<abs>\scripts\<Adapter>.ps1" -MessagePath <arquivo> [outros]` — casa a entrada `PowerShell(& "<repo>\scripts\*" *)`.
+- NÃO usar `& "scripts\<Adapter>.ps1"` (relativo via PowerShell) — não é coberto pela allowlist.
+- Detalhes completos (síncrono/assíncrono, `-Cd`, ressalva ~32KB, exemplo do caso real): ver `xpz-llm-delegate/SKILL.md`, seção `## Forma canônica de invocação dos adapters`.
 
 ## Revisão pré-push
 

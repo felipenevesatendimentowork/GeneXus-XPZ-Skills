@@ -2,6 +2,31 @@
 
 Registro de ideias que sairam de `999-ideias-pendentes.md` por terem sido implementadas ou incorporadas ao contrato metodologico vigente.
 
+## Forma canônica de invocação dos adapters documentada (resíduo (b1) do item URGENTE)
+
+**Importância original:** alta (atrito operacional recorrente; resíduo (b1) do item URGENTE «Reduzir as variações de chamada dos adapters de delegação»).
+**Status:** concluída em 2026-06-22 (documentação (b1)). (b2 = enxugar allowlist) segue como resíduo opcional/local no `999`.
+
+### Origem
+
+Resíduo (b) do item URGENTE do `999` (a parte (a) `-MessagePath` foi concluída antes — ver a entrada própria «`-MessagePath` estendido aos adapters…»). (b1): a convenção de invocação só vivia na memória pessoal de um agente; o repo serve vários (Claude Code, Codex, Cursor, OpenCode), então a forma canônica tem que morar onde **todo** agente lê.
+
+### Implementação
+
+- **`xpz-llm-delegate/SKILL.md`** — nova seção `## Forma canônica de invocação dos adapters`, ao final do bloco `## SCRIPTS` (antes de `## MANUSCRITO/PROMPT PARA REVISORES`): princípio atômico + `-MessagePath` (zero aspas embutidas); **forma por ferramenta** (Bash com path relativo `pwsh -NoProfile -File scripts/<Adapter>.ps1 …` casando `Bash(pwsh -NoProfile -File scripts/*)`; PowerShell fallback com path absoluto `& "<abs>\scripts\<Adapter>.ps1" …` casando `PowerShell(& "<repo>\scripts\*" *)`; o call-operator `&` com path relativo **não** é coberto); síncrono `Invoke-*` vs jobs `Start-*Job` existentes (`-TimeoutSec` só nos síncronos); `-Cd` só nos adapters que o suportam (opencode não tem); ressalva ~32KB (cross-ref) — `-MessagePath` tira a substituição inline no chamador em todos, mas só os stdin-based escapam do teto, argument-based (Gemini/Copilot) mantêm o teto com guard de 30000 chars; o caso real de 2026-06-21 com a causa correta (aspas embutidas quebrando o match literal, **mesma família** PowerShell, não descasamento de ferramenta); nota não-normativa do padrão de allowlist.
+- **`AGENTS.md`** — nova seção `## Invocação dos adapters de delegação` (forma canônica condensada + ponteiro ao SKILL.md) + bullet de paridade na seção «Alinhamento entre documentos».
+- **`CHANGELOG.md`** — entrada trilíngue (Unreleased).
+
+### Decisão final
+
+(b1) é o entregável **durável e cross-agente**; (b2) enxugar a allowlist é housekeeping **local** (`.claude/settings.json`/`settings.local.json` são git-ignored, máquina-local) e fica como resíduo opcional no `999` — **(b1) elimina a deriva na origem, tornando (b2) praticamente opcional**. Plano convergido por **revisão por pares** (v1→v4): painel multi-família — anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro/glm-5.2 — convergiu em zero gaps de conteúdo sobre a v4; a voz nvidia/kimi-k2.6 entrou tarde (leu o working tree já editado por sessão paralela) e o preferido ollama `kimi-k2.7-code` foi excluído por decisão humana (flakiness/truncagem, Achado D). Correção-chave entre versões: a causa-raiz do incidente de 2026-06-21 é **aspas embutidas** quebrando o match literal (mesma família PowerShell), **não** descasamento de ferramenta (achado da voz anthropic nativa, ratificado contra `999:35`).
+
+### Rastreabilidade
+
+- Arquivos: `xpz-llm-delegate/SKILL.md`, `AGENTS.md`, `CHANGELOG.md` (trilíngue), `999-ideias-pendentes.md` (entrada URGENTE → resíduo (b2)).
+- Revisão por pares: livro-razão em `Temp/peer-review-adapters-canonico/` (gitignored).
+- Rastreabilidade: ver o commit de fechamento desta frente (forma canônica + CHANGELOG trilíngue + migração da entrada do `999`).
+
 ## Harness `Invoke-LlmDelegatePanelDispatch.ps1` (frente A) — disparo+coleta do painel de revisão por pares
 
 **Importância original:** média-alta (o «harness de disparo do painel» previsto como futuro em `15-revisao-por-pares.md:94`; a orquestração da revisão por pares era ad-hoc).
@@ -46,7 +71,7 @@ Duas entradas do `999`: "URGENTE — Reduzir as variacoes de chamada dos adapter
 
 ### Decisao final
 
-Escopo expandido para incluir os adapters Claude Code (achado de Codex/glm na revisao): a fricca de chamador e identica a do Codex. Convergido por **revisao por pares** (4 rodadas v1->v4, 5 revisores / 3 familias: anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro/glm-5.2/kimi-k2.7-code; v4 aprovada 5/5; redesenho do teste comportamental do Codex e guard de tamanho = achados do glm). **Residuos abertos no `999`:** (b) documentar UMA forma canonica de invocacao + enxugar allowlist (repo-level, todos os agentes); e a migracao **stdin real** de Gemini/Copilot (bloqueada por falta de assinatura para validar).
+Escopo expandido para incluir os adapters Claude Code (achado de Codex/glm na revisao): a fricca de chamador e identica a do Codex. Convergido por **revisao por pares** (4 rodadas v1->v4, 5 revisores / 3 familias: anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro/glm-5.2/kimi-k2.7-code; v4 aprovada 5/5; redesenho do teste comportamental do Codex e guard de tamanho = achados do glm). **Residuos:** (b1) documentar a forma canonica de invocacao — **concluido** (ver a entrada propria «Forma canônica de invocação dos adapters documentada»); (b2) enxugar a allowlist = housekeeping **local** (git-ignored), opcional, segue no `999`; a migracao **stdin real** de Gemini/Copilot segue aberta no `999` (bloqueada por falta de assinatura para validar).
 
 ## `.ContainsKey` sobre `OrderedDictionary` quebrava o pos-processamento do BuildAll/SpecifyGenerate sob StrictMode
 

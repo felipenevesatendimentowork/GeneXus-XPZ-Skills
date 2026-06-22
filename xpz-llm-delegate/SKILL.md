@@ -532,6 +532,46 @@ re-despacho single-flight do ollama que falhou │    gateAsk,gateDeny}
 - **Disciplina de stdout:** o harness é processo filho; `panel-summary.json` é a **única** linha de stdout (`[Console]::Out`); todo texto humano sai por `[Console]::Error` (lição do `Sync-GeneXusXpzToXml`: `Write-Host`/`Write-Warning`/`Write-Information` **vazam** para o stdout capturado). O **chamador captura stdout e stderr separadamente**; redirecionar stderr→stdout corromperia o JSON.
 - **NÃO refatorar os 6 adapters** por esta frente: o status tipado dos adapters é frente própria no 999.
 
+## Forma canônica de invocação dos adapters
+
+A allowlist do harness (Claude Code, Codex, OpenCode, Cursor) casa comandos **atômicos**, não comandos compostos. Cada variante de forma exige uma entrada de allowlist distinta — deriva que, além de incomodar, gera prompt de autorização desnecessário quando o match literal falha.
+
+**Princípio:** comando **atômico**, prompt sempre por **`-MessagePath <arquivo>`**, zero aspas embutidas para o prompt. A raiz do atrito é prompt inline + múltiplos segmentos entre aspas no mesmo comando quebrando o match literal da allowlist — `-MessagePath` + comando atômico elimina isso.
+
+**Forma por ferramenta (cada uma casa a sua família de entrada na allowlist):**
+
+- Pela ferramenta **Bash** (forma primária), com `cwd` na raiz do repo, path **relativo**:
+  `pwsh -NoProfile -File scripts/<Adapter>.ps1 -MessagePath <arquivo> [demais parâmetros do adapter]`
+  — casa a entrada `Bash(pwsh -NoProfile -File scripts/*)`.
+- Pela ferramenta **PowerShell** (fallback), path **absoluto**:
+  `& "<abs>\scripts\<Adapter>.ps1" -MessagePath <arquivo> [demais parâmetros do adapter]`
+  — casa as entradas `PowerShell(& "<repo>\scripts\*" *)`.
+
+> **Importante (cobertura por ferramenta):** o path **relativo** é a forma coberta **via Bash**; o fallback **PowerShell** é coberto na forma de path **absoluto**. **Não** existe entrada ampla cobrindo path relativo via PowerShell — então não use `& "scripts\<Adapter>.ps1"` (relativo, via PowerShell) como forma canônica. Manter cada forma na sua ferramenta evita recair em variação não coberta.
+
+**Síncrono vs assíncrono (parâmetros próprios do adapter):**
+
+- Síncrono `Invoke-*`: `-MessagePath <arquivo> [-Model <m>] [-TimeoutSec <s>]`.
+- Assíncrono `Start-*Job` (os existentes: opencode, Codex, Claude Code — Gemini/Copilot **não** têm job): `-MessagePath <arquivo> [-Model <m>] [-NoWatcher] [-TempDir <dir>] [-KeepDays <n>]` — `-TimeoutSec` **não** se aplica aos jobs. A regra `-MessagePath`/atômico vale igual para os dois.
+
+**Arquivo de `-MessagePath`:** preferir caminho **sem espaços**, sob o `Temp` do usuário (`%LOCALAPPDATA%\Temp`, já allowlistado para escrita) — fecha o ciclo escrita+leitura sem prompt; se o caminho exigir aspas, um **único** par e nada de prompt inline.
+
+**`-Cd` (quando o adapter suportar):** Codex, Claude Code, Copilot e Gemini aceitam `-Cd`; **opencode NÃO tem** `-Cd`. Quando suportado, omitir `-Cd` se o `cwd` já é a raiz; preferir apontar o diretório pelo parâmetro `workdir` da própria ferramenta em vez de passar `-Cd` no comando; **nunca** `-Cd` como segundo segmento entre aspas (foi exatamente um `-Cd "<path>"` somado a um prompt inline entre aspas que produziu o caso real de 2026-06-21, ver abaixo).
+
+**Ressalva ~32KB (cross-reference):** `-MessagePath` elimina a substituição de comando inline (`(Get-Content)` / `"$(cat ...)"`) **no chamador** em **todos** os adapters; mas só os **stdin-based** (Codex, opencode, Claude Code) também movem o prompt para **fora** do `argv` (escapam do teto). Nos **argument-based** (Gemini/Copilot) o adapter lê o arquivo e repassa o prompt no `argv` interno — o teto ~32KB permanece, com o guard fail-closed de 30000 chars ativo. `-MessagePath` não levanta o teto nesses dois. Ver a seção de limite no `SKILL.md` para detalhe.
+
+**O caso real que motivou o item:** em 2026-06-21, `Invoke-Codex.ps1` foi chamado como:
+```powershell
+& "<abs>\Invoke-Codex.ps1" "<prompt>" -Model gpt-5.5 -Cd "<abs>" -TimeoutSec 420
+```
+...e **promptou** apesar de existirem entradas `PowerShell(& "…\scripts\*")`. A causa foi **as aspas embutidas** — prompt inline como segmento posicional + `-Cd "<path>"` no mesmo comando — quebrando o match literal da allowlist. Foi uma chamada da **mesma família PowerShell** contra entradas PowerShell existentes, **não** um descasamento de ferramenta. A forma canônica (prompt por `-MessagePath`, comando atômico, zero aspas embutidas) corrige exatamente essa causa. A regra "manter cada forma na sua ferramenta" é um cuidado preventivo adicional.
+
+**Nota não-normativa de allowlist:** como referência para quem configura uma máquina nova, o padrão de entrada ampla que cobre a forma canônica é:
+- `Bash(pwsh -NoProfile -File scripts/*)`
+- `PowerShell(& "<repo>\scripts\*" *)`
+
+Esses padrões são **exemplo informativo** — não são arquivo versionado e não fazem parte do setup automático.
+
 ## MANUSCRITO/PROMPT PARA REVISORES
 
 Ao montar o manuscrito/prompt de revisão por pares, não embutir como fatos conclusões que a
