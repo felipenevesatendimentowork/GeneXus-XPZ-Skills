@@ -121,8 +121,9 @@ $attempt = 0
 # limpa). A decisao de re-tentar le $verdict.status DIRETAMENTE (nao captura o throw), entao os
 # terminais lancados antes do veredito escapam do laco. Precedencia por tentativa:
 #   (1) timeout / exit!=0 / erro explicito de stream  -> terminal (sai do laco)
-#   (2) 429 na janela da tentativa                     -> terminal (mesmo se status=truncated)
-#   (3) veredito de conclusao                          -> retry SO {truncated, no-completion}
+#   (2) veredito de conclusao: 'ok' retorna; 'empty' terminal; so {truncated, no-completion} re-tentaveis
+#   (3) ao DECIDIR re-tentar, checa 429 na janela      -> terminal (gate da re-tentativa). Sem
+#       re-tentativa pendente (-MaxAttempts 1 / ultima tentativa), reporta o veredito de conclusao.
 # -TimeoutSec e POR TENTATIVA (com -MaxAttempts 2 o tempo de parede pode dobrar).
 try {
     while ($true) {
