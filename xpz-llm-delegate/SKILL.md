@@ -289,7 +289,7 @@ Do NOT use esta skill para:
 ## SCRIPTS (em `scripts/`, na raiz do repositório)
 
 Backend opencode:
-- `Invoke-OpenCode.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <p/m>] [-Agent <n>] [-OpenCodeExe <path>] [-Raw] [-AllText] [-TimeoutSec <s>]` — síncrono (prompt → texto). Bloqueia até a resposta. `-AllText` devolve toda a narração (preâmbulos + resposta) em vez de só a resposta final. Entrega o prompt por **stdin** (arquivo via `Start-Process -RedirectStandardInput`), fora do argv; `-MessagePath` lê o prompt de um arquivo (exclusivo com `-Message`); `-OpenCodeExe` força o `opencode.exe`.
+- `Invoke-OpenCode.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <p/m>] [-Agent <n>] [-OpenCodeExe <path>] [-Raw] [-AllText] [-TimeoutSec <s>] [-MaxAttempts <1-3>]` — síncrono (prompt → texto). Bloqueia até a resposta. `-AllText` devolve toda a narração (preâmbulos + resposta) em vez de só a resposta final. Entrega o prompt por **stdin** (arquivo via `Start-Process -RedirectStandardInput`), fora do argv; `-MessagePath` lê o prompt de um arquivo (exclusivo com `-Message`); `-OpenCodeExe` força o `opencode.exe`. `-MaxAttempts` (default 1) liga o **retry-once** opt-in (ver «Detecção de truncamento (Achado D)» → «Retry-once»).
 - `Start-OpenCodeJob.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <p/m>] [-Agent <n>] [-OpenCodeExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. Entrega o prompt por **stdin** (`<GUID>.stdin.txt`), **sem runner** (espelha Start-CodexJob).
 - `Watch-OpenCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental; grava `<GUID>.result.json` ao fim (campos `status`, `finalText`, `error`, `tokens`, `totalCost`, `finishReason`). O `status` pode ser `completed`, `truncado`, `sem-conclusao`, `sem-texto` ou `error` (Achado D: classificação por `reason` do último `step_finish`; ver «Detecção de truncamento»).
 
@@ -617,10 +617,13 @@ viraria `truncado` — nesse caso, revisar `Get-OpenCodeCompletionVerdict` e est
 **não-determinismo de cauda** (o modelo encerra logo após um tool-call sem o `stop` final). Como some
 na repetição, `Invoke-OpenCode.ps1` aceita `-MaxAttempts <1-3>` (default **1** = comportamento
 histórico, sem re-tentativa): com 2+, re-despacha **apenas** veredito `truncated`/`no-completion`.
-Precedência por tentativa: **(1)** timeout/exit≠0/erro-explícito-de-stream → terminal; **(2)** **429
-na janela da tentativa** (`Get-OpenCodeUsageLimitError`, `$startedAt` por-tentativa) → terminal mesmo
-se `truncated` (não re-queimar cota); **(3)** veredito → retry só `{truncated,no-completion}`. **`empty`
-(stop limpo sem texto) é terminal.** `-TimeoutSec` é **por tentativa** (com `-MaxAttempts 2` o tempo de
+Precedência por tentativa: **(1)** timeout/exit≠0/erro-explícito-de-stream → terminal (lançam antes
+do veredito); **(2)** veredito de conclusão — `ok` retorna, **`empty` (stop limpo sem texto) é
+terminal**, só `{truncated,no-completion}` são re-tentáveis; **(3)** ao **decidir re-tentar** um
+`truncated`/`no-completion`, checa **429 na janela da tentativa** (`Get-OpenCodeUsageLimitError`,
+`$startedAt` reatribuído por iteração) → se houver, **terminal** (não re-tentar, para não re-queimar a
+cota). Sem re-tentativa pendente (`-MaxAttempts 1` — o default — ou última tentativa), o veredito
+reportado é o de conclusão (ex.: `truncado`); a checagem de 429 do passo (3) não se aplica. `-TimeoutSec` é **por tentativa** (com `-MaxAttempts 2` o tempo de
 parede pode dobrar); `-Raw` **não** re-tenta (devolve a 1ª execução); cada re-tentativa emite em stderr
 `OPENCODE_RETRY: attempt=N status=… reason=…`. **Síncrono-only** — o assíncrono (`Start-`/`Watch-OpenCodeJob`)
 sofre a mesma truncagem mas **não** tem retry (follow-up em `999-ideias-pendentes.md`). Guard:
