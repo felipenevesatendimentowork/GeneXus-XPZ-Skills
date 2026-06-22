@@ -2,6 +2,32 @@
 
 Registro de ideias que sairam de `999-ideias-pendentes.md` por terem sido implementadas ou incorporadas ao contrato metodologico vigente.
 
+## Harness `Invoke-LlmDelegatePanelDispatch.ps1` (frente A) — disparo+coleta do painel de revisão por pares
+
+**Importância original:** média-alta (o «harness de disparo do painel» previsto como futuro em `15-revisao-por-pares.md:94`; a orquestração da revisão por pares era ad-hoc).
+**Status:** concluída e pushada em 2026-06-22 (`origin/main` em `2e88905`).
+
+### Origem
+
+Entrada do `999` "Implementar `Invoke-LlmDelegatePanelDispatch.ps1` (frente A)". Design congelado em `Temp/revisao-por-pares/panel-v11/manuscrito.md` (gitignored), convergido por **revisão por pares** (painel inteiro, 3 famílias: anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro+kimi-k2.7-code; 4 aprova / zero gaps sobre a v11, incluindo o dissidente Codex, que achou o gap P1 da circularidade do `$effectiveModel` do opencode na v10 e reaprovou na v11).
+
+### Implementação
+
+- `scripts/Invoke-LlmDelegatePanelDispatch.ps1` — harness **MECÂNICO**: por revisor resolve o modelo efetivo (+ fail-closeds por backend), roda o gate `Resolve-LlmDelegateAuthorization.ps1` sem autorizar, despacha os `allow` aos adapters `Invoke-*.ps1` em paralelo (`ForEach-Object -Parallel -ThrottleLimit 8` + `SemaphoreSlim($OllamaConcurrency)` via `$using:` só para `ollama-cloud/*`; `$collected` capturado antes do `Dispose`), classifica de forma estrutural (texto→`responded`; cota→`unavailable`; timeout→`timeout`; resto→`error`) e emite `panel-summary.json` (1 linha de stdout, `Kind`/`SchemaVersion` PascalCase, UTF-8 sem BOM, texto humano por `[Console]::Error`) + `manifest.json` + ledger por estado. Contenção per-backend recusada em `securityBlockedArgs` (Posição B); opencode só-`public` no v1; `-Cd` precedência+fail-closed (opencode nunca recebe `-Cd`); single-flight diferido; NÃO injeta nativo/piso/closeout/triagem/convergência (do orquestrador).
+- `scripts/Test-InvokeLlmDelegatePanelDispatchSelfTest.ps1` (token `OK: Test-InvokeLlmDelegatePanelDispatchSelfTest.ps1`) — fake-exe por backend via `-BackendExeMap` no adapter REAL + gate dirigido por config/política sintéticas; cobre modelo efetivo + fail-closeds, gate codex com oss, gate que lança, opencode-kb→unavailable, splat+contenção, paralelismo (ocupação ≤OllamaConcurrency, outros livres, bloco que lança não aborta, OllamaConcurrency=0→validação), sem single-flight, classificação mecânica, cota→unavailable, timeout→timeout, ollamaQuotaWarning, despacho real de claude-code/copilot/gemini, `-Cd` e o contrato.
+- Paridade: `09-inventario-e-rastreabilidade-publica.md` (ponteiro + self-test), `xpz-llm-delegate/SKILL.md` (SCRIPTS + seção «Harness de disparo do painel» com o split orquestrador↔harness e as decisões), `15-revisao-por-pares.md` (futuro→implementado), `08-guia-para-agente-gpt.md`, `CHANGELOG.md` (trilíngue), `999` (entrada→ponteiro).
+
+### Decisão final
+
+Decisões fechadas da v11: **I-a** (`ForEach-Object -Parallel`, NÃO `ThreadJob` — ausente na máquina); **II-b** (single-flight diferido); contenção fora da allowlist = **Posição B** (decisão de segurança); opencode **só-`public`** no v1; **NÃO** refatorar os 6 adapters (status tipado é frente própria). A **implementação** também passou por revisão por pares: v1 (4 aprova / 1 revisa por cobertura de self-test) → **v2 endurecida** (family no fail-closed do codex; bloco FOP inteiro em `try/catch` com `[void]` no `Release` — que pegou um **bug real** de int vazando para `$collected`; cobertura de cota/timeout/quota + despacho dos 3 backends restantes) → painel inteiro convergiu em **zero gaps sobre a v2**, dissidente Codex reaprovou; closeout `closeoutReady=true`, `vNextState=resubmitted`; kimi-k2.7-code = `noResponse` (off-task, família coberta por glm+deepseek).
+
+### Rastreabilidade
+
+- Arquivos: `scripts/Invoke-LlmDelegatePanelDispatch.ps1` (novo), `scripts/Test-InvokeLlmDelegatePanelDispatchSelfTest.ps1` (novo), `09`, `15`, `08`, `xpz-llm-delegate/SKILL.md`, `CHANGELOG.md`, `999`.
+- Commit: `2e88905` (pushado no bundle `52db98b..2e88905`, junto da frente `-MessagePath` `4f3ccf1`/`f946ac6`).
+- Revisão por pares (design v6→v11 + implementação v1→v2): livro-razão em `Temp/revisao-por-pares/panel-v11/` e `Temp/revisao-por-pares/impl-A/` (gitignored).
+- Resíduos abertos no `999`: «contrato de saída estruturado dos adapters» (consumidor do single-flight automático) e «agente reviewer sem execução/escrita» (confinamento do opencode).
+
 ## `-MessagePath` estendido aos adapters de delegacao restantes (Codex/ClaudeCode/Gemini/Copilot) + guard de tamanho
 
 **Importancia original:** alta (atrito operacional recorrente: despacho de adapter com prompt grande disparava prompt de autorizacao em toda sessao, atrasando o usuario)
