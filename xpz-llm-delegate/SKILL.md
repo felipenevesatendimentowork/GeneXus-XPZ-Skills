@@ -685,6 +685,24 @@ is redirected`. Pela ferramenta Bash (stdout = pipe) funcionava.
   limite, dispensa `"$(cat ...)"` na linha de comando do chamador (sem substituição de comando = sem
   prompt de autorização desnecessário no harness).
 
+## LIMITE CONHECIDO — COTA/LIMITE DE USO DO PROVIDER (HTTP 429) PARECE TIMEOUT
+
+Quando a conta do provider estoura a cota (ex.: **ollama-cloud weekly usage limit**, HTTP **429**),
+o opencode **retenta em silêncio**: stdout/stderr ficam **vazios** (confirmado até 180s) e o 429 é
+gravado **apenas no log próprio** do opencode (`~/.local/share/opencode/log/<ts>.log`; respeita
+`XDG_DATA_HOME`). Sem tratamento, a chamada só estoura por `-TimeoutSec` e **parece timeout técnico**.
+
+- **`Invoke-OpenCode.ps1` diagnostica isso:** no branch de timeout, `Get-OpenCodeUsageLimitError`
+  (em `OpenCodeStreamSupport.ps1`, dot-source; `-LogDir` para fixture) varre o log da janela do
+  processo por `"statusCode":429` + a mensagem de limite e lança um erro **claro** ("limite de uso
+  do provider (HTTP 429)… aguardar o reset do ciclo"), em vez de "excedeu Xs". Self-test
+  `Test-OpenCodeUsageLimitDetectionSelfTest.ps1` (token `OPENCODE_USAGE_LIMIT_DETECTION_SELFTEST_OK`).
+- **Não adianta redisparar nem aumentar o timeout** — só reseta no ciclo de uso (semanal no
+  ollama-cloud) ou com upgrade/extra usage. Outras famílias (Codex/Claude Code nativo/nvidia) **não**
+  são afetadas pela cota do ollama-cloud.
+- **Follow-up:** estender a detecção aos jobs opencode (`Start-`/`Watch-OpenCodeJob`) e aos demais
+  backends — `999-ideias-pendentes.md`.
+
 ## LIMITE CONHECIDO — CODEX É AGÊNTICO (HERDA O AGENTS.md, PODE EXECUTAR)
 
 O `codex exec` também é **agêntico**: carrega o `AGENTS.md`/config do Codex como instruções e,
