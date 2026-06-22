@@ -44,7 +44,7 @@ O manuscrito é submetido a um **painel de pares**. Cada par:
 
 ## Papéis: montagem e opinião (agente) vs decisão (humano)
 
-- **(a) Montagem do painel** — disparar os revisores diversos (via [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md) + subagentes), cada um com o manuscrito + o prompt mínimo, e **colher os vereditos**. O agente **pode** fazê-lo, como mãos do humano, **sob acionamento humano**. Antes de rotular o resultado como revisão por pares, **valida o piso de diversidade sobre a lista completa** de revisores (ver `## Composição do painel`); subagentes nativos contam como a família do orquestrador.
+- **(a) Montagem do painel** — disparar os revisores diversos (via [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md) + subagentes), cada um com o manuscrito + o prompt mínimo, e **colher os vereditos**. O agente **pode** fazê-lo, como mãos do humano, **sob acionamento humano**. Antes de rotular o resultado como revisão por pares, **valida o piso de diversidade sobre a lista completa** de revisores (ver `## Composição do painel`); subagentes nativos contam como a família do orquestrador. O **despacho+coleta mecânico** dos revisores delegados (gate por revisor, despacho concorrente, ledger, `panel-summary.json`) pode ser feito pelo harness `Invoke-LlmDelegatePanelDispatch.ps1` (ver [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md), `### Harness de disparo do painel`); o harness é **estritamente mecânico** — injeção de nativo, piso, closeout, triagem e convergência seguem com o orquestrador/humano.
 - **(b) Nós de decisão — a OPINIÃO do agente é esperada; a DECISÃO é humana.** Quem **decide** se um gap é real (vs convenção/falso positivo), **declara** a convergência e **autoriza** a execução é o humano. O agente, como orquestrador, **deve dar sua opinião e recomendação** sobre cada ponto — tem o contexto e o humano espera esse insumo **antes** de decidir. O que o agente **não** faz é **decidir e agir sozinho**: auto-triar e já aplicar a correção, declarar convergência por conta própria, ou executar.
 - **(c) Ser um revisor** — rodar a avaliação do manuscrito contra as fontes. Qualquer revisor, humano ou agente.
 
@@ -91,6 +91,6 @@ Distinto do verbatim do pré-push (o `14` usa `execute a rotina pre push, sem pu
 
 ## Futuros
 
-- **Harness de disparo** do painel (script/workflow que recebe o manuscrito e a lista de revisores, dispara cada um, coleta os vereditos no livro-razão) — hoje a orquestração é ad-hoc.
+- **Harness de disparo** do painel — **implementado**: `scripts/Invoke-LlmDelegatePanelDispatch.ps1` (ver [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md), `### Harness de disparo do painel`) recebe o manuscrito + a lista de revisores, dispara cada um (gate por revisor, despacho concorrente) e coleta os vereditos no ledger + `panel-summary.json`. É **estritamente mecânico**; montagem (nativo/piso), closeout, triagem e convergência seguem com o orquestrador/humano. Resíduo: recuperação automática por single-flight depende do contrato de saída tipado dos adapters (frente 999).
 - **Backends one-shot** (`llm`/`mods`) para enviar só o prompt, sem camada agêntica.
 - **Personas de revisão** (lentes distintas por revisor) — em tensão com a independência do prompt mínimo; pesquisa.
