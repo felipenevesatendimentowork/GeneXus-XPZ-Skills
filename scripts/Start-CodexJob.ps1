@@ -23,7 +23,12 @@
         <GUID>.stdin.txt      o prompt enviado via stdin
         <GUID>.result.json    resposta final + status (gravado pelo watcher no fim)
 .PARAMETER Message
-    Prompt a enviar (posicional, obrigatorio).
+    Prompt a enviar (posicional). Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Evita
+    substituicao de comando ("(Get-Content ...)") na linha de comando do chamador. O texto do
+    prompt segue persistido em <GUID>.request.json e <GUID>.stdin.txt como hoje; -MessagePath
+    muda so a origem do texto, nao o transporte.
 .PARAMETER Model
     Modelo do Codex (nu). Opcional; quando omitido, o adapter nao passa -m e deixa o
     default do proprio Codex/config valer.
@@ -45,10 +50,13 @@
     Idade maxima (dias) dos arquivos de job antes da auto-limpeza. Default 3.
 .EXAMPLE
     .\Start-CodexJob.ps1 "tarefa longa" -NoWatcher
+.EXAMPLE
+    .\Start-CodexJob.ps1 -MessagePath .\prompt-grande.txt -NoWatcher
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model,
     [switch] $Oss,
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
@@ -65,6 +73,15 @@ Set-StrictMode -Version Latest
 
 # Funcoes compartilhadas de descoberta do binario do Codex (dot-source)
 . (Join-Path $PSScriptRoot 'CodexCliSupport.ps1')
+
+# Prompt: inline (-Message) ou de arquivo (-MessagePath). Le como UTF-8 ANTES de montar
+# request.json / stdin.txt (que persistem o texto de $Message).
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
+}
 
 # 1) Resolve o binario compativel (fail-closed)
 $exe = Resolve-CodexExe -Override $CodexExe

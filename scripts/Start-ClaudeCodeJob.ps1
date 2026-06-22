@@ -9,10 +9,18 @@
 
     CONFIDENCIALIDADE: passe pelo gate Resolve-LlmDelegateAuthorization.ps1 -Backend
     claude-code antes de enviar payload sensivel.
+.PARAMETER Message
+    Prompt a enviar (posicional). Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Evita
+    substituicao de comando ("(Get-Content ...)") na linha de comando do chamador. O texto do
+    prompt segue persistido em <GUID>.request.json e <GUID>.stdin.txt como hoje; -MessagePath
+    muda so a origem do texto.
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model = 'claude-opus-4-8',
     [ValidateSet('default', 'acceptEdits', 'plan', 'auto', 'dontAsk', 'bypassPermissions')] [string] $PermissionMode = 'plan',
     [string] $Tools = 'Read,Glob,Grep',
@@ -28,6 +36,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'ClaudeCodeCliSupport.ps1')
+
+# Prompt: inline (-Message) ou de arquivo (-MessagePath). Le como UTF-8 ANTES de montar
+# request.json / stdin.txt (que persistem o texto de $Message).
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
+}
 
 if ($PSBoundParameters.ContainsKey('PermissionMode') -and $PermissionMode -eq 'bypassPermissions') {
     throw 'BLOCK: Start-ClaudeCodeJob.ps1 nao permite PermissionMode=bypassPermissions.'

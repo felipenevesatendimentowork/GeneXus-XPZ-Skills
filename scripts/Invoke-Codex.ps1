@@ -18,7 +18,13 @@
     payload sensivel (conteudo de pasta paralela de KB) a um modelo, o chamador deve passar
     pelo gate Resolve-LlmDelegateAuthorization.ps1 (use -Backend codex), conforme a skill.
 .PARAMETER Message
-    Prompt a enviar ao agente (posicional, obrigatorio). Enviado via stdin.
+    Prompt a enviar ao agente (posicional). Enviado via stdin. Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Util para
+    prompts grandes e para evitar substituicao de comando ("(Get-Content ...)") na linha de
+    comando do chamador (sem comando composto = sem prompt de autorizacao desnecessario no
+    harness). O Codex ja entrega o prompt por stdin, entao -MessagePath nao muda o transporte;
+    so muda a origem do texto.
 .PARAMETER Model
     Modelo do Codex (nu). Opcional; quando omitido, o adapter nao passa -m e deixa o
     default do proprio Codex/config valer.
@@ -38,10 +44,13 @@
     .\Invoke-Codex.ps1 "resuma este log"
 .EXAMPLE
     .\Invoke-Codex.ps1 "oi" -Model gpt-5.5 -TimeoutSec 300
+.EXAMPLE
+    .\Invoke-Codex.ps1 -MessagePath .\prompt-grande.txt -Model gpt-5.5
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model,
     [switch] $Oss,
     [ValidateSet('ollama', 'lmstudio')] [string] $LocalProvider,
@@ -59,6 +68,14 @@ try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catc
 
 # Funcoes compartilhadas de descoberta do binario do Codex (dot-source)
 . (Join-Path $PSScriptRoot 'CodexCliSupport.ps1')
+
+# Prompt: inline (-Message) ou de arquivo (-MessagePath). Le como UTF-8 antes de qualquer uso.
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
+}
 
 # 1) Resolve o binario compativel (fail-closed)
 $exe = Resolve-CodexExe -Override $CodexExe

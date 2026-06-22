@@ -10,7 +10,13 @@
     enviar payload sensivel, passe por Resolve-LlmDelegateAuthorization.ps1 -Backend
     gemini.
 .PARAMETER Message
-    Prompt a enviar ao Gemini.
+    Prompt a enviar ao Gemini. Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Evita
+    substituicao de comando ("(Get-Content ...)") na linha de comando do chamador. ATENCAO:
+    este adapter e argument-based (o prompt vai no argv via runner), entao -MessagePath NAO
+    levanta o teto ~32KB do command line do Windows; um guard fail-closed (~30000 chars) recusa
+    prompts grandes. So os adapters stdin-based (Codex/Claude Code/opencode) sao imunes ao teto.
 .PARAMETER Model
     Modelo aceito pelo Gemini CLI. Default: gemini-3-flash-preview.
 .PARAMETER ApprovalMode
@@ -22,9 +28,10 @@
 .PARAMETER TimeoutSec
     Tempo maximo de espera.
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model = 'gemini-3-flash-preview',
     [ValidateSet('default', 'auto_edit', 'yolo', 'plan')] [string] $ApprovalMode = 'plan',
     [string] $Cd,
@@ -41,6 +48,23 @@ try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catc
 
 if ($ApprovalMode -ne 'plan') {
     throw 'BLOCK: Invoke-Gemini.ps1 permite somente ApprovalMode=plan na delegacao XPZ.'
+}
+
+# Prompt: inline (-Message) ou de arquivo (-MessagePath, UTF-8). Le ANTES do guard de tamanho.
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
+}
+
+# Guard de tamanho fail-closed (cobre -Message E -MessagePath). Este adapter e argument-based:
+# o prompt vai no argv do runner, entao acima da margem o command line do Windows estoura. O
+# limite e HEURISTICO em chars (UTF-16 code units), nao em bytes: margem conservadora sob o teto
+# ~32767 do command line, reservando espaco para as demais flags. -MessagePath NAO levanta o teto.
+$MaxArgvPromptChars = 30000
+if ($Message.Length -gt $MaxArgvPromptChars) {
+    throw "BLOCK: prompt com $($Message.Length) caracteres excede a margem de $MaxArgvPromptChars para o adapter argument-based Gemini (o prompt vai no argv; teto ~32767 do command line do Windows). Use prompt menor ou um backend stdin-based (Codex/Claude Code/opencode). Migracao do Gemini a stdin: follow-up em 999-ideias-pendentes.md."
 }
 
 $exe = Resolve-GeminiExe -Override $GeminiExe

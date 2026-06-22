@@ -12,7 +12,12 @@
     enviar payload sensivel, passe por Resolve-LlmDelegateAuthorization.ps1 -Backend
     claude-code.
 .PARAMETER Message
-    Prompt a enviar ao Claude Code. Enviado por stdin.
+    Prompt a enviar ao Claude Code. Enviado por stdin. Exclusivo com -MessagePath.
+.PARAMETER MessagePath
+    Caminho de um arquivo de onde ler o prompt (UTF-8). Exclusivo com -Message. Evita
+    substituicao de comando ("(Get-Content ...)") na linha de comando do chamador (sem comando
+    composto = sem prompt de autorizacao desnecessario no harness). O prompt ja vai por stdin;
+    -MessagePath muda so a origem do texto.
 .PARAMETER Model
     Modelo aceito pelo Claude Code. Default: claude-opus-4-8.
 .PARAMETER PermissionMode
@@ -28,9 +33,10 @@
 .PARAMETER TimeoutSec
     Tempo maximo de espera. Modelos externos podem ser lentos.
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Inline')]
 param(
-    [Parameter(Mandatory, Position = 0)] [string] $Message,
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Inline')] [string] $Message,
+    [Parameter(Mandatory, ParameterSetName = 'FromFile')] [string] $MessagePath,
     [string] $Model = 'claude-opus-4-8',
     [ValidateSet('default', 'acceptEdits', 'plan', 'auto', 'dontAsk', 'bypassPermissions')] [string] $PermissionMode = 'plan',
     [string] $Tools = 'Read,Glob,Grep',
@@ -46,6 +52,14 @@ $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
 
 . (Join-Path $PSScriptRoot 'ClaudeCodeCliSupport.ps1')
+
+# Prompt: inline (-Message) ou de arquivo (-MessagePath). Le como UTF-8 antes de qualquer uso.
+if ($PSCmdlet.ParameterSetName -eq 'FromFile') {
+    if (-not (Test-Path -LiteralPath $MessagePath -PathType Leaf)) {
+        throw "BLOCK: -MessagePath nao encontrado: $MessagePath"
+    }
+    $Message = Get-Content -LiteralPath $MessagePath -Raw -Encoding utf8
+}
 
 if ($PSBoundParameters.ContainsKey('PermissionMode') -and $PermissionMode -eq 'bypassPermissions') {
     throw 'BLOCK: Invoke-ClaudeCode.ps1 nao permite PermissionMode=bypassPermissions.'

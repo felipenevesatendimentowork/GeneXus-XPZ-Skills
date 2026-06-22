@@ -2,6 +2,26 @@
 
 Registro de ideias que sairam de `999-ideias-pendentes.md` por terem sido implementadas ou incorporadas ao contrato metodologico vigente.
 
+## `-MessagePath` estendido aos adapters de delegacao restantes (Codex/ClaudeCode/Gemini/Copilot) + guard de tamanho
+
+**Importancia original:** alta (atrito operacional recorrente: despacho de adapter com prompt grande disparava prompt de autorizacao em toda sessao, atrasando o usuario)
+**Status:** concluida em 2026-06-22 (eixo `-MessagePath` + guard de tamanho). Residuos seguem no `999`.
+
+### Origem
+
+Duas entradas do `999`: "URGENTE — Reduzir as variacoes de chamada dos adapters de delegacao" (direcao (a)) e "Migrar Invoke-Gemini/Invoke-Copilot para stdin e/ou guard de tamanho" (direcao (b) guard). Problema-raiz sofrido por meses: a allowlist do harness casa comandos **atomicos**; despachar um adapter com prompt grande exigia `-Message (Get-Content -Raw '<arq>')` inline -> comando composto -> prompt de autorizacao toda vez. O `Invoke-OpenCode.ps1`/`Start-OpenCodeJob.ps1` ja tinham `-MessagePath` (referencia pronta).
+
+### Implementacao
+
+- **`-MessagePath` (ParameterSet `Inline`/`FromFile` exclusivo, `Get-Content -LiteralPath -Raw -Encoding utf8` + guarda `Test-Path -LiteralPath -PathType Leaf`, espelhando `Invoke-OpenCode.ps1:61-89`)** em: `Invoke-Codex.ps1`, `Start-CodexJob.ps1`, `Invoke-ClaudeCode.ps1`, `Start-ClaudeCodeJob.ps1` (stdin-based) e `Invoke-Gemini.ps1`, `Invoke-Copilot.ps1` (argument-based). Nos `Start-*Job`, `$Message` e populado **antes** de montar `request.json`/`stdin.txt`. Aditivo, default inalterado.
+- **Guard de tamanho fail-closed** nos argument-based (`$MaxArgvPromptChars = 30000`, heuristico em chars/UTF-16 code units, margem sob ~32767, cobre `-Message` e `-MessagePath`): o prompt segue no argv via runner, entao `-MessagePath` **nao** levanta o teto ~32KB; o guard recusa prompts grandes com `BLOCK` antes do `Argument list too long`.
+- **Self-test** `Test-LlmDelegateStdinHandlingSelfTest.ps1` estendido (nao recriado — ja provava `-MessagePath` no opencode, caso C): guard estatico por tokens independentes nos 6 adapters + asercao do guard de tamanho; prova comportamental dedicada de `-MessagePath` no `Invoke-Codex` (fake-exe via `-CodexExe` escrevendo texto bruto no `-o output-last-message`, cadeia `-MessagePath -> $Message -> stdin -> -o -> return`).
+- **Paridade:** `09-inventario-e-rastreabilidade-publica.md` (6 ponteiros + entrada do self-test), `xpz-llm-delegate/SKILL.md` (assinaturas SCRIPTS + secoes anti-hang stdin e limite 32KB), `CHANGELOG.md` (entrada trilingue), `999` (entradas encolhidas aos residuos).
+
+### Decisao final
+
+Escopo expandido para incluir os adapters Claude Code (achado de Codex/glm na revisao): a fricca de chamador e identica a do Codex. Convergido por **revisao por pares** (4 rodadas v1->v4, 5 revisores / 3 familias: anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro/glm-5.2/kimi-k2.7-code; v4 aprovada 5/5; redesenho do teste comportamental do Codex e guard de tamanho = achados do glm). **Residuos abertos no `999`:** (b) documentar UMA forma canonica de invocacao + enxugar allowlist (repo-level, todos os agentes); e a migracao **stdin real** de Gemini/Copilot (bloqueada por falta de assinatura para validar).
+
 ## `.ContainsKey` sobre `OrderedDictionary` quebrava o pos-processamento do BuildAll/SpecifyGenerate sob StrictMode
 
 **Importancia original:** alta (nao corrompia o build, mas mascarava um resultado limpo como falha e empobrecia o diagnostico)

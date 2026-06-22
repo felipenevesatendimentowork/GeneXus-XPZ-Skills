@@ -298,8 +298,8 @@ No backend opencode, `-Model` deve usar o identificador aceito pelo CLI no forma
 `deepseek-v4-pro` não identifica o provider e tende a falhar antes da chamada.
 
 Backend codex (`codex exec`, default da própria ferramenta/config quando `-Model` é omitido, sandbox `read-only` fixo):
-- `Invoke-Codex.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; resposta final pelo `output-last-message`.
-- `Start-CodexJob.ps1 <prompt> [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result, watcher}`; abre janela de acompanhamento por padrão.
+- `Invoke-Codex.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <m>] [-Oss] [-LocalProvider <ollama|lmstudio>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; resposta final pelo `output-last-message`. `-MessagePath` lê o prompt de arquivo (exclusivo com `-Message`; dispensa `(Get-Content)` inline no chamador); stdin-based, então **não** está sujeito ao teto ~32KB.
+- `Start-CodexJob.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <m>] [-Oss] [-LocalProvider <p>] [-Profile <id>] [-Cd <dir>] [-CodexExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, lastmsg, result, watcher}`; abre janela de acompanhamento por padrão. `-MessagePath` exclusivo com `-Message` (o texto do prompt segue persistido em `request.json`/`stdin.txt`).
 - `Watch-CodexJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental do stream `--json`; grava `<GUID>.result.json` ao fim (`status`, `finalText`, `error`, `inputTokens`, `outputTokens`).
 - `CodexCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `codex.exe` compatível (app desktop sob `%LOCALAPPDATA%\OpenAI\Codex\bin`, maior versão; ignora o shim npm do PATH, rejeitado para GPT-5.5).
 
@@ -309,17 +309,17 @@ Se `-Model` for omitido, o adapter não força modelo e deixa o default da ferra
 modelo fixado pelo adapter.
 
 Backend Claude Code (`claude -p`, Opus 4.8 por padrão, externo Anthropic):
-- `Invoke-ClaudeCode.ps1 <prompt> [-Model <m>] [-PermissionMode <mode>] [-Tools <list>] [-MaxTurns <n>] [-Cd <dir>] [-ClaudeExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin; por padrão usa consulta curta restrita (`PermissionMode=plan`, `Tools=Read,Glob,Grep`, sem persistência de sessão). `-MaxTurns` é aplicado somente quando a versão local do Claude Code expõe `--max-turns`.
-- `Start-ClaudeCodeJob.ps1 <prompt> [-Model <m>] [-PermissionMode <mode>] [-Tools <list>] [-MaxTurns <n>] [-Cd <dir>] [-ClaudeExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. `-MaxTurns` é aplicado somente quando a CLI suportar a flag.
+- `Invoke-ClaudeCode.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <m>] [-PermissionMode <mode>] [-Tools <list>] [-MaxTurns <n>] [-Cd <dir>] [-ClaudeExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Prompt via stdin (`-MessagePath` lê de arquivo, exclusivo com `-Message`; stdin-based, sem o teto ~32KB); por padrão usa consulta curta restrita (`PermissionMode=plan`, `Tools=Read,Glob,Grep`, sem persistência de sessão). `-MaxTurns` é aplicado somente quando a versão local do Claude Code expõe `--max-turns`.
+- `Start-ClaudeCodeJob.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <m>] [-PermissionMode <mode>] [-Tools <list>] [-MaxTurns <n>] [-Cd <dir>] [-ClaudeExe <path>] [-NoWatcher] [-TempDir <path>] [-KeepDays <n>]` — assíncrono; retorna `{jobId, pid, stream, result, watcher}`; abre janela de acompanhamento por padrão. `-MessagePath` exclusivo com `-Message` (o texto do prompt segue persistido em `request.json`/`stdin.txt`). `-MaxTurns` é aplicado somente quando a CLI suportar a flag.
 - `Watch-ClaudeCodeJob.ps1 -JobId <guid> -ProcessId <pid> [-TempDir <path>] [-IntervalSeconds <1-30>] [-SilenceThresholdSeconds <30-3600>]` — monitor incremental do stream `--output-format stream-json`; grava `<GUID>.result.json` ao fim (`status`, `finalText`, `error`).
 - `ClaudeCodeCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `claude.exe`, validação de versão/flags mínimas e extração de erros.
 
 Backend GitHub Copilot CLI (`copilot -p`, externo GitHub Copilot):
-- `Invoke-Copilot.ps1 <prompt> [-Model <m>] [-Cd <dir>] [-CopilotExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--no-custom-instructions`, `--disable-builtin-mcps`, `--available-tools=` e JSONL para consulta curta sem ferramentas disponíveis; `--allow-all-tools` permanece porque o CLI exige aprovação automática em modo não interativo.
+- `Invoke-Copilot.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <m>] [-Cd <dir>] [-CopilotExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--no-custom-instructions`, `--disable-builtin-mcps`, `--available-tools=` e JSONL para consulta curta sem ferramentas disponíveis; `--allow-all-tools` permanece porque o CLI exige aprovação automática em modo não interativo. `-MessagePath` lê o prompt de arquivo (exclusivo com `-Message`; elimina o `(Get-Content)` inline), mas é **argument-based** — o prompt segue no argv, então **não** levanta o teto ~32KB; um guard fail-closed (`$MaxArgvPromptChars = 30000`, heurístico em chars) recusa prompts grandes com `BLOCK`.
 - `CopilotCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `copilot`, validação de versão/flags mínimas e extração de resposta do JSONL.
 
 Backend Gemini CLI (`gemini -p`, externo Google):
-- `Invoke-Gemini.ps1 <prompt> [-Model <m>] [-ApprovalMode plan] [-Cd <dir>] [-GeminiExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--approval-mode plan` e `--output-format json`; o adapter bloqueia modos diferentes de `plan`.
+- `Invoke-Gemini.ps1 [-Message <prompt> | -MessagePath <arquivo>] [-Model <m>] [-ApprovalMode plan] [-Cd <dir>] [-GeminiExe <path>] [-TimeoutSec <s>]` — síncrono (prompt → texto). Usa `--approval-mode plan` e `--output-format json`; o adapter bloqueia modos diferentes de `plan`. `-MessagePath` lê o prompt de arquivo (exclusivo com `-Message`; elimina o `(Get-Content)` inline), mas é **argument-based** — o prompt segue no argv, então **não** levanta o teto ~32KB; um guard fail-closed (`$MaxArgvPromptChars = 30000`, heurístico em chars) recusa prompts grandes com `BLOCK`.
 - `GeminiCliSupport.ps1` (dot-source) — descoberta **fail-closed** do `gemini`, validação de versão/flags mínimas e extração de erros.
 
 Latência por provedor: modelos externos OAuth (`openai/*`, Codex externo; `anthropic/*`,
@@ -655,7 +655,8 @@ pendurava por minutos. Todos os adapters dão **EOF** ao CLI, por um de dois reg
 - **stdin-based** (`Invoke-OpenCode`/`Start-OpenCodeJob`, `Invoke-Codex`/`Start-CodexJob`,
   `Invoke-ClaudeCode`/`Start-ClaudeCodeJob`): entregam o prompt **por stdin** via
   `Start-Process -RedirectStandardInput <arquivo>`; o **fim do arquivo dá o EOF**. O prompt fica
-  **fora do argv** (ver a seção do limite ~32KB). O opencode lê o prompt do stdin quando o
+  **fora do argv** (ver a seção do limite ~32KB) e vem de `-Message` (inline) ou `-MessagePath`
+  (arquivo, exclusivos) — `-MessagePath` muda só a **origem** do texto, não o transporte por stdin. O opencode lê o prompt do stdin quando o
   argumento posicional de `run` é **omitido** (verificado no opencode em uso nesta máquina, 2026-06).
 - **argument-based** (`Invoke-Gemini`, `Invoke-Copilot`): passam o prompt como **argumento** e
   **fecham o stdin** no runner com `$null | & ([string]$req.exe) @args` (`$null` = EOF puro, sem
@@ -697,12 +698,18 @@ is redirected`. Pela ferramenta Bash (stdout = pipe) funcionava.
 
 **Limite de ~32KB de linha de comando do Windows** (reproduzível): passar o prompt como
 **argumento** estoura `Argument list too long` acima de ~32767 caracteres.
-- **argument-based** (`Invoke-Gemini`, `Invoke-Copilot`): prompt grande inline é frágil — manter
-  enxuto. (Follow-up: migrar a stdin / guard de tamanho — `999-ideias-pendentes.md`.)
-- **stdin-based** (opencode, Codex, ClaudeCode): o prompt vai por **stdin/arquivo**, não pelo argv —
-  sem o limite. Para o opencode, use `-MessagePath <arquivo>` (ou `-Message`): além de evitar o
-  limite, dispensa `"$(cat ...)"` na linha de comando do chamador (sem substituição de comando = sem
-  prompt de autorização desnecessário no harness).
+- **argument-based** (`Invoke-Gemini`, `Invoke-Copilot`): o prompt vai no **argv** via runner → o
+  teto ~32KB **persiste**. Os dois ganharam `-MessagePath` (lê o prompt de arquivo e elimina o
+  `(Get-Content)`/`"$(cat ...)"` inline do chamador), mas ele **não** levanta o teto; um **guard de
+  tamanho fail-closed** (`$MaxArgvPromptChars = 30000`, **heurístico em chars** — UTF-16 code units,
+  margem deliberada conservadora sob o teto físico ~32767 do command line, não um limite em bytes)
+  recusa prompts grandes com `BLOCK` claro antes do estouro de `Argument list too long`. A migração
+  real para **stdin** segue como follow-up (bloqueada por falta de assinatura para validar
+  empiricamente) — `999-ideias-pendentes.md`.
+- **stdin-based** (opencode, Codex, ClaudeCode — síncronos e jobs): o prompt vai por **stdin/arquivo**,
+  não pelo argv — sem o limite. Use `-MessagePath <arquivo>` (ou `-Message`): além de evitar o limite,
+  dispensa `"$(cat ...)"`/`(Get-Content)` na linha de comando do chamador (sem substituição de comando
+  = sem prompt de autorização desnecessário no harness).
 
 ## LIMITE CONHECIDO — COTA/LIMITE DE USO DO PROVIDER (HTTP 429) PARECE TIMEOUT
 

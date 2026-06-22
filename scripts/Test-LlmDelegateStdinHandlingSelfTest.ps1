@@ -164,6 +164,88 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0fake-reader.ps1"
     Assert-True ($seen -ge 32768) `
         "O prompt > 32KB deveria chegar inteiro pelo stdin; o fake-exe leu $seen chars (esperado >= 32768) — sinal de que o prompt nao passou por stdin."
 
+    # --- (D) Guard estatico de -MessagePath nos 6 adapters (Frente 1) -------
+    # Por TOKENS independentes (nao substring fixa, pois a ordem -Raw/-Encoding pode variar):
+    # parametro -MessagePath em set 'FromFile', leitura Get-Content -LiteralPath $MessagePath
+    # -Raw -Encoding utf8, e guarda Test-Path -LiteralPath $MessagePath -PathType Leaf. Espelha
+    # Invoke-OpenCode.ps1:61-89. NAO ha prova comportamental de >32KB aqui para os 4 stdin-based
+    # (o caso C ja prova o principio para o opencode) nem para os 2 argument-based (seria enganoso:
+    # Gemini/Copilot seguem no argv). So Invoke-Codex tem prova comportamental dedicada (secao E).
+    $messagePathAdapters = @(
+        'Invoke-Codex.ps1'
+        'Start-CodexJob.ps1'
+        'Invoke-ClaudeCode.ps1'
+        'Start-ClaudeCodeJob.ps1'
+        'Invoke-Gemini.ps1'
+        'Invoke-Copilot.ps1'
+    )
+    foreach ($name in $messagePathAdapters) {
+        $mpPath = Join-Path $scriptsDir $name
+        Assert-True (Test-Path -LiteralPath $mpPath -PathType Leaf) "Adapter ausente: $name"
+        $mpText = [System.IO.File]::ReadAllText($mpPath)
+        $mpLines = @($mpText -split "`r?`n")
+
+        Assert-True ($mpText -match "ParameterSetName\s*=\s*'FromFile'") `
+            "Adapter '$name' deveria declarar -MessagePath em ParameterSet 'FromFile'."
+        Assert-True ($mpText -match '\[string\]\s*\$MessagePath') `
+            "Adapter '$name' deveria declarar o parametro [string] `$MessagePath."
+
+        $mpReadLine = @($mpLines | Where-Object { $_ -match 'Get-Content' -and $_ -match '\$MessagePath' }) | Select-Object -First 1
+        Assert-True ($mpReadLine -and $mpReadLine -match '-LiteralPath' -and $mpReadLine -match '-Raw' -and $mpReadLine -match '-Encoding\s+utf8') `
+            "Adapter '$name' deveria ler -MessagePath com 'Get-Content -LiteralPath `$MessagePath -Raw -Encoding utf8' (tokens em qualquer ordem)."
+
+        $mpGuardLine = @($mpLines | Where-Object { $_ -match 'Test-Path' -and $_ -match '\$MessagePath' }) | Select-Object -First 1
+        Assert-True ($mpGuardLine -and $mpGuardLine -match '-LiteralPath' -and $mpGuardLine -match '-PathType\s+Leaf') `
+            "Adapter '$name' deveria guardar -MessagePath com 'Test-Path -LiteralPath `$MessagePath -PathType Leaf'."
+    }
+
+    # Adapters argument-based (Gemini/Copilot): guard de tamanho fail-closed (prompt vai no argv).
+    foreach ($name in @('Invoke-Gemini.ps1', 'Invoke-Copilot.ps1')) {
+        $agText = [System.IO.File]::ReadAllText((Join-Path $scriptsDir $name))
+        Assert-True ($agText -match '\$MaxArgvPromptChars\s*=\s*30000') `
+            "Adapter argument-based '$name' deveria definir o guard de tamanho `$MaxArgvPromptChars = 30000."
+        Assert-True ($agText -match '\$Message\.Length\s*-gt\s*\$MaxArgvPromptChars') `
+            "Adapter argument-based '$name' deveria comparar `$Message.Length com `$MaxArgvPromptChars (cobre -Message e -MessagePath)."
+        Assert-True ($agText -match 'excede a margem de \$MaxArgvPromptChars') `
+            "Adapter argument-based '$name' deveria lancar BLOCK fail-closed citando a margem acima do limite."
+    }
+
+    # --- (E) Prova comportamental: Invoke-Codex -MessagePath -> $Message -> stdin -> -o -> return ---
+    # Objetivo (distinto do caso C, que prova >32KB no opencode): provar a CADEIA do -MessagePath no
+    # Codex. NAO e teste de 32KB (Codex e stdin-based, ja imune). O fake-exe varre $args por '-o',
+    # le o stdin (o que o adapter entregou de $Message), e escreve CODEXFAKE=<len-do-stdin> como
+    # TEXTO BRUTO no arquivo do -o (o adapter devolve o conteudo literal do output-last-message, sem
+    # parsing JSON — ao contrario do fake do opencode). Forma .cmd+.ps1 porque Start-Process -FilePath
+    # nao invoca .ps1 direto; o .cmd repassa %* para o leitor pwsh ver o '-o'.
+    $fakeCodexReader = Join-Path $tempRoot 'fake-codex-reader.ps1'
+    @'
+$o = $null
+for ($i = 0; $i -lt $args.Count; $i++) { if ($args[$i] -eq '-o') { $o = $args[$i + 1]; break } }
+$s = [Console]::In.ReadToEnd()
+if ($o) { Set-Content -LiteralPath $o -Value ('CODEXFAKE=' + $s.Length) -Encoding utf8 -NoNewline }
+exit 0
+'@ | Set-Content -LiteralPath $fakeCodexReader -Encoding utf8
+
+    $fakeCodexCmd = Join-Path $tempRoot 'fake-codex.cmd'
+    @'
+@echo off
+pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0fake-codex-reader.ps1" %*
+'@ | Set-Content -LiteralPath $fakeCodexCmd -Encoding ascii
+
+    $codexPromptText = 'Prompt de teste -MessagePath para o Codex, com acentuacao pt-BR: cao, revisao, deducao.'
+    $codexFile = Join-Path $tempRoot 'codex-mp-prompt.txt'
+    Set-Content -LiteralPath $codexFile -Value $codexPromptText -Encoding utf8 -NoNewline
+    $codexExpectedLen = $codexPromptText.Length
+
+    $invokeCodex = Join-Path $scriptsDir 'Invoke-Codex.ps1'
+    $codexAnswer = [string](& $invokeCodex -CodexExe $fakeCodexCmd -MessagePath $codexFile -TimeoutSec 60)
+
+    Assert-True ($codexAnswer -match 'CODEXFAKE=(\d+)') `
+        "Invoke-Codex -MessagePath deveria devolver o conteudo literal do output-last-message do fake (CODEXFAKE=<n>); devolveu: '$codexAnswer'."
+    $codexSeen = [int]$Matches[1]
+    Assert-True ($codexSeen -eq $codexExpectedLen) `
+        "O -MessagePath deveria chegar ao `$Message e por stdin ao Codex: esperado $codexExpectedLen chars, o fake leu $codexSeen do stdin."
+
     Write-Output 'OK: Test-LlmDelegateStdinHandlingSelfTest.ps1'
 }
 finally {
