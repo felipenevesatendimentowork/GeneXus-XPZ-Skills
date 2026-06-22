@@ -611,6 +611,22 @@ versão futura do opencode **renomear** `stop` (ex.: `done`/`finished`), toda ch
 viraria `truncado` — nesse caso, revisar `Get-OpenCodeCompletionVerdict` e este registro. Use
 `-Raw` (síncrono) ou o campo `finishReason` do `result.json` (assíncrono) para diagnóstico.
 
+**Retry-once opt-in (`-MaxAttempts`, síncrono).** A truncagem por `tool-calls` observada em vozes
+"coder" do ollama-cloud (`kimi-k2.7-code`, `minimax-m3`) é **intermitente e rara** — não é cota, não
+é timeout, não é orçamento de passos, não é propriedade fixa do modelo; a hipótese sobrevivente é
+**não-determinismo de cauda** (o modelo encerra logo após um tool-call sem o `stop` final). Como some
+na repetição, `Invoke-OpenCode.ps1` aceita `-MaxAttempts <1-3>` (default **1** = comportamento
+histórico, sem re-tentativa): com 2+, re-despacha **apenas** veredito `truncated`/`no-completion`.
+Precedência por tentativa: **(1)** timeout/exit≠0/erro-explícito-de-stream → terminal; **(2)** **429
+na janela da tentativa** (`Get-OpenCodeUsageLimitError`, `$startedAt` por-tentativa) → terminal mesmo
+se `truncated` (não re-queimar cota); **(3)** veredito → retry só `{truncated,no-completion}`. **`empty`
+(stop limpo sem texto) é terminal.** `-TimeoutSec` é **por tentativa** (com `-MaxAttempts 2` o tempo de
+parede pode dobrar); `-Raw` **não** re-tenta (devolve a 1ª execução); cada re-tentativa emite em stderr
+`OPENCODE_RETRY: attempt=N status=… reason=…`. **Síncrono-only** — o assíncrono (`Start-`/`Watch-OpenCodeJob`)
+sofre a mesma truncagem mas **não** tem retry (follow-up em `999-ideias-pendentes.md`). Guard:
+`scripts/Test-OpenCodeRetrySelfTest.ps1` (token `OK: Test-OpenCodeRetrySelfTest.ps1`; fake-exe com
+contador em arquivo + seam `XDG_DATA_HOME` para o caso 429).
+
 **Cobertura por adapter (varredura confirmatória, escopo declarado).** A detecção por `reason`
 acima é **opencode-only** — é fenômeno do **streaming agêntico** do opencode. Os demais adapters
 **não** têm sinal de finish-reason equivalente. Uma **varredura confirmatória** (inspeção
@@ -702,6 +718,31 @@ gravado **apenas no log próprio** do opencode (`~/.local/share/opencode/log/<ts
   são afetadas pela cota do ollama-cloud.
 - **Follow-up:** estender a detecção aos jobs opencode (`Start-`/`Watch-OpenCodeJob`) e aos demais
   backends — `999-ideias-pendentes.md`.
+
+## LIMITE CONHECIDO — OPENCODE: AGENTE DEFAULT AUTO-APROVA FERRAMENTAS LOCAIS EM HEADLESS
+
+Observação **empírica** (opencode 2026-06; não-contratual): em `opencode run` headless (sem TTY), as
+permissões de ferramenta do agente default `build` — **e do `--agent plan`** — são **auto-aprovadas**:
+o modelo executou `bash` (e a rotina pré-push real) **sem gate interativo**. Consequência: ao despachar
+para um modelo **externo** via `Invoke-OpenCode.ps1` com o agente default, o painel concede a esse modelo
+**execução de comandos arbitrários na máquina** durante a tarefa.
+
+- **Dois eixos de risco:** (i) **execução arbitrária local** — vale para **qualquer** modelo (inclusive
+  local), porque o opencode auto-aprova as tools em headless; (ii) **exfiltração** — agravante específico
+  do modelo **externo**.
+- **O gate de confidencialidade não cobre este eixo.** `Resolve-LlmDelegateAuthorization.ps1` governa
+  **se o dado sai** (destino/sensibilidade), **não** a capacidade do modelo de executar/ler localmente —
+  eixos distintos. **Caso central deste repositório:** payload `public` cai em **`allow` automático**
+  (validação de plano/design na raiz das skills é o caso nobre da diversidade externa), então o risco de
+  execução local **não passa por nó humano**. Vale também para `ask` **autorizado** (consentir o envio
+  também concede execução).
+- **Mecanismo de contenção é DIFERENTE** do Codex/Claude/Gemini (que usam `--approval-mode plan`/
+  `PermissionMode=plan`): no opencode a contenção é por **config `permission` em arquivo de agente custom**
+  (`permission: bash: deny`/`edit: deny`). **`-Agent <nome>` por si só não mitiga** — só mitiga se o agente
+  custom negar as ferramentas. **Limite residual:** mesmo negando `bash`/`edit`, a tool `read` (default) lê
+  **qualquer arquivo** (config com baseURL/chaves, `.env`) — eixo de **leitura** ainda aberto (e o adapter
+  opencode **não** tem `-Cd` para conter o cwd). Ver `999-ideias-pendentes.md` (frente "agente reviewer
+  sem execução/escrita").
 
 ## LIMITE CONHECIDO — CODEX É AGÊNTICO (HERDA O AGENTS.md, PODE EXECUTAR)
 

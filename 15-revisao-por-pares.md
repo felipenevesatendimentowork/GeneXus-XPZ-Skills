@@ -68,7 +68,7 @@ Subagente nativo **pode e deve** ser usado quando a ferramenta atual o oferece; 
 
 ## Confidencialidade
 
-Antes de enviar, o **autor classifica o manuscrito** como `public` (texto do repositório de skills, molde sanitizado, diff público) ou `kb-sensitive` (conteúdo de pasta paralela de KB real). Para **cada** revisor, roda `Resolve-LlmDelegateAuthorization.ps1` (ver [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md)) — conteúdo sensível só vai a modelo externo com autorização; o gate reavalia destino e sensibilidade deterministicamente e **não** depende de inventário de capacidade. Revisores agênticos rodam com `-Cd` no **menor diretório** necessário. Validação de plano/design **na raiz de desenvolvimento das skills** é tipicamente `public` — é o caso nobre da diversidade de modelo.
+Antes de enviar, o **autor classifica o manuscrito** como `public` (texto do repositório de skills, molde sanitizado, diff público) ou `kb-sensitive` (conteúdo de pasta paralela de KB real). Para **cada** revisor, roda `Resolve-LlmDelegateAuthorization.ps1` (ver [`xpz-llm-delegate`](xpz-llm-delegate/SKILL.md)) — conteúdo sensível só vai a modelo externo com autorização; o gate reavalia destino e sensibilidade deterministicamente e **não** depende de inventário de capacidade. Revisores agênticos rodam com `-Cd` no **menor diretório** necessário **quando o adapter suportar `-Cd`** (Codex/Claude Code/Copilot/Gemini têm; o adapter **opencode não tem** — para o opencode a contenção é por agente custom, ver `xpz-llm-delegate/SKILL.md`). Validação de plano/design **na raiz de desenvolvimento das skills** é tipicamente `public` — é o caso nobre da diversidade de modelo.
 
 ## Recibo e livro-razão
 

@@ -40,7 +40,15 @@
 .PARAMETER AllText
     Devolve toda a narracao (preambulos de passo + resposta final) concatenada, em vez de só a resposta final.
 .PARAMETER TimeoutSec
-    Tempo máximo de espera pela resposta (default 180s).
+    Tempo máximo de espera pela resposta (default 180s). É POR TENTATIVA: com -MaxAttempts > 1,
+    o tempo de parede total pode ser múltiplo deste valor.
+.PARAMETER MaxAttempts
+    Número máximo de tentativas (1-3, default 1 = comportamento histórico, sem re-tentativa).
+    Com 2+, re-despacha UMA vez por tentativa adicional APENAS quando o veredito de conclusão for
+    'truncated' ou 'no-completion' (truncagem intermitente de cauda do opencode). NUNCA re-tenta
+    timeout, exit code != 0, erro explícito de stream, 429 detectado na janela da tentativa, nem
+    'empty' (conclusão limpa sem texto). Não tem efeito com -Raw (que devolve a 1ª execução).
+    Cada re-tentativa emite, em stderr, uma linha 'OPENCODE_RETRY: attempt=N status=... reason=...'.
 .EXAMPLE
     .\Invoke-OpenCode.ps1 "oi"
 .EXAMPLE
@@ -59,7 +67,8 @@ param(
     [string] $OpenCodeExe,
     [switch] $Raw,
     [switch] $AllText,
-    [int]    $TimeoutSec = 180
+    [int]    $TimeoutSec = 180,
+    [ValidateRange(1, 3)] [int] $MaxAttempts = 1
 )
 
 Set-StrictMode -Version Latest
@@ -102,49 +111,90 @@ if (-not [string]::IsNullOrWhiteSpace($Agent)) { $ocArgs += @('--agent', $Agent)
 
 $in  = (New-TemporaryFile).FullName
 Set-Content -LiteralPath $in -Value $Message -Encoding utf8 -NoNewline
-$out = (New-TemporaryFile).FullName
-$err = (New-TemporaryFile).FullName
+$out = $null
+$err = $null
+$attempt = 0
 
+# Retry-once (opt-in por -MaxAttempts; default 1 = comportamento historico, sem re-tentativa).
+# Re-tentar SO um veredito de conclusao truncada/sem-conclusao (nao-determinismo de cauda do
+# opencode); NUNCA timeout, exit!=0, erro explicito de stream, 429 mascarado ou 'empty' (conclusao
+# limpa). A decisao de re-tentar le $verdict.status DIRETAMENTE (nao captura o throw), entao os
+# terminais lancados antes do veredito escapam do laco. Precedencia por tentativa:
+#   (1) timeout / exit!=0 / erro explicito de stream  -> terminal (sai do laco)
+#   (2) 429 na janela da tentativa                     -> terminal (mesmo se status=truncated)
+#   (3) veredito de conclusao                          -> retry SO {truncated, no-completion}
+# -TimeoutSec e POR TENTATIVA (com -MaxAttempts 2 o tempo de parede pode dobrar).
 try {
-    $startedAt = Get-Date
-    $p = Start-Process -FilePath $exe -ArgumentList $ocArgs -NoNewWindow -PassThru `
-        -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err
-    if (-not $p.WaitForExit($TimeoutSec * 1000)) {
-        try { $p.Kill($true) } catch { }
-        $usageLimit = Get-OpenCodeUsageLimitError -SinceTime $startedAt
-        if ($usageLimit) {
-            throw "BLOCK: opencode atingiu o limite de uso do provider (HTTP 429) e ficou retentando em silencio ate ${TimeoutSec}s: $usageLimit. NAO e timeout tecnico nem indisponibilidade do provider; aguardar o reset do ciclo de uso (ex.: ollama-cloud weekly usage limit)."
+    while ($true) {
+        $attempt++
+        $startedAt = Get-Date
+        $out = (New-TemporaryFile).FullName
+        $err = (New-TemporaryFile).FullName
+
+        $p = Start-Process -FilePath $exe -ArgumentList $ocArgs -NoNewWindow -PassThru `
+            -RedirectStandardInput $in -RedirectStandardOutput $out -RedirectStandardError $err
+        if (-not $p.WaitForExit($TimeoutSec * 1000)) {
+            try { $p.Kill($true) } catch { }
+            $usageLimit = Get-OpenCodeUsageLimitError -SinceTime $startedAt
+            if ($usageLimit) {
+                throw "BLOCK: opencode atingiu o limite de uso do provider (HTTP 429) e ficou retentando em silencio ate ${TimeoutSec}s: $usageLimit. NAO e timeout tecnico nem indisponibilidade do provider; aguardar o reset do ciclo de uso (ex.: ollama-cloud weekly usage limit)."
+            }
+            throw "BLOCK: opencode excedeu ${TimeoutSec}s e foi encerrado."
         }
-        throw "BLOCK: opencode excedeu ${TimeoutSec}s e foi encerrado."
+        if ($p.ExitCode -ne 0) {
+            throw "BLOCK: opencode saiu com codigo $($p.ExitCode).`nstderr:`n$(Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue)"
+        }
+
+        $lines = Get-Content -LiteralPath $out -Encoding utf8
+        # -Raw: stream literal da 1a execucao, SEM retry (o chamador quer o stream cru de uma chamada).
+        if ($Raw) { return $lines }
+
+        $events = ConvertFrom-OpenCodeStreamLines -Lines $lines
+
+        # Erro explicito do agente no stream tem prioridade sobre a ausencia de texto e e terminal.
+        $errMsg = Get-OpenCodeStreamErrorMessage -Events $events
+        if ($errMsg) { throw "BLOCK: opencode retornou erro no stream: $errMsg" }
+
+        $parts = @(Get-OpenCodeTextParts -Events $events)
+        $finalText = Get-OpenCodeFinalText -TextParts $parts
+
+        # Achado D: NAO devolver preambulo como resposta. Precedencia de conclusao SEMPRE sobre a
+        # resposta final (Get-OpenCodeFinalText), nunca sobre a narracao do -AllText: reason!=stop ->
+        # truncado; step_finish/reason ausente -> sem-conclusao; texto final vazio -> empty.
+        $signal = Get-OpenCodeCompletionSignal -Events $events
+        $verdict = Get-OpenCodeCompletionVerdict -HasStepFinish $signal.hasStepFinish -Reason $signal.reason -FinalText $finalText
+
+        if ($verdict.status -eq 'ok') {
+            # -AllText: narracao da tentativa BEM-SUCEDIDA; default: resposta final concatenada.
+            if ($AllText) { return (Get-OpenCodeAllText -TextParts $parts) }
+            return $finalText
+        }
+
+        # So 'truncated'/'no-completion' sao re-tentaveis; 'empty' (conclusao limpa) e terminal.
+        $retryable = ($verdict.status -eq 'truncated' -or $verdict.status -eq 'no-completion')
+        if ($retryable -and $attempt -lt $MaxAttempts) {
+            # Guarda anti-429 POR TENTATIVA: precede o status de conclusao. Um 429 mascarado (que
+            # voltou rapido, sem timeout) nao deve ser re-tentado (re-queimaria a cota semanal).
+            $usageLimit = Get-OpenCodeUsageLimitError -SinceTime $startedAt
+            if ($usageLimit) {
+                throw "BLOCK: opencode atingiu o limite de uso do provider (HTTP 429) na tentativa ${attempt}; nao re-tentar: $usageLimit. Aguardar o reset do ciclo de uso (ex.: ollama-cloud weekly usage limit)."
+            }
+            [Console]::Error.WriteLine("OPENCODE_RETRY: attempt=$attempt status=$($verdict.status) reason=$($verdict.reason)")
+            Remove-Item -LiteralPath $out, $err -Force -ErrorAction SilentlyContinue
+            $out = $null
+            $err = $null
+            continue
+        }
+
+        # Esgotado ou nao-retryable (inclui 'empty'): lanca com o status da ULTIMA tentativa.
+        if ($attempt -gt 1) {
+            throw "$($verdict.message) (apos $attempt tentativas; ultimo status=$($verdict.status) reason=$($verdict.reason))"
+        }
+        throw $verdict.message
     }
-    if ($p.ExitCode -ne 0) {
-        throw "BLOCK: opencode saiu com codigo $($p.ExitCode).`nstderr:`n$(Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue)"
-    }
-
-    $lines = Get-Content -LiteralPath $out -Encoding utf8
-    if ($Raw) { return $lines }
-
-    $events = ConvertFrom-OpenCodeStreamLines -Lines $lines
-
-    # Erro explicito do agente no stream tem prioridade sobre a ausencia de texto
-    $errMsg = Get-OpenCodeStreamErrorMessage -Events $events
-    if ($errMsg) { throw "BLOCK: opencode retornou erro no stream: $errMsg" }
-
-    $parts = @(Get-OpenCodeTextParts -Events $events)
-    $finalText = Get-OpenCodeFinalText -TextParts $parts
-
-    # Achado D: NAO devolver preambulo como resposta. Apos o erro explicito (acima, prioritario),
-    # aplicar a precedencia de conclusao SEMPRE sobre a resposta final (Get-OpenCodeFinalText),
-    # nunca sobre a narracao do -AllText: reason!=stop -> truncado; step_finish/reason ausente ->
-    # sem-conclusao; texto final vazio -> empty. So depois de 'ok' escolhemos o retorno.
-    $signal = Get-OpenCodeCompletionSignal -Events $events
-    $verdict = Get-OpenCodeCompletionVerdict -HasStepFinish $signal.hasStepFinish -Reason $signal.reason -FinalText $finalText
-    if ($verdict.status -ne 'ok') { throw $verdict.message }
-
-    # -AllText: toda a narracao; default: resposta final (última mensagem concatenada)
-    if ($AllText) { return (Get-OpenCodeAllText -TextParts $parts) }
-    return $finalText
 }
 finally {
-    Remove-Item -LiteralPath $out, $err, $in -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $in -Force -ErrorAction SilentlyContinue
+    if ($out) { Remove-Item -LiteralPath $out -Force -ErrorAction SilentlyContinue }
+    if ($err) { Remove-Item -LiteralPath $err -Force -ErrorAction SilentlyContinue }
 }
