@@ -75,7 +75,12 @@ Regra prática para o agente consumidor:
    revisor preferido da rodada; preferido não pode virar pool opcional silencioso. Ao **autorar**
    a versão consolidada (vN+1), passar `-VNextState pendingResubmission` — o closeout bloqueia
    até `resubmitted` ou declínio auditado (`resubmissionDeclinedByHuman` + `-ResubmissionDeclinedBy`
-   + `-ResubmissionDeclineReason` + `-RoundId`).
+   + `-ResubmissionDeclineReason` + `-RoundId`). **Dois subcasos do mesmo `resubmissionDeclinedByHuman`**
+   distinguem-se pelo `-ResubmissionDeclineReason`: (a) **congelamento do design** — o humano decide
+   parar de iterar no papel e transferir a prova para implementação/self-test (motivo ex.: `"prova
+   transferida para implementação/self-test"`; ver `15-revisao-por-pares.md`, seção `## Quando o design
+   estabiliza: congelar o papel e migrar para o código`); (b) **abandono** do ciclo sem substituto de
+   prova. Em ambos o estado **não** é `resubmitted` — a vN+1 não foi revisada pelo painel.
 7. Só usar o rótulo `revisão por pares` se houver painel válido (≥2 famílias efetivamente
    consultadas) e recibo mínimo: arquivos lidos, manuscrito/prompt, revisores, famílias,
    resultado do piso, vereditos e o estado da vN+1 (`vNextState`). Sem isso, rotular como

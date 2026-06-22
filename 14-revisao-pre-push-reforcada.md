@@ -19,6 +19,7 @@ A **régua de convergência** — independência, diversidade de modelo, pára-n
 - **Painel _stale_ a cada commit:** todo commit novo **invalida** os vereditos anteriores — eles revisaram outro estado; um "sem gap" só vale para o commit **exato** que foi revisado.
 - **O ciclo não pára no meio:** gap → triagem humana → correção+commit → **re-montar o painel sobre o novo HEAD** (sem novo acionamento) → repetir até a convergência. **"Sem push" restringe só o push final — não interrompe o laço.**
 - **Push-ready:** *depois da última alteração do repositório*, **o painel inteiro** responde "sem gap" sobre **esse estado final**; passe parcial — inclusive o do dissidente sozinho, ou de revisores que aprovaram um commit anterior — **não** conta. Só então o estado é push-ready, e o push em si continua exigindo autorização explícita do usuário (conforme o `13`).
+- **Congelar o design (remissão ao `15`):** a regra de parada — *quando a arquitetura estabiliza, o agente propõe e o humano decide* parar de iterar no papel e transferir a prova para a implementação — é normativa em [`15-revisao-por-pares.md`](15-revisao-por-pares.md) (`## Quando o design estabiliza: congelar o papel e migrar para o código`). No pré-push a prova transferida **já é o código**: a rotina do `13` e este painel reforçado são essa prova.
 
 ## Papéis: montagem e opinião (agente) vs decisão (humano)
 
