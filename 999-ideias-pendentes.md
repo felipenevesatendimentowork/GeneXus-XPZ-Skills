@@ -89,6 +89,13 @@ Skills consumidoras: `xpz-builder`, `xpz-msbuild-import-export`. Motor: `scripts
 
 **Origem:** frente da detecção de 429 no `Invoke-OpenCode` (2026-06-21), nascida de uma pré-push reforçada em que 3 modelos `ollama-cloud` (kimi/minimax/glm) "estouraram timeout" sem causa visível — era a **cota semanal** esgotada da conta ollama-cloud. Deixado como follow-up para não bundlar na frente do `.ContainsKey`.
 
+## Variante de prompt read-only para vozes "coder" do painel de revisão por pares (evitar truncamento por tool-calls)
+
+- **Importância** — baixa (workaround conhecido). Modelos agênticos/"coder" do ollama-cloud — `kimi-k2.7-code`, `minimax-m3` — quando recebem o prompt da reforçada que manda **executar** a rotina ("rode `pwsh -NoProfile -File scripts/Invoke-PrePushMechanicalChecks.ps1 -AsJson`…") tendem a virar **tool-calls** e o turno termina sem parecer final → o wrapper classifica como **truncado** (`reason=tool-calls`, Achado D) = `noResponse`. Observado 2026-06-21: kimi e minimax truncaram com o prompt de execução; com um prompt **read-only** (revisar só lendo o diff/arquivos, com o resultado mecânico já fornecido pronto), o kimi devolveu parecer completo e útil. `deepseek-v4-pro` e `glm-5.2` **não** truncam (rodam a rotina e emitem o parecer) — são as vozes ollama-cloud confiáveis para a tarefa que exige executar.
+- **Maturidade** — ideia (decisão de onde/como formalizar). Direção: documentar em `15-revisao-por-pares.md` (composição/prompt) e/ou `xpz-llm-delegate/SKILL.md` (mecanismo, junto da seção «Detecção de truncamento (Achado D)») que, para **vozes coder** do painel, há duas opções: (a) preferir vozes não-coder (deepseek/glm) na tarefa que exige rodar a rotina; ou (b) despachar com a **variante read-only** — o orquestrador roda o passo mecânico **uma vez** e entrega o resultado pronto ao revisor coder, pedindo só a fase semântica por leitura, em UMA resposta final (sem tool-calls). Cuidado: a variante read-only **não** pode enfraquecer a régua — o passo mecânico continua sendo executado (por outro revisor/orquestrador), só não por aquela voz.
+
+**Origem:** teste do ollama-cloud durante a reforçada do pacote `.ContainsKey`+429 (2026-06-21). É conhecimento de **dispatch de revisor** — vai para o repo (skills), não para memória pessoal de agente.
+
 ## Maturar a Fase 2b da rotina pré-push de pasta paralela de KB (Fase 2b da skill `xpz-kb-parallel-pre-push`, hoje classificador documental)
 
 **Importância:** média (o sub-caso **destrutivo** tende a `alta` — falso negativo de regressão por dependente não enumerado; hoje mitigado só pelo build)
