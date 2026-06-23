@@ -1516,3 +1516,56 @@ Há ainda colisão terminológica: a `xpz-msbuild-import-export` já usa "cirúr
 **Relação com o "Manifesto semântico de pacote" (999):** a ideia *sancionada* de "agregar os gates" é o manifesto — mas é o lado **output** (artefato de auditoria que consolida os resultados estruturados dos gates), não um runner que os executa, e está bloqueado até haver gate upstream em uso e decisões editoriais fechadas. Se um dia fizer sentido um braço de execução, ele nasce como mecanismo do manifesto, não como orquestrador separado.
 
 **Não reavaliar salvo** aparição de um fluxo real de **wrapper local de KB** em que o agente **não** carregue a skill `xpz-builder` (e portanto não tenha o WORKFLOW como roteiro), tornando um runner fino local útil para reduzir comandos compostos — caso em que ele seria um wrapper local recomendado pelo `xpz-kb-parallel-setup`, não um script compartilhado novo.
+
+---
+
+## Hook `PreToolUse` que barra comando não-atômico (enforcement negativo)
+
+**Origem:** sessão de 2026-06-22 sobre redução de prompts de autorização. Proposta de outro
+agente, follow-on do item URGENTE «Reduzir as variações de chamada dos adapters» (resíduo (b2) em
+`999`). Avaliada e **descartada por revisão por pares** — painel de 5 revisores, 3 famílias
+(Claude/Opus nativo, Codex/gpt-5.5, ollama-cloud `deepseek-v4-pro`/`glm-5.2`/`kimi-k2.7-code`),
+convergência **unânime** pelo descarte.
+
+**O que era:** um hook `PreToolUse` em `~/.claude/settings.json` que interceptasse comandos
+Bash/PowerShell e **barrasse** (`deny`) ou **avisasse** (`ask`) os não-atômicos (pipe `|`, `;`,
+`&&`/`||`, substituição `$()`/`(Get-Content)`, heredoc) **antes** do matcher da allowlist —
+enforcement mecânico **negativo** da disciplina de invocação atômica.
+
+**Escopo do descarte (preservar na redação):** descarta-se **a polaridade NEGATIVA/bloqueadora**,
+não o mecanismo `PreToolUse` em si nem a ideia de reduzir prompts. A **polaridade POSITIVA** — um
+hook que **auto-aprova** comandos read-only seguros, reduzindo prompts — segue **viva** como frente
+própria (ver `999`, «Hook PreToolUse positivo (auto-allow)» e
+`hook-pretooluse-auto-allow-design.md`). Citar sempre "hook negativo / `deny` de comando
+não-atômico", nunca "hook PreToolUse" genérico — `deny` e `allow` saem do **mesmo** mecanismo.
+
+**Por que foi descartada:**
+
+1. **Não cumpre o objetivo real.** O objetivo é reduzir prompts; um `deny` não reduz — bloqueia a
+   chamada e força o agente a reformular e tentar de novo, trocando um prompt por um turno perdido.
+   Pior: o agente tende a reatentar com variação cosmética, multiplicando turnos.
+
+2. **Maior risco de falso-positivo, com evidência concreta.** A allowlist do Claude Code já contém
+   **compostos legítimos** mantidos de propósito pelo usuário (ex.: entrada com `&&` para
+   `git -C "C:/Dev/Prod/Gx_*" add * && git*`). Um barrador cego de compostos quebraria configuração
+   curada. Para evitar a colisão, a regra negativa teria que reimplementar a allowlist dentro do
+   hook — duplicação acoplada e frágil.
+
+3. **Dor já mitigada na origem.** As partes (a) `-MessagePath` e (b1) forma canônica documentada já
+   endereçaram a deriva de comandos compostos onde importa (delegação via adapters). O resíduo (b2)
+   é housekeeping local, classificado como baixo/opcional no `999`. Enforcement negativo para
+   resíduo opcional é desproporcional.
+
+4. **Acoplamento ruim, não viaja.** O hook viveria em `~/.claude/settings.json` (máquina-local,
+   fora de qualquer repositório git — confirmado empiricamente na sessão). Não se propaga para
+   Codex/Cursor/OpenCode nem para outras máquinas; não é solução de repositório de skills.
+
+5. **A polaridade útil é a positiva.** `permissionDecision: allow` reduz prompts de forma alinhada
+   ao objetivo; `deny` faz o oposto. A sub-variante **"avisa/`ask`"** também foi avaliada e
+   descartada: não reduz prompt (adiciona ruído) e é redundante com a frente positiva, que já cobre
+   o caso comum (o resíduo ambíguo continua caindo no prompt normal da allowlist).
+
+**Não reavaliar salvo** surgimento de um objetivo distinto de "reduzir prompts" — por exemplo, uma
+necessidade explícita de **auditoria/treinamento** de disciplina de comando (modo diagnóstico
+não-bloqueante), que seria uma frente diferente (observabilidade local), não bloqueio operacional —
+e mesmo nesse caso o ponto de observação já existiria no hook positivo.
