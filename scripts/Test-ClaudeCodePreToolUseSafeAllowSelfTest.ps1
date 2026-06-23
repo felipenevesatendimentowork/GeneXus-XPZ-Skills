@@ -1,13 +1,13 @@
-# Test-PreToolUseSafeAllowSelfTest.ps1 - gate de seguranca do hook PreToolUse positivo.
+# Test-ClaudeCodePreToolUseSafeAllowSelfTest.ps1 - gate do hook PreToolUse do CLAUDE CODE (auto-allow).
 # Corpus adversarial (deve -> defer) + happy-path (deve -> allow) + escopo.
-# Token de sucesso: "OK: Test-PreToolUseSafeAllowSelfTest.ps1". Exit 1 em falha.
-# Ver hook-pretooluse-auto-allow-design.md (secao 4).
+# Token de sucesso: "OK: Test-ClaudeCodePreToolUseSafeAllowSelfTest.ps1". Exit 1 em falha.
+# Ver claude-code-pretooluse-auto-allow-design.md (secao 4).
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $here = $PSScriptRoot
-. (Join-Path $here 'PreToolUseSafeAllowSupport.ps1')
+. (Join-Path $here 'ClaudeCodePreToolUseSafeAllowSupport.ps1')
 
 $python = $null
 $cmd = Get-Command -Name python -ErrorAction SilentlyContinue
@@ -18,7 +18,7 @@ if (-not $python) {
 }
 if (-not $python) { Write-Host 'SKIP/FAIL: python nao encontrado (caminho Bash exige shlex)'; exit 1 }
 
-$helper = Join-Path $here 'Get-BashSafeSegments.py'
+$helper = Join-Path $here 'Get-ClaudeCodeBashSafeSegments.py'
 $repo = Split-Path -Parent $here
 $roots = @($repo)
 $cwd = $repo
@@ -112,7 +112,7 @@ $gotSub = Get-PtuDecision -ToolName 'Bash' -Command 'git status' -Cwd (Join-Path
 if ($gotSub -ne 'allow') { Write-Host "FAIL: escopo subpasta esperado=allow obtido=$gotSub"; $fail++ }
 
 if ($fail -eq 0) {
-    Write-Host 'OK: Test-PreToolUseSafeAllowSelfTest.ps1'
+    Write-Host 'OK: Test-ClaudeCodePreToolUseSafeAllowSelfTest.ps1'
 }
 else {
     Write-Host "FAILED: $fail caso(s)"

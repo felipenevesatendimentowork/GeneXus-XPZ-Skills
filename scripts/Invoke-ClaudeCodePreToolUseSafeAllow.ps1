@@ -1,8 +1,9 @@
-# Invoke-PreToolUseSafeAllow.ps1 - decisor do hook PreToolUse positivo (auto-allow).
-# Le o JSON do hook no stdin (ou -InputJson para teste) e emite a decisao em JSON:
+# Invoke-ClaudeCodePreToolUseSafeAllow.ps1 - decisor do hook PreToolUse do CLAUDE CODE (auto-allow).
+# Solucao especifica do Claude Code (hook PreToolUse + permissionDecision); nao se aplica a
+# Codex/Cursor/OpenCode. Le o JSON do hook no stdin (ou -InputJson para teste) e emite em JSON:
 #   {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow|defer",...}}
 # NUNCA emite 'deny'. Fail-closed: qualquer erro -> 'defer'.
-# Ver hook-pretooluse-auto-allow-design.md.
+# Ver claude-code-pretooluse-auto-allow-design.md.
 [CmdletBinding()]
 param(
     [switch] $Observe,
@@ -11,7 +12,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
-. (Join-Path $PSScriptRoot 'PreToolUseSafeAllowSupport.ps1')
+. (Join-Path $PSScriptRoot 'ClaudeCodePreToolUseSafeAllowSupport.ps1')
 
 function Get-PtuProp {
     param($Obj, [string] $Name)
@@ -53,7 +54,7 @@ try {
 
     $roots = Get-PtuRoots
     $pythonExe = Get-PtuPythonExe
-    $helperPath = Join-Path $PSScriptRoot 'Get-BashSafeSegments.py'
+    $helperPath = Join-Path $PSScriptRoot 'Get-ClaudeCodeBashSafeSegments.py'
 
     $computed = Get-PtuDecision -ToolName $toolName -Command $command -Cwd $cwd -Roots $roots -PythonExe $pythonExe -HelperPath $helperPath
 

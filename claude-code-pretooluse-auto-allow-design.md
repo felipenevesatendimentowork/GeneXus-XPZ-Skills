@@ -1,5 +1,11 @@
-# Hook `PreToolUse` positivo (auto-allow) — spec de design
+# Hook `PreToolUse` positivo (auto-allow) do Claude Code — spec de design
 
+> **ESCOPO — Claude Code apenas.** Esta solução é **exclusiva do Claude Code**: depende do hook
+> `PreToolUse` com `permissionDecision: allow`, recurso que **não existe** em Codex/Cursor/OpenCode.
+> O classificador (lógica de "comando read-only seguro?") é agnóstico de agente e poderia ser
+> reusado **se** outra ferramenta expuser um gancho equivalente — hoje nenhuma expõe. O "fio" (a
+> entrada de hook em `~/.claude/settings.json`) é **máquina-local** e não viaja como config.
+>
 > **Status:** design **congelado** (v4) após 3 rodadas de revisão por pares (3 famílias:
 > `anthropic`/Opus, `openai`/Codex gpt-5.5, `ollama-cloud` deepseek-v4-pro/glm-5.2/kimi-k2.7-code) +
 > Fase 0 confirmada na doc oficial. A polaridade **negativa** (barrar comando não-atômico) foi
@@ -7,10 +13,16 @@
 > Itens marcados **[self-test]** são requisitos de prova do corpus adversarial.
 >
 > **Estado de implementação:** Fase 1–2 do **caminho Bash** implementadas e cobertas por self-test
-> (`scripts/Invoke-PreToolUseSafeAllow.ps1`, `scripts/PreToolUseSafeAllowSupport.ps1`,
-> `scripts/Get-BashSafeSegments.py`, `scripts/Test-PreToolUseSafeAllowSelfTest.ps1`). O caminho
-> **PowerShell retorna `defer`** (fail-closed) até a Fase 0 do campo de input PS ser confirmada
-> empiricamente. Fases 3–5 pendentes (ver `999-ideias-pendentes.md`).
+> (`scripts/Invoke-ClaudeCodePreToolUseSafeAllow.ps1`, `scripts/ClaudeCodePreToolUseSafeAllowSupport.ps1`,
+> `scripts/Get-ClaudeCodeBashSafeSegments.py`, `scripts/Test-ClaudeCodePreToolUseSafeAllowSelfTest.ps1`;
+> sentinela `OK: Test-ClaudeCodePreToolUseSafeAllowSelfTest.ps1`). O caminho **PowerShell retorna
+> `defer`** (fail-closed) até a Fase 0 do campo de input PS ser confirmada empiricamente. Fases 3–5
+> pendentes (ver `999-ideias-pendentes.md`).
+>
+> **Latência medida (2026-06-22):** ~**520 ms** por comando no caminho comum (fast-path, só `pwsh`) e
+> ~**570 ms** no candidato a `allow` (sobe `python`). O custo é dominado pelo **startup do `pwsh` por
+> chamada**, não pela lógica — **5× o orçamento p95 ≤ 100ms**. Conclusão: o enforce inline é inviável;
+> o **daemon** (dissidência do kimi) é pré-requisito da Fase 4.
 
 ## 1. Objetivo
 

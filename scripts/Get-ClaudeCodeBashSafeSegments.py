@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-# Get-BashSafeSegments.py - parte do hook PreToolUse positivo (auto-allow).
-# Ver hook-pretooluse-auto-allow-design.md (secao 4).
+# Get-ClaudeCodeBashSafeSegments.py - parte do hook PreToolUse do CLAUDE CODE (auto-allow).
+# (O lexing em si e agnostico de agente, mas integra a solucao especifica do Claude Code.)
+# Ver claude-code-pretooluse-auto-allow-design.md (secao 4).
 #
 # Tokeniza um comando Bash com shlex (parser de verdade, nao regex) e devolve os
 # SEGMENTOS de um pipeline simples e seguro, OU 'defer'. Conservador por desenho:
 # qualquer duvida -> defer (fail-closed). O classificador de verbo/flag fica no
-# PowerShell (PreToolUseSafeAllowSupport.ps1); este helper so faz o lexing seguro.
+# PowerShell (ClaudeCodePreToolUseSafeAllowSupport.ps1); este helper so faz o lexing seguro.
 #
 # Contrato: le o comando cru do stdin; emite 1 linha JSON no stdout:
 #   {"status":"ok","segments":[["git","log"],["head"]]}

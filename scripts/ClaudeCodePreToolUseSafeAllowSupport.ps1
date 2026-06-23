@@ -1,6 +1,7 @@
-# PreToolUseSafeAllowSupport.ps1 - logica pura do hook PreToolUse positivo (auto-allow).
+# ClaudeCodePreToolUseSafeAllowSupport.ps1 - logica pura do hook PreToolUse do CLAUDE CODE (auto-allow).
+# Solucao especifica do Claude Code; nao se aplica a Codex/Cursor/OpenCode.
 # Dot-source este arquivo para reusar as funcoes (decisor e self-test).
-# Ver hook-pretooluse-auto-allow-design.md. NUNCA decide 'deny': so 'allow' ou 'defer'.
+# Ver claude-code-pretooluse-auto-allow-design.md. NUNCA decide 'deny': so 'allow' ou 'defer'.
 #
 # Quirks de case: flags git diferem so por caixa (-c config = perigoso vs -C chdir = seguro);
 # por isso a logica de git usa operadores case-sensitive (-ceq/-clike), nao -eq/-like.

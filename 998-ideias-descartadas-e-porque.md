@@ -1536,7 +1536,7 @@ enforcement mecânico **negativo** da disciplina de invocação atômica.
 não o mecanismo `PreToolUse` em si nem a ideia de reduzir prompts. A **polaridade POSITIVA** — um
 hook que **auto-aprova** comandos read-only seguros, reduzindo prompts — segue **viva** como frente
 própria (ver `999`, «Hook PreToolUse positivo (auto-allow)» e
-`hook-pretooluse-auto-allow-design.md`). Citar sempre "hook negativo / `deny` de comando
+`claude-code-pretooluse-auto-allow-design.md`). Citar sempre "hook negativo / `deny` de comando
 não-atômico", nunca "hook PreToolUse" genérico — `deny` e `allow` saem do **mesmo** mecanismo.
 
 **Por que foi descartada:**
