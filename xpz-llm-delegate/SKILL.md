@@ -433,7 +433,7 @@ quando necessário; `deny`, indisponibilidade, timeout, erro técnico ou interru
 gap não autorizam omitir os demais em silêncio — cada preferido recebe estado no recibo
 (`responded`, `noResponse`, `timeout`, `error`, `gateAsk`, `gateDeny`, `unavailable`,
 `skippedByHumanDecision`, `stoppedOnGap`). **`responded` exige parecer utilizável**: um retorno
-off-task/sem-parecer/vazio (o revisor não opinou sobre o manuscrito) é **`noResponse`**, não
+off-task/sem-parecer/vazio **ou on-task porém substantivamente vazio/raquítico** (terminou em `stop` mas não se posiciona sobre o manuscrito) é **`noResponse`**, não
 `responded` — senão o recibo infla o aproveitamento e um off-task pode satisfazer **falsamente** o
 piso de "≥2 famílias efetivamente consultadas" (ver [`15-revisao-por-pares.md`](../15-revisao-por-pares.md),
 recibo). Preferência continua subordinada à política de papel e
@@ -530,7 +530,7 @@ re-despacho single-flight do ollama que falhou │    gateAsk,gateDeny}
 ```
 
 - **Modelo efetivo:** opencode = `invokeArgs.model` ou o `targetModelKey` de **entrada** (o resolvedor opencode exige `-Model`; o gate recebe o mesmo valor); codex = `invokeArgs.model` ou, se ausente, gate **sem** `-Model` → último segmento do `targetModelKey` retornado; claude-code/copilot/gemini = `invokeArgs.model` **obrigatório** (ausente → `state=error` fail-closed). `targetModelKey` nulo onde exigido (opencode/codex) → `state=error`.
-- **`responded` é MECÂNICO** (texto não-vazio), **não** «parecer válido»: o harness não inspeciona o conteúdo. A reclassificação `responded`→`noResponse` (revisor off-task) é **post-hoc do orquestrador** antes do closeout (`15-revisao-por-pares.md`, `## Recibo e livro-razão`) — um off-task não soma para o piso.
+- **`responded` é MECÂNICO** (texto não-vazio), **não** «parecer válido»: o harness não inspeciona o conteúdo. A reclassificação `responded`→`noResponse` (revisor off-task **ou on-task raquítico**) é **post-hoc do orquestrador** antes do closeout (`15-revisao-por-pares.md`, `## Recibo e livro-razão`) — um off-task **ou parecer raquítico** não soma para o piso.
 - **Contenção = trava fail-closed PER-BACKEND (Posição B, decisão de segurança):** as chaves de contenção do backend que as aceita — claude-code `{permissionMode,tools,maxTurns}`, opencode `{agent}`, gemini `{approvalMode != plan}` — são **recusadas** (`securityBlockedArgs`) e **não** repassadas ao adapter; o despacho segue com os **defaults seguros** do adapter. O harness **nunca** expõe nem relaxa contenção. `approvalMode=plan` (gemini, o default) → `droppedArgs` silencioso; codex/copilot não têm parâmetro de contenção (chave estranha → `droppedArgs`).
 - **opencode só-`public` no v1:** opencode em `kb-sensitive` → `unavailable` (sem gate/despacho); o confinamento do agente custom fica para a frente 999 «agente reviewer sem execução/escrita». O adapter opencode **não** tem `-Cd` (por isso nunca o recebe); os demais (codex/claude-code/gemini/copilot) recebem `-Cd` por precedência (explícito → `ParallelKbRoot` em `kb-sensitive` → cwd em `public`) com **fail-closed** quando `kb-sensitive` e faltam ambos.
 - **single-flight DIFERIDO (decisão II-b):** uma falha concorrente de `ollama-cloud/*` vira `error` + ledger cru + `concurrencySaturationWarning` por stderr; a recuperação automática depende do **contrato de saída tipado dos adapters** (frente 999) — o orquestrador pode redisparar isolado manualmente.
@@ -703,6 +703,18 @@ parede pode dobrar); `-Raw` **não** re-tenta (devolve a 1ª execução); cada r
 sofre a mesma truncagem mas **não** tem retry (follow-up em `999-ideias-pendentes.md`). Guard:
 `scripts/Test-OpenCodeRetrySelfTest.ps1` (token `OK: Test-OpenCodeRetrySelfTest.ps1`; fake-exe com
 contador em arquivo + seam `XDG_DATA_HOME` para o caso 429).
+
+**LIMITE CONHECIDO — `ok` não garante parecer útil (sem piso de substância).** O veredito `ok` exige
+só `reason='stop'` + texto não-vazio — sem piso de tamanho/qualidade. Observado (2026-06-23):
+`minimax-m3` terminou `stop` com 414 chars (vs. ~16k de uma run cheia, mesmo pedido) → `ok`, **não**
+re-tentado pelo `-MaxAttempts` (só cobre `truncated`/`no-completion`) e contado como `responded` no
+painel. Distinto do truncamento (Achado D) e do `empty` (stop sem texto): aqui "termina" limpo mas
+raquítico. Ver «`responded` exige parecer utilizável» (estados de revisor preferido, acima) e
+«`responded` é MECÂNICO». A **única mitigação atual** é a reclassificação post-hoc (manual) do
+orquestrador (`15-revisao-por-pares.md`, §Papéis parágrafo «Recibo mínimo obrigatório» — *dono* — /
+§Recibo e livro-razão — *restatement*), que cobre tanto off-task quanto parecer raquítico. **Critério:
+descolamento do `ok`/`responded` da matéria do manuscrito, NÃO contagem de chars (ver `15`).** **Não**
+é piso automático — piso/heurística segue **frente aberta** no `999`.
 
 **Cobertura por adapter (varredura confirmatória, escopo declarado).** A detecção por `reason`
 acima é **opencode-only** — é fenômeno do **streaming agêntico** do opencode. Os demais adapters
