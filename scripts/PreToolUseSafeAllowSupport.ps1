@@ -126,9 +126,30 @@ function Test-PtuBashSegmentAllowed {
     }
 }
 
+function Get-PtuBashFastPath {
+    # Pre-filtro barato, in-process. Retorna 'defer' (decide na hora, sem parser) ou
+    # 'escalate' (subir ao parser pesado/python). NUNCA retorna 'allow' (invariante do
+    # design, secao 4.4): allow so vem do parser completo. Conservador: na duvida, defer.
+    param([string] $Command)
+    if ([string]::IsNullOrWhiteSpace($Command)) { return 'defer' }
+    if ($Command.Contains("`n") -or $Command.Contains("`r")) { return 'defer' }  # multilinha
+    $parts = @($Command.TrimStart() -split '\s+')
+    if ($parts.Count -lt 1) { return 'defer' }
+    $firstToken = $parts[0]
+    if ([string]::IsNullOrEmpty($firstToken)) { return 'defer' }
+    # Expansao/substituicao logo no primeiro token (ex.: $FOO, `cmd`) -> defer barato.
+    if ($firstToken.Contains('$') -or $firstToken.Contains('`')) { return 'defer' }
+    # O primeiro token do comando e o verbo do primeiro segmento. Se nao for um verbo
+    # read-only conhecido, nenhum segmento-inicial pode ser allow -> defer sem python.
+    $allowedLeading = @('git', 'head', 'tail', 'rg', 'date', 'cat', 'wc', 'ls')
+    if ($allowedLeading -ccontains $firstToken) { return 'escalate' }
+    return 'defer'
+}
+
 function Get-PtuBashDecision {
     param([string] $Command, [string] $PythonExe, [string] $HelperPath)
     if ([string]::IsNullOrWhiteSpace($Command)) { return 'defer' }
+    if ((Get-PtuBashFastPath -Command $Command) -eq 'defer') { return 'defer' }  # caminho comum: sem python
     if ([string]::IsNullOrWhiteSpace($PythonExe) -or -not (Test-Path -LiteralPath $PythonExe)) { return 'defer' }
     if ([string]::IsNullOrWhiteSpace($HelperPath) -or -not (Test-Path -LiteralPath $HelperPath)) { return 'defer' }
     try {

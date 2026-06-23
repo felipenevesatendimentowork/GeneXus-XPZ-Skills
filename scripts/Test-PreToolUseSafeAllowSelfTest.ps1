@@ -86,6 +86,23 @@ foreach ($c in $cases) {
     }
 }
 
+# Fast-path: 'defer' barato vs 'escalate'; invariante "nunca allow"; defer sem python.
+$fpDefer = Get-PtuBashFastPath -Command 'rm -rf x'
+if ($fpDefer -ne 'defer') { Write-Host "FAIL: fast-path 'rm' esperado=defer obtido=$fpDefer"; $fail++ }
+$fpAssign = Get-PtuBashFastPath -Command 'FOO=bar git log'
+if ($fpAssign -ne 'defer') { Write-Host "FAIL: fast-path assign esperado=defer obtido=$fpAssign"; $fail++ }
+$fpEsc = Get-PtuBashFastPath -Command 'git log | head'
+if ($fpEsc -ne 'escalate') { Write-Host "FAIL: fast-path 'git' esperado=escalate obtido=$fpEsc"; $fail++ }
+$fpNewline = Get-PtuBashFastPath -Command "git status`ngit log"
+if ($fpNewline -ne 'defer') { Write-Host "FAIL: fast-path newline esperado=defer obtido=$fpNewline"; $fail++ }
+foreach ($probe in @('git log', 'rm -rf x', 'cat a', 'npm i', '', '| x', '$(rm) x')) {
+    $r = Get-PtuBashFastPath -Command $probe
+    if ($r -eq 'allow') { Write-Host "FAIL: fast-path retornou allow para '$probe'"; $fail++ }
+}
+# Prova de que o caminho comum nao precisa de python: 'rm' defere mesmo com python invalido.
+$fpNoPy = Get-PtuDecision -ToolName 'Bash' -Command 'rm -rf x' -Cwd $cwd -Roots $roots -PythonExe 'C:\nao-existe-python.exe' -HelperPath $helper
+if ($fpNoPy -ne 'defer') { Write-Host "FAIL: fast-path defer sem python esperado=defer obtido=$fpNoPy"; $fail++ }
+
 # Escopo: cwd fora das raizes -> defer mesmo para comando happy.
 $gotScope = Get-PtuDecision -ToolName 'Bash' -Command 'git status' -Cwd 'C:\Temp\fora' -Roots $roots -PythonExe $python -HelperPath $helper
 if ($gotScope -ne 'defer') { Write-Host "FAIL: escopo fora-da-raiz esperado=defer obtido=$gotScope"; $fail++ }

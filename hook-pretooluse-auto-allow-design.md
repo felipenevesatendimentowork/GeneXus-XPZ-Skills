@@ -80,11 +80,15 @@ segmentos passam.** Qualquer redireção (`>`/`>>`/`*>`/`2>&1`/`<`/`<<`), subshe
 o caminho PS estiver em `defer`. Candidatos para depois: `git ls-files`/`git grep`/`git remote -v`/
 `git config --get`, `sort`/`uniq`/`cut`/`tr`.
 
-### 4.4 Fast-path (latência)
-Otimização **adiada** para a Fase 3 (medição). A implementação atual sempre passa pelo parser
-completo (correto, possivelmente mais lento). Quando implementado, o fast-path **só** pode produzir
-`defer` ou "subir ao parser" — **nunca `allow` direto** (senão `git branch topic`/`rg --pre`
-escapariam).
+### 4.4 Fast-path (latência) — implementado
+Pré-filtro barato in-process (`Get-PtuBashFastPath`): se o **primeiro token** do comando não é um
+verbo read-only conhecido (`git`/`head`/`tail`/`rg`/`date`/`cat`/`wc`/`ls`), ou há newline, ou o
+primeiro token traz `$`/crase, decide **`defer` na hora — sem subir `python`**. Só **escala** ao
+parser pesado (shlex + tabelas) quando o comando é candidato a `allow`. O fast-path **só** produz
+`defer` ou "escala" — **nunca `allow` direto** (invariante coberto por self-test; senão
+`git branch topic`/`rg --pre` escapariam). Assim o caso comum (comando que não começa por verbo
+read-only) custa sub-ms; o `python` só roda no caminho candidato. A medição de latência efetiva
+(p95) continua sendo objetivo da Fase 3.
 
 ## 5. Escopo e fases
 
