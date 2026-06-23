@@ -337,7 +337,7 @@ Após implementar + rebuild:
 { "vN+1Type": "relay", "roundId": "<id>", "checklist": { "newClaim": false, "reordered": false, "resolvedConflict": false }, "classifiedBy": "human" }
 ```
 
-**Relacionado:** `15-revisao-por-pares.md` (régua `:40`); `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1` (onde o estado de re-submissão da vN+1 será mecanizado no Achado A); frente dos 4 achados da revisão por pares.
+**Relacionado:** `15-revisao-por-pares.md` (régua `:41`); `scripts/Resolve-LlmDelegatePeerReviewCloseout.ps1` (onde o estado de re-submissão da vN+1 será mecanizado no Achado A); frente dos 4 achados da revisão por pares.
 
 ## Escolha de escopo do painel na revisão por pares (o agente não encolhe o painel sozinho)
 
