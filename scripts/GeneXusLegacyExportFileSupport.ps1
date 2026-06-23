@@ -242,6 +242,7 @@ function Get-GeneXusLegacyExportFileSyncItems {
             LogicalName    = $logicalName
             NormalizedName = & $NormalizeFileBaseName $logicalName
             TypeGuid       = $catalogMaps.CanonicalToGuid[$canonicalType].ToLowerInvariant()
+            Guid           = ''
             LegacyElement  = $legacyTag
             CanonicalType  = $canonicalType
             Node           = $node
@@ -280,6 +281,7 @@ function Get-GeneXusLegacyExportFileSyncItems {
             LogicalName    = $logicalName
             NormalizedName = & $NormalizeFileBaseName $logicalName
             TypeGuid       = 'attribute-top-level'
+            Guid           = ''
             LegacyElement  = 'GXAtt'
             CanonicalType  = 'Attribute'
             Node           = $node

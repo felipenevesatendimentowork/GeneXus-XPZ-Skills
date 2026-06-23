@@ -33,6 +33,15 @@ if (@($sync.Items).Count -ne 2) {
     throw "Expected 2 sync items, got $(@($sync.Items).Count)."
 }
 
+foreach ($item in @($sync.Items)) {
+    if ($null -eq $item.PSObject.Properties['Guid']) {
+        throw "Legacy sync item '$($item.FolderType):$($item.LogicalName)' missing Guid property."
+    }
+    if ($item.Guid -ne '') {
+        throw "Legacy sync item '$($item.FolderType):$($item.LogicalName)' should expose empty Guid, got '$($item.Guid)'."
+    }
+}
+
 $transaction = @($sync.Items | Where-Object { $_.CanonicalType -eq 'Transaction' })
 if ($transaction.Count -ne 1 -or $transaction[0].LogicalName -ne 'Cliente') {
     throw 'Transaction Cliente not materialized as expected.'

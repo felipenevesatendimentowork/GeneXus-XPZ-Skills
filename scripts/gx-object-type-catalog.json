@@ -188,7 +188,7 @@
       "inventoryEligible": true,
       "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Menu principal (GXObject/Menubar em export legado GX9). GUID empirico da amostra GXW_alunoturma_re.xpz; queryableByKbIntelligence=false: extrator atual nao interpreta payload legado."
+      "notes": "Menu principal (GXObject/Menubar em export legado GX9). GUID sintetico/provisorio reservado para adaptacao de export legado; nao observado como Object/@type moderno. Substituir quando houver evidencia oficial ou empirica do tipo real. queryableByKbIntelligence=false: extrator atual nao interpreta payload legado."
     },
     "PackagedModule": {
       "objectTypeGuid": "c88fffcd-b6f8-0000-8fec-00b5497e2117",
@@ -251,7 +251,7 @@
       "inventoryEligible": true,
       "queryableByKbIntelligence": false,
       "containerType": false,
-      "notes": "Relatorio em export legado (GXObject/Report, GX9). GUID empirico da amostra GXW_alunoturma_re.xpz; queryableByKbIntelligence=false: extrator atual nao interpreta payload legado."
+      "notes": "Relatorio em export legado (GXObject/Report, GX9). GUID sintetico/provisorio reservado para adaptacao de export legado; nao observado como Object/@type moderno. Substituir quando houver evidencia oficial ou empirica do tipo real. queryableByKbIntelligence=false: extrator atual nao interpreta payload legado."
     },
     "SDT": {
       "objectTypeGuid": "447527b5-9210-4523-898b-5dccb17be60a",
