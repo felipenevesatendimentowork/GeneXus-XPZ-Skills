@@ -764,3 +764,32 @@ Discriminador único `ConvertFrom-Json` (não os tokens `$result.Campo`/`Get-Res
 ### Rastreabilidade
 
 - Commits de fechamento desta frente: ver `CHANGELOG.md` (`Unreleased`, trilíngue) e `git log` da frente «drift de contrato de consumo» (closing commits desta sessão; visíveis via `git blame` no arquivo mensal, conforme `historico/AGENTS.md`).
+
+## Variante de prompt read-only para vozes "coder" do painel — investigação concluída (truncamento = não-determinismo raro; fix = `-MaxAttempts`)
+
+**Importância original:** baixa (workaround conhecido de dispatch de revisor).
+**Status:** investigação concluída em 2026-06-22; corroborada por experimento controlado em 2026-06-23. Fix (`-MaxAttempts`) já implementado e no despacho do painel. Frentes derivadas de **segurança** seguem **abertas** no `999`.
+
+### Origem
+
+Teste do ollama-cloud durante a reforçada do pacote `.ContainsKey`+429 (2026-06-21): vozes coder (`kimi-k2.7-code`, `minimax-m3`) pareciam truncar (`reason=tool-calls`, Achado D) com o prompt que manda **executar** a rotina. Levantou-se a hipótese de uma "variante read-only" de prompt como mitigação.
+
+### Investigação e evidência
+
+- **CONTESTAÇÃO (2026-06-21):** a tese "coder trunca por tool-calls" não se reproduziu de forma confiável; os logs do opencode mostraram que os runs truncados **pós-renovação** **não tinham 429** → não era cota mascarada.
+- **RESOLUÇÃO (2026-06-22):** 8 chamadas `-Raw`. Orçamento-de-passos **refutado** (kimi fez 7 tool-calls e fechou no 8º passo com `reason=stop`); truncagem **real mas intermitente e rara** → hipótese sobrevivente = **não-determinismo de cauda**.
+- **Experimento controlado (2026-06-23):** 12 chamadas, 4 modelos × 3, **sequenciais** (sem concorrência de cota), `-Raw`, medindo o último `step_finish.reason` + 429 por janela. Resultado: kimi-k2.7-code 3/3 `stop`, deepseek-v4-pro 3/3 `stop`, glm-5.2 3/3 `stop`; minimax-m3 = 1 cheia (`stop`, 16k) / 1 `stop` raquítica (414 chars) / 1 **truncada** (`reason=tool-calls`, 28 `tool_use`, **sem 429**). Confirma: não é cota, não é propriedade fixa de "coder" (kimi, coder, completou 3/3), é instabilidade intermitente específica do minimax-m3.
+
+### Decisão final
+
+- **Correção implementada:** `-MaxAttempts` (retry-once opt-in) em `scripts/Invoke-OpenCode.ps1` — agnóstica à causa (re-sorteia o não-determinismo; re-tenta só `truncated`/`no-completion`, com guarda anti-429), já passada como `MaxAttempts=2` no `scripts/Invoke-LlmDelegatePanelDispatch.ps1` (despacho do painel). Self-test `Test-OpenCodeRetrySelfTest.ps1`.
+- **"Variante read-only por prompt" descartada como solução de truncamento:** não se faz por prompt (`--agent plan` **auto-aprova bash em headless** — refutado empiricamente). A substância de menor-privilégio migrou para frentes de **segurança** que seguem **abertas** no `999` («Painel … concede execução de código…» e «Agente reviewer sem execução/escrita»).
+- **Gap derivado novo:** resposta `stop` porém quase-vazia (minimax-m3 run2, 414 chars) é classificada como `ok` e escapa do veredito e do retry — registrada como entrada própria no `999`.
+- Convergência por **revisão por pares** (v1→v5, 5 vozes / 3 famílias: anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro/glm-5.2/kimi-k2.7-code) em 2026-06-22; o painel de 2026-06-23 (mesmas 3 famílias) corrigiu o rumo da migração (**histórico, não 998** — a ideia foi resolvida/implementada, não rejeitada) e confirmou os gaps.
+
+### Rastreabilidade
+
+- Commit material (frente fechada em sessão anterior, já em `origin/main`): `7713dc6` — "Invoke-OpenCode: retry-once opt-in (-MaxAttempts) + achados de segurança/reviewer no 999"; follow-ups `b0c2e20` (precedência/429) e `52db98b` (comentário do laço de retry).
+- Código (já existente): `scripts/Invoke-OpenCode.ps1` (`-MaxAttempts`), `scripts/Invoke-LlmDelegatePanelDispatch.ps1` (`MaxAttempts=2` no despacho), `scripts/OpenCodeStreamSupport.ps1` (`Get-OpenCodeCompletionVerdict`), `scripts/Test-OpenCodeRetrySelfTest.ps1`, `CHANGELOG.md` (entrada do retry).
+- `999-ideias-pendentes.md` — entrada → ponteiro «RESOLVIDA E MIGRADA»; frentes de segurança derivadas seguem **abertas**.
+- Revisão por pares: livro-razão efêmero em `Temp/xpz-llm-panel-dispatch/` (gitignored).
