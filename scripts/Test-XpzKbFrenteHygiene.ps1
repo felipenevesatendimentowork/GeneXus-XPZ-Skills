@@ -22,10 +22,17 @@
   deletada apos import bem-sucedido, frente experimental fora do padrao); o
   usuario decide aceitar ou corrigir.
 
-  CONTRATO DE SAIDA: JSON de maquina por padrao no stdout. Campos: status
-  (ok|warn), exitCode, repoRoot, frentesValidas, frentesNaoConformes[], pacotesOk,
-  pacotesOrfaos[], pacotesNaoPadronizados[]. -AsText da saida humana; -AsJson e
-  no-op (JSON ja e o default).
+  CONTRATO DE SAIDA: JSON de maquina por padrao no stdout. Campos: Kind
+  ('xpz-frente-hygiene-result'), SchemaVersion (1), status (ok|warn), exitCode,
+  repoRoot, frentesDir, pacotesDir (caminhos resolvidos/normalizados),
+  frentesValidas, frentesNaoConformes[], pacotesOk, pacotesOrfaos[],
+  pacotesNaoPadronizados[]. -AsText da saida humana; -AsJson e no-op (JSON ja e o
+  default).
+
+  CONSUMIDOR: scripts/Remove-XpzKbFrenteHygieneFindings.ps1 (executor de faxina)
+  consome este JSON como fonte de verdade. Renomear/retipar campos aqui quebra o
+  contrato; o lockstep e travado por Test-XpzKbFrenteHygieneCleanupSelfTest.ps1
+  (asserta tipos + caso fixture end-to-end).
 
   EXIT CODE: 0 ok, 2 warn. Fase 2a nunca bloqueia push.
 
@@ -61,6 +68,11 @@ Set-StrictMode -Version Latest
 
 $frentesDir = Join-Path $RepoRoot (($FrentesDirName -replace '\\', '/').Trim().TrimEnd('/'))
 $pacotesDir = Join-Path $RepoRoot (($PacotesDirName -replace '\\', '/').Trim().TrimEnd('/'))
+
+# Caminhos resolvidos/normalizados (absolutos) para o contrato de saida. GetFullPath
+# normaliza sem exigir existencia (Resolve-Path falharia em pasta inexistente).
+$frentesDirResolved = [System.IO.Path]::GetFullPath($frentesDir)
+$pacotesDirResolved = [System.IO.Path]::GetFullPath($pacotesDir)
 
 # Padrao: <NomeCurto>_<GUID>_<YYYYMMDD>; NomeCurto pode conter underscores
 $frentePattern = [regex]::new(
@@ -105,9 +117,13 @@ $overall = if ($cheque1Status -eq 'warn' -or $cheque2Status -eq 'warn') { 'warn'
 $exitCode = if ($overall -eq 'warn') { 2 } else { 0 }
 
 $result = [pscustomobject]@{
+  Kind                   = 'xpz-frente-hygiene-result'
+  SchemaVersion          = 1
   status                 = $overall
   exitCode               = $exitCode
   repoRoot               = $RepoRoot
+  frentesDir             = $frentesDirResolved
+  pacotesDir             = $pacotesDirResolved
   frentesValidas         = $frentesValidas.Count
   frentesNaoConformes    = @($frentesNaoConformes)
   pacotesOk              = $pacotesOk

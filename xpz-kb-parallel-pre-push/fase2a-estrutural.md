@@ -24,7 +24,29 @@ Ambos são `warn` (não bloqueiam) porque podem ter justificativa legítima (fre
 
 ### Contrato de saída
 
-JSON de máquina por padrão. Campos: `status` (`ok`|`warn`), `exitCode`, `repoRoot`, `frentesValidas`, `frentesNaoConformes[]`, `pacotesOk`, `pacotesOrfaos[]`, `pacotesNaoPadronizados[]`. **Exit: 0 ok, 2 warn.** Fase 2a nunca bloqueia push.
+JSON de máquina por padrão. Campos: `Kind` (`xpz-frente-hygiene-result`), `SchemaVersion` (`1`), `status` (`ok`|`warn`), `exitCode`, `repoRoot`, `frentesDir`, `pacotesDir` (caminhos resolvidos/normalizados), `frentesValidas`, `frentesNaoConformes[]` (nomes), `pacotesOk`, `pacotesOrfaos[]` (`{pacote, frenteEsperada}`), `pacotesNaoPadronizados[]`. **Exit: 0 ok, 2 warn.** Fase 2a nunca bloqueia push.
+
+Este JSON é o **contrato de consumo** do executor de faxina (ver abaixo): renomear/retipar campos aqui quebra o executor; o lockstep é travado por `Test-XpzKbFrenteHygieneCleanupSelfTest.ps1`.
+
+## Higiene local: as pastas inspecionadas são tipicamente gitignoradas
+
+`ObjetosGeradosParaImportacaoNaKbNoGenexus/` e `PacotesGeradosParaImportacaoNaKbNoGenexus/` são **área de trabalho local** — na maioria das KBs paralelas elas são **gitignoradas**. Portanto os `warn` da Fase 2a são **higiene da área de trabalho local**, distinta do conteúdo que vai no push: calibra a severidade na leitura (não confundir com problema do que será publicado). Como são gitignoradas, **deleção ali não tem recuperação por git** — daí o executor abaixo ser fail-safe por padrão.
+
+## Faxina: `Remove-XpzKbFrenteHygieneFindings.ps1` (forma canônica de corrigir)
+
+Motor compartilhado, agnóstico de KB, **filesystem-only**. **Consome** o JSON de `Test-XpzKbFrenteHygiene` (fonte de verdade única — não reimplementa o matching) e remove exatamente o flagado.
+
+```text
+pwsh -File <repo-skills>\scripts\Remove-XpzKbFrenteHygieneFindings.ps1 -RepoRoot <pasta-paralela> [-Apply]
+```
+
+- **Fail-safe por padrão:** sem `-Apply` é **dry-run** (lista o que *seria* removido, apaga nada). `-WhatIf` também funciona. Deleção real só com `-Apply` — **exige decisão humana explícita**.
+- **`-Scope`** `Frentes`|`Pacotes`|`Ambos` (default `Ambos`). `pacotesNaoPadronizados` **nunca** é tocado (espelhado em `untouchedNonStandard`).
+- **`-Apply`** re-invoca o motor a cada passada e **itera até ponto-fixo** (trata a cascata: remover frentes orfana pacotes-irmãos), com fusível `-MaxPasses` (default 5).
+- **`-Backup <dir> -RunStamp <id>`** (opcional): move-aside no **mesmo volume**, fora das pastas-alvo, com `backup-manifest.json` (cross-volume é recusado no v1).
+- **Segurança:** ancora os diretórios-base sob `-RepoRoot` canônico, recusa reparse point (junction/symlink) em componente do caminho ou em descendente do item, e remove diretório por descida bottom-up (nunca `-Recurse`).
+- **Saída:** 1 linha JSON (`Kind='xpz-frente-hygiene-cleanup-result'`); texto humano só por stderr. `status` normativo: `clean`|`findings`|`applied-clean`|`applied-with-skips`|`not-stabilized`|`error`. **Exit:** 0 `clean`/`applied-clean`; 2 `findings`; 3 `applied-with-skips`/`not-stabilized`; 1 `error`. Automação lê `status`, não o número.
+- **Não é passo automático da pré-push.** A pré-push continua sendo análise + relatório; a faxina é ação separada, fail-safe, sob decisão humana. Validação: `Test-XpzKbFrenteHygieneCleanupSelfTest.ps1` (token `XPZ_KB_FRENTE_HYGIENE_CLEANUP_SELFTEST_OK`).
 
 ## Nuance cabeça-detalhe (vinda do F1)
 
@@ -37,7 +59,7 @@ Além dos dois cheques mecânicos, antes de declarar a Fase 2a saneada:
 - [ ] A frente ativa vive na própria subpasta `NomeCurto_GUID_YYYYMMDD` (não na raiz de `ObjetosGeradosParaImportacaoNaKbNoGenexus`).
 - [ ] Não há XML de referência/exemplo/template/molde deixado na subpasta da frente como se fosse objeto a importar.
 - [ ] A pasta de pacotes está **plana** (sem subpastas por frente).
-- [ ] Pacotes órfãos reportados pelo motor têm justificativa explícita (frente já importada/removida) ou foram corrigidos.
-- [ ] Frentes não-conformes reportadas têm justificativa (experimental) ou foram renomeadas para o padrão.
+- [ ] Pacotes órfãos reportados pelo motor têm justificativa explícita (frente já importada/removida) ou foram corrigidos — a forma **canônica** de corrigir é o executor `Remove-XpzKbFrenteHygieneFindings.ps1` (fail-safe, `-Apply` sob decisão humana), não deleção manual/ad-hoc.
+- [ ] Frentes não-conformes reportadas têm justificativa (experimental) ou foram renomeadas para o padrão; quando a decisão for remover, usar o executor (acima), não recontar/apagar à mão.
 
 O resultado da Fase 2a entra no relatório da rodada (molde em `examples/`) como `warn` consolidável, nunca como bloqueio automático.

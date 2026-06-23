@@ -30,6 +30,13 @@ Derivada da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (ver `CHANGELO
 
 Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na frente Revisão por Pares formalizada.
 
+## Backup cross-volume no executor de faxina da Fase 2a (`Remove-XpzKbFrenteHygieneFindings.ps1`)
+
+- **Importância** — baixa (limite conhecido declarado, com workaround). O `-Backup` do executor de faxina move-aside **só no mesmo volume** (via `Move-Item` atômico); `-Backup` em outro volume é **recusado** com mensagem clara (erro de contrato). Workaround: apontar `-Backup` para um diretório no mesmo volume da pasta paralela, ou rodar sem backup (a deleção segue fail-safe: dry-run por padrão, reparse/ancoragem, idempotência).
+- **Maturidade** — ideia (decisão de design em aberto). O cross-volume exigiria `copy+delete` **não-atômico**, que reabre superfície real (cópia órfã se o delete falhar após copy; item parcial se copy falhar no meio; rollback) — o painel da v3→v4 recomendou deixar fora do v1 por isso. Direção: se houver demanda, implementar copy+delete com ordem segura (gravar o manifesto só após confirmar a cópia íntegra; deletar a origem só após verificar a cópia; política explícita para cópia órfã), com self-test próprio para colisão/restauração/falha parcial. A correção deve passar por revisão por pares.
+
+Derivada da frente do executor de faxina da Fase 2a (ver `CHANGELOG`).
+
 ## Hook PreToolUse positivo (auto-allow) do Claude Code — Fases 3–5
 
 - **Escopo: Claude Code apenas.** Depende do hook `PreToolUse` + `permissionDecision: allow`, recurso que **não existe** em Codex/Cursor/OpenCode — não viaja transversalmente para os outros agentes (só o classificador é agnóstico, mas não há onde plugá-lo hoje). É a ferramenta que o usuário mais usa (Opus 4.8) e onde está o atrito.
