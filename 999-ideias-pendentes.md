@@ -30,6 +30,14 @@ Derivada da frente do contrato JSON do `Sync-GeneXusXpzToXml.ps1` (ver `CHANGELO
 
 Reforça a lição "consultar a lista INTEIRA, não parar no piso" registrada na frente Revisão por Pares formalizada.
 
+## Hook PreToolUse positivo (auto-allow) — Fases 3–5
+
+- **Importância** — baixa (ganho de **conforto local**: reduz prompts de autorização para comandos read-only compostos que a allowlist literal não expressa). O **cérebro viaja** (lógica versionada em `scripts/`), mas o **fio não** (a entrada de hook em `~/.claude/settings.json` é máquina-local). Dor já mitigada na origem para a delegação (`-MessagePath` + forma canônica); aqui é o caso geral de qualquer comando read-only.
+- **Maturidade** — **parcialmente implementada**. Design **congelado** (v4, ver [`hook-pretooluse-auto-allow-design.md`](hook-pretooluse-auto-allow-design.md)) após 3 rodadas de revisão por pares (3 famílias) + Fase 0 confirmada. **Fase 1–2 do caminho Bash feitas** e cobertas por self-test adversarial (`scripts/Invoke-PreToolUseSafeAllow.ps1`, `PreToolUseSafeAllowSupport.ps1`, `Get-BashSafeSegments.py`, `Test-PreToolUseSafeAllowSelfTest.ps1`; sentinela `OK: Test-PreToolUseSafeAllowSelfTest.ps1`). **Pendente:** Fase 3 (modo `-Observe` rodando contra comandos reais para medir cobertura + latência, orçamento p95 ≤ 100ms), Fase 4 (ligar `-Enforce` só com self-test verde **E** observe sem `allow` inesperado), Fase 5 (caminho **PowerShell** — hoje `defer` até confirmar empiricamente o campo de `tool_input` do PS; depois ligar; `xpz-skills-setup` grava o path por máquina + valida self-test antes de instalar o fio).
+- **Polaridade negativa descartada** (ver `998-ideias-descartadas-e-porque.md`): este é o oposto útil — auto-aprova em vez de barrar.
+- **Paridade pré-push pendente para quando empurrar:** inventariar os 4 scripts no `09`, registrar no `CHANGELOG` e avaliar menção no `README` trilíngue.
+- **Dissidências registradas** (reavaliar depois): escopo **global** em vez de só-o-repo (deepseek — risco baixo dada a gramática estreita); **daemon** já na v1 se o p95 estourar (kimi).
+
 ## Enxugar a allowlist para a forma canônica de invocação dos adapters (resíduo (b2), opcional/local)
 
 - **Importância** — baixa (housekeeping local; **(b1) já eliminou a deriva na origem** documentando a forma canônica, tornando (b2) praticamente opcional). A allowlist do Claude Code (`.claude/settings.json`/`settings.local.json`, **git-ignored**, máquina-local) acumula entradas literais antigas dos adapters; a entrada ampla `Bash(pwsh -NoProfile -File scripts/*)` já cobre a forma canônica, então não há ganho durável em podar — e a poda não viaja para outros agentes/máquinas.

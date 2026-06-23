@@ -1,0 +1,176 @@
+# PreToolUseSafeAllowSupport.ps1 - logica pura do hook PreToolUse positivo (auto-allow).
+# Dot-source este arquivo para reusar as funcoes (decisor e self-test).
+# Ver hook-pretooluse-auto-allow-design.md. NUNCA decide 'deny': so 'allow' ou 'defer'.
+#
+# Quirks de case: flags git diferem so por caixa (-c config = perigoso vs -C chdir = seguro);
+# por isso a logica de git usa operadores case-sensitive (-ceq/-clike), nao -eq/-like.
+
+Set-StrictMode -Version Latest
+
+$script:PtuSafeAllowVersion = '1.0.0'
+
+function Get-PtuRoots {
+    $envRoots = [Environment]::GetEnvironmentVariable('PTU_SAFE_ALLOW_ROOTS')
+    if (-not [string]::IsNullOrWhiteSpace($envRoots)) {
+        $parts = @($envRoots -split ';' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        if ($parts.Count -ge 1) { return $parts }
+    }
+    return @('C:\Dev\Knowledge\GeneXus-XPZ-Skills')
+}
+
+function Test-PtuCwdInScope {
+    param([string] $Cwd, [string[]] $Roots)
+    if ([string]::IsNullOrWhiteSpace($Cwd)) { return $false }
+    $rootList = @($Roots)
+    if ($rootList.Count -lt 1) { return $false }
+    $c = $Cwd.Replace('/', '\').TrimEnd('\')
+    foreach ($r in $rootList) {
+        if ([string]::IsNullOrWhiteSpace($r)) { continue }
+        $rr = $r.Replace('/', '\').TrimEnd('\')
+        if ($c.Equals($rr, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+        if ($c.StartsWith($rr + '\', [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+    }
+    return $false
+}
+
+function Test-PtuGitSegmentAllowed {
+    param([string[]] $Tokens)
+    $t = @($Tokens)
+    if ($t.Count -lt 2) { return $false }  # 'git' nu -> defer
+
+    # Flags perigosas em qualquer posicao (injecao de config / programa externo / escrita).
+    $danger = @('-c', '--exec-path', '--config-env', '--ext-diff', '--upload-pack', '--receive-pack', '--open-files-in-pager')
+    foreach ($tok in $t) {
+        foreach ($d in $danger) { if ($tok -ceq $d -or $tok -clike "$d=*") { return $false } }
+        if ($tok -ceq '--output' -or $tok -clike '--output=*') { return $false }
+        if ($tok -clike '-O*') { return $false }
+    }
+
+    # Localiza o subcomando, pulando opcoes globais. -C/--git-dir/--work-tree consomem o argumento.
+    $i = 1
+    while ($i -lt $t.Count) {
+        $tok = $t[$i]
+        if ($tok -ceq '-C' -or $tok -ceq '--git-dir' -or $tok -ceq '--work-tree') { $i += 2; continue }
+        if ($tok.StartsWith('-')) { $i += 1; continue }
+        break
+    }
+    if ($i -ge $t.Count) { return $false }  # sem subcomando
+
+    $sub = $t[$i]
+    $allowedSubs = @('status', 'log', 'show', 'diff', 'rev-parse', 'branch')
+    if ($allowedSubs -cnotcontains $sub) { return $false }
+
+    if ($sub -ceq 'branch') {
+        $listFlags = @('--list', '-a', '--all', '-v', '-vv', '-r', '--show-current')
+        for ($j = $i + 1; $j -lt $t.Count; $j++) {
+            $tok = $t[$j]
+            if ($tok.StartsWith('-')) {
+                if ($listFlags -cnotcontains $tok) { return $false }
+            }
+            else {
+                return $false  # posicional -> 'git branch <nome>' cria branch -> defer
+            }
+        }
+    }
+    return $true
+}
+
+function Test-PtuHeadTailAllowed {
+    param([string[]] $Tokens)
+    $t = @($Tokens)
+    $bad = @('-f', '-F', '--follow', '--retry', '--pid')
+    for ($j = 1; $j -lt $t.Count; $j++) {
+        $tok = $t[$j]
+        foreach ($b in $bad) { if ($tok -eq $b -or $tok -like "$b=*") { return $false } }
+        if ($tok -like '--follow*') { return $false }
+    }
+    return $true
+}
+
+function Test-PtuRgAllowed {
+    param([string[]] $Tokens)
+    $t = @($Tokens)
+    $bad = @('--pre', '--pre-glob', '--hostname-bin')
+    for ($j = 1; $j -lt $t.Count; $j++) {
+        $tok = $t[$j]
+        foreach ($b in $bad) { if ($tok -eq $b -or $tok -like "$b=*") { return $false } }
+    }
+    return $true
+}
+
+function Test-PtuDateAllowed {
+    param([string[]] $Tokens)
+    $t = @($Tokens)
+    for ($j = 1; $j -lt $t.Count; $j++) {
+        $tok = $t[$j]
+        if (-not $tok.StartsWith('-') -and -not $tok.StartsWith('+')) { return $false }  # set de relogio
+    }
+    return $true
+}
+
+function Test-PtuBashSegmentAllowed {
+    param([string[]] $Tokens)
+    $t = @($Tokens)
+    if ($t.Count -lt 1) { return $false }
+    $verb = $t[0]
+    switch -CaseSensitive ($verb) {
+        'git'  { return (Test-PtuGitSegmentAllowed $t) }
+        'head' { return (Test-PtuHeadTailAllowed $t) }
+        'tail' { return (Test-PtuHeadTailAllowed $t) }
+        'rg'   { return (Test-PtuRgAllowed $t) }
+        'date' { return (Test-PtuDateAllowed $t) }
+        'cat'  { return $true }
+        'wc'   { return $true }
+        'ls'   { return $true }
+        default { return $false }
+    }
+}
+
+function Get-PtuBashDecision {
+    param([string] $Command, [string] $PythonExe, [string] $HelperPath)
+    if ([string]::IsNullOrWhiteSpace($Command)) { return 'defer' }
+    if ([string]::IsNullOrWhiteSpace($PythonExe) -or -not (Test-Path -LiteralPath $PythonExe)) { return 'defer' }
+    if ([string]::IsNullOrWhiteSpace($HelperPath) -or -not (Test-Path -LiteralPath $HelperPath)) { return 'defer' }
+    try {
+        $json = $Command | & $PythonExe $HelperPath 2>$null
+    }
+    catch { return 'defer' }
+    if ($LASTEXITCODE -ne 0) { return 'defer' }
+    if ([string]::IsNullOrWhiteSpace($json)) { return 'defer' }
+    try { $parsed = $json | ConvertFrom-Json } catch { return 'defer' }
+    if (-not $parsed -or $parsed.status -ne 'ok') { return 'defer' }
+    $segs = @($parsed.segments)
+    if ($segs.Count -lt 1) { return 'defer' }
+    foreach ($seg in $segs) {
+        $tokens = @($seg)
+        if (-not (Test-PtuBashSegmentAllowed $tokens)) { return 'defer' }
+    }
+    return 'allow'
+}
+
+function Get-PtuPowerShellDecision {
+    param([string] $Command)
+    # Fase 0: o campo de input PowerShell nao e documentado; ate confirmar -> defer (fail-closed).
+    # O classificador via AST nativo entra na Fase 5 (ver design, secao 3/5).
+    return 'defer'
+}
+
+function Get-PtuDecision {
+    param(
+        [string] $ToolName,
+        [string] $Command,
+        [string] $Cwd,
+        [string[]] $Roots,
+        [string] $PythonExe,
+        [string] $HelperPath
+    )
+    try {
+        if (-not (Test-PtuCwdInScope -Cwd $Cwd -Roots $Roots)) { return 'defer' }
+        switch -CaseSensitive ($ToolName) {
+            'Bash'       { return (Get-PtuBashDecision -Command $Command -PythonExe $PythonExe -HelperPath $HelperPath) }
+            'PowerShell' { return (Get-PtuPowerShellDecision -Command $Command) }
+            default      { return 'defer' }
+        }
+    }
+    catch { return 'defer' }
+}
