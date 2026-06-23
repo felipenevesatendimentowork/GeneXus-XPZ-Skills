@@ -138,6 +138,15 @@ Skills consumidoras: `xpz-builder`, `xpz-msbuild-import-export`. Motor: `scripts
 
 **Origem:** experimento controlado do truncamento das vozes coder (2026-06-23); gap derivado da frente «variante read-only» (migrada ao histórico). Achado e priorizado por **revisão por pares** (5 vozes / 3 famílias: anthropic nativo, openai/Codex gpt-5.5, ollama-cloud deepseek-v4-pro/glm-5.2/kimi-k2.7-code).
 
+## Formalizar regra de retirada de pendências: reler estado atual + distinção 998 vs histórico
+
+- **Importância** — média (sem a regra, agente propõe destino errado: entrada resolvida vai para 998 em vez do histórico mensal, ou manuscrito é construído sobre visão stale da entrada).
+- **Maturidade** — pronta para implementar (lição extraída e validada; falta só gravar no lugar certo).
+- **Achado (2026-06-23):** agente construiu manuscrito inteiro de migração ao 998 sem reler a entrada do 999 — que já tinha uma RESOLUÇÃO e pertencia ao **histórico mensal**, não ao 998 (rejeitadas). O painel diverso (5 vozes / 3 famílias) é que pegou a contradição com o estado real da entrada. Dois gaps distintos: (1) não reler o estado atual antes de propor retirada; (2) não distinguir 998 (ideia rejeitada) de `historico/IdeiasImplementadas` (ideia resolvida/implementada).
+- **Direção:** adicionar regra curta ao `AGENTS.md` (seção «Revisão pré-push») e/ou à própria «Política de retirada» no topo deste arquivo. Texto candidato: *"Antes de propor migrar ou descartar uma entrada, reler o estado ATUAL da entrada — ela pode já ter RESOLUÇÃO ou estado avançado. Entrada resolvida/implementada vai ao histórico mensal; entrada rejeitada vai ao 998."*
+
+**Origem:** sessão de investigação do truncamento de vozes coder (2026-06-23); erro de processo do agente corrigido pelo painel de revisão por pares.
+
 ## Fallback de voz anthropic no painel quando o subagente nativo cai em 529
 
 - **Importância** — baixa-média (atrito real: bloqueou a 4ª voz do painel por ~15 min). O painel de revisão por pares usa o **subagente nativo** (ferramenta Agent) como voz **anthropic**, **fixado no modelo da sessão** (ex.: `claude-opus-4-8`). Quando a API anthropic está sobrecarregada, o spawn falha com **HTTP 529 Overloaded** repetido (observado 2026-06-21: `opus-4.8` deu 529 ×4 seguidos), e **não há fallback** — a família anthropic ficou descoberta até o usuário rodar `opus-4.7` manualmente em outra sessão.
